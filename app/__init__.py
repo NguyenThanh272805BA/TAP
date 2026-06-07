@@ -46,6 +46,9 @@ def create_app():
     def dashboard():
         return render_template('dashboard.html')
 
+    @app.route('/auth')
+    def auth_portal():
+        return render_template('auth.html')
     # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
     from app.controllers.game_controller import game_bp

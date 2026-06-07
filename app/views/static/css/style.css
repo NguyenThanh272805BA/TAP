@@ -1,30 +1,30 @@
-/* app/static/css/style.css */
+/* app/views/static/css/style.css */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
 
 :root {
-    --bg-gradient: linear-gradient(135deg, #090d16 0%, #110c26 50%, #1a103c 100%);
-    --glass-bg: rgba(15, 23, 42, 0.45);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --pixel-border: rgba(99, 102, 241, 0.2);
+    /* Nâng tone nền sáng và rực rỡ hơn, giữ độ sâu của màn hình CRT */
+    --bg-gradient: linear-gradient(135deg, #121829 0%, #1a163a 50%, #251654 100%);
+    --glass-bg: rgba(22, 32, 66, 0.65); /* Tăng độ sáng và độ đục của kính */
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --pixel-border: rgba(129, 140, 248, 0.4);
 
-    /* Bảng màu Neon Retro RPG */
-    --neon-purple: #8b5cf6;
-    --neon-cyan: #06b6d4;
-    --neon-pink: #ec4899;
-    --neon-amber: #f59e0b;
-    --pixel-green: #10b981;
+    /* Bảng màu Neon Rực Rỡ */
+    --neon-purple: #a78bfa;
+    --neon-cyan: #22d3ee;
+    --neon-pink: #f472b6;
+    --neon-amber: #fbbf24;
+    --pixel-green: #34d399;
 
     --text-pixel: 'Press Start 2P', monospace;
     --text-mono: 'Share Tech Mono', monospace;
 }
 
-/* --- TOÀN BỘ MÔI TRƯỜNG GAME INTERFACE --- */
 body {
     margin: 0;
     padding: 30px;
     background: var(--bg-gradient);
     background-attachment: fixed;
-    color: #f8fafc;
+    color: #f1f5f9;
     font-family: var(--text-mono);
     font-size: 18px;
     letter-spacing: 0.5px;
@@ -33,30 +33,18 @@ body {
     overflow-x: hidden;
 }
 
-/* Hiệu ứng lớp quét CRT quét sọc của màn hình máy game cổ điển */
+/* Màn hình CRT cổ điển quét sọc phát sáng */
 body::after {
     content: " ";
     display: block;
     position: fixed;
     top: 0; left: 0; bottom: 0; right: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
     z-index: 99999;
     pointer-events: none;
     background-size: 100% 3px, 6px 100%;
 }
 
-/* Nền nhiễu hạt giả lập sương mù không gian */
-body::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0.03;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    z-index: 1;
-}
-
-/* --- BENTO GRID CẤU TRÚC LỚN --- */
 .bento-container {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -68,172 +56,156 @@ body::before {
     z-index: 2;
 }
 
-/* --- THẺ BENTO BOX PIXEL GLASSMORPHISM --- */
+/* Thẻ Bento Nghệ Thuật Cao Cấp */
 .bento-card {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 2px solid var(--glass-border);
-    border-radius: 18px; /* Bo góc mượt của bento */
+    border-radius: 18px;
     padding: 28px;
     box-shadow:
-        0 10px 40px -10px rgba(0, 0, 0, 0.7),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        0 15px 45px -10px rgba(0, 0, 0, 0.6),
+        inset 0 1px 1px rgba(255, 255, 255, 0.2);
     position: relative;
     overflow: hidden;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Hiệu ứng viền phát sáng bám góc khi Hover */
-.bento-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%;
-    width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-    transition: 0.5s;
-}
-
-.bento-card:hover::before {
-    left: 100%;
-}
-
 .bento-card:hover {
-    transform: translateY(-8px) scale(1.01);
-    border-color: var(--neon-purple);
+    transform: translateY(-6px) scale(1.01);
+    border-color: var(--neon-cyan);
     box-shadow:
-        0 20px 50px -10px rgba(139, 92, 246, 0.3),
-        0 0 20px 0 rgba(139, 92, 246, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        0 20px 50px -10px rgba(34, 211, 238, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 
-/* Định dạng kích thước lưới chuyên sâu */
 .card-large { grid-column: span 2; grid-row: span 2; }
 .card-wide { grid-column: span 2; }
 .card-tall { grid-row: span 2; }
 
-/* --- KIỂU CHỮ PIXEL ĐẶC TRƯNG --- */
 .pixel-title {
     font-family: var(--text-pixel);
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 13px;
     color: var(--neon-cyan);
-    text-shadow: 2px 2px 0px rgba(6, 182, 212, 0.3);
+    text-shadow: 2px 2px 0px rgba(34, 211, 238, 0.4);
     margin-bottom: 15px;
 }
 
 .pixel-text {
     font-family: var(--text-mono);
     font-size: 20px;
-    color: #cbd5e1;
+    color: #e2e8f0;
 }
 
-/* --- HỆ THỐNG ANIMATION KHỦNG BẰNG KEYFRAMES THUẦN --- */
-
-/* 1. Đốm sáng Pixel bay lơ lửng ở nền (Floating Particles) */
-@keyframes float {
-    0% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-    50% { transform: translateY(-15px) rotate(180deg); opacity: 0.8; }
-    100% { transform: translateY(0px) rotate(360deg); opacity: 0.3; }
-}
-
-/* 2. Hiệu ứng thở nhẹ/nhấp nháy cho text quan trọng (Pulse Glow) */
-@keyframes pulseGlow {
-    0%, 100% { text-shadow: 0 0 4px var(--neon-pink); opacity: 0.9; }
-    50% { text-shadow: 0 0 16px var(--neon-pink), 0 0 24px var(--neon-pink); opacity: 1; }
-}
-.pulse-neon {
-    animation: pulseGlow 2s infinite ease-in-out;
-    color: var(--neon-pink);
-}
-
-/* 3. Hiệu ứng rung bần bật khi làm bài sai hoặc ấn nút (Juicy Shake) */
-@keyframes pixelShake {
-    0%, 100% { transform: translate(0, 0); }
-    20% { transform: translate(-3px, 2px); }
-    40% { transform: translate(3px, -1px); }
-    60% { transform: translate(-2px, -2px); }
-    80% { transform: translate(2px, 1px); }
-}
-.error-shake {
-    animation: pixelShake 0.3s cubic-bezier(.36,.07,.19,.97) both;
-}
-
-/* --- ĐỒ HỌA ICON TỰ VẼ BẰNG CODE (CSS CANVAS) --- */
-
-/* Thanh điểm danh Streak rực lửa */
-.pixel-fire-icon {
-    width: 24px;
-    height: 32px;
-    background: var(--neon-amber);
-    display: inline-block;
-    position: relative;
-    /* Cắt đa giác răng cưa dạng Pixel Art */
-    clip-path: polygon(50% 0%, 83% 25%, 100% 55%, 83% 100%, 16% 100%, 0% 55%, 16% 25%);
-    animation: float 2.5s infinite ease-in-out;
-}
-.pixel-fire-icon::after {
-    content: '';
-    position: absolute;
-    top: 25%; left: 25%;
-    width: 50%; height: 50%;
-    background: #ef4444;
-    clip-path: polygon(50% 0%, 100% 40%, 75% 100%, 25% 100%, 0% 40%);
-}
-
-/* Nút Bấm Đậm Chất Game Hồi Xưa (Pixel Retro Button) */
+/* Nút Bấm Game Retro Phát Sáng cường độ cao */
 .pixel-btn {
     font-family: var(--text-pixel);
     font-size: 11px;
     color: #ffffff;
-    background: #3b82f6;
+    background: #2563eb;
     border: none;
     padding: 14px 24px;
     cursor: pointer;
     position: relative;
     box-shadow:
-        -4px 0 0 0 #000,
-        4px 0 0 0 #000,
-        0 -4px 0 0 #000,
-        0 4px 0 0 #000,
-        inset -4px -4px 0 0 #1d4ed8;
+        -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000,
+        inset -4px -4px 0 0 #1d4ed8, 0 0 15px rgba(37, 99, 235, 0.6);
     image-rendering: pixelated;
     transition: all 0.1s;
 }
 
 .pixel-btn:active {
     transform: translate(2px, 2px);
-    box-shadow:
-        -4px 0 0 0 #000,
-        4px 0 0 0 #000,
-        0 -4px 0 0 #000,
-        0 4px 0 0 #000,
-        inset 2px 2px 0 0 #1d4ed8;
+    box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000, inset 2px 2px 0 0 #1d4ed8;
 }
 
-/* Hộp hội thoại của AI Master G (Chat Bubble) */
+.pixel-fire-icon {
+    width: 24px;
+    height: 32px;
+    background: var(--neon-amber);
+    display: inline-block;
+    position: relative;
+    clip-path: polygon(50% 0%, 83% 25%, 100% 55%, 83% 100%, 16% 100%, 0% 55%, 16% 25%);
+    box-shadow: 0 0 15px var(--neon-amber);
+}
+
 .ai-dialog-box {
-    border: 4px solid #fff;
-    background: rgba(0, 0, 0, 0.8);
+    border: 4px solid var(--neon-pink);
+    background: rgba(10, 10, 20, 0.9);
     padding: 15px;
     position: relative;
     margin-top: 15px;
-    box-shadow:
-        -4px 0 0 0 #000,
-        4px 0 0 0 #000,
-        0 -4px 0 0 #000,
-        0 4px 0 0 #000;
-}
-/* Hiệu ứng rung lắc Bento Card dạng Pixel Art khi lỗi / điểm thấp */
-.error-shake {
-    animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
-    transform: translate3d(0, 0, 0);
-    border-color: var(--neon-pink) !important;
+    box-shadow: 0 0 20px rgba(244, 114, 182, 0.3);
 }
 
-@keyframes shake {
-    10%, 90% { transform: translate3d(-2px, 0, 0); }
-    20%, 80% { transform: translate3d(4px, 0, 0); }
-    30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
-    40%, 60% { transform: translate3d(6px, 0, 0); }
+/* Hiệu ứng thở phát sáng */
+@keyframes pulseGlow {
+    0%, 100% { text-shadow: 0 0 5px var(--neon-pink); opacity: 0.9; }
+    50% { text-shadow: 0 0 20px var(--neon-pink), 0 0 30px var(--neon-pink); opacity: 1; }
+}
+
+/* Ô nhập liệu Form Đăng nhập sạch sẽ */
+.auth-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--pixel-border);
+    color: #fff;
+    padding: 12px;
+    font-family: var(--text-mono);
+    font-size: 16px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+.auth-input:focus {
+    border-color: var(--neon-cyan);
+    outline: none;
+    /* Thêm vào app/views/static/css/style.css */
+
+:root {
+    /* Nâng cấp bảng màu sáng rực rỡ hơn */
+    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #2e1065 100%);
+    --glass-bg: rgba(30, 41, 59, 0.7); /* Tăng độ sáng nền kính */
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --neon-cyan: #22d3ee;  /* Sáng hơn */
+    --neon-pink: #f472b6;  /* Sáng hơn */
+    --neon-amber: #fbbf24; /* Sáng hơn */
+    --pixel-green: #34d399; /* Sáng hơn */
+}
+
+/* --- NHÂN VẬT PIXEL MASTER G TỰ VẼ BẰNG BOX-SHADOW THUẦN --- */
+.pixel-avatar {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+    display: inline-block;
+    position: relative;
+    /* Vẽ mắt kính và khuôn mặt cool ngầu của Master G bằng ma trận điểm ảnh */
+    box-shadow:
+        20px 10px var(--neon-pink), 30px 10px var(--neon-pink),
+        10px 20px var(--neon-cyan), 20px 20px #fff, 30px 20px #fff, 40px 20px var(--neon-cyan),
+        10px 30px var(--neon-cyan), 20px 30px var(--neon-cyan), 30px 30px var(--neon-cyan), 40px 30px var(--neon-cyan),
+        20px 40px #fff, 30px 40px #fff;
+    animation: characterIdle 1.5s infinite ease-in-out;
+}
+
+@keyframes characterIdle {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-6px) scaleY(0.9); box-shadow:
+        20px 12px var(--neon-pink), 30px 12px var(--neon-pink),
+        10px 22px var(--neon-pink), 20px 22px #fff, 30px 22px #fff, 40px 22px var(--neon-pink),
+        10px 32px var(--neon-cyan), 20px 32px var(--neon-cyan), 30px 32px var(--neon-cyan), 40px 32px var(--neon-cyan),
+        20px 42px #fff, 30px 42px #fff; } /* Đổi màu mắt khi nhún nhảy */
+}
+
+/* Hiệu ứng Text Chữ chạy (Typewriter) tăng tính nghệ thuật */
+.typing-effect {
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 3px solid var(--neon-cyan);
+    animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+}
+
+@keyframes typing { from { width: 0 } to { width: 100% } }
+@keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--neon-cyan); } }
 }

@@ -1,10 +1,14 @@
 /* app/static/js/main.js */
 
 // Giả định User ID hiện tại để test luồng (Khi có Auth Portal sẽ lấy từ Session/LocalStorage)
-const CURRENT_USER_ID = 1;
-
+const CURRENT_USER_ID = localStorage.getItem("user_id") || 1;
+const CURRENT_USERNAME = localStorage.getItem("username") || "Explorer";
 document.addEventListener("DOMContentLoaded", () => {
     // Khởi tạo trạng thái giao diện ban đầu
+    const nameSpan = document.querySelector("#status-card .pixel-text span");
+    if(nameSpan) nameSpan.textContent = CURRENT_USERNAME;
+
+    loadVocabQuests();
     loadPlayerStatus();
     loadVocabQuests();
     // Bổ sung sự kiện lắng nghe phím Enter trong ô Textarea để bấm gửi lệnh nhanh
