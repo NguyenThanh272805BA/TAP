@@ -26,3 +26,10 @@ def create_app():
 
     # Gắn db vào app
     db.init_app(app)
+
+    # Tạo một Route tạm để test
+    @app.route('/')
+    def home():
+        return " Backend Global Fluent đã khởi chạy thành công!"
+
+    return app
