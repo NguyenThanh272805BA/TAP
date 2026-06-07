@@ -1,10 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Fluent - RPG Command Center</title>
+    <link class="page-style" rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 
+    <div class="bento-container">
+
+        <div class="bento-card card-wide" id="status-card">
+            <div class="pixel-title">PLAYER_STATUS // MAIN_HUB</div>
+            <div class="pixel-text">
+                USER: <span style="color: var(--neon-cyan);">thanhnguyen_test</span> <br>
+                RANK: <span style="color: var(--pixel-green);">Beginner Explorer</span>
+            </div>
+
+            <div style="position: absolute; right: 30px; top: 20px; text-align: center;">
+                <button class="pixel-btn" style="background: var(--neon-amber); padding: 8px 12px; font-size: 10px; margin-bottom: 8px;" onclick="triggerCheckin()">DAILY_CHECKIN</button>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <div class="pixel-fire-icon"></div>
+                    <div class="pixel-title" style="margin: 0; color: var(--neon-amber);">STREAK: <span class="pulse-neon">3</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bento-card" id="leaderboard-card">
+            <div class="pixel-title">LEADERBOARD</div>
+            <div class="pixel-text" style="font-size: 15px; line-height: 1.6;">
+                1. Kim Thành - 999 XP<br>
+                2. Player_02 - 500 XP
+            </div>
+        </div>
+
+        <div class="bento-card card-tall" id="vocab-card" onclick="switchFeature('vocab')" style="cursor: pointer;">
+            <div class="pixel-title" style="color: var(--neon-cyan);">VOCAB_QUESTS (THEMES)</div>
+            <div class="pixel-text" style="font-size: 16px;">
+                <div class="loading-text">LOADING_QUESTS...</div>
+            </div>
+        </div>
+
+        <div class="bento-card card-large" id="battle-card">
+            <div class="pixel-title" style="color: var(--neon-pink);">BATTLE_ZONE // MASTER_G_CHALLENGE</div>
+
+            <div id="dynamic-workspace">
+                <div class="pixel-text" style="font-size: 16px; margin-bottom: 15px;">
+                    NHIỆM VỤ CHIẾN TRƯỜNG: Sử dụng cấu trúc <span style="color: var(--neon-amber);" id="current-structure">"S + wish + S + V(past)"</span> để viết câu điều ước.
+                </div>
+
+                <textarea id="userInput" style="width: 100%; height: 90px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 18px; border-radius: 8px; resize: none;" placeholder="Nhập câu tiếng Anh của bạn vào đây để AI phân tích..."></textarea>
+
+                <div style="margin-top: 15px; display: flex; gap: 12px;">
+                    <button class="pixel-btn" onclick="submitChallenge()">SEND_COMMAND</button>
+                    <button class="pixel-btn" id="voice-btn" style="background: #ef4444; box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000, inset -4px -4px 0 0 #b91c1c;" onclick="toggleVoiceRecording()">RECORD_VOICE</button>
+                </div>
+            </div>
+
+            <div class="ai-dialog-box" id="aiResponseBox" style="display: none;">
+                <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 5px;">MASTER_G:</div>
+                <div id="aiFeedback" class="pixel-text" style="font-size: 16px; color: #fff;"></div>
+            </div>
+        </div>
+
+        <div class="bento-card" id="grammar-card" onclick="switchFeature('grammar')" style="cursor: pointer;">
+            <div class="pixel-title" style="color: var(--neon-amber);">GRAMMAR_THEMES</div>
+            <div class="pixel-text" style="font-size: 16px; color: #cbd5e1;">
+                Quản lý và luyện tập các cấu trúc câu cốt lõi.
+            </div>
+            <span class="status-tag" style="position: absolute; bottom: 15px; right: 20px; color: var(--neon-cyan); font-size: 11px; font-family: var(--text-pixel);">SELECT</span>
+        </div>
+
+        <div class="bento-card" id="story-card" onclick="switchFeature('story')" style="cursor: pointer;">
+            <div class="pixel-title" style="color: var(--neon-purple);">RPG_STORIES</div>
+            <div class="pixel-text" style="font-size: 16px; color: #cbd5e1;">
+                Đọc tiểu thuyết nhập vai và tương tác cùng AI.
+            </div>
+            <span class="status-tag" style="position: absolute; bottom: 15px; right: 20px; color: var(--neon-cyan); font-size: 11px; font-family: var(--text-pixel);">SELECT</span>
+        </div>
+
+        <div class="bento-card card-wide" id="mini-game-card" onclick="switchFeature('game')" style="cursor: pointer;">
+            <div class="pixel-title" style="color: var(--pixel-green);">MINI_GAME_ZONE // CASINO_GACHA</div>
+            <div class="pixel-text" style="font-size: 16px;">
+                Tham gia Đấu trường phản xạ, giải đố từ vựng nhanh để cược điểm Streak và nhận thưởng lớn.
+            </div>
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

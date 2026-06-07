@@ -1,57 +1,34 @@
-import requests
+# seed_data.py
+from app import create_app, db
+from app.models.vocabulary import Vocabulary
+from app.models.grammar import Grammar
 
-BASE_URL = "http://127.0.0.1:5000/api/auth"
+app = create_app()
 
-def test_register():
-    print("--- TEST ĐĂNG KÝ ---")
-    data = {"username": "thanhnguyen_test", "password": "123"}
-    response = requests.post(f"{BASE_URL}/register", json=data)
-    print(f"Status Code: {response.status_code}")
-    print(f"Kết quả: {response.json()}\n")
+def seed_everything():
+    with app.app_context():
+        # 1. Clear dữ liệu cũ nếu cần để tránh trùng lặp
+        db.session.query(Vocabulary).delete()
+        db.session.query(Grammar).delete()
 
-def test_login():
-    print("--- TEST ĐĂNG NHẬP ---")
-    data = {"username": "thanhnguyen_test", "password": "123"}
-    response = requests.post(f"{BASE_URL}/login", json=data)
-    print(f"Status Code: {response.status_code}")
-    print(f"Kết quả: {response.json()}\n")
+        # 2. Thêm từ vựng mẫu (Dùng tên ảnh Low-Poly giả định)
+        vocabs = [
+            Vocabulary(word="Annihilate", meaning="Tiêu diệt hoàn toàn (Game RPG hay xài)", image_url="annihilate.png", is_unlocked=True),
+            Vocabulary(word="Cooldown", meaning="Thời gian hồi chiêu", image_url="cooldown.png", is_unlocked=True),
+            Vocabulary(word="Immortal", meaning="Bất tử", image_url="immortal.png", is_unlocked=False),
+            Vocabulary(word="Synergy", meaning="Sự phối hợp, kết hợp ăn ý", image_url="synergy.png", is_unlocked=False)
+        ]
+
+        # 3. Thêm cấu trúc ngữ pháp mẫu
+        grammars = [
+            Grammar(structure="S + wish + S + V(past)", explanation="Câu điều ước trái ngược với hiện tại.", example="I wish I had a high-tier gaming PC."),
+            Grammar(structure="If + S + V(past), S + would + V-inf", explanation="Câu điều kiện loại 2 - Giả định không có thật ở hiện tại.", example="If I were an NPC, I would give you a legendary quest.")
+        ]
+
+        db.session.add_all(vocabs)
+        db.session.add_all(grammars)
+        db.session.commit()
+        print(" Bơm dữ liệu mẫu cho Global Fluent thành công rồi nhé Thành!")
 
 if __name__ == "__main__":
-    # Nhớ đảm bảo file run.py (Server Flask) đang được chạy ở một Terminal khác nhé!
-    test_register()
-    test_login()
-
-
-    # Bổ sung vào cuối file test_api.py cũ:
-
-    def test_game_logic():
-        print("--- TEST ĐIỂM DANH & MỞ KHÓA TỪ VỰNG ---")
-        # Giả định user_id = 1 là tài khoản chúng ta vừa tạo ở lượt test trước
-        data = {"user_id": 1}
-        response = requests.post("http://127.0.0.1:5000/api/game/checkin", json=data)
-        print(f"Status Code: {response.status_code}")
-        print(f"Kết quả: {response.json()}\n")
-
-
-    if __name__ == "__main__":
-        # test_register()
-        # test_login()
-        test_game_logic()  # Chạy hàm test mới này
-
-
-        def test_ai_evaluate():
-            print("\n--- TEST AI CHẤM ĐIỂM (CẨN THẬN BỊ CHỬI) ---")
-            data = {
-                "user_id": 1,
-                "text": "I wish I have a lot of money to buy game."
-            }
-            response = requests.post("http://127.0.0.1:5000/api/ai/evaluate", json=data)
-            print(f"Status Code: {response.status_code}")
-            print(f"Kết quả:\n{response.text}")
-
-
-        if __name__ == "__main__":
-            # test_register()
-            # test_login()
-            # test_game_logic()
-            test_ai_evaluate()  # Gọi API AI
+    seed_everything()

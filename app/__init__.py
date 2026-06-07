@@ -1,42 +1,58 @@
 # app/__init__.py
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 import os
 from dotenv import load_dotenv
 
-# Load file .env
+# Tải các biến môi trường cấu hình bảo mật từ tệp .env
 load_dotenv()
 
-# Khởi tạo instance database
+# Khởi tạo instance database SQLAlchemy để quản lý ORM
 db = SQLAlchemy()
 
-
 def create_app():
-    app = Flask(__name__)
+    # Định vị chính xác tuyệt đối từ thư mục gốc của phân vùng app
+    base_dir = os.path.abspath(os.path.dirname(__file__))
 
-    # Lấy thông tin từ file .env để ghép thành chuỗi kết nối MySQL
+    # CẤU HÌNH KHỚP 100% CÂY THƯ MỤC: Cả templates và static đều lùi sâu nằm trong views/
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(base_dir, 'views', 'templates'),
+        static_folder=os.path.join(base_dir, 'views', 'static')
+    )
+
+    # Đọc thông tin kết nối từ file .env
     db_user = os.getenv("DB_USER")
     db_pass = os.getenv("DB_PASSWORD")
     db_host = os.getenv("DB_HOST")
     db_name = os.getenv("DB_NAME")
 
-    # Cấu hình chuỗi URI cho SQLAlchemy
+    # Cấu hình chuỗi kết nối MySQL thông qua driver pymysql
     app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Gắn db vào app
+    # Gắn kết cấu cấu hình Database vào Flask Application instance
     db.init_app(app)
 
-    # Tạo một Route tạm để test
+    # --- HỆ THỐNG ROUTE ĐIỀU HƯỚNG GIAO DIỆN CHÍNH ---
+
+    # 1. Trang giới thiệu sản phẩm cô đọng (Landing Page)
     @app.route('/')
     def home():
-        return " Backend Global Fluent đã khởi chạy thành công!"
+        return render_template('index.html')
 
+    # 2. Trang Tổng hành dinh quản lý tập trung mọi chức năng (Dashboard Hub)
+    @app.route('/dashboard')
+    def dashboard():
+        return render_template('dashboard.html')
+
+    # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
     from app.controllers.game_controller import game_bp
+    from app.controllers.ai_controller import ai_bp
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(game_bp)
-
-    from app.controllers.ai_controller import ai_bp
     app.register_blueprint(ai_bp)
+
     return app

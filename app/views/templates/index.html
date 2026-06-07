@@ -1,10 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Fluent - Thần Thoại Tiếng Anh RPG</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+
+    <div class="bento-container">
+
+        <div class="bento-card card-large" style="display: flex; flex-direction: column; justify-content: center;">
+            <div class="pixel-title" style="font-size: 24px; color: var(--neon-pink); animation: pulseGlow 2s infinite;">
+                GLOBAL FLUENT
+            </div>
+            <p class="pixel-text" style="font-size: 18px; line-height: 1.6; margin-top: 15px;">
+                Chào mừng Nhà Thám Hiểm đến với Hệ thống học Tiếng Anh giả lập môi trường Retro RPG.
+                Đây không phải là một ứng dụng học vẹt thông thường, đây là một cuộc sinh tồn ngôn ngữ!
+            </p>
+            <div style="margin-top: 25px;">
+                <button class="pixel-btn" onclick="window.location.href='/dashboard'" style="background: var(--pixel-green); box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000, inset -4px -4px 0 0 #065f46; font-size: 14px;">
+                    ENTER_GAME_START
+                </button>
+            </div>
+        </div>
+
+        <div class="bento-card">
+            <div class="pixel-title" style="color: var(--neon-cyan);">VOCAB_QUESTS</div>
+            <p class="pixel-text" style="font-size: 15px; line-height: 1.5;">
+                Học từ vựng theo chủ đề qua mô hình **Gacha sinh tồn**. Duy trì chuỗi Streak điểm danh thời gian thực để quét sạch quái vật và mở khóa kho thẻ bài từ lóng, hình ảnh 3D Low-Poly độc quyền.
+            </p>
+        </div>
+
+        <div class="bento-card">
+            <div class="pixel-title" style="color: var(--neon-amber);">GRAMMAR_THEMES</div>
+            <p class="pixel-text" style="font-size: 15px; line-height: 1.5;">
+                Hệ thống phân phối cấu trúc ngữ pháp từ cơ bản đến nâng cao. Mỗi chủ đề là một ải thử thách đòi hỏi bạn phải áp dụng chính xác để vượt qua chướng ngại vật.
+            </p>
+        </div>
+
+        <div class="bento-card card-wide">
+            <div class="pixel-title" style="color: var(--neon-pink);">BATTLE_ZONE // AI_MASTER_G</div>
+            <p class="pixel-text" style="font-size: 16px; line-height: 1.6;">
+                **Trọng tâm cốt lõi:** Được hậu thuẫn bởi trí tuệ nhân tạo **Gemini 2.5 Flash**. Giám khảo "Master G" cá tính, bộc trực và xéo xắt sẽ trực tiếp kiểm tra kỹ năng của bạn qua ô lệnh Text hoặc Giọng nói (Speech-to-Text). Sai bị chửi thẳng mặt bằng ngôn ngữ game thủ, đúng được ca ngợi ngạo nghễ! Chấm điểm chuẩn xác theo thời gian thực.
+            </p>
+        </div>
+
+        <div class="bento-card">
+            <div class="pixel-title" style="color: var(--neon-purple);">RPG_STORIES</div>
+            <p class="pixel-text" style="font-size: 15px; line-height: 1.5;">
+                Đắm chìm vào những câu chuyện viễn tưởng theo chủ đề. Đọc hiểu, tương tác trực tiếp và đưa ra quyết định bằng tiếng Anh để thay đổi kết cục của cốt truyện.
+            </p>
+        </div>
+
+        <div class="bento-card">
+            <div class="pixel-title" style="color: var(--pixel-green);">MINI_GAME_ZONE</div>
+            <p class="pixel-text" style="font-size: 15px; line-height: 1.5;">
+                Nơi giải trí tích lũy kinh nghiệm (XP) bằng cách cá cược chuỗi Streak, đấu trường phản xạ nhanh giúp việc ghi nhớ kiến thức không còn nhàm chán.
+            </p>
+        </div>
+
+    </div>
 
 </body>
 </html>
