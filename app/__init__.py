@@ -33,5 +33,10 @@ def create_app():
         return " Backend Global Fluent đã khởi chạy thành công!"
 
     from app.controllers.auth_controller import auth_bp
+    from app.controllers.game_controller import game_bp
     app.register_blueprint(auth_bp)
+    app.register_blueprint(game_bp)
+
+    from app.controllers.ai_controller import ai_bp
+    app.register_blueprint(ai_bp)
     return app
