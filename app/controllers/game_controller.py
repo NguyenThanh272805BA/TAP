@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.models.user import User
 from app.models.vocabulary import Vocabulary
 from app import db
+from app.models.grammar import Grammar
 from datetime import datetime, date
 
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
@@ -94,3 +95,22 @@ def toggle_memorize():
         "level_upgraded": level_upgraded,
         "current_level": user.current_level
     }), 200
+
+# ... (Các đoạn code cũ giữ nguyên) ...
+
+@game_bp.route('/grammars', methods=['GET'])
+def get_grammars():
+    # Lấy toàn bộ kho ngữ pháp đẩy lên giao diện
+    grammar_list = Grammar.query.all()
+
+    output = []
+    for g in grammar_list:
+        output.append({
+            "id": g.id,
+            "structure": g.structure,
+            "explanation": g.explanation,
+            "example": g.example,
+            "is_slang": g.is_slang
+        })
+
+    return jsonify({"grammars": output}), 200

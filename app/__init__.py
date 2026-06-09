@@ -46,6 +46,13 @@ def create_app():
     def dashboard():
         return render_template('dashboard.html')
 
+    @app.route('/learn')
+    def learn_page():
+        return render_template('learn.html')
+
+    @app.route('/test')
+    def test_page():
+        return render_template('test.html')
     @app.route('/auth')
     def auth_portal():
         return render_template('auth.html')

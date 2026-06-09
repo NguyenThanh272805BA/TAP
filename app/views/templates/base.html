@@ -1,10 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Fluent - {% block title %}BATTLE ZONE{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <div style="margin-bottom: 20px;">
+        <button class="pixel-btn" onclick="window.location.href='/dashboard'" style="background: var(--neon-purple); font-size: 10px;">
+            < RETURN_TO_HUB
+        </button>
+    </div>
 
+    {% block content %}{% endblock %}
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

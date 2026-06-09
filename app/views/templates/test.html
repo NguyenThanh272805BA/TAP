@@ -1,10 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}GACHA MINIGAME{% endblock %}
+
+{% block content %}
+<div class="bento-container">
+    <div class="bento-card" style="grid-column: span 4; text-align: center; padding: 50px;">
+        <div class="pixel-title" style="font-size: 30px; color: var(--pixel-green); margin-bottom: 20px;">
+            GACHA MINIGAME // REFLEX BATTLE
+        </div>
+        <div class="pixel-text" style="font-size: 18px; color: #94a3b8; max-width: 600px; margin: 0 auto 40px auto;">
+            (Tính năng đang được Master G rèn giũa trong lò rèn. Sắp ra mắt hệ thống bốc thăm từ vựng thời gian thực!)
+        </div>
+        <button class="pixel-btn" onclick="triggerFireworksEffect()" style="background: var(--pixel-green); padding: 15px 30px; font-size: 16px;">
+            TEST_FIREWORKS (NỔ PHÁO HOA)
+        </button>
+    </div>
+</div>
+{% endblock %}

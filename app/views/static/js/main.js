@@ -26,33 +26,45 @@ document.addEventListener("DOMContentLoaded", () => {
     initLottieLibrary();
 });
 
-/**
- * 1. HÀM TRỌNG TÂM: ĐIỀU HƯỚNG TÍNH NĂNG TỔNG THỂ (View Switcher)
- * Thay đổi toàn bộ không gian làm việc của ô BATTLE_ZONE tùy theo mục được chọn
- */
 function switchFeature(featureName) {
+    const currentPath = window.location.pathname;
+
+    // 1. KIỂM TRA ĐIỀU HƯỚNG TỪ DASHBOARD
+    // Nếu đang không ở trang học (/learn) mà click vào grammar/vocab -> Chuyển trang
+    if ((featureName === 'grammar' || featureName === 'vocab') && currentPath !== '/learn') {
+        localStorage.setItem("selected_learning_mode", featureName);
+        window.location.href = '/learn';
+        return; // Dừng lại để trình duyệt load trang mới
+    }
+
+    // Nếu click vào mini-game mà chưa ở trang /test -> Chuyển trang
+    if (featureName === 'game' && currentPath !== '/test') {
+        window.location.href = '/test';
+        return;
+    }
+
+    // 2. RENDER GIAO DIỆN (Chỉ chạy khi ĐÃ Ở ĐÚNG TRANG hoặc dùng cho tính năng Story tại Dashboard)
     activeFeature = featureName;
     const workspace = document.getElementById("dynamic-workspace");
-    const battleTitle = document.querySelector("#battle-card .pixel-title");
     const aiResponseBox = document.getElementById("aiResponseBox");
 
-    if (!workspace || !battleTitle) return;
-
-    // Ẩn hộp thoại cũ của Master G khi đổi chế độ để người chơi tập trung
-    if (aiResponseBox) aiResponseBox.style.display = "none";
-
-    // Xóa hiệu ứng lựa chọn trên các thẻ khác và làm nổi bật thẻ được chọn
+    // Xóa hiệu ứng chọn cũ trên Bento Grid (Chỉ có tác dụng nếu đang ở Dashboard)
     document.querySelectorAll(".bento-card").forEach(card => card.style.borderColor = "var(--glass-border)");
     const activeCard = document.getElementById(`${featureName}-card`);
     if (activeCard) activeCard.style.borderColor = "var(--neon-cyan)";
 
-    // Cấu trúc lại giao diện lõi BATTLE_ZONE dựa trên tính năng được click (Đã gỡ nút RECORD_VOICE)
+    // Nếu không tìm thấy không gian làm việc thì thoát luôn (tránh lỗi)
+    if (!workspace) return;
+
+    // Ẩn hộp thoại AI khi mới đổi chế độ
+    if (aiResponseBox) aiResponseBox.style.display = "none";
+
+    // Bắt đầu vẽ khung nhập liệu tùy theo chế độ
     switch (featureName) {
         case 'vocab':
-            battleTitle.textContent = "BATTLE_ZONE // VOCAB_CHALLENGE";
             workspace.innerHTML = `
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px;">
-                    NHIỆM VỤ TỪ VỰNG: Đặt một câu có nghĩa chứa từ lóng/từ vựng mới mở khóa: <span style="color: var(--neon-cyan);">"Annihilate"</span>.
+                    NHIỆM VỤ TỪ VỰNG: Đặt một câu có nghĩa chứa từ lóng/từ vựng hệ thống yêu cầu.
                 </div>
                 <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 17px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Master G đang đợi câu từ vựng của bạn..."></textarea>
                 <div style="margin-top: 10px; display: flex; gap: 12px;">
@@ -62,10 +74,9 @@ function switchFeature(featureName) {
             break;
 
         case 'grammar':
-            battleTitle.textContent = "BATTLE_ZONE // GRAMMAR_CHALLENGE";
             workspace.innerHTML = `
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px;">
-                    NHIỆM VỤ NGỮ PHÁP: Sử dụng cấu trúc <span style="color: var(--neon-amber);" id="current-structure">"S + wish + S + V(past)"</span> để đặt câu điều ước.
+                    NHIỆM VỤ NGỮ PHÁP: Sử dụng đúng cấu trúc ngữ pháp để vượt ải.
                 </div>
                 <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 17px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Nhập câu ngữ pháp tại đây..."></textarea>
                 <div style="margin-top: 10px; display: flex; gap: 12px;">
@@ -75,35 +86,23 @@ function switchFeature(featureName) {
             break;
 
         case 'story':
-            battleTitle.textContent = "BATTLE_ZONE // RPG_STORY_INTERACT";
+            // Tính năng nhập vai RPG ngay tại màn hình Dashboard
+            const battleTitle = document.querySelector("#battle-card .pixel-title");
+            if(battleTitle) battleTitle.textContent = "BATTLE_ZONE // RPG_STORY_INTERACT";
+
             workspace.innerHTML = `
                 <div class="pixel-text" style="font-size: 14px; margin-bottom: 10px; max-height: 80px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
-                    <span style="color: var(--neon-purple);">[CHƯƠNG 1]</span> Bạn lạc vào vùng đất hoang dã hoang tàn, trước mặt là một NPC đang hấp hối. Ông ta đưa bạn một cuộn giấy da cổ. Bạn sẽ nói gì bằng tiếng Anh để hỏi đường hoặc cứu giúp?
+                    <span style="color: var(--neon-purple);">[CHƯƠNG 1]</span> Bạn lạc vào vùng đất hoang tàn, trước mặt là một NPC đang hấp hối. Bạn sẽ nói gì bằng tiếng Anh để hỏi đường hoặc cứu giúp?
                 </div>
                 <textarea id="userInput" style="width: 100%; height: 60px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 16px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Viết phản ứng/lời thoại của nhân vật của bạn..."></textarea>
                 <div style="margin-top: 8px; display: flex; gap: 12px;">
-                    <button class="pixel-btn" style="background: var(--neon-purple); box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000, inset -4px -4px 0 0 #6b21a8;" onclick="submitChallenge()">CHOICE_ACTION</button>
-                </div>
-            `;
-            break;
-
-        case 'game':
-            battleTitle.textContent = "BATTLE_ZONE // CASINO_MINIGAME";
-            workspace.innerHTML = `
-                <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px; text-align: center;">
-                    <span style="color: var(--pixel-green);">ĐẤU TRƯỜNG PHẢN XẠ NHANH GACHA</span><br>
-                    Hệ thống sẽ bốc ngẫu nhiên từ vựng, đoán nghĩa trong 5 giây để nhân đôi điểm kinh nghiệm!
-                </div>
-                <div style="text-align: center; margin-top: 15px;">
-                    <button class="pixel-btn" style="background: var(--pixel-green); box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000, inset -4px -4px 0 0 #065f46; padding: 14px 28px;" onclick="startMiniGame()">
-                        START_ROLL_GACHA
-                    </button>
+                    <button class="pixel-btn" style="background: var(--neon-purple);" onclick="submitChallenge()">CHOICE_ACTION</button>
                 </div>
             `;
             break;
     }
 
-    // Tái cấu hình lại sự kiện phím tắt cho ô textarea mới tạo ra trong DOM
+    // Tái cấu hình phím tắt Enter để gửi bài nhanh
     initKeyboardShortcuts();
 }
 
