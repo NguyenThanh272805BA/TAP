@@ -1,96 +1,138 @@
-/* app/static/js/main.js */
+// Khép kín hệ thống Auth Portal: Chặn quyền truy cập Dashboard trái phép từ đầu
+if (!localStorage.getItem("user_id") || !localStorage.getItem("username")) {
+    alert("CẢNH BÁO TRUY CẬP: Bạn chưa đăng nhập hệ thống! Đang quay lại Portal...");
+    window.location.href = '/auth';
+}
 
-// Giả định User ID hiện tại để test luồng (Khi có Auth Portal sẽ lấy từ Session/LocalStorage)
+// Quản lý trạng thái phiên làm việc động từ LocalStorage
 const CURRENT_USER_ID = localStorage.getItem("user_id") || 1;
 const CURRENT_USERNAME = localStorage.getItem("username") || "Explorer";
-document.addEventListener("DOMContentLoaded", () => {
-    // Khởi tạo trạng thái giao diện ban đầu
-    const nameSpan = document.querySelector("#status-card .pixel-text span");
-    if(nameSpan) nameSpan.textContent = CURRENT_USERNAME;
 
+// Biến toàn cục lưu trữ tính năng hiện tại người dùng đang chọn
+let activeFeature = "grammar";
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Cập nhật tên người chơi thực tế lên giao diện chính
+    const nameSpan = document.querySelector("#status-card .pixel-text span");
+    if (nameSpan) nameSpan.textContent = CURRENT_USERNAME;
+
+    // Tải trước danh sách nhiệm vụ từ vựng ở cột trái
     loadVocabQuests();
-    loadPlayerStatus();
-    loadVocabQuests();
-    // Bổ sung sự kiện lắng nghe phím Enter trong ô Textarea để bấm gửi lệnh nhanh
-    const userInput = document.getElementById("userInput");
-    if (userInput) {
-        userInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                submitChallenge();
-            }
-        });
-    }
+
+    // Lắng nghe sự kiện gõ phím nhanh trong ô nhập lệnh
+    initKeyboardShortcuts();
+
+    // Tải thư viện Lottie động để chuẩn bị hiệu ứng nổ pháo hoa pixel
+    initLottieLibrary();
 });
 
 /**
- * 1. Tải trạng thái người chơi (PLAYER_STATUS) từ Backend
+ * 1. HÀM TRỌNG TÂM: ĐIỀU HƯỚNG TÍNH NĂNG TỔNG THỂ (View Switcher)
+ * Thay đổi toàn bộ không gian làm việc của ô BATTLE_ZONE tùy theo mục được chọn
  */
-function loadPlayerStatus() {
-    // Gửi yêu cầu lấy thông tin tổng quan của User (Tạm thời map thông qua Game Controller hoặc mock data dựa theo DB)
-    // Để đồng bộ chính xác với giao diện HTML hiện tại của bạn:
-    const streakElement = document.querySelector(".pulse-neon");
+function switchFeature(featureName) {
+    activeFeature = featureName;
+    const workspace = document.getElementById("dynamic-workspace");
+    const battleTitle = document.querySelector("#battle-card .pixel-title");
+    const aiResponseBox = document.getElementById("aiResponseBox");
 
-    // Đoạn này cấu trúc sẵn sàng để Fetch thông tin User từ Route tương lai
-    console.log("Initializing Player Status for User ID:", CURRENT_USER_ID);
-}
+    if (!workspace || !battleTitle) return;
 
-/**
- * 2. Tải danh sách từ vựng thời gian thực (VOCAB_QUESTS)
- * Áp dụng Gamification: Từ khóa sẽ hiển thị, từ chưa mở khóa xử lý render thuần không chèn icon văn bản bừa bãi
- */
-function loadVocabQuests() {
-    const vocabContainer = document.querySelector(".card-tall .pixel-text");
-    if (!vocabContainer) return;
+    // Ẩn hộp thoại cũ của Master G khi đổi chế độ để người chơi tập trung
+    if (aiResponseBox) aiResponseBox.style.display = "none";
 
-    fetch('/api/game/vocabularies', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        if (!response.ok) throw new Error("Không thể tải danh sách từ vựng.");
-        return response.json();
-    })
-    .then(data => {
-        if (!data || data.length === 0) {
-            vocabContainer.innerHTML = "Kho từ vựng trống. Hãy chạy file seed để nạp dữ liệu!";
-            return;
-        }
+    // Xóa hiệu ứng lựa chọn trên các thẻ khác và làm nổi bật thẻ được chọn
+    document.querySelectorAll(".bento-card").forEach(card => card.style.borderColor = "var(--glass-border)");
+    const activeCard = document.getElementById(`${featureName}-card`);
+    if (activeCard) activeCard.style.borderColor = "var(--neon-cyan)";
 
-        // Tạo khung thẻ danh sách HTML thuần
-        let htmlContent = '<ul style="list-style: none; padding: 0; margin: 0;">';
-
-        data.forEach(item => {
-            htmlContent += `
-                <li style="margin-bottom: 12px; padding: 8px; border-bottom: 1px solid var(--pixel-border); display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                        <strong style="color: var(--neon-cyan);">${item.word}</strong> 
-                        <span style="font-size: 14px; color: #aaa; display: block;">${item.meaning}</span>
-                    </div>
-                    <div>
-                        ${item.is_unlocked 
-                            ? `<span class="status-tag unlocked" style="color: var(--pixel-green); font-family: var(--text-pixel); font-size: 10px;">OPEN</span>` 
-                            : `<span class="status-tag locked" style="color: var(--neon-pink); font-family: var(--text-pixel); font-size: 10px;">LOCK</span>`
-                        }
-                    </div>
-                </li>
+    // Cấu trúc lại giao diện lõi BATTLE_ZONE dựa trên tính năng được click (Đã gỡ nút RECORD_VOICE)
+    switch (featureName) {
+        case 'vocab':
+            battleTitle.textContent = "BATTLE_ZONE // VOCAB_CHALLENGE";
+            workspace.innerHTML = `
+                <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px;">
+                    NHIỆM VỤ TỪ VỰNG: Đặt một câu có nghĩa chứa từ lóng/từ vựng mới mở khóa: <span style="color: var(--neon-cyan);">"Annihilate"</span>.
+                </div>
+                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 17px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Master G đang đợi câu từ vựng của bạn..."></textarea>
+                <div style="margin-top: 10px; display: flex; gap: 12px;">
+                    <button class="pixel-btn" onclick="submitChallenge()">SEND_VOCAB</button>
+                </div>
             `;
-        });
+            break;
 
-        htmlContent += '</ul>';
-        vocabContainer.innerHTML = htmlContent;
-    })
-    .catch(error => {
-        console.error("Lỗi hệ thống từ vựng:", error);
-        vocabContainer.innerHTML = "<span style='color: var(--neon-pink);'>Lỗi nạp Quest!</span>";
-    });
+        case 'grammar':
+            battleTitle.textContent = "BATTLE_ZONE // GRAMMAR_CHALLENGE";
+            workspace.innerHTML = `
+                <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px;">
+                    NHIỆM VỤ NGỮ PHÁP: Sử dụng cấu trúc <span style="color: var(--neon-amber);" id="current-structure">"S + wish + S + V(past)"</span> để đặt câu điều ước.
+                </div>
+                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 17px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Nhập câu ngữ pháp tại đây..."></textarea>
+                <div style="margin-top: 10px; display: flex; gap: 12px;">
+                    <button class="pixel-btn" onclick="submitChallenge()">SEND_COMMAND</button>
+                </div>
+            `;
+            break;
+
+        case 'story':
+            battleTitle.textContent = "BATTLE_ZONE // RPG_STORY_INTERACT";
+            workspace.innerHTML = `
+                <div class="pixel-text" style="font-size: 14px; margin-bottom: 10px; max-height: 80px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
+                    <span style="color: var(--neon-purple);">[CHƯƠNG 1]</span> Bạn lạc vào vùng đất hoang dã hoang tàn, trước mặt là một NPC đang hấp hối. Ông ta đưa bạn một cuộn giấy da cổ. Bạn sẽ nói gì bằng tiếng Anh để hỏi đường hoặc cứu giúp?
+                </div>
+                <textarea id="userInput" style="width: 100%; height: 60px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 16px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Viết phản ứng/lời thoại của nhân vật của bạn..."></textarea>
+                <div style="margin-top: 8px; display: flex; gap: 12px;">
+                    <button class="pixel-btn" style="background: var(--neon-purple); box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000, inset -4px -4px 0 0 #6b21a8;" onclick="submitChallenge()">CHOICE_ACTION</button>
+                </div>
+            `;
+            break;
+
+        case 'game':
+            battleTitle.textContent = "BATTLE_ZONE // CASINO_MINIGAME";
+            workspace.innerHTML = `
+                <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px; text-align: center;">
+                    <span style="color: var(--pixel-green);">ĐẤU TRƯỜNG PHẢN XẠ NHANH GACHA</span><br>
+                    Hệ thống sẽ bốc ngẫu nhiên từ vựng, đoán nghĩa trong 5 giây để nhân đôi điểm kinh nghiệm!
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button class="pixel-btn" style="background: var(--pixel-green); box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000, inset -4px -4px 0 0 #065f46; padding: 14px 28px;" onclick="startMiniGame()">
+                        START_ROLL_GACHA
+                    </button>
+                </div>
+            `;
+            break;
+    }
+
+    // Tái cấu hình lại sự kiện phím tắt cho ô textarea mới tạo ra trong DOM
+    initKeyboardShortcuts();
 }
 
 /**
- * 3. Gửi bài làm lên hệ thống AI (BATTLE_ZONE)
- * Nhận chuỗi chửi xéo xắt từ Master G và hiển thị thời gian thực với hiệu ứng rung lắc màn hình nếu bị điểm thấp
+ * TƯƠNG TÁC THỊ GIÁC: Điều khiển biểu cảm biến hình thời gian thực của Nhân vật Chibi
+ */
+function updateChibiEmotion(score) {
+    const chibiCharacter = document.querySelector(".character");
+    if (!chibiCharacter) return;
+
+    // Gỡ bỏ các lớp cảm xúc cũ
+    chibiCharacter.classList.remove("master-g-mad", "master-g-proud");
+
+    // Ép trạng thái hình thể dựa trên điểm số thực tế
+    if (score < 5.0) {
+        chibiCharacter.classList.add("master-g-mad"); // Mặt đỏ rực, rung giật dữ dội khi sai
+    } else if (score >= 8.0) {
+        chibiCharacter.classList.add("master-g-proud"); // Miệng cười to, nhún nhảy tốc độ cao khi đúng
+        triggerFireworksEffect(); // Điểm cao rực rỡ kích nổ pháo hoa Lottie
+    }
+
+    // Sau 5 giây, cho nhân vật tự động bình tĩnh trở lại nhịp thở sinh học
+    setTimeout(() => {
+        chibiCharacter.classList.remove("master-g-mad", "master-g-proud");
+    }, 5000);
+}
+
+/**
+ * 2. GỬI LỆNH LÀM BÀI ĐỒNG BỘ QUA AI CONTROLLER
  */
 function submitChallenge() {
     const userInputField = document.getElementById("userInput");
@@ -103,103 +145,235 @@ function submitChallenge() {
 
     if (!textValue) {
         triggerCardShake();
-        alert("Vui lòng nhập câu trả lời trước khi gửi lệnh!");
         return;
     }
 
-    // Hiển thị trạng thái đang xử lý (Loading) đậm chất terminal cổ điển
     aiResponseBox.style.display = "block";
-    aiFeedbackDiv.innerHTML = "<span class='loading-text' style='color: var(--neon-amber);'>MASTER_G ĐANG SOI MÓI...</span>";
+    aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-amber);'>MASTER_G ĐANG SOI MÓI BÀI LÀM...</span>";
 
-    // Gửi dữ liệu qua Fetch API đến AI Controller
+    // Đẩy payload lên API tùy thuộc vào chế độ đang chọn
     fetch('/api/ai/evaluate', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             user_id: CURRENT_USER_ID,
-            text: textValue
+            text: textValue,
+            mode: activeFeature // Truyền mode để AI biết lối xử lý ngữ cảnh
         })
     })
     .then(response => {
-        if (!response.ok) throw new Error("Kết nối API chấm điểm thất bại.");
+        if (!response.ok) throw new Error("API sập.");
         return response.json();
     })
     .then(data => {
-        // Cấu trúc dữ liệu nhận về từ ai_controller.py sau khi bóc tách JSON từ Gemini 2.5 Flash
-        const feedback = data.feedback || data.ai_feedback || "Hệ thống không trả về nhận xét.";
-        const score = data.score !== undefined ? data.score : 0;
+        // Render kết quả bóc tách sạch từ Gemini 2.5 Flash
+        const result = data.result || data;
+        const feedback = result.feedback || "Không có nhận xét.";
+        const score = result.score !== undefined ? result.score : 0;
 
-        // Cập nhật giao diện Chatbox của Master G công bằng và bộc trực
         let scoreColor = "var(--pixel-green)";
         if (score < 5.0) {
             scoreColor = "var(--neon-pink)";
-            triggerCardShake(); // Điểm thấp (bị chửi) -> Rung lắc card Bento để cảnh cáo người chơi
+            triggerCardShake(); // Rung giật màn hình CRT khi bị chê bài
         } else if (score < 8.0) {
             scoreColor = "var(--neon-amber)";
         }
 
+        // Kích hoạt biến hình cảm xúc Chibi thời gian thực
+        updateChibiEmotion(score);
+
         aiFeedbackDiv.innerHTML = `
-            <div style="margin-bottom: 8px; font-size: 16px; line-height: 1.4; color: #ffffff;">
-                ${feedback}
-            </div>
-            <div style="font-family: var(--text-pixel); font-size: 14px; color: ${scoreColor}; margin-top: 10px;">
-                STATUS_SCORE: <span>${score}</span> / 10
+            <div style="margin-bottom: 8px; line-height: 1.4; color: #fff;">${feedback}</div>
+            <div style="font-family: var(--text-pixel); font-size: 12px; color: ${scoreColor}; margin-top: 8px;">
+                RATING_SCORE: ${score}/10
             </div>
         `;
-
-        // Làm sạch ô nhập liệu sau khi nộp thành công
         userInputField.value = "";
     })
     .catch(error => {
-        console.error("Lỗi xử lý Battle Zone:", error);
+        console.error(error);
         triggerCardShake();
-        aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink);'>ERROR: SERVER_TIMED_OUT HOẶC API KEY SẬP!</span>";
+        aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink);'>ERROR: KHÔNG THỂ KẾT NỐI VỚI NÃO BỘ AI!</span>";
     });
 }
 
 /**
- * 4. Kích hoạt logic Điểm danh thời gian thực (STREAK SYSTEM)
- * Hàm này có thể gán vào nút bấm điểm danh hằng ngày nếu bạn bổ sung trên UI
+ * 3. TẢI DANH SÁCH TỪ VỰNG TỪ MYSQL RENDER LÊN CARD TALL
+ */
+function loadVocabQuests() {
+    const container = document.querySelector("#vocab-card .pixel-text");
+    if (!container) return;
+
+    fetch('/api/game/vocabularies')
+    .then(res => res.json())
+    .then(data => {
+        const list = data.vocabularies;
+        if (!list || list.length === 0) {
+            container.innerHTML = "Chưa có Quest từ vựng.";
+            return;
+        }
+
+        // Tạo cấu trúc phân nhóm từ vựng theo chủ đề (Theme)
+        const themes = {};
+        list.forEach(item => {
+            const themeName = item.theme || "General";
+            if (!themes[themeName]) themes[themeName] = [];
+            themes[themeName].push(item);
+        });
+
+        let html = '<div style="max-height: 380px; overflow-y: auto; padding-right: 4px;">';
+
+        for (const [theme, words] of Object.entries(themes)) {
+            html += `
+                <div style="margin-bottom: 16px;">
+                    <div class="pixel-title" style="color: var(--neon-amber); font-size: 11px; border-left: 3px solid var(--neon-amber); padding-left: 6px; margin-bottom: 8px;">
+                        ${theme.toUpperCase()}
+                    </div>
+                    <ul style="list-style: none; padding:0; margin:0;">
+            `;
+
+            words.forEach(item => {
+                const opacity = item.is_unlocked ? "1" : "0.4";
+                const pointerEvents = item.is_unlocked ? "auto" : "none";
+                const checkSign = item.is_memorized ? "[ X ]" : "[ _ ]";
+                const checkColor = item.is_memorized ? "var(--pixel-green)" : "#64748b";
+
+                html += `
+                    <li style="margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; opacity: ${opacity}; pointer-events: ${pointerEvents};">
+                        <div style="flex-grow: 1; padding-right: 10px;">
+                            <strong style="color: var(--neon-cyan); font-size: 16px;">${item.word}</strong>
+                            <span style="font-size: 13px; color: #94a3b8; display: block; margin-top: 2px;">${item.meaning}</span>
+                        </div>
+                        <button onclick="toggleVocabMark(${item.id})" style="background: transparent; border: none; color: ${checkColor}; font-family: var(--text-pixel); font-size: 10px; cursor: pointer; padding: 4px;">
+                            ${checkSign}
+                        </button>
+                    </li>
+                `;
+            });
+
+            html += '</ul></div>';
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    })
+    .catch(() => {
+        container.innerHTML = "<span style='color:var(--neon-pink)'>Lỗi nạp Quest từ vựng!</span>";
+    });
+}
+
+/**
+ * Gửi lệnh đánh dấu X đã ghi nhớ từ vựng lên hệ thống
+ */
+function toggleVocabMark(vocabId) {
+    fetch('/api/game/vocab/toggle_memorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vocab_id: vocabId, user_id: CURRENT_USER_ID })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) return;
+        loadVocabQuests();
+
+        // Kích hoạt nổ pháo hoa và nâng cấp hiển thị nếu hoàn thành ải thăng Level
+        if (data.level_upgraded) {
+            triggerFireworksEffect();
+            alert(` CHÚC MỪNG! Bạn đã hoàn thành ải từ vựng. ĐẲNG CẤP MỚI: ${data.current_level}`);
+            const rankText = document.querySelector("#status-card .pixel-text");
+            if (rankText) {
+                rankText.innerHTML = `USER: <span style="color: var(--neon-cyan);">${CURRENT_USERNAME}</span> <br>RANK: <span style="color: var(--pixel-green);">${data.current_level}</span>`;
+            }
+            updateChibiEmotion(10.0);
+        }
+    });
+}
+
+/**
+ * 4. ĐIỂM DANH HÀNG NGÀY TĂNG CHUỖI STREAK THỜI GIAN THỰC
  */
 function triggerCheckin() {
     fetch('/api/game/checkin', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: CURRENT_USER_ID })
     })
-    .then(response => {
-        if (!response.ok) throw new Error("Điểm danh thất bại.");
-        return response.json();
-    })
+    .then(res => res.json())
     .then(data => {
-        // Cập nhật số ngày Streak rực cháy trên màn hình CRT
-        const streakElement = document.querySelector(".pulse-neon");
-        if (streakElement && data.current_streak) {
-            streakElement.textContent = data.current_streak;
+        if(data.error) return;
+        const streakText = document.querySelector(".pulse-neon");
+        if (streakText && data.current_streak) {
+            streakText.textContent = data.current_streak;
+            triggerFireworksEffect(); // Điểm danh thành công -> Thưởng nổ pháo hoa rực rỡ
         }
-
-        // Hệ thống báo từ vựng mới mở khóa -> Nạp lại bảng VOCAB_QUESTS lập tức
         loadVocabQuests();
-    })
-    .catch(error => {
-        console.error("Lỗi điểm danh:", error);
     });
 }
 
-/**
- * Kỹ thuật hiệu ứng thị giác: Rung lắc thẻ Bento khi gặp lỗi hoặc bị AI chê bài làm
- */
+function startMiniGame() {
+    alert("Đấu trường Gacha phản xạ đang được Master G thiết lập trận đấu!");
+}
+
 function triggerCardShake() {
-    const battleCard = document.querySelector(".bento-card.card-large"); // Card chứa Battle Zone
+    const battleCard = document.getElementById("battle-card");
     if (battleCard) {
         battleCard.classList.add("error-shake");
-        // Gỡ class sau khi kết thúc chuyển động animation (300ms) để có thể kích hoạt lại lần sau
-        setTimeout(() => {
-            battleCard.classList.remove("error-shake");
-        }, 300);
+        setTimeout(() => battleCard.classList.remove("error-shake"), 300);
     }
+}
+
+function initKeyboardShortcuts() {
+    const userInput = document.getElementById("userInput");
+    if (userInput) {
+        userInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submitChallenge();
+            }
+        });
+    }
+}
+
+/**
+ * TÍNH NĂNG NÂNG CAO: Tự động tải thư viện Lottie không làm chậm trang
+ */
+function initLottieLibrary() {
+    if (!window.lottie) {
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js";
+        script.id = "lottie-cdn";
+        document.head.appendChild(script);
+    }
+}
+
+/**
+ * Tạo hiệu ứng nổ pháo hoa Pixel rực rỡ tràn màn hình khi đạt thành tích cao
+ */
+function triggerFireworksEffect() {
+    if (!window.lottie) return;
+
+    // Tạo nhanh một vùng chứa hiệu ứng tạm thời
+    const lottieContainer = document.createElement("div");
+    lottieContainer.style.position = "fixed";
+    lottieContainer.style.top = "0";
+    lottieContainer.style.left = "0";
+    lottieContainer.style.width = "100vw";
+    lottieContainer.style.height = "100vh";
+    lottieContainer.style.zIndex = "99999";
+    lottieContainer.style.pointerEvents = "none";
+    document.body.appendChild(lottieContainer);
+
+    // Triển khai pháo hoa từ tệp JSON động có sẵn mã nguồn Pixel
+    const animation = lottie.loadAnimation({
+        container: lottieContainer,
+        renderer: 'svg',
+        loop: false,
+        autoplay: true,
+        path: 'https://assets5.lottiefiles.com/packages/lf20_obh5c7sh.json' // Tệp hiệu ứng pháo hoa 8-bit mẫu mực
+    });
+
+    // Tự động dọn dẹp bộ nhớ xóa khối div khi pháo hoa nổ xong
+    animation.addEventListener('complete', () => {
+        lottieContainer.remove();
+    });
 }

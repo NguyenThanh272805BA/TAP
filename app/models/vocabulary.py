@@ -9,7 +9,9 @@ class Vocabulary(db.Model):
     word = db.Column(db.String(100), nullable=False)
     meaning = db.Column(db.Text, nullable=False)
     image_url = db.Column(db.String(255))  # Đường dẫn file .png/.jpg
+    theme = db.Column(db.String(50), default='General')
     is_unlocked = db.Column(db.Boolean, default=False)
+    is_memorized = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=func.now())
 
     def __repr__(self):
