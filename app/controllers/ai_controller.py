@@ -47,7 +47,6 @@ def evaluate():
         result = json.loads(ai_response_str)
 
         # --- TỰ ĐỘNG ĐÀO DATA TỪ BÊN NGOÀI BẰNG AI (AUTOMATIC DATA MINING) ---
-        # Nếu người dùng làm bài xuất sắc (Score >= 8.0), AI Master G sẽ thưởng bằng cách đào thêm từ mới đắp vào DB
         score = result.get("score", 0)
         if score >= 8.0:
             mine_new_data_via_ai(mode)
@@ -79,7 +78,6 @@ def mine_new_data_via_ai(current_mode):
     để nạp thêm tài nguyên mới cho game.
     """
     try:
-        # Cấu hình Client thế hệ mới
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
         if current_mode == 'vocab':
@@ -92,7 +90,6 @@ def mine_new_data_via_ai(current_mode):
                 "theme": "Gaming"
             }
             """
-            # Đổi cách gọi response
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt
@@ -123,7 +120,6 @@ def mine_new_data_via_ai(current_mode):
                 "example": "Câu ví dụ minh họa bằng tiếng Anh"
             }
             """
-            # Đổi cách gọi response
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt
@@ -165,70 +161,84 @@ def get_guide():
     """
 
     try:
-        from google import genai
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt
         )
-        # Thay thế ký tự ngắt dòng thành thẻ <br> để HTML render đẹp hơn
         formatted_guide = response.text.replace('\n', '<br>')
         return jsonify({"guide": formatted_guide}), 200
     except Exception as e:
-        # Cơ chế Offline phòng hờ sập API
         return jsonify({
-                           "guide": f"[OFFLINE MODE] Lõi AI đang bận tản nhiệt! Gợi ý tạm: Hãy thử đặt câu dạng 'S + V + {word}' xem sao đồ ngốc!"}), 200
+            "guide": f"[OFFLINE MODE] Lõi AI đang bận tản nhiệt! Gợi ý tạm: Hãy thử đặt câu dạng 'S + V + {word}' xem sao đồ ngốc!"
+        }), 200
 
-    @ai_bp.route('/generate_unit', methods=['POST'])
-    def generate_unit():
-        data = request.get_json()
-        topic = data.get('topic')
 
-        if not topic:
-            return jsonify({"error": "Vui lòng nhập chủ đề muốn học!"}), 400
+# =================================================================
+# ĐÃ FIX LỖI: ĐƯA HÀM RA NGOÀI VÀ CĂN SÁT LỀ TRÁI
+# =================================================================
+@ai_bp.route('/generate_unit', methods=['POST'])
+def generate_unit():
+    data = request.get_json()
+    topic = data.get('topic')
 
-        prompt = f"""
-        Bạn là hệ thống thiết kế bài giảng. Người dùng muốn học tiếng Anh về chủ đề: '{topic}'.
-        Hãy tạo ra các từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
-        Tuyệt đối chỉ trả về 1 mảng JSON hợp lệ, KHÔNG chứa ký hiệu markdown (không có ```json).
-        Cấu trúc:
-        [
-            {{"word": "từ_vựng_1", "meaning": "nghĩa tiếng Việt ngắn gọn, dễ hiểu", "theme": "{topic}"}},
-            {{"word": "từ_vựng_2", "meaning": "nghĩa tiếng Việt ngắn gọn, dễ hiểu", "theme": "{topic}"}}
+    if not topic:
+        return jsonify({"error": "Vui lòng nhập chủ đề muốn học!"}), 400
+
+    prompt = f"""
+    Bạn là hệ thống thiết kế bài giảng. Người dùng muốn học tiếng Anh về chủ đề: '{topic}'.
+    Hãy tạo ra đúng 5 từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
+    Tuyệt đối chỉ trả về 1 mảng JSON hợp lệ, KHÔNG chứa ký hiệu markdown.
+    Cấu trúc:
+    [
+        {{"word": "từ_vựng_1", "meaning": "nghĩa tiếng Việt", "theme": "{topic}"}}
+    ]
+    """
+
+    try:
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+
+        clean_json = response.text.strip().replace('```json', '').replace('```', '')
+        items = json.loads(clean_json)
+        is_offline = False
+
+    except Exception as e:
+        print(f"[-] AI Tạm ngưng do Quota/Lỗi: {e}")
+        items = [
+            {"word": f"Basic {topic}", "meaning": f"Kiến thức cơ bản về {topic}", "theme": topic},
+            {"word": f"Advanced {topic}", "meaning": f"Kỹ năng nâng cao trong {topic}", "theme": topic},
+            {"word": f"{topic} Master", "meaning": f"Bậc thầy trong lĩnh vực {topic}", "theme": topic}
         ]
-        """
+        is_offline = True
 
-        try:
-            from google import genai
-            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt
-            )
+    try:
+        added_count = 0
+        for item in items:
+            if not Vocabulary.query.filter_by(word=item['word']).first():
+                new_v = Vocabulary(
+                    word=item['word'],
+                    meaning=item['meaning'],
+                    theme=item['theme'].upper(),
+                    image_url="default.png",
+                    is_unlocked=True
+                )
+                db.session.add(new_v)
+                added_count += 1
 
-            clean_json = response.text.strip().replace('```json', '').replace('```', '')
-            items = json.loads(clean_json)
+        db.session.commit()
 
-            added_count = 0
-            for item in items:
-                # Kiểm tra xem từ này đã tồn tại chưa để tránh rác DB
-                if not Vocabulary.query.filter_by(word=item['word']).first():
-                    new_v = Vocabulary(
-                        word=item['word'],
-                        meaning=item['meaning'],
-                        theme=item['theme'].upper(),  # Viết hoa tên Unit cho đẹp
-                        image_url="default.png",
-                        is_unlocked=True  # Mở khóa luôn cho người dùng học
-                    )
-                    db.session.add(new_v)
-                    added_count += 1
+        msg = f"Đã đúc thành công Unit '{topic}' với {added_count} từ vựng mới!"
+        if is_offline:
+            msg = f"[OFFLINE MODE] Server bận, hệ thống tự cấp phát Unit dự phòng cho '{topic}'!"
 
-            db.session.commit()
+        return jsonify({
+            "message": msg,
+            "added": added_count
+        }), 200
 
-            return jsonify({
-                "message": f"Đã đúc thành công Unit '{topic}' với {added_count} từ vựng mới!",
-                "added": added_count
-            }), 200
-
-        except Exception as e:
-            return jsonify({"error": f"Lỗi lò đúc AI: {str(e)}"}), 500
+    except Exception as db_err:
+        return jsonify({"error": f"Lỗi lưu trữ Database: {str(db_err)}"}), 500
