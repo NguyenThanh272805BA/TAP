@@ -14,8 +14,8 @@
             <div>
                 <div class="pixel-title">PLAYER_STATUS // MAIN_HUB</div>
                 <div class="pixel-text">
-                    USER: <span style="color: var(--neon-cyan);">thanhnguyen_test</span> <br>
-                    RANK: <span style="color: var(--pixel-green);">Beginner Explorer</span>
+                    USER: <span id="dash-username" style="color: var(--neon-cyan);">Đang tải...</span> <br>
+                    RANK: <span id="dash-rank" style="color: var(--pixel-green);">Đang tải...</span>
                 </div>
             </div>
 
@@ -23,7 +23,7 @@
                 <button class="pixel-btn" style="background: var(--neon-amber); padding: 6px 10px; font-size: 9px; margin-bottom: 6px; box-shadow: none;" onclick="triggerCheckin()">DAILY_CHECKIN</button>
                 <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                     <div class="pixel-fire-icon"></div>
-                    <div class="pixel-title" style="margin: 0; color: var(--neon-amber);">STREAK: <span class="pulse-neon">3</span></div>
+                    <div class="pixel-title" style="margin: 0; color: var(--neon-amber);">STREAK: <span id="dash-streak" class="pulse-neon">0</span></div>
                 </div>
             </div>
         </div>
@@ -122,5 +122,33 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Lấy ID người chơi đã lưu lúc đăng nhập (từ auth.html)
+            const userId = localStorage.getItem("user_id");
+
+            if (!userId) {
+                // Nếu chưa đăng nhập, đá văng ra màn hình Auth
+                window.location.href = '/auth';
+                return;
+            }
+
+            // Gọi API lấy dữ liệu thực tế
+            fetch(`/api/auth/user/${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error(data.error);
+                        return;
+                    }
+                    // Bắn dữ liệu vào các thẻ ID đã chuẩn bị
+                    document.getElementById("dash-username").innerText = data.username;
+                    document.getElementById("dash-rank").innerText = data.level;
+                    document.getElementById("dash-streak").innerText = data.streak;
+                })
+                .catch(err => console.error("Lỗi đồng bộ dữ liệu User:", err));
+        });
+    </script>
 </body>
 </html>

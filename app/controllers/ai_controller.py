@@ -82,12 +82,12 @@ def mine_new_data_via_ai(current_mode):
 
         if current_mode == 'vocab':
             prompt = """
-            Bạn là máy đào dữ liệu. Hãy tìm và xuất bản đúng 1 từ vựng tiếng Anh độc đáo thuộc chủ đề Gaming RPG hoặc Internet Slang.
+            Bạn là máy đào dữ liệu. Hãy tìm và xuất bản đúng 1 từ vựng tiếng Anh độc đáo thuộc chủ đề Gaming RPG hoặc Internet Slang hoặc đời thực.
             Trả về CHUẨN định dạng JSON sau (không chứa markdown thương hiệu ```json):
             {
                 "word": "tên từ tiếng Anh",
                 "meaning": "ý nghĩa ngắn gọn tiếng Việt kèm ngữ cảnh",
-                "theme": "Gaming"
+                "theme": "Gaming, Đời thực"
             }
             """
             response = client.models.generate_content(
@@ -112,7 +112,7 @@ def mine_new_data_via_ai(current_mode):
 
         elif current_mode == 'grammar':
             prompt = """
-            Hãy cung cấp 1 cấu trúc ngữ pháp tiếng Anh cốt lõi hoặc nâng cao.
+            Hãy cung cấp 1 cấu trúc ngữ pháp tiếng Anh từ cơ bản tới cốt lõi hoặc nâng cao.
             Trả về CHUẨN định dạng JSON sau (không chứa markdown):
             {
                 "structure": "Công thức cấu trúc",
@@ -154,7 +154,7 @@ def get_guide():
     prompt = f"""
     Bạn là Master G. Học trò đang không biết cách dùng từ '{word}', hãy hướng dẫn nhanh.
     Trả về một đoạn văn bản ngắn gọn (khoảng 3-4 câu, KHÔNG dùng markdown định dạng phức tạp) gồm:
-    1. Một câu ví dụ minh họa mang phong cách cực chất (liên quan đến game RPG, IT hoặc GenZ).
+    1. Một câu ví dụ minh họa mang phong cách cực chất (lời nói thẳng thắn có phần cục súc).
     2. Dịch nghĩa câu đó ra tiếng Việt.
     3. Phân tích siêu nhanh cấu trúc ngữ pháp vừa dùng trong câu.
     Giọng điệu: Hơi xéo xắt, mỏ hỗn nhưng thực tâm rất muốn học trò hiểu bài.
@@ -187,7 +187,7 @@ def generate_unit():
 
     prompt = f"""
     Bạn là hệ thống thiết kế bài giảng. Người dùng muốn học tiếng Anh về chủ đề: '{topic}'.
-    Hãy tạo ra đúng 5 từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
+    Hãy tạo ra 50 từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
     Tuyệt đối chỉ trả về 1 mảng JSON hợp lệ, KHÔNG chứa ký hiệu markdown.
     Cấu trúc:
     [

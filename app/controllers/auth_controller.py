@@ -53,3 +53,15 @@ def login():
         }), 200
     else:
         return jsonify({"error": "Tài khoản hoặc mật khẩu không chính xác!"}), 401
+
+@auth_bp.route('/user/<int:user_id>', methods=['GET'])
+def get_user_profile(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Không tìm thấy người chơi!"}), 404
+
+    return jsonify({
+        "username": user.username,
+        "level": user.current_level,
+        "streak": user.streak_count
+    }), 200
