@@ -2,9 +2,11 @@ from flask import Blueprint, request, jsonify
 from app.models.user import User
 from app.models.vocabulary import Vocabulary
 from app import db
+from app.models.user_vocabulary import UserVocabulary
 from app.models.grammar import Grammar
 from datetime import datetime, date
 import random
+
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
 
 
@@ -18,12 +20,9 @@ def checkin():
         return jsonify({"error": "Không tìm thấy người dùng!"}), 404
 
     # Logic giả lập kiểm tra ngày điểm danh gần nhất (Real-time)
-    # Trong một app thực tế, ta sẽ so sánh ngày hiện tại với ngày check-in cuối cùng lưu trong DB.
-    # Ở đây chúng ta sẽ tăng streak lên 1 và cập nhật trực tiếp để phục vụ kiểm thử logic.
     user.streak_count += 1
 
-    # Cơ chế mở khóa tự động (Gamification):
-    # Ví dụ: Cứ đạt thêm 1 chuỗi streak thì hệ thống sẽ tự động mở khóa thêm 2 từ vựng mới trong DB
+    # Cơ chế mở khóa tự động (Gamification)
     words_to_unlock = Vocabulary.query.filter_by(is_unlocked=False).limit(2).all()
     unlocked_words_list = []
 
@@ -56,6 +55,8 @@ def get_vocabularies():
         })
 
     return jsonify({"vocabularies": output}), 200
+
+
 @game_bp.route('/vocab/toggle_memorize', methods=['POST'])
 def toggle_memorize():
     data = request.get_json() or {}
@@ -79,7 +80,6 @@ def toggle_memorize():
 
     level_upgraded = False
     if total_words_in_theme > 0 and total_words_in_theme == memorized_words_in_theme:
-        # Nếu nhớ hết từ trong chủ đề -> Thăng cấp Level cho người chơi
         if user.current_level == 'Beginner':
             user.current_level = 'Intermediate Explorer'
         elif user.current_level == 'Intermediate Explorer':
@@ -96,11 +96,9 @@ def toggle_memorize():
         "current_level": user.current_level
     }), 200
 
-# ... (Các đoạn code cũ giữ nguyên) ...
 
 @game_bp.route('/grammars', methods=['GET'])
 def get_grammars():
-    # Lấy toàn bộ kho ngữ pháp đẩy lên giao diện
     grammar_list = Grammar.query.all()
 
     output = []
@@ -114,6 +112,8 @@ def get_grammars():
         })
 
     return jsonify({"grammars": output}), 200
+
+
 @game_bp.route('/gacha/roll', methods=['POST'])
 def gacha_roll():
     """Bốc ngẫu nhiên một từ vựng đang bị khóa để đưa vào đấu trường"""
@@ -122,7 +122,7 @@ def gacha_roll():
     if not locked_vocab:
         return jsonify({
             "status": "empty",
-            "message": "🎉 Tuyệt vời! Bạn đã giải cứu và mở khóa thành công toàn bộ kho từ vựng!"
+            "message": "[ SYSTEM ] Tuyệt vời! Bạn đã giải cứu và mở khóa thành công toàn bộ kho từ vựng!"
         }), 200
 
     # Chọn ngẫu nhiên từ mục tiêu
@@ -170,7 +170,7 @@ def gacha_verify():
         db.session.commit()
         return jsonify({
             "correct": False,
-            "message": "⏱️ HẾT GIỜ! " + random.choice(master_g_insults),
+            "message": "[ TIMEOUT ] HẾT GIỜ! " + random.choice(master_g_insults),
             "new_streak": 0
         }), 200
 
@@ -182,7 +182,7 @@ def gacha_verify():
 
         return jsonify({
             "correct": True,
-            "message": "💥 BOOM! Kích nổ pháo hoa thành công! Bạn đã thu phục từ vựng này!",
+            "message": "[ KABOOM ] Kích nổ pháo hoa thành công! Bạn đã thu phục từ vựng này!",
             "new_streak": user.streak_count
         }), 200
     else:
@@ -190,6 +190,67 @@ def gacha_verify():
         db.session.commit()
         return jsonify({
             "correct": False,
-            "message": "❌ SAI RỒI! " + random.choice(master_g_insults),
+            "message": "[ ERROR ] SAI RỒI! " + random.choice(master_g_insults),
             "new_streak": 0
         }), 200
+
+
+@game_bp.route('/exam/generate', methods=['POST'])
+def generate_exam():
+    """Tạo đề thi 50 từ: Ưu tiên từ Chưa thuộc/Hơi thuộc, sau đó bù từ mới"""
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+
+    # 1. Lọc các từ cần ôn tập
+    needs_review = UserVocabulary.query.filter(
+        UserVocabulary.user_id == user_id,
+        UserVocabulary.memorization_level.in_(['CHUA_THUOC', 'HOI_THUOC'])
+    ).all()
+
+    review_vocab_ids = [uv.vocab_id for uv in needs_review]
+
+    limit = 50
+    exam_words = []
+
+    # 2. Nạp từ cần ôn tập vào đề thi
+    if review_vocab_ids:
+        review_vocabs = Vocabulary.query.filter(Vocabulary.id.in_(review_vocab_ids)).limit(limit).all()
+        exam_words.extend(review_vocabs)
+
+    # 3. Nếu chưa đủ 50 từ, bốc thêm từ mới hoàn toàn
+    if len(exam_words) < limit:
+        needed = limit - len(exam_words)
+
+        # Tìm các từ vựng chưa từng xuất hiện trong user_vocabularies của người chơi này
+        subquery = db.session.query(UserVocabulary.vocab_id).filter_by(user_id=user_id)
+        new_vocabs = Vocabulary.query.filter(~Vocabulary.id.in_(subquery)).limit(needed).all()
+
+        # Đăng ký các từ mới này vào hồ sơ của người chơi với trạng thái mặc định là CHUA_THUOC
+        for nv in new_vocabs:
+            new_uv = UserVocabulary(user_id=user_id, vocab_id=nv.id, memorization_level='CHUA_THUOC')
+            db.session.add(new_uv)
+            exam_words.append(nv)
+        db.session.commit()
+
+    # Trộn đều đề thi
+    output = [{"id": w.id, "word": w.word, "meaning": w.meaning} for w in exam_words]
+    random.shuffle(output)
+
+    return jsonify({"exam": output, "count": len(output)}), 200
+
+
+@game_bp.route('/exam/update_status', methods=['POST'])
+def update_exam_status():
+    """Cập nhật 3 trạng thái trí nhớ cho từng từ"""
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    vocab_id = data.get('vocab_id')
+    level = data.get('level')  # 'DA_THUOC', 'HOI_THUOC', 'CHUA_THUOC'
+
+    uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=vocab_id).first()
+    if uv:
+        uv.memorization_level = level
+        db.session.commit()
+        return jsonify({"success": True}), 200
+
+    return jsonify({"error": "Không tìm thấy dữ liệu!"}), 400

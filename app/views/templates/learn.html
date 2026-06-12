@@ -61,8 +61,9 @@
 
 {% block extra_js %}
 <script>
-    // Biến toàn cục để lưu trữ dữ liệu từ vựng chia theo Theme
+    // Biến toàn cục để lưu trữ dữ liệu
     let globalVocabData = {};
+    let currentExamData = []; // Lưu trữ mảng 50 từ khi làm bài thi
 
     document.addEventListener("DOMContentLoaded", () => {
         const mode = localStorage.getItem("selected_learning_mode") || "grammar";
@@ -84,7 +85,6 @@
             fetchLibraryData('/api/game/grammars', mode);
         }
 
-        // Gọi hàm switchFeature ở main.js để render ô BATTLE ZONE
         if(typeof switchFeature === 'function') {
             switchFeature(mode);
         }
@@ -98,16 +98,13 @@
             if (mode === 'vocab') {
                 const list = data.vocabularies;
                 globalVocabData = {};
-                // Nhóm dữ liệu vào bộ nhớ cục bộ
                 list.forEach(item => {
                     const themeName = item.theme || "General";
                     if(!globalVocabData[themeName]) globalVocabData[themeName] = [];
                     globalVocabData[themeName].push(item);
                 });
-                // Khởi chạy màn hình đầu tiên: Danh sách Unit
                 renderThemesList();
             } else {
-                // Phần Grammar giữ nguyên hiển thị danh sách
                 const container = document.getElementById("library-content");
                 let html = "";
                 data.grammars.forEach(g => {
@@ -124,7 +121,7 @@
             }
         })
         .catch(err => {
-            document.getElementById("library-content").innerHTML = "<span style='color:var(--neon-pink)'>LỖI: Mất kết nối tới Database lõi!</span>";
+            document.getElementById("library-content").innerHTML = "<span style='color:var(--neon-pink)'>[ ERROR ] Mất kết nối tới Database lõi!</span>";
         });
     }
 
@@ -134,8 +131,11 @@
     function renderThemesList() {
         const container = document.getElementById("library-content");
 
-        // CÔNG CỤ AI ĐÚC UNIT
         let html = `
+        <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 20px; font-size: 12px; padding: 15px;">
+            [!] THỬ THÁCH NHỒI 50 TỪ (EXAM) [!]
+        </button>
+
         <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 2px dashed var(--neon-purple); margin-bottom: 25px;">
             <div style="color: var(--neon-purple); font-family: var(--text-pixel); font-size: 11px; margin-bottom: 10px;">[ CREATE_NEW_UNIT ]</div>
             <input type="text" id="newTopicInput" placeholder="VD: Thể thao eSports..."
@@ -148,7 +148,6 @@
         <div style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">HOẶC CHỌN UNIT CÓ SẴN:</div>
         `;
 
-        // DANH SÁCH UNIT CÓ SẴN
         for (const theme of Object.keys(globalVocabData)) {
             html += `
             <div onclick="renderWordsList('${theme}')"
@@ -178,10 +177,9 @@
 
         words.forEach((w, index) => {
             const opacity = w.is_unlocked ? "1" : "0.5";
-            const icon = w.is_unlocked ? "🔓" : "🔒";
+            const icon = w.is_unlocked ? "[ UNLOCKED ]" : "[ LOCKED ]";
             const safeWord = w.word.replace(/'/g, "\\'");
 
-            // Xử lý nút Checkbox Đã Thuộc
             const memoText = w.is_memorized ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
             const memoColor = w.is_memorized ? "var(--pixel-green)" : "var(--glass-border)";
 
@@ -189,7 +187,7 @@
             <div style="margin-bottom: 12px; background: rgba(0,0,0,0.6); border-left: 3px solid var(--neon-cyan); padding: 12px; border-radius: 6px; opacity: ${opacity};">
                 <div onclick="toggleWordDetail(${index})" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                     <strong style="color: var(--neon-cyan); font-size: 16px;">${w.word}</strong>
-                    <span style="font-size: 12px;">${icon}</span>
+                    <span style="font-size: 10px; color: #cbd5e1;">${icon}</span>
                 </div>
 
                 <div id="word-detail-${index}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
@@ -200,7 +198,6 @@
                             MASTER G HƯỚNG DẪN
                         </button>
 
-                        <!-- NÚT ĐÁNH DẤU TỪ VỰNG MỚI ĐƯỢC THÊM VÀO -->
                         <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id})" style="background: ${memoColor}; box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000; font-size: 9px; padding: 8px; flex: 1;">
                             ${memoText}
                         </button>
@@ -239,12 +236,10 @@
                 return;
             }
 
-            // Nếu người chơi cày xong chủ đề và thăng cấp
             if (data.level_upgraded) {
-                alert(`🎉 CHÚC MỪNG! BẠN ĐÃ THUỘC TOÀN BỘ CHỦ ĐỀ.\nDanh hiệu mới của bạn là: ${data.current_level}`);
+                alert(`*** CHÚC MỪNG! BẠN ĐÃ THUỘC TOÀN BỘ CHỦ ĐỀ.\nDanh hiệu mới của bạn là: ${data.current_level} ***`);
             }
 
-            // Tải lại kho dữ liệu để UI cập nhật nút [X] mới nhất
             fetchLibraryData('/api/game/vocabularies', 'vocab');
         })
         .catch(err => console.error("Lỗi cập nhật tiến độ:", err));
@@ -257,7 +252,6 @@
         const aiResponseBox = document.getElementById("aiResponseBox");
         const aiFeedback = document.getElementById("aiFeedback");
 
-        // Tự động đẩy nội dung từ vựng vào ô nhập liệu để user dễ thao tác đặt câu
         const userInput = document.getElementById("userInput");
         if(userInput) {
             userInput.value = word + " ";
@@ -294,7 +288,6 @@
             return;
         }
 
-        // Hiệu ứng Loading khóa nút để tránh bấm nhiều lần
         topicInput.disabled = true;
         btnGenerate.disabled = true;
         btnGenerate.style.background = "var(--neon-amber)";
@@ -311,19 +304,111 @@
                 alert(data.error);
             } else {
                 alert(data.message);
-                fetchLibraryData('/api/game/vocabularies', 'vocab'); // Load lại kho dữ liệu mới
+                fetchLibraryData('/api/game/vocabularies', 'vocab');
             }
         })
         .catch(err => {
             alert("Lỗi kết nối tới lò đúc AI!");
         })
         .finally(() => {
-            // Mở khóa UI sau khi hoàn thành
             topicInput.disabled = false;
             topicInput.value = "";
             btnGenerate.disabled = false;
             btnGenerate.style.background = "var(--neon-purple)";
             btnGenerate.innerHTML = "YÊU CẦU AI ĐÚC UNIT";
+        });
+    }
+
+    // ==========================================
+    // TẦNG EXAM: CHẾ ĐỘ THỬ THÁCH 50 TỪ (SRS)
+    // ==========================================
+    function startExamMode() {
+        const userId = localStorage.getItem("user_id");
+        if (!userId) return alert("Vui lòng đăng nhập!");
+
+        document.getElementById("training-title").textContent = "BATTLE_ZONE // EXAM_50_WORDS";
+        document.getElementById("training-title").style.color = "var(--neon-pink)";
+
+        const workspace = document.getElementById("dynamic-workspace");
+        workspace.innerHTML = `<div class="typing-effect" style="color: var(--neon-amber);">Đang thiết lập ma trận từ vựng...</div>`;
+
+        fetch('/api/game/exam/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: userId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            currentExamData = data.exam;
+            renderExamPaper();
+        })
+        .catch(err => {
+            workspace.innerHTML = `<div style="color: var(--neon-pink);">Lỗi kết nối tới Server Đề Thi!</div>`;
+        });
+    }
+
+    function renderExamPaper() {
+        const workspace = document.getElementById("dynamic-workspace");
+
+        let html = `
+        <div style="margin-bottom: 15px; color: #94a3b8; font-size: 14px;">
+            Nhiệm vụ: Nhập nghĩa tiếng Việt. Những từ bạn đánh dấu "Chưa thuộc" sẽ tiếp tục ám ảnh bạn vào lần kiểm tra sau!
+        </div>
+        <div id="exam-list" style="max-height: 450px; overflow-y: auto; padding-right: 10px;">`;
+
+        currentExamData.forEach((item, index) => {
+            html += `
+            <div class="bento-card" style="margin-bottom: 15px; padding: 15px;">
+                <div style="font-size: 20px; color: var(--neon-cyan); margin-bottom: 10px; font-weight: bold;">[${index + 1}] ${item.word}</div>
+                <input type="text" id="exam-input-${item.id}" placeholder="Nhập nghĩa tiếng Việt..."
+                       style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 16px; border-radius: 4px; box-sizing: border-box;">
+
+                <div id="exam-result-${item.id}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2);">
+                    <div style="color: var(--neon-amber); font-size: 15px; margin-bottom: 15px;">Nghĩa đúng: ${item.meaning}</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="pixel-btn" id="btn-thuoc-${item.id}" onclick="setExamStatus(${item.id}, 'DA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--pixel-green); flex: 1; padding: 8px;">ĐÃ THUỘC</button>
+                        <button class="pixel-btn" id="btn-hoi-${item.id}" onclick="setExamStatus(${item.id}, 'HOI_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-amber); flex: 1; padding: 8px;">HƠI THUỘC</button>
+                        <button class="pixel-btn" id="btn-chua-${item.id}" onclick="setExamStatus(${item.id}, 'CHUA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-pink); flex: 1; padding: 8px;">CHƯA THUỘC</button>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        html += `
+        </div>
+        <button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 20px; font-size: 16px;">
+            NỘP BÀI & ĐỐI CHIẾU
+        </button>
+        `;
+
+        workspace.innerHTML = html;
+    }
+
+    function submitExam() {
+        currentExamData.forEach(item => {
+            const inputField = document.getElementById(`exam-input-${item.id}`);
+            if (inputField) inputField.disabled = true;
+            const resultDiv = document.getElementById(`exam-result-${item.id}`);
+            if (resultDiv) resultDiv.style.display = "block";
+        });
+        alert("*** Đã nộp bài! Hãy tự đối chiếu và đánh giá mức độ ghi nhớ nhé! ***");
+    }
+
+    function setExamStatus(vocabId, level) {
+        const userId = localStorage.getItem("user_id");
+
+        document.getElementById(`btn-thuoc-${vocabId}`).style.background = "rgba(0,0,0,0.5)";
+        document.getElementById(`btn-hoi-${vocabId}`).style.background = "rgba(0,0,0,0.5)";
+        document.getElementById(`btn-chua-${vocabId}`).style.background = "rgba(0,0,0,0.5)";
+
+        if(level === 'DA_THUOC') document.getElementById(`btn-thuoc-${vocabId}`).style.background = "var(--pixel-green)";
+        if(level === 'HOI_THUOC') document.getElementById(`btn-hoi-${vocabId}`).style.background = "var(--neon-amber)";
+        if(level === 'CHUA_THUOC') document.getElementById(`btn-chua-${vocabId}`).style.background = "var(--neon-pink)";
+
+        fetch('/api/game/exam/update_status', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: userId, vocab_id: vocabId, level: level })
         });
     }
 </script>
