@@ -1,7 +1,10 @@
 // Khép kín hệ thống Auth Portal: Chặn quyền truy cập Dashboard trái phép từ đầu
 if (!localStorage.getItem("user_id") || !localStorage.getItem("username")) {
-    alert("CẢNH BÁO TRUY CẬP: Bạn chưa đăng nhập hệ thống! Đang quay lại Portal...");
-    window.location.href = '/auth';
+    // Tránh bị lặp vòng lặp nếu đang ở trang auth hoặc index
+    if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
+        alert("CẢNH BÁO TRUY CẬP: Bạn chưa đăng nhập hệ thống! Đang quay lại Portal...");
+        window.location.href = '/auth';
+    }
 }
 
 // Quản lý trạng thái phiên làm việc động từ LocalStorage
@@ -12,17 +15,32 @@ const CURRENT_USERNAME = localStorage.getItem("username") || "Explorer";
 let activeFeature = "grammar";
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Cập nhật tên người chơi thực tế lên giao diện chính
-    const nameSpan = document.querySelector("#status-card .pixel-text span");
-    if (nameSpan) nameSpan.textContent = CURRENT_USERNAME;
+    // 1. Đồng bộ dữ liệu thực tế từ DB lên Dashboard (Tích hợp từ Bước 2)
+    const currentPath = window.location.pathname;
+    if (currentPath === '/dashboard') {
+        fetch(`/api/auth/user/${CURRENT_USER_ID}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.error) {
+                    const dashUsername = document.getElementById("dash-username");
+                    const dashRank = document.getElementById("dash-rank");
+                    const dashStreak = document.getElementById("dash-streak");
 
-    // Tải trước danh sách nhiệm vụ từ vựng ở cột trái
+                    if(dashUsername) dashUsername.innerText = data.username;
+                    if(dashRank) dashRank.innerText = data.level;
+                    if(dashStreak) dashStreak.innerText = data.streak;
+                }
+            })
+            .catch(err => console.error("Lỗi đồng bộ dữ liệu User:", err));
+    }
+
+    // 2. Tải trước danh sách nhiệm vụ từ vựng ở cột trái
     loadVocabQuests();
 
-    // Lắng nghe sự kiện gõ phím nhanh trong ô nhập lệnh
+    // 3. Lắng nghe sự kiện gõ phím nhanh trong ô nhập lệnh
     initKeyboardShortcuts();
 
-    // Tải thư viện Lottie động để chuẩn bị hiệu ứng nổ pháo hoa pixel
+    // 4. Tải thư viện Lottie động để chuẩn bị hiệu ứng nổ pháo hoa pixel
     initLottieLibrary();
 });
 
@@ -30,38 +48,37 @@ function switchFeature(featureName) {
     const currentPath = window.location.pathname;
 
     // 1. KIỂM TRA ĐIỀU HƯỚNG TỪ DASHBOARD
-    // Nếu đang không ở trang học (/learn) mà click vào grammar/vocab -> Chuyển trang
     if ((featureName === 'grammar' || featureName === 'vocab') && currentPath !== '/learn') {
         localStorage.setItem("selected_learning_mode", featureName);
         window.location.href = '/learn';
-        return; // Dừng lại để trình duyệt load trang mới
+        return;
     }
 
-    // Nếu click vào mini-game mà chưa ở trang /test -> Chuyển trang
     if (featureName === 'game' && currentPath !== '/test') {
         window.location.href = '/test';
         return;
     }
 
-    // 2. RENDER GIAO DIỆN (Chỉ chạy khi ĐÃ Ở ĐÚNG TRANG hoặc dùng cho tính năng Story tại Dashboard)
+    // 2. RENDER GIAO DIỆN KHÔNG GIAN BATTLE ZONE
     activeFeature = featureName;
     const workspace = document.getElementById("dynamic-workspace");
     const aiResponseBox = document.getElementById("aiResponseBox");
 
-    // Xóa hiệu ứng chọn cũ trên Bento Grid (Chỉ có tác dụng nếu đang ở Dashboard)
+    // Xóa hiệu ứng chọn cũ trên Bento Grid
     document.querySelectorAll(".bento-card").forEach(card => card.style.borderColor = "var(--glass-border)");
     const activeCard = document.getElementById(`${featureName}-card`);
     if (activeCard) activeCard.style.borderColor = "var(--neon-cyan)";
 
-    // Nếu không tìm thấy không gian làm việc thì thoát luôn (tránh lỗi)
     if (!workspace) return;
-
-    // Ẩn hộp thoại AI khi mới đổi chế độ
     if (aiResponseBox) aiResponseBox.style.display = "none";
 
-    // Bắt đầu vẽ khung nhập liệu tùy theo chế độ
     switch (featureName) {
         case 'vocab':
+            const vocabTitle = document.querySelector("#battle-card .pixel-title");
+            if(vocabTitle) {
+                vocabTitle.textContent = "BATTLE_ZONE // MASTER_G";
+                vocabTitle.style.color = "var(--neon-pink)";
+            }
             workspace.innerHTML = `
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px;">
                     NHIỆM VỤ TỪ VỰNG: Đặt một câu có nghĩa chứa từ lóng/từ vựng hệ thống yêu cầu.
@@ -74,6 +91,11 @@ function switchFeature(featureName) {
             break;
 
         case 'grammar':
+            const grammarTitle = document.querySelector("#battle-card .pixel-title");
+            if(grammarTitle) {
+                grammarTitle.textContent = "BATTLE_ZONE // MASTER_G";
+                grammarTitle.style.color = "var(--neon-pink)";
+            }
             workspace.innerHTML = `
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px;">
                     NHIỆM VỤ NGỮ PHÁP: Sử dụng đúng cấu trúc ngữ pháp để vượt ải.
@@ -86,53 +108,113 @@ function switchFeature(featureName) {
             break;
 
         case 'story':
-            // Tính năng nhập vai RPG ngay tại màn hình Dashboard
+            // Tích hợp logic RPG Terminal thời gian thực (Từ Bước 5)
             const battleTitle = document.querySelector("#battle-card .pixel-title");
-            if(battleTitle) battleTitle.textContent = "BATTLE_ZONE // RPG_STORY_INTERACT";
+            if(battleTitle) {
+                battleTitle.textContent = "BATTLE_ZONE // RPG_TERMINAL";
+                battleTitle.style.color = "var(--neon-purple)";
+            }
 
             workspace.innerHTML = `
-                <div class="pixel-text" style="font-size: 14px; margin-bottom: 10px; max-height: 80px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">
-                    <span style="color: var(--neon-purple);">[CHƯƠNG 1]</span> Bạn lạc vào vùng đất hoang tàn, trước mặt là một NPC đang hấp hối. Bạn sẽ nói gì bằng tiếng Anh để hỏi đường hoặc cứu giúp?
+                <div id="story-terminal" style="height: 150px; overflow-y: auto; background: rgba(0,0,0,0.8); border: 2px solid var(--neon-purple); padding: 10px; margin-bottom: 10px; font-size: 14px; color: #a855f7; border-radius: 4px;">
+                    <div class="typing-effect" style="color: var(--neon-cyan);">[SYSTEM] Đang kết nối tới máy chủ Game Master...</div>
                 </div>
-                <textarea id="userInput" style="width: 100%; height: 60px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 16px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Viết phản ứng/lời thoại của nhân vật của bạn..."></textarea>
-                <div style="margin-top: 8px; display: flex; gap: 12px;">
-                    <button class="pixel-btn" style="background: var(--neon-purple);" onclick="submitChallenge()">CHOICE_ACTION</button>
+                <textarea id="userInput" style="width: 100%; height: 50px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Gõ hành động tiếng Anh của bạn (VD: I look around)"></textarea>
+                <div style="margin-top: 10px; display: flex; gap: 12px;">
+                    <button class="pixel-btn" style="background: var(--neon-purple); width: 100%;" onclick="submitStoryAction()">THỰC THI HÀNH ĐỘNG</button>
                 </div>
             `;
+
+            // Gọi API để lấy bối cảnh mở màn (Từ Bước 5.1)
+            fetch('/api/ai/story/init', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: CURRENT_USER_ID })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const terminal = document.getElementById("story-terminal");
+                if (terminal) terminal.innerHTML = `<div style="margin-bottom: 10px; color: var(--neon-cyan);"><strong>[GM]</strong> ${data.scene}</div>`;
+            });
             break;
     }
 
-    // Tái cấu hình phím tắt Enter để gửi bài nhanh
     initKeyboardShortcuts();
 }
 
 /**
- * TƯƠNG TÁC THỊ GIÁC: Điều khiển biểu cảm biến hình thời gian thực của Nhân vật Chibi
+ * LOGIC ĐẶC BIỆT CHO RPG TERMINAL: Đẩy text vào Terminal thay vì Box AI
  */
+function submitStoryAction() {
+    const inputEle = document.getElementById("userInput");
+    const terminal = document.getElementById("story-terminal");
+    if (!inputEle || !terminal) return;
+
+    const actionText = inputEle.value.trim();
+    if(!actionText) {
+        triggerCardShake();
+        return;
+    }
+
+    // 1. In hành động lên Terminal
+    terminal.innerHTML += `<div style="margin-bottom: 10px; color: #fff;"><strong>[YOU]</strong> > ${actionText}</div>`;
+    inputEle.value = "";
+    terminal.scrollTop = terminal.scrollHeight;
+
+    // 2. Kích hoạt hiệu ứng loading của Game Master
+    const loadId = "loading-" + Date.now();
+    terminal.innerHTML += `<div id="${loadId}" class="pulse-neon" style="margin-bottom: 10px;">[GM] Đang phân tích kết quả hành động...</div>`;
+    terminal.scrollTop = terminal.scrollHeight;
+
+    // 3. Gửi cho AI phân tích và dắt truyện
+    fetch('/api/ai/evaluate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: CURRENT_USER_ID, text: actionText, mode: 'story' })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const loadEl = document.getElementById(loadId);
+        if(loadEl) loadEl.remove();
+
+        const result = data.result || data;
+        const score = result.score !== undefined ? result.score : 0;
+        const color = score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
+
+        updateChibiEmotion(score);
+
+        // 4. In kết quả diễn biến mới ra Terminal
+        terminal.innerHTML += `
+            <div style="margin-bottom: 10px; border-left: 2px solid ${color}; padding-left: 8px;">
+                <strong style="color: ${color};">[GM - Điểm ngữ pháp: ${score}/10]</strong><br>
+                <span style="color: var(--neon-cyan); line-height: 1.4; display: inline-block; margin-top: 5px;">${result.feedback}</span>
+            </div>
+        `;
+        terminal.scrollTop = terminal.scrollHeight;
+    })
+    .catch(err => {
+        document.getElementById(loadId).innerHTML = "<span style='color: var(--neon-pink);'>Lỗi kết nối GM! Đứt cáp không gian!</span>";
+    });
+}
+
 function updateChibiEmotion(score) {
     const chibiCharacter = document.querySelector(".character");
     if (!chibiCharacter) return;
 
-    // Gỡ bỏ các lớp cảm xúc cũ
     chibiCharacter.classList.remove("master-g-mad", "master-g-proud");
 
-    // Ép trạng thái hình thể dựa trên điểm số thực tế
     if (score < 5.0) {
-        chibiCharacter.classList.add("master-g-mad"); // Mặt đỏ rực, rung giật dữ dội khi sai
+        chibiCharacter.classList.add("master-g-mad");
     } else if (score >= 8.0) {
-        chibiCharacter.classList.add("master-g-proud"); // Miệng cười to, nhún nhảy tốc độ cao khi đúng
-        triggerFireworksEffect(); // Điểm cao rực rỡ kích nổ pháo hoa Lottie
+        chibiCharacter.classList.add("master-g-proud");
+        triggerFireworksEffect();
     }
 
-    // Sau 5 giây, cho nhân vật tự động bình tĩnh trở lại nhịp thở sinh học
     setTimeout(() => {
         chibiCharacter.classList.remove("master-g-mad", "master-g-proud");
     }, 5000);
 }
 
-/**
- * 2. GỬI LỆNH LÀM BÀI ĐỒNG BỘ QUA AI CONTROLLER
- */
 function submitChallenge() {
     const userInputField = document.getElementById("userInput");
     const aiResponseBox = document.getElementById("aiResponseBox");
@@ -150,14 +232,13 @@ function submitChallenge() {
     aiResponseBox.style.display = "block";
     aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-amber);'>MASTER_G ĐANG SOI MÓI BÀI LÀM...</span>";
 
-    // Đẩy payload lên API tùy thuộc vào chế độ đang chọn
     fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             user_id: CURRENT_USER_ID,
             text: textValue,
-            mode: activeFeature // Truyền mode để AI biết lối xử lý ngữ cảnh
+            mode: activeFeature
         })
     })
     .then(response => {
@@ -165,7 +246,6 @@ function submitChallenge() {
         return response.json();
     })
     .then(data => {
-        // Render kết quả bóc tách sạch từ Gemini 2.5 Flash
         const result = data.result || data;
         const feedback = result.feedback || "Không có nhận xét.";
         const score = result.score !== undefined ? result.score : 0;
@@ -173,12 +253,11 @@ function submitChallenge() {
         let scoreColor = "var(--pixel-green)";
         if (score < 5.0) {
             scoreColor = "var(--neon-pink)";
-            triggerCardShake(); // Rung giật màn hình CRT khi bị chê bài
+            triggerCardShake();
         } else if (score < 8.0) {
             scoreColor = "var(--neon-amber)";
         }
 
-        // Kích hoạt biến hình cảm xúc Chibi thời gian thực
         updateChibiEmotion(score);
 
         aiFeedbackDiv.innerHTML = `
@@ -190,15 +269,11 @@ function submitChallenge() {
         userInputField.value = "";
     })
     .catch(error => {
-        console.error(error);
         triggerCardShake();
         aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink);'>ERROR: KHÔNG THỂ KẾT NỐI VỚI NÃO BỘ AI!</span>";
     });
 }
 
-/**
- * 3. TẢI DANH SÁCH TỪ VỰNG TỪ MYSQL RENDER LÊN CARD TALL
- */
 function loadVocabQuests() {
     const container = document.querySelector("#vocab-card .pixel-text");
     if (!container) return;
@@ -212,7 +287,6 @@ function loadVocabQuests() {
             return;
         }
 
-        // Tạo cấu trúc phân nhóm từ vựng theo chủ đề (Theme)
         const themes = {};
         list.forEach(item => {
             const themeName = item.theme || "General";
@@ -261,9 +335,6 @@ function loadVocabQuests() {
     });
 }
 
-/**
- * Gửi lệnh đánh dấu X đã ghi nhớ từ vựng lên hệ thống
- */
 function toggleVocabMark(vocabId) {
     fetch('/api/game/vocab/toggle_memorize', {
         method: 'POST',
@@ -275,22 +346,17 @@ function toggleVocabMark(vocabId) {
         if (data.error) return;
         loadVocabQuests();
 
-        // Kích hoạt nổ pháo hoa và nâng cấp hiển thị nếu hoàn thành ải thăng Level
         if (data.level_upgraded) {
             triggerFireworksEffect();
-            alert(` CHÚC MỪNG! Bạn đã hoàn thành ải từ vựng. ĐẲNG CẤP MỚI: ${data.current_level}`);
-            const rankText = document.querySelector("#status-card .pixel-text");
-            if (rankText) {
-                rankText.innerHTML = `USER: <span style="color: var(--neon-cyan);">${CURRENT_USERNAME}</span> <br>RANK: <span style="color: var(--pixel-green);">${data.current_level}</span>`;
-            }
+            alert(`🎉 CHÚC MỪNG! Bạn đã hoàn thành ải từ vựng. ĐẲNG CẤP MỚI: ${data.current_level}`);
+            // Cập nhật Rank trên UI nếu đang ở Dashboard
+            const dashRank = document.getElementById("dash-rank");
+            if (dashRank) dashRank.innerText = data.current_level;
             updateChibiEmotion(10.0);
         }
     });
 }
 
-/**
- * 4. ĐIỂM DANH HÀNG NGÀY TĂNG CHUỖI STREAK THỜI GIAN THỰC
- */
 function triggerCheckin() {
     fetch('/api/game/checkin', {
         method: 'POST',
@@ -300,17 +366,13 @@ function triggerCheckin() {
     .then(res => res.json())
     .then(data => {
         if(data.error) return;
-        const streakText = document.querySelector(".pulse-neon");
+        const streakText = document.getElementById("dash-streak") || document.querySelector(".pulse-neon");
         if (streakText && data.current_streak) {
             streakText.textContent = data.current_streak;
-            triggerFireworksEffect(); // Điểm danh thành công -> Thưởng nổ pháo hoa rực rỡ
+            triggerFireworksEffect();
         }
         loadVocabQuests();
     });
-}
-
-function startMiniGame() {
-    alert("Đấu trường Gacha phản xạ đang được Master G thiết lập trận đấu!");
 }
 
 function triggerCardShake() {
@@ -324,18 +386,23 @@ function triggerCardShake() {
 function initKeyboardShortcuts() {
     const userInput = document.getElementById("userInput");
     if (userInput) {
-        userInput.addEventListener("keydown", (e) => {
+        // Clone và thay thế node để reset các event listener cũ
+        const newField = userInput.cloneNode(true);
+        userInput.parentNode.replaceChild(newField, userInput);
+
+        newField.addEventListener("keydown", (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                submitChallenge();
+                if (activeFeature === 'story') {
+                    submitStoryAction();
+                } else {
+                    submitChallenge();
+                }
             }
         });
     }
 }
 
-/**
- * TÍNH NĂNG NÂNG CAO: Tự động tải thư viện Lottie không làm chậm trang
- */
 function initLottieLibrary() {
     if (!window.lottie) {
         const script = document.createElement("script");
@@ -345,13 +412,9 @@ function initLottieLibrary() {
     }
 }
 
-/**
- * Tạo hiệu ứng nổ pháo hoa Pixel rực rỡ tràn màn hình khi đạt thành tích cao
- */
 function triggerFireworksEffect() {
     if (!window.lottie) return;
 
-    // Tạo nhanh một vùng chứa hiệu ứng tạm thời
     const lottieContainer = document.createElement("div");
     lottieContainer.style.position = "fixed";
     lottieContainer.style.top = "0";
@@ -362,16 +425,14 @@ function triggerFireworksEffect() {
     lottieContainer.style.pointerEvents = "none";
     document.body.appendChild(lottieContainer);
 
-    // Triển khai pháo hoa từ tệp JSON động có sẵn mã nguồn Pixel
     const animation = lottie.loadAnimation({
         container: lottieContainer,
         renderer: 'svg',
         loop: false,
         autoplay: true,
-        path: 'https://assets5.lottiefiles.com/packages/lf20_obh5c7sh.json' // Tệp hiệu ứng pháo hoa 8-bit mẫu mực
+        path: 'https://assets5.lottiefiles.com/packages/lf20_obh5c7sh.json'
     });
 
-    // Tự động dọn dẹp bộ nhớ xóa khối div khi pháo hoa nổ xong
     animation.addEventListener('complete', () => {
         lottieContainer.remove();
     });

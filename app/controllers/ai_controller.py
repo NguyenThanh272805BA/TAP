@@ -39,8 +39,24 @@ def evaluate():
             else:
                 context_challenge = "Từ vựng bắt buộc phải dùng: 'Annihilate' (Tiêu diệt hoàn toàn)"
 
+
         elif mode == 'story':
-            context_challenge = "Ngữ cảnh nhập vai RPG: Người dùng đang đối thoại với một NPC hấp hối..."
+
+            user = User.query.get(user_id)
+
+            user_level = user.current_level if user else "Beginner"
+
+            context_challenge = f"""
+
+                    Ngữ cảnh: Bạn là Game Master. Người chơi Rank {user_level} vừa thực hiện một hành động trong thế giới sinh tồn tận thế.
+
+                    Nhiệm vụ của bạn:
+
+                    1. Chấm điểm (0-10) xem câu tiếng Anh của họ viết có đúng ngữ pháp và bối cảnh không.
+
+                    2. Phần 'feedback' không chỉ là sửa lỗi, mà phải là ĐOẠN VĂN KỂ TIẾP DIỄN BIẾN cốt truyện dựa trên hành động đó (thành công hay thất bại tùy vào chất lượng câu tiếng Anh của họ). Kết thúc bằng câu hỏi "Tiếp theo bạn làm gì?".
+
+                    """
 
         # Gọi AI chấm điểm
         ai_response_str = evaluate_english_skill(user_input, context_challenge)
@@ -242,3 +258,38 @@ def generate_unit():
 
     except Exception as db_err:
         return jsonify({"error": f"Lỗi lưu trữ Database: {str(db_err)}"}), 500
+
+
+@ai_bp.route('/story/init', methods=['POST'])
+def init_story():
+    """Hàm mồi: Tạo bối cảnh mở màn cho game nhập vai dựa trên trình độ người chơi"""
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+
+    user = User.query.get(user_id)
+    user_level = user.current_level if user else "Beginner"
+
+    # Lấy vốn từ vựng làm chất liệu cho AI
+    known_vocabs = Vocabulary.query.filter_by(is_memorized=True).limit(5).all()
+    vocab_context = ", ".join(
+        [v.word for v in known_vocabs]) if known_vocabs else "Trắng tay, chưa có vũ khí ngôn từ nào"
+
+    prompt = f"""
+    Bạn là Game Master của một game Text-RPG Sinh tồn hậu tận thế Cyberpunk.
+    Người chơi đang ở Rank: {user_level}. Vốn từ vựng họ đã học: [{vocab_context}].
+    Hãy viết 1 đoạn văn ngắn (tối đa 10 ca) mô tả khung cảnh u ám nơi người chơi vừa tỉnh dậy. 
+    Hãy cố gắng lồng ghép 1-2 từ vựng tiếng Anh mà họ đã học vào ngữ cảnh tiếng Việt để tạo sự quen thuộc.
+    Kết thúc đoạn văn bằng một câu hỏi gợi mở hành động: "Bạn muốn làm gì tiếp theo?"
+    Không dùng markdown. Trả về text thuần.
+    """
+
+    try:
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        return jsonify({"scene": response.text}), 200
+    except Exception as e:
+        return jsonify({
+                           "scene": "[OFFLINE MODE] Bạn tỉnh dậy giữa một khu phế liệu tĩnh lặng. Hệ thống AI toàn cầu đang sập. Bạn muốn làm gì tiếp theo?"}), 200

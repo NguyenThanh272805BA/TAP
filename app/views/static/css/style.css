@@ -1,5 +1,5 @@
 /* app/views/static/css/style.css */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
     --bg-gradient: linear-gradient(135deg, #090d16 0%, #110c26 50%, #1a103c 100%);
@@ -14,8 +14,10 @@
     --neon-amber: #fbbf24;
     --pixel-green: #34d399;
 
-    --text-pixel: 'Press Start 2P', monospace;
-    --text-mono: 'Share Tech Mono', monospace;
+    /* Hệ thống Font chữ mới - Đều, mượt và dễ đọc hơn */
+    --text-pixel: 'Press Start 2P', cursive;
+    --text-main: 'Space Grotesk', sans-serif; /* Dùng cho văn bản chính */
+    --text-mono: 'JetBrains Mono', monospace; /* Dùng cho input/code */
 }
 
 body {
@@ -24,9 +26,10 @@ body {
     background: var(--bg-gradient);
     background-attachment: fixed;
     color: #f1f5f9;
-    font-family: var(--text-mono);
-    font-size: 18px;
-    letter-spacing: 0.5px;
+    font-family: var(--text-main); /* Chuyển sang font mượt hơn */
+    font-size: 16px; /* Giảm nhẹ base size cho tinh tế */
+    line-height: 1.6; /* Tăng khoảng cách dòng để dễ thở */
+    letter-spacing: 0.3px;
     min-height: 100vh;
     box-sizing: border-box;
     overflow-x: hidden;
@@ -101,7 +104,9 @@ body::before {
 
 .pixel-title {
     font-family: var(--text-pixel);
-    font-size: 12px;
+    font-size: 11px; /* Cân chỉnh lại để font pixel không quá thô */
+    line-height: 1.5;
+    letter-spacing: 0.5px;
     color: var(--neon-cyan);
     text-shadow: 2px 2px 0px rgba(34, 211, 238, 0.3);
     margin-top: 0;
@@ -109,8 +114,10 @@ body::before {
 }
 
 .pixel-text {
-    font-family: var(--text-mono);
-    font-size: 19px;
+    font-family: var(--text-main); /* Chữ thường rất dễ đọc */
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.6;
     color: #e2e8f0;
     margin: 0;
 }
@@ -118,7 +125,8 @@ body::before {
 /* Nút Bấm Game Retro Phát Sáng */
 .pixel-btn {
     font-family: var(--text-pixel);
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 1.4;
     color: #ffffff;
     background: #2563eb;
     border: none;
@@ -161,8 +169,8 @@ body::before {
     border: 2px solid var(--pixel-border);
     color: #fff;
     padding: 12px;
-    font-family: var(--text-mono);
-    font-size: 16px;
+    font-family: var(--text-mono); /* Giữ font monospace chuẩn cho ô nhập liệu */
+    font-size: 15px;
     margin-bottom: 15px;
     box-sizing: border-box;
 }
@@ -458,6 +466,7 @@ body::before {
     0%, 100% { transform: rotate(-15deg); }
     50% { transform: rotate(-28deg) translateY(-1px); }
 }
+
 /* --- TRẠNG THÁI CHIBI BIẾN HÌNH THEO ĐIỂM SỐ --- */
 
 /* 1. Trạng thái Master G nổi điên (Khi điểm < 5.0) */
