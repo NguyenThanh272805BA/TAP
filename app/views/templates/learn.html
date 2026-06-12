@@ -48,7 +48,7 @@
         </div>
 
         <div id="dynamic-workspace" style="min-height: 180px;">
-            </div>
+        </div>
 
         <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 30px; padding: 25px;">
             <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 15px;">MASTER_G FEEDBACK:</div>
@@ -179,8 +179,11 @@
         words.forEach((w, index) => {
             const opacity = w.is_unlocked ? "1" : "0.5";
             const icon = w.is_unlocked ? "🔓" : "🔒";
-            // Chuẩn hóa chuỗi để chống lỗi nháy đơn khi click
             const safeWord = w.word.replace(/'/g, "\\'");
+
+            // Xử lý nút Checkbox Đã Thuộc
+            const memoText = w.is_memorized ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
+            const memoColor = w.is_memorized ? "var(--pixel-green)" : "var(--glass-border)";
 
             html += `
             <div style="margin-bottom: 12px; background: rgba(0,0,0,0.6); border-left: 3px solid var(--neon-cyan); padding: 12px; border-radius: 6px; opacity: ${opacity};">
@@ -191,9 +194,17 @@
 
                 <div id="word-detail-${index}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
                     <span style="font-size: 14px; color: #cbd5e1; display: block; line-height: 1.4; margin-bottom: 12px;">Nghĩa: ${w.meaning}</span>
-                    <button class="pixel-btn" onclick="requestWordGuide('${safeWord}')" style="background: var(--neon-purple); box-shadow: -3px 0 0 0 #000, 3px 0 0 0 #000, 0 -3px 0 0 #000, 0 3px 0 0 #000, inset -3px -3px 0 0 #6b21a8; font-size: 9px; padding: 10px;">
-                        XIN MASTER G HƯỚNG DẪN
-                    </button>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button class="pixel-btn" onclick="requestWordGuide('${safeWord}')" style="background: var(--neon-purple); box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000; font-size: 9px; padding: 8px; flex: 1;">
+                            MASTER G HƯỚNG DẪN
+                        </button>
+
+                        <!-- NÚT ĐÁNH DẤU TỪ VỰNG MỚI ĐƯỢC THÊM VÀO -->
+                        <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id})" style="background: ${memoColor}; box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000; font-size: 9px; padding: 8px; flex: 1;">
+                            ${memoText}
+                        </button>
+                    </div>
                 </div>
             </div>`;
         });
@@ -204,6 +215,39 @@
     function toggleWordDetail(index) {
         const detailDiv = document.getElementById('word-detail-' + index);
         detailDiv.style.display = detailDiv.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ==========================================
+    // HÀM XỬ LÝ SỰ KIỆN KHI NHẤN "ĐÃ THUỘC"
+    // ==========================================
+    function toggleMemorizeStatus(vocabId) {
+        const userId = localStorage.getItem("user_id");
+        if (!userId) {
+            alert("Vui lòng đăng nhập lại để lưu tiến độ!");
+            return;
+        }
+
+        fetch('/api/game/vocab/toggle_memorize', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ vocab_id: vocabId, user_id: userId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.error) {
+                alert(data.error);
+                return;
+            }
+
+            // Nếu người chơi cày xong chủ đề và thăng cấp
+            if (data.level_upgraded) {
+                alert(`🎉 CHÚC MỪNG! BẠN ĐÃ THUỘC TOÀN BỘ CHỦ ĐỀ.\nDanh hiệu mới của bạn là: ${data.current_level}`);
+            }
+
+            // Tải lại kho dữ liệu để UI cập nhật nút [X] mới nhất
+            fetchLibraryData('/api/game/vocabularies', 'vocab');
+        })
+        .catch(err => console.error("Lỗi cập nhật tiến độ:", err));
     }
 
     // ==========================================

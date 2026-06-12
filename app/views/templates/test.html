@@ -1,19 +1,184 @@
 {% extends "base.html" %}
 
-{% block title %}GACHA MINIGAME{% endblock %}
+{% block title %}GACHA REFLEX ARENA{% endblock %}
 
 {% block content %}
-<div class="bento-container">
-    <div class="bento-card" style="grid-column: span 4; text-align: center; padding: 50px;">
-        <div class="pixel-title" style="font-size: 30px; color: var(--pixel-green); margin-bottom: 20px;">
-            GACHA MINIGAME // REFLEX BATTLE
+<div class="bento-container" style="max-width: 800px; margin: 5vh auto;">
+
+    <div class="bento-card" style="grid-column: span 4; text-align: center; padding: 40px; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px;">
+            <div class="pixel-title" style="color: var(--pixel-green); font-size: 16px; margin: 0;">GACHA_ARENA // REFLEX_5S</div>
+            <div class="pixel-title" style="color: var(--neon-amber); font-size: 14px; margin: 0;">STREAK: <span id="gacha-streak">0</span></div>
         </div>
-        <div class="pixel-text" style="font-size: 18px; color: #94a3b8; max-width: 600px; margin: 0 auto 40px auto;">
-            (Tính năng đang được Master G rèn giũa trong lò rèn. Sắp ra mắt hệ thống bốc thăm từ vựng thời gian thực!)
+
+        <div id="start-screen">
+            <div class="pixel-title" style="font-size: 26px; color: #fff; margin-bottom: 20px; text-shadow: 2px 2px var(--neon-pink);">READY FOR THE ROLL?</div>
+            <p class="pixel-text" style="color: #94a3b8; font-size: 14px; margin-bottom: 30px; line-height: 1.6;">
+                Hệ thống sẽ bốc một từ vựng bất kỳ đang bị KHÓA.<br> Bạn có chính xác 5 giây để tìm ra nghĩa đúng. Thua = Reset Streak!
+            </p>
+            <button class="pixel-btn" onclick="rollNewChallenge()" style="background: var(--pixel-green); padding: 12px 30px; font-size: 14px;">
+                PRESS START TO ROLL
+            </button>
         </div>
-        <button class="pixel-btn" onclick="triggerFireworksEffect()" style="background: var(--pixel-green); padding: 15px 30px; font-size: 16px;">
-            TEST_FIREWORKS (NỔ PHÁO HOA)
-        </button>
+
+        <div id="arena-screen" style="display: none;">
+            <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 30px; overflow: hidden;">
+                <div id="timer-bar" style="width: 100%; height: 100%; background: var(--neon-pink); transition: width 0.1s linear;"></div>
+            </div>
+
+            <div class="pixel-title" id="target-word" style="font-size: 42px; color: var(--neon-cyan); margin-bottom: 30px; letter-spacing: 2px;">WORD</div>
+
+            <div id="options-box" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                </div>
+        </div>
+
+        <div class="ai-dialog-box" id="result-box" style="display: none; margin-top: 20px; text-align: left;">
+            <div class="pixel-title" id="result-title" style="color: var(--neon-pink); margin-bottom: 8px;">MASTER_G CHẤM ĐIỂM:</div>
+            <div id="result-msg" class="pixel-text" style="font-size: 15px; color: #fff; line-height: 1.4;"></div>
+            <button class="pixel-btn" id="btn-next" onclick="rollNewChallenge()" style="background: var(--neon-purple); margin-top: 15px; font-size: 10px; padding: 6px 12px;">TIẾP TỤC ĐẤU TRƯỜNG ></button>
+        </div>
+
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentVocabId = null;
+    let countdownInterval = null;
+    let timeLeft = 5.0;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Đồng bộ điểm chuỗi hiện tại của người chơi lên góc màn hình arena
+        const userId = localStorage.getItem("user_id");
+        if (userId) {
+            fetch(`/api/auth/user/${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById("gacha-streak").innerText = data.streak;
+                });
+        }
+    });
+
+    function rollNewChallenge() {
+        const userId = localStorage.getItem("user_id");
+        // Reset UI trạng thái
+        document.getElementById("start-screen").style.display = "none";
+        document.getElementById("result-box").style.display = "none";
+        document.getElementById("arena-screen").style.display = "block";
+        document.getElementById("options-box").innerHTML = "";
+        clearInterval(countdownInterval);
+
+        fetch('/api/game/gacha/roll', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: userId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'empty') {
+                document.getElementById("arena-screen").style.display = "none";
+                document.getElementById("start-screen").style.display = "block";
+                document.getElementById("start-screen").innerHTML = `<div class='pixel-title' style='color:var(--pixel-green)'>${data.message}</div>`;
+                return;
+            }
+
+            currentVocabId = data.vocab_id;
+            document.getElementById("target-word").innerText = data.word;
+
+            // Render danh sách nút lựa chọn đáp án
+            data.options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.className = "pixel-btn";
+                btn.style.background = "rgba(0,0,0,0.5)";
+                btn.style.textTransform = "none";
+                btn.innerText = opt;
+                btn.onclick = () => submitAnswer(opt);
+                document.getElementById("options-box").appendChild(btn);
+            });
+
+            // Kích hoạt đồng hồ đếm ngược sinh tồn 5 giây
+            startArenaTimer();
+        });
+    }
+
+    function startArenaTimer() {
+        timeLeft = 5.0;
+        const timerBar = document.getElementById("timer-bar");
+        timerBar.style.width = "100%";
+        timerBar.style.background = "var(--neon-pink)";
+
+        countdownInterval = setInterval(() => {
+            timeLeft -= 0.1;
+            const percentage = (timeLeft / 5.0) * 100;
+            timerBar.style.width = percentage + "%";
+
+            if (timeLeft <= 2.0) {
+                timerBar.style.background = "red"; // Đổi màu cảnh báo nguy cơ sắp hết giờ
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                handleTimeout();
+            }
+        }, 100);
+    }
+
+    function handleTimeout() {
+        lockOptions();
+        sendVerification(null, true);
+    }
+
+    function submitAnswer(selectedAnswer) {
+        clearInterval(countdownInterval);
+        lockOptions();
+        sendVerification(selectedAnswer, false);
+    }
+
+    function lockOptions() {
+        const buttons = document.getElementById("options-box").getElementsByTagName("button");
+        for (let btn of buttons) {
+            btn.disabled = true;
+            btn.style.opacity = "0.6";
+        }
+    }
+
+    function sendVerification(answer, isTimeout) {
+        const userId = localStorage.getItem("user_id");
+        const resultBox = document.getElementById("result-box");
+        const resultTitle = document.getElementById("result-title");
+        const resultMsg = document.getElementById("result-msg");
+
+        fetch('/api/game/gacha/verify', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: userId,
+                vocab_id: currentVocabId,
+                answer: answer,
+                timeout: isTimeout
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            resultBox.style.display = "block";
+            document.getElementById("gacha-streak").innerText = data.new_streak;
+
+            if (data.correct) {
+                resultTitle.innerText = "MASTER_G: CỰC TỐT!";
+                resultTitle.style.color = "var(--pixel-green)";
+                resultMsg.innerText = data.message;
+
+                // Trigger hiệu ứng pháo hoa rỗng có sẵn ở file js nếu có
+                if(typeof triggerFireworksEffect === 'function') {
+                    triggerFireworksEffect();
+                }
+            } else {
+                resultTitle.innerText = "MASTER_G SỈ VẢ:";
+                resultTitle.style.color = "var(--neon-pink)";
+                resultMsg.innerText = data.message;
+            }
+        });
+    }
+</script>
 {% endblock %}

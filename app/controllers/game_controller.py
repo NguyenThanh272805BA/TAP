@@ -4,7 +4,7 @@ from app.models.vocabulary import Vocabulary
 from app import db
 from app.models.grammar import Grammar
 from datetime import datetime, date
-
+import random
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
 
 
@@ -42,7 +42,6 @@ def checkin():
 
 @game_bp.route('/vocabularies', methods=['GET'])
 def get_vocabularies():
-    # Lấy toàn bộ kho từ vựng từ database để đẩy lên giao diện Bento Grid
     vocab_list = Vocabulary.query.all()
 
     output = []
@@ -52,7 +51,8 @@ def get_vocabularies():
             "word": vocab.word,
             "meaning": vocab.meaning,
             "image_url": vocab.image_url,
-            "is_unlocked": vocab.is_unlocked
+            "is_unlocked": vocab.is_unlocked,
+            "is_memorized": getattr(vocab, 'is_memorized', False)
         })
 
     return jsonify({"vocabularies": output}), 200
@@ -114,3 +114,82 @@ def get_grammars():
         })
 
     return jsonify({"grammars": output}), 200
+@game_bp.route('/gacha/roll', methods=['POST'])
+def gacha_roll():
+    """Bốc ngẫu nhiên một từ vựng đang bị khóa để đưa vào đấu trường"""
+    locked_vocab = Vocabulary.query.filter_by(is_unlocked=False).all()
+
+    if not locked_vocab:
+        return jsonify({
+            "status": "empty",
+            "message": "🎉 Tuyệt vời! Bạn đã giải cứu và mở khóa thành công toàn bộ kho từ vựng!"
+        }), 200
+
+    # Chọn ngẫu nhiên từ mục tiêu
+    target = random.choice(locked_vocab)
+
+    # Bốc thêm 3 từ khác bất kỳ trong DB làm phương án nhiễu (Distractors)
+    distractors = Vocabulary.query.filter(Vocabulary.id != target.id).order_by(db.func.rand()).limit(3).all()
+
+    options = [target.meaning] + [d.meaning for d in distractors]
+    random.shuffle(options)  # Trộn đều vị trí đáp án
+
+    return jsonify({
+        "status": "success",
+        "vocab_id": target.id,
+        "word": target.word,
+        "options": options
+    }), 200
+
+
+@game_bp.route('/gacha/verify', methods=['POST'])
+def gacha_verify():
+    """Xử lý kết quả thắng/thua thời gian thực"""
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    vocab_id = data.get('vocab_id')
+    user_answer = data.get('answer')
+    is_timeout = data.get('timeout', False)
+
+    user = User.query.get(user_id)
+    vocab = Vocabulary.query.get(vocab_id)
+
+    if not user or not vocab:
+        return jsonify({"error": "Dữ liệu không hợp lệ!"}), 400
+
+    master_g_insults = [
+        "Tốc độ phản xạ quá chậm! Bộ não của bạn đóng băng rồi à?",
+        "Master G nhìn bạn bằng nửa con mắt. Học hành thế đấy à đồ ngốc!",
+        "Chuỗi Streak của bạn đã vỡ vụn như bong bóng xà phòng!",
+        "Chọn bừa cũng sai, bạn cần phải rèn luyện thêm nhiều vào!"
+    ]
+
+    # Trường hợp hết giờ
+    if is_timeout:
+        user.streak_count = 0
+        db.session.commit()
+        return jsonify({
+            "correct": False,
+            "message": "⏱️ HẾT GIỜ! " + random.choice(master_g_insults),
+            "new_streak": 0
+        }), 200
+
+    # Trường hợp người dùng chọn đáp án
+    if vocab.meaning.strip() == user_answer.strip():
+        vocab.is_unlocked = True
+        user.streak_count += 1
+        db.session.commit()
+
+        return jsonify({
+            "correct": True,
+            "message": "💥 BOOM! Kích nổ pháo hoa thành công! Bạn đã thu phục từ vựng này!",
+            "new_streak": user.streak_count
+        }), 200
+    else:
+        user.streak_count = 0
+        db.session.commit()
+        return jsonify({
+            "correct": False,
+            "message": "❌ SAI RỒI! " + random.choice(master_g_insults),
+            "new_streak": 0
+        }), 200
