@@ -1,3 +1,5 @@
+// main.js
+
 // Khép kín hệ thống Auth Portal: Chặn quyền truy cập Dashboard trái phép từ đầu
 if (!localStorage.getItem("user_id") || !localStorage.getItem("username")) {
     // Tránh bị lặp vòng lặp nếu đang ở trang auth hoặc index
@@ -15,7 +17,7 @@ const CURRENT_USERNAME = localStorage.getItem("username") || "Explorer";
 let activeFeature = "grammar";
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Đồng bộ dữ liệu thực tế từ DB lên Dashboard (Tích hợp từ Bước 2)
+    // 1. Đồng bộ dữ liệu thực tế từ DB lên Dashboard
     const currentPath = window.location.pathname;
     if (currentPath === '/dashboard') {
         fetch(`/api/auth/user/${CURRENT_USER_ID}`)
@@ -34,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .catch(err => console.error("Lỗi đồng bộ dữ liệu User:", err));
     }
 
-    // 2. Tải trước danh sách nhiệm vụ từ vựng ở cột trái
+    // 2. Tải trước danh sách nhiệm vụ từ vựng ở cột trái (nếu đang ở trang có cột này)
     loadVocabQuests();
 
     // 3. Lắng nghe sự kiện gõ phím nhanh trong ô nhập lệnh
@@ -42,12 +44,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 4. Tải thư viện Lottie động để chuẩn bị hiệu ứng nổ pháo hoa pixel
     initLottieLibrary();
+
+    // 5. Nếu đang ở trang Story, tự động kích hoạt truyện
+    if (currentPath === '/story') {
+        initRPGStory();
+    }
 });
 
 function switchFeature(featureName) {
     const currentPath = window.location.pathname;
 
-    // 1. KIỂM TRA ĐIỀU HƯỚNG TỪ DASHBOARD
+    // 1. KIỂM TRA ĐIỀU HƯỚNG GIỮA CÁC TRANG
     if ((featureName === 'grammar' || featureName === 'vocab') && currentPath !== '/learn') {
         localStorage.setItem("selected_learning_mode", featureName);
         window.location.href = '/learn';
@@ -59,7 +66,12 @@ function switchFeature(featureName) {
         return;
     }
 
-    // 2. RENDER GIAO DIỆN KHÔNG GIAN BATTLE ZONE
+    if (featureName === 'story' && currentPath !== '/story') {
+        window.location.href = '/story';
+        return;
+    }
+
+    // 2. RENDER GIAO DIỆN KHÔNG GIAN BATTLE ZONE (Cho Dashboard/Learn)
     activeFeature = featureName;
     const workspace = document.getElementById("dynamic-workspace");
     const aiResponseBox = document.getElementById("aiResponseBox");
@@ -106,95 +118,9 @@ function switchFeature(featureName) {
                 </div>
             `;
             break;
-
-        case 'story':
-            // Tích hợp logic RPG Terminal thời gian thực (Từ Bước 5)
-            const battleTitle = document.querySelector("#battle-card .pixel-title");
-            if(battleTitle) {
-                battleTitle.textContent = "BATTLE_ZONE // RPG_TERMINAL";
-                battleTitle.style.color = "var(--neon-purple)";
-            }
-
-            workspace.innerHTML = `
-                <div id="story-terminal" style="height: 150px; overflow-y: auto; background: rgba(0,0,0,0.8); border: 2px solid var(--neon-purple); padding: 10px; margin-bottom: 10px; font-size: 14px; color: #a855f7; border-radius: 4px;">
-                    <div class="typing-effect" style="color: var(--neon-cyan);">[SYSTEM] Đang kết nối tới máy chủ Game Master...</div>
-                </div>
-                <textarea id="userInput" style="width: 100%; height: 50px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Gõ hành động tiếng Anh của bạn (VD: I look around)"></textarea>
-                <div style="margin-top: 10px; display: flex; gap: 12px;">
-                    <button class="pixel-btn" style="background: var(--neon-purple); width: 100%;" onclick="submitStoryAction()">THỰC THI HÀNH ĐỘNG</button>
-                </div>
-            `;
-
-            // Gọi API để lấy bối cảnh mở màn (Từ Bước 5.1)
-            fetch('/api/ai/story/init', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: CURRENT_USER_ID })
-            })
-            .then(res => res.json())
-            .then(data => {
-                const terminal = document.getElementById("story-terminal");
-                if (terminal) terminal.innerHTML = `<div style="margin-bottom: 10px; color: var(--neon-cyan);"><strong>[GM]</strong> ${data.scene}</div>`;
-            });
-            break;
     }
 
     initKeyboardShortcuts();
-}
-
-/**
- * LOGIC ĐẶC BIỆT CHO RPG TERMINAL: Đẩy text vào Terminal thay vì Box AI
- */
-function submitStoryAction() {
-    const inputEle = document.getElementById("userInput");
-    const terminal = document.getElementById("story-terminal");
-    if (!inputEle || !terminal) return;
-
-    const actionText = inputEle.value.trim();
-    if(!actionText) {
-        triggerCardShake();
-        return;
-    }
-
-    // 1. In hành động lên Terminal
-    terminal.innerHTML += `<div style="margin-bottom: 10px; color: #fff;"><strong>[YOU]</strong> > ${actionText}</div>`;
-    inputEle.value = "";
-    terminal.scrollTop = terminal.scrollHeight;
-
-    // 2. Kích hoạt hiệu ứng loading của Game Master
-    const loadId = "loading-" + Date.now();
-    terminal.innerHTML += `<div id="${loadId}" class="pulse-neon" style="margin-bottom: 10px;">[GM] Đang phân tích kết quả hành động...</div>`;
-    terminal.scrollTop = terminal.scrollHeight;
-
-    // 3. Gửi cho AI phân tích và dắt truyện
-    fetch('/api/ai/evaluate', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: CURRENT_USER_ID, text: actionText, mode: 'story' })
-    })
-    .then(res => res.json())
-    .then(data => {
-        const loadEl = document.getElementById(loadId);
-        if(loadEl) loadEl.remove();
-
-        const result = data.result || data;
-        const score = result.score !== undefined ? result.score : 0;
-        const color = score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
-
-        updateChibiEmotion(score);
-
-        // 4. In kết quả diễn biến mới ra Terminal
-        terminal.innerHTML += `
-            <div style="margin-bottom: 10px; border-left: 2px solid ${color}; padding-left: 8px;">
-                <strong style="color: ${color};">[GM - Điểm ngữ pháp: ${score}/10]</strong><br>
-                <span style="color: var(--neon-cyan); line-height: 1.4; display: inline-block; margin-top: 5px;">${result.feedback}</span>
-            </div>
-        `;
-        terminal.scrollTop = terminal.scrollHeight;
-    })
-    .catch(err => {
-        document.getElementById(loadId).innerHTML = "<span style='color: var(--neon-pink);'>Lỗi kết nối GM! Đứt cáp không gian!</span>";
-    });
 }
 
 function updateChibiEmotion(score) {
@@ -349,7 +275,6 @@ function toggleVocabMark(vocabId) {
         if (data.level_upgraded) {
             triggerFireworksEffect();
             alert(`🎉 CHÚC MỪNG! Bạn đã hoàn thành ải từ vựng. ĐẲNG CẤP MỚI: ${data.current_level}`);
-            // Cập nhật Rank trên UI nếu đang ở Dashboard
             const dashRank = document.getElementById("dash-rank");
             if (dashRank) dashRank.innerText = data.current_level;
             updateChibiEmotion(10.0);
@@ -384,23 +309,26 @@ function triggerCardShake() {
 }
 
 function initKeyboardShortcuts() {
-    const userInput = document.getElementById("userInput");
-    if (userInput) {
-        // Clone và thay thế node để reset các event listener cũ
-        const newField = userInput.cloneNode(true);
-        userInput.parentNode.replaceChild(newField, userInput);
+    // Hỗ trợ sự kiện gõ Enter cho cả input thường và input của story
+    ['userInput', 'storyInput'].forEach(inputId => {
+        const el = document.getElementById(inputId);
+        if (el) {
+            // Reset listener cũ
+            const newField = el.cloneNode(true);
+            el.parentNode.replaceChild(newField, el);
 
-        newField.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                if (activeFeature === 'story') {
-                    submitStoryAction();
-                } else {
-                    submitChallenge();
+            newField.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (inputId === 'storyInput') {
+                        executeStoryAction();
+                    } else {
+                        submitChallenge();
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
+    });
 }
 
 function initLottieLibrary() {
@@ -435,5 +363,159 @@ function triggerFireworksEffect() {
 
     animation.addEventListener('complete', () => {
         lottieContainer.remove();
+    });
+}
+
+// =======================================================
+// LOGIC RPG STORY (CÓ TRÍ NHỚ, LƯỢT ĐÁNH + GỢI Ý ĐIỀN TỪ)
+// =======================================================
+let currentStoryTurn = 1;
+let storyHistory = "";
+
+function initRPGStory() {
+    currentStoryTurn = 1;
+    storyHistory = "";
+
+    const turnCounter = document.getElementById("story-turn-counter");
+    if(turnCounter) turnCounter.innerText = "1/10";
+
+    const terminal = document.getElementById("story-terminal");
+    if (!terminal) return;
+
+    terminal.innerHTML = `<div class="typing-effect" style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 14px;">[SYSTEM] Đang thiết lập bối cảnh sinh tồn...</div>`;
+
+    fetch('/api/ai/story/init', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: CURRENT_USER_ID })
+    })
+    .then(res => res.json())
+    .then(data => {
+        terminal.innerHTML = "";
+        appendStoryScene(data, true);
+    })
+    .catch(err => {
+        terminal.innerHTML = "<span style='color: var(--neon-pink);'>Lỗi khởi tạo thế giới! Hãy tải lại trang.</span>";
+    });
+}
+
+function appendStoryScene(data, isInit = false) {
+    const terminal = document.getElementById("story-terminal");
+    const hintBox = document.getElementById("story-hint-box");
+
+    // 1. In cảnh truyện ra Terminal
+    terminal.innerHTML += `
+        <div style="background: rgba(26, 16, 60, 0.5); border-left: 3px solid var(--neon-purple); padding: 12px; border-radius: 4px; margin-bottom: 10px;">
+            <div style="color: #fff; font-size: 16px; margin-bottom: 8px; line-height: 1.5;">${data.scene_en}</div>
+            <div style="color: #94a3b8; font-size: 14px; font-style: italic; line-height: 1.4;">${data.scene_vn}</div>
+        </div>
+    `;
+    terminal.scrollTop = terminal.scrollHeight;
+
+    // Cập nhật trí nhớ cốt truyện cho AI
+    storyHistory += `\n[GM]: ${data.scene_en}`;
+
+    // 2. Xử lý màn hình kết thúc hoặc render hộp Gợi ý
+    const storyInput = document.getElementById("storyInput");
+    const btnExecute = document.getElementById("btn-story-execute");
+
+    if (data.is_end === "true" || data.is_end === true) {
+        hintBox.innerHTML = `
+            <div style="color: var(--pixel-green); font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 10px;">MISSION ACCOMPLISHED!</div>
+            <div style="color: #cbd5e1; font-size: 13px; text-align: center;">Hành trình kết thúc. Bạn đã sống sót qua 10 lượt!</div>
+            <button class="pixel-btn" style="background: var(--neon-amber); width: 100%; margin-top: 15px;" onclick="initRPGStory()">CHƠI LẠI TỪ ĐẦU</button>
+        `;
+        if(storyInput) storyInput.disabled = true;
+        if(btnExecute) btnExecute.disabled = true;
+
+        triggerFireworksEffect();
+    } else {
+        hintBox.innerHTML = `
+            <div style="color: var(--neon-cyan); font-size: 16px; font-weight: bold; font-family: var(--text-mono); line-height: 1.5; margin-bottom: 10px;">${data.hint_en || "Gợi ý đang bị nhiễu..."}</div>
+            <div style="color: #94a3b8; font-size: 13px; font-style: italic;">Ý nghĩa: ${data.hint_vn || "Vui lòng tự do hành động"}</div>
+        `;
+        if(storyInput) {
+            storyInput.disabled = false;
+            storyInput.focus();
+        }
+        if(btnExecute) btnExecute.disabled = false;
+    }
+}
+
+function executeStoryAction() {
+    const inputEle = document.getElementById("storyInput");
+    const terminal = document.getElementById("story-terminal");
+    const hintBox = document.getElementById("story-hint-box");
+    const turnCounter = document.getElementById("story-turn-counter");
+
+    const actionText = inputEle.value.trim();
+    if(!actionText) {
+        triggerCardShake(); // Rung lắc nếu submit rỗng
+        return;
+    }
+
+    // Ghi nhận hành động vào lịch sử AI
+    storyHistory += `\n[Player]: ${actionText}`;
+
+    // Tăng lượt và cập nhật UI
+    currentStoryTurn++;
+    if(turnCounter) turnCounter.innerText = `${currentStoryTurn}/10`;
+
+    // Trạng thái Loading
+    hintBox.innerHTML = "<div class='pulse-neon' style='font-size:13px; text-align: center;'>MASTER_G ĐANG SOẠN KỊCH BẢN...</div>";
+
+    // In câu gõ của người dùng lên terminal
+    terminal.innerHTML += `
+        <div style="text-align: right; margin: 10px 0;">
+            <span style="background: var(--neon-cyan); color: #000; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-family: var(--text-mono);">> ${actionText}</span>
+        </div>
+    `;
+    inputEle.value = "";
+    terminal.scrollTop = terminal.scrollHeight;
+
+    // Loading indicator của Game Master
+    const loadId = "loading-" + Date.now();
+    terminal.innerHTML += `<div id="${loadId}" class="pulse-neon" style="margin-bottom: 10px;">[GM] Đang chấm điểm và viết tiếp truyện...</div>`;
+    terminal.scrollTop = terminal.scrollHeight;
+
+    // Gửi data lên Server kèm Trí nhớ và Số lượt
+    fetch('/api/ai/evaluate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            user_id: CURRENT_USER_ID,
+            text: actionText,
+            mode: 'story',
+            turn: currentStoryTurn,
+            history: storyHistory
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const loadEl = document.getElementById(loadId);
+        if(loadEl) loadEl.remove();
+
+        const result = data.result || data;
+        const score = result.score !== undefined ? result.score : 0;
+
+        // Cập nhật trạng thái chấm điểm ngữ pháp
+        const scoreColor = score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
+        terminal.innerHTML += `
+            <div style="font-size: 13px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 15px; text-align: right;">
+                [GM RATING: ${score}/10] - ${result.feedback || "Không có nhận xét"}
+            </div>
+        `;
+
+        updateChibiEmotion(score);
+        appendStoryScene(result);
+    })
+    .catch(err => {
+        const loadEl = document.getElementById(loadId);
+        if(loadEl) loadEl.remove();
+        hintBox.innerHTML = "<span style='color: var(--neon-pink);'>Lỗi kết nối Game Master! Đứt cáp không gian!</span>";
+
+        // Hoàn tác lượt nếu gọi API lỗi
+        currentStoryTurn--;
+        if(turnCounter) turnCounter.innerText = `${currentStoryTurn}/10`;
     });
 }

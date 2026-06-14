@@ -11,18 +11,18 @@
     <div class="bento-container" style="margin-top: 10vh; max-width: 500px;">
 
         <div class="bento-card" style="grid-column: span 4; padding: 40px;">
-            <div class="pixel-title" id="auth-title" style="font-size: 20px; color: var(--neon-cyan); text-align: center; margin-bottom: 30px;">
+            <div class="pixel-title" id="auth-title" style="font-size: 14px; color: var(--neon-cyan); text-align: center; margin-bottom: 30px; letter-spacing: 1px;">
                 LOGIN_TO_ACCOUNT
             </div>
 
             <div style="margin-bottom: 20px;">
-                <div class="pixel-title" style="font-size: 11px; margin-bottom: 8px;">PLAYER_NAME:</div>
-                <input type="text" id="username" style="width: 100%; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 18px; border-radius: 8px; box-sizing: border-box;">
+                <div class="pixel-title" style="font-size: 10px; margin-bottom: 8px;">PLAYER_NAME:</div>
+                <input type="text" id="username" style="width: 100%; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 30px;">
-                <div class="pixel-title" style="font-size: 11px; margin-bottom: 8px;">ACCESS_PASSWORD:</div>
-                <input type="password" id="password" style="width: 100%; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 18px; border-radius: 8px; box-sizing: border-box;">
+                <div class="pixel-title" style="font-size: 10px; margin-bottom: 8px;">ACCESS_PASSWORD:</div>
+                <input type="password" id="password" style="width: 100%; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; box-sizing: border-box;">
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 15px;">
@@ -62,7 +62,6 @@
                     msg.style.color = "var(--pixel-green)";
                     msg.innerText = "THÀNH CÔNG! ĐANG ĐIỀU HƯỚNG VÀO CHIẾN TRƯỜNG...";
 
-                    // Lưu ID và Name người dùng để main.js nhận diện danh tính
                     const userData = obj.body.user || { id: obj.body.user_id, username: user };
                     localStorage.setItem("user_id", userData.id);
                     localStorage.setItem("username", userData.username);

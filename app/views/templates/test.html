@@ -7,16 +7,16 @@
 
     <div class="bento-card" style="grid-column: span 4; text-align: center; padding: 40px; position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px;">
-            <div class="pixel-title" style="color: var(--pixel-green); font-size: 16px; margin: 0;">GACHA_ARENA // REFLEX_5S</div>
-            <div class="pixel-title" style="color: var(--neon-amber); font-size: 14px; margin: 0;">STREAK: <span id="gacha-streak">0</span></div>
+            <div class="pixel-title" style="color: var(--pixel-green); font-size: 11px; margin: 0; letter-spacing: 0.5px;">GACHA_ARENA // REFLEX_5S</div>
+            <div class="pixel-title" style="color: var(--neon-amber); font-size: 11px; margin: 0; letter-spacing: 0.5px;">STREAK: <span id="gacha-streak">0</span></div>
         </div>
 
         <div id="start-screen">
-            <div class="pixel-title" style="font-size: 26px; color: #fff; margin-bottom: 20px; text-shadow: 2px 2px var(--neon-pink);">READY FOR THE ROLL?</div>
-            <p class="pixel-text" style="color: #94a3b8; font-size: 14px; margin-bottom: 30px; line-height: 1.6;">
+            <div class="pixel-title" style="font-size: 14px; color: #fff; margin-bottom: 20px; text-shadow: 2px 2px var(--neon-pink); letter-spacing: 1px;">READY FOR THE ROLL?</div>
+            <p class="pixel-text" style="color: #94a3b8; font-size: 15px; margin-bottom: 30px; line-height: 1.6;">
                 Hệ thống sẽ bốc một từ vựng bất kỳ đang bị KHÓA.<br> Bạn có chính xác 5 giây để tìm ra nghĩa đúng. Thua = Reset Streak!
             </p>
-            <button class="pixel-btn" onclick="rollNewChallenge()" style="background: var(--pixel-green); padding: 12px 30px; font-size: 14px;">
+            <button class="pixel-btn" onclick="rollNewChallenge()" style="background: var(--pixel-green); padding: 12px 30px; font-size: 11px;">
                 PRESS START TO ROLL
             </button>
         </div>
@@ -26,16 +26,18 @@
                 <div id="timer-bar" style="width: 100%; height: 100%; background: var(--neon-pink); transition: width 0.1s linear;"></div>
             </div>
 
-            <div class="pixel-title" id="target-word" style="font-size: 42px; color: var(--neon-cyan); margin-bottom: 30px; letter-spacing: 2px;">WORD</div>
+            <div id="target-word" style="font-family: var(--text-mono); font-size: 38px; font-weight: 700; color: var(--neon-cyan); margin-bottom: 35px; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 12px rgba(34, 211, 238, 0.4);">
+                WORD
+            </div>
 
             <div id="options-box" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
-                </div>
+            </div>
         </div>
 
         <div class="ai-dialog-box" id="result-box" style="display: none; margin-top: 20px; text-align: left;">
-            <div class="pixel-title" id="result-title" style="color: var(--neon-pink); margin-bottom: 8px;">MASTER_G CHẤM ĐIỂM:</div>
-            <div id="result-msg" class="pixel-text" style="font-size: 15px; color: #fff; line-height: 1.4;"></div>
-            <button class="pixel-btn" id="btn-next" onclick="rollNewChallenge()" style="background: var(--neon-purple); margin-top: 15px; font-size: 10px; padding: 6px 12px;">TIẾP TỤC ĐẤU TRƯỜNG ></button>
+            <div class="pixel-title" id="result-title" style="color: var(--neon-pink); margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">MASTER_G CHẤM ĐIỂM:</div>
+            <div id="result-msg" class="pixel-text" style="font-size: 15px; color: #fff; line-height: 1.5;"></div>
+            <button class="pixel-btn" id="btn-next" onclick="rollNewChallenge()" style="background: var(--neon-purple); margin-top: 15px; font-size: 9px; padding: 8px 16px;">TIẾP TỤC ĐẤU TRƯỜNG ></button>
         </div>
 
     </div>
@@ -49,7 +51,6 @@
     let timeLeft = 5.0;
 
     document.addEventListener("DOMContentLoaded", () => {
-        // Đồng bộ điểm chuỗi hiện tại của người chơi lên góc màn hình arena
         const userId = localStorage.getItem("user_id");
         if (userId) {
             fetch(`/api/auth/user/${userId}`)
@@ -62,7 +63,6 @@
 
     function rollNewChallenge() {
         const userId = localStorage.getItem("user_id");
-        // Reset UI trạng thái
         document.getElementById("start-screen").style.display = "none";
         document.getElementById("result-box").style.display = "none";
         document.getElementById("arena-screen").style.display = "block";
@@ -79,25 +79,25 @@
             if (data.status === 'empty') {
                 document.getElementById("arena-screen").style.display = "none";
                 document.getElementById("start-screen").style.display = "block";
-                document.getElementById("start-screen").innerHTML = `<div class='pixel-title' style='color:var(--pixel-green)'>${data.message}</div>`;
+                document.getElementById("start-screen").innerHTML = `<div class='pixel-title' style='color:var(--pixel-green); font-size: 11px;'>${data.message}</div>`;
                 return;
             }
 
             currentVocabId = data.vocab_id;
             document.getElementById("target-word").innerText = data.word;
 
-            // Render danh sách nút lựa chọn đáp án
             data.options.forEach(opt => {
                 const btn = document.createElement("button");
                 btn.className = "pixel-btn";
                 btn.style.background = "rgba(0,0,0,0.5)";
                 btn.style.textTransform = "none";
+                btn.style.fontSize = "15px"; // Đồng bộ cỡ chữ lựa chọn dễ nhìn
+                btn.style.fontFamily = "var(--text-main)";
                 btn.innerText = opt;
                 btn.onclick = () => submitAnswer(opt);
                 document.getElementById("options-box").appendChild(btn);
             });
 
-            // Kích hoạt đồng hồ đếm ngược sinh tồn 5 giây
             startArenaTimer();
         });
     }
@@ -114,7 +114,7 @@
             timerBar.style.width = percentage + "%";
 
             if (timeLeft <= 2.0) {
-                timerBar.style.background = "red"; // Đổi màu cảnh báo nguy cơ sắp hết giờ
+                timerBar.style.background = "red";
             }
 
             if (timeLeft <= 0) {
@@ -169,7 +169,6 @@
                 resultTitle.style.color = "var(--pixel-green)";
                 resultMsg.innerText = data.message;
 
-                // Trigger hiệu ứng pháo hoa rỗng có sẵn ở file js nếu có
                 if(typeof triggerFireworksEffect === 'function') {
                     triggerFireworksEffect();
                 }

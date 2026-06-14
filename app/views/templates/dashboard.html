@@ -36,7 +36,6 @@
             </div>
         </div>
 
-        <!-- ĐÃ SỬA DÒNG NÀY: Link trực tiếp sang trang /test -->
         <div class="bento-card" id="mini-game-card" onclick="window.location.href='/test'" style="cursor: pointer;">
             <div class="pixel-title" style="color: var(--pixel-green);">MINI_GAME // GACHA</div>
             <div class="pixel-text" style="font-size: 15px; line-height: 1.4;">
@@ -71,18 +70,10 @@
                                 </div>
                             </div>
                             <div class="body">
-                                <div class="shirt">
-                                    <div class="collar"></div>
-                                </div>
-                                <div class="arms">
-                                    <div class="arm left"></div>
-                                    <div class="arm right"></div>
-                                </div>
+                                <div class="shirt"><div class="collar"></div></div>
+                                <div class="arms"><div class="arm left"></div><div class="arm right"></div></div>
                             </div>
-                            <div class="legs">
-                                <div class="leg left"></div>
-                                <div class="leg right"></div>
-                            </div>
+                            <div class="legs"><div class="leg left"></div><div class="leg right"></div></div>
                         </div>
                     </div>
                 </div>
@@ -90,10 +81,10 @@
 
             <div id="dynamic-workspace" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;">
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 10px;">
-                    NHIỆM VỤ: Sử dụng cấu trúc <span style="color: var(--neon-amber);" id="current-structure">"S + wish + S + V(past)"</span> để đặt câu.
+                    NHIỆM VỤ: Sử dụng cấu trúc <span style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 16px; font-weight: bold; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;" id="current-structure">"S + wish + S + V(past)"</span> để đặt câu.
                 </div>
 
-                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 17px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Nhập lệnh tiếng Anh tại đây..."></textarea>
+                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 16px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Nhập lệnh tiếng Anh tại đây..."></textarea>
 
                 <div style="margin-top: 10px; display: flex; gap: 12px;">
                     <button class="pixel-btn" onclick="submitChallenge()">SEND_COMMAND</button>
@@ -126,16 +117,11 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // Lấy ID người chơi đã lưu lúc đăng nhập (từ auth.html)
             const userId = localStorage.getItem("user_id");
-
             if (!userId) {
-                // Nếu chưa đăng nhập, đá văng ra màn hình Auth
                 window.location.href = '/auth';
                 return;
             }
-
-            // Gọi API lấy dữ liệu thực tế
             fetch(`/api/auth/user/${userId}`)
                 .then(res => res.json())
                 .then(data => {
@@ -143,7 +129,6 @@
                         console.error(data.error);
                         return;
                     }
-                    // Bắn dữ liệu vào các thẻ ID đã chuẩn bị
                     document.getElementById("dash-username").innerText = data.username;
                     document.getElementById("dash-rank").innerText = data.level;
                     document.getElementById("dash-streak").innerText = data.streak;

@@ -5,11 +5,13 @@ from google import genai
 from flask import Blueprint, request, jsonify
 from app.utils.gemini_helper import evaluate_english_skill
 from app.models.test import TestLog
+from app.models.user import User
 from app.models.grammar import Grammar
 from app.models.vocabulary import Vocabulary
 from app import db
 
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
+
 
 @ai_bp.route('/evaluate', methods=['POST'])
 def evaluate():
@@ -39,28 +41,51 @@ def evaluate():
             else:
                 context_challenge = "Từ vựng bắt buộc phải dùng: 'Annihilate' (Tiêu diệt hoàn toàn)"
 
-
         elif mode == 'story':
-
             user = User.query.get(user_id)
-
             user_level = user.current_level if user else "Beginner"
 
+            # Nhận thêm Lịch sử truyện và Số lượt từ Frontend gửi lên
+            story_turn = data.get('turn', 1)
+            story_history = data.get('history', '')
+
+            is_final_turn = True if story_turn >= 10 else False
+
+            # Cấu hình Prompt có trí nhớ cho Game Master
             context_challenge = f"""
+            Ngữ cảnh: Bạn là Game Master game Text-RPG Sinh tồn. Trình độ người chơi: {user_level}.
+            Đang ở LƯỢT {story_turn}/10.
 
-                    Ngữ cảnh: Bạn là Game Master. Người chơi Rank {user_level} vừa thực hiện một hành động trong thế giới sinh tồn tận thế.
+            TÓM TẮT CỐT TRUYỆN TỪ TRƯỚC ĐẾN NAY: 
+            {story_history}
 
-                    Nhiệm vụ của bạn:
+            HÀNH ĐỘNG MỚI NHẤT CỦA NGƯỜI CHƠI: "{user_input}"
 
-                    1. Chấm điểm (0-10) xem câu tiếng Anh của họ viết có đúng ngữ pháp và bối cảnh không.
+            YÊU CẦU:
+            1. Chấm điểm ngữ pháp hành động mới nhất (0-10) và nhận xét siêu ngắn.
+            2. Nếu điểm >= 5: Hành động thành công, kể tiếp diễn biến có lợi.
+               Nếu điểm < 5: Hành động thất bại (bị vấp ngã, bị quái cắn...), kể diễn biến bất lợi.
+            3. Trả về một Gợi ý điền vào chỗ trống (___) cho lượt tiếp theo (chỉ ẩn 1-2 từ).
+            4. NẾU LÀ LƯỢT 10 (is_final_turn=True): Tạo ra cái kết (Boss chết hoặc trốn thoát), KHÔNG cần hint nữa, set is_end = true.
 
-                    2. Phần 'feedback' không chỉ là sửa lỗi, mà phải là ĐOẠN VĂN KỂ TIẾP DIỄN BIẾN cốt truyện dựa trên hành động đó (thành công hay thất bại tùy vào chất lượng câu tiếng Anh của họ). Kết thúc bằng câu hỏi "Tiếp theo bạn làm gì?".
-
-                    """
+            CHỈ TRẢ VỀ ĐÚNG 1 OBJECT JSON (không markdown). Cấu trúc:
+            {{
+                "score": 8,
+                "feedback": "Dùng đúng thì quá khứ đơn, rất tốt.",
+                "scene_en": "Câu chuyện tiếp diễn bằng tiếng Anh (1-2 câu ngầu)...",
+                "scene_vn": "Dịch tiếng Việt...",
+                "hint_en": "I ___ to ___ away.",
+                "hint_vn": "Tôi (cố gắng) (chạy) thoát.",
+                "is_end": {"true" if is_final_turn else "false"}
+            }}
+            """
 
         # Gọi AI chấm điểm
         ai_response_str = evaluate_english_skill(user_input, context_challenge)
-        result = json.loads(ai_response_str)
+
+        # Xử lý dọn dẹp JSON từ Gemini trả về để tránh lỗi parse
+        clean_json_str = ai_response_str.strip().replace('```json', '').replace('```', '')
+        result = json.loads(clean_json_str)
 
         # --- TỰ ĐỘNG ĐÀO DATA TỪ BÊN NGOÀI BẰNG AI (AUTOMATIC DATA MINING) ---
         score = result.get("score", 0)
@@ -70,7 +95,12 @@ def evaluate():
     except Exception as e:
         result = {
             "score": 4.0,
-            "feedback": f"Hệ thống lõi gặp xung đột dữ liệu rồi! Lỗi: {str(e)}"
+            "feedback": f"Hệ thống lõi gặp xung đột dữ liệu rồi! Lỗi: {str(e)}",
+            "scene_en": "The system crashed. You are bleeding.",
+            "scene_vn": "Hệ thống sụp đổ. Bạn đang chảy máu.",
+            "hint_en": "I must ___ help.",
+            "hint_vn": "Tôi phải (tìm) sự giúp đỡ.",
+            "is_end": False
         }
 
     # Lưu vết kết quả vào Database
@@ -83,7 +113,7 @@ def evaluate():
     db.session.commit()
 
     return jsonify({
-        "message": "Master G đã chấm điểm xong!",
+        "message": "Master G đã xử lý xong!",
         "result": result
     }), 200
 
@@ -190,9 +220,6 @@ def get_guide():
         }), 200
 
 
-# =================================================================
-# ĐÃ FIX LỖI: ĐƯA HÀM RA NGOÀI VÀ CĂN SÁT LỀ TRÁI
-# =================================================================
 @ai_bp.route('/generate_unit', methods=['POST'])
 def generate_unit():
     data = request.get_json()
@@ -262,34 +289,40 @@ def generate_unit():
 
 @ai_bp.route('/story/init', methods=['POST'])
 def init_story():
-    """Hàm mồi: Tạo bối cảnh mở màn cho game nhập vai dựa trên trình độ người chơi"""
+    """Hàm mồi: Tạo bối cảnh mở màn và gợi ý điền từ đầu tiên"""
     data = request.get_json() or {}
     user_id = data.get('user_id')
 
     user = User.query.get(user_id)
     user_level = user.current_level if user else "Beginner"
 
-    # Lấy vốn từ vựng làm chất liệu cho AI
-    known_vocabs = Vocabulary.query.filter_by(is_memorized=True).limit(5).all()
-    vocab_context = ", ".join(
-        [v.word for v in known_vocabs]) if known_vocabs else "Trắng tay, chưa có vũ khí ngôn từ nào"
-
     prompt = f"""
-    Bạn là Game Master của một game Text-RPG Sinh tồn hậu tận thế Cyberpunk.
-    Người chơi đang ở Rank: {user_level}. Vốn từ vựng họ đã học: [{vocab_context}].
-    Hãy viết 1 đoạn văn ngắn (tối đa 10 ca) mô tả khung cảnh u ám nơi người chơi vừa tỉnh dậy. 
-    Hãy cố gắng lồng ghép 1-2 từ vựng tiếng Anh mà họ đã học vào ngữ cảnh tiếng Việt để tạo sự quen thuộc.
-    Kết thúc đoạn văn bằng một câu hỏi gợi mở hành động: "Bạn muốn làm gì tiếp theo?"
-    Không dùng markdown. Trả về text thuần.
+    Bạn là Game Master của một game Text-RPG Sinh tồn hậu tận thế.
+    Trình độ người chơi: {user_level}. Đây là LƯỢT 1/10.
+
+    Nhiệm vụ: Tạo bối cảnh mở màn ngầu, gai góc, ngắn gọn (2 câu).
+    Và tạo ra một GỢI Ý HÀNH ĐỘNG tiếp theo dạng ĐIỀN VÀO CHỖ TRỐNG (ẩn đi 1-2 từ khóa quan trọng bằng dấu ___ để người chơi tự ghép thành câu hoàn chỉnh).
+
+    CHỈ TRẢ VỀ ĐÚNG 1 OBJECT JSON, không dùng markdown (```json). Cấu trúc:
+    {{
+        "scene_en": "Cảnh báo hệ thống... Bạn tỉnh dậy giữa đống đổ nát.",
+        "scene_vn": "Dịch tiếng Việt câu trên. Ngắn gọn, tăm tối.",
+        "hint_en": "I need to ___ my ___.",
+        "hint_vn": "Tôi cần (tìm) (vũ khí) của mình.",
+        "is_end": false
+    }}
     """
 
     try:
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
-        return jsonify({"scene": response.text}), 200
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+        clean_json = response.text.strip().replace('```json', '').replace('```', '')
+        return jsonify(json.loads(clean_json)), 200
     except Exception as e:
         return jsonify({
-                           "scene": "[OFFLINE MODE] Bạn tỉnh dậy giữa một khu phế liệu tĩnh lặng. Hệ thống AI toàn cầu đang sập. Bạn muốn làm gì tiếp theo?"}), 200
+            "scene_en": "System error. The world is collapsing.",
+            "scene_vn": "Lỗi hệ thống. Thế giới đang sụp đổ.",
+            "hint_en": "I ___ to ___ the system.",
+            "hint_vn": "Tôi (cần) (khởi động lại) hệ thống.",
+            "is_end": False
+        }), 200

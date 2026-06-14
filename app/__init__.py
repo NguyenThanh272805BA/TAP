@@ -65,4 +65,8 @@ def create_app():
     app.register_blueprint(game_bp)
     app.register_blueprint(ai_bp)
 
+    @app.route('/story')
+    def story_page():
+        return render_template('story.html')
     return app
+

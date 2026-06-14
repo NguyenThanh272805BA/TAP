@@ -17,7 +17,7 @@
 
     <div class="bento-card card-large" id="battle-card" style="grid-column: span 3; padding: 40px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
-            <div class="pixel-title" id="training-title" style="font-size: 24px; color: var(--neon-cyan);">
+            <div class="pixel-title" id="training-title" style="font-size: 14px; color: var(--neon-cyan); letter-spacing: 1px;">
                 TRAINING_CHAMBER // LOADING...
             </div>
 
@@ -51,7 +51,7 @@
         </div>
 
         <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 30px; padding: 25px;">
-            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 15px;">MASTER_G FEEDBACK:</div>
+            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 14px; letter-spacing: 0.5px;">MASTER_G FEEDBACK:</div>
             <div id="aiFeedback" class="pixel-text" style="font-size: 17px; color: #fff; line-height: 1.6;"></div>
         </div>
     </div>
@@ -61,13 +61,11 @@
 
 {% block extra_js %}
 <script>
-    // Biến toàn cục để lưu trữ dữ liệu
     let globalVocabData = {};
-    let currentExamData = []; // Lưu trữ mảng 50 từ khi làm bài thi
+    let currentExamData = [];
 
     document.addEventListener("DOMContentLoaded", () => {
         const mode = localStorage.getItem("selected_learning_mode") || "grammar";
-
         const title = document.getElementById("training-title");
         const libTitle = document.getElementById("library-title");
 
@@ -90,7 +88,6 @@
         }
     });
 
-    // Gọi API kéo data về
     function fetchLibraryData(apiUrl, mode) {
         fetch(apiUrl)
         .then(res => res.json())
@@ -125,19 +122,15 @@
         });
     }
 
-    // ==========================================
-    // TẦNG 1: HIỂN THỊ CÔNG CỤ ĐÚC UNIT VÀ DANH SÁCH CHỦ ĐỀ
-    // ==========================================
     function renderThemesList() {
         const container = document.getElementById("library-content");
-
         let html = `
-        <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 20px; font-size: 12px; padding: 15px;">
+        <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 20px; font-size: 11px; padding: 15px;">
             [!] THỬ THÁCH NHỒI 50 TỪ (EXAM) [!]
         </button>
 
         <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 2px dashed var(--neon-purple); margin-bottom: 25px;">
-            <div style="color: var(--neon-purple); font-family: var(--text-pixel); font-size: 11px; margin-bottom: 10px;">[ CREATE_NEW_UNIT ]</div>
+            <div style="color: var(--neon-purple); font-family: var(--text-pixel); font-size: 10px; margin-bottom: 10px;">[ CREATE_NEW_UNIT ]</div>
             <input type="text" id="newTopicInput" placeholder="VD: Thể thao eSports..."
                    style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: #fff; padding: 8px; font-family: var(--text-mono); font-size: 14px; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px;">
             <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); width: 100%; font-size: 10px; padding: 8px; box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000, inset -2px -2px 0 0 #6b21a8;">
@@ -161,9 +154,6 @@
         container.innerHTML = html;
     }
 
-    // ==========================================
-    // TẦNG 2: HIỂN THỊ DANH SÁCH TỪ VỰNG TRONG 1 UNIT
-    // ==========================================
     function renderWordsList(theme) {
         const container = document.getElementById("library-content");
         const words = globalVocabData[theme];
@@ -172,14 +162,13 @@
         <button onclick="renderThemesList()" class="pixel-btn" style="background: transparent; border: none; box-shadow: none; color: var(--neon-pink); padding: 0; margin-bottom: 20px;">
             < QUAY LẠI CÁC UNITS
         </button>
-        <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 12px; margin-bottom: 15px;">UNIT ĐANG HỌC: ${theme.toUpperCase()}</div>
+        <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 11px; margin-bottom: 15px;">UNIT ĐANG HỌC: ${theme.toUpperCase()}</div>
         `;
 
         words.forEach((w, index) => {
             const opacity = w.is_unlocked ? "1" : "0.5";
             const icon = w.is_unlocked ? "[ UNLOCKED ]" : "[ LOCKED ]";
             const safeWord = w.word.replace(/'/g, "\\'");
-
             const memoText = w.is_memorized ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
             const memoColor = w.is_memorized ? "var(--pixel-green)" : "var(--glass-border)";
 
@@ -214,9 +203,6 @@
         detailDiv.style.display = detailDiv.style.display === 'none' ? 'block' : 'none';
     }
 
-    // ==========================================
-    // HÀM XỬ LÝ SỰ KIỆN KHI NHẤN "ĐÃ THUỘC"
-    // ==========================================
     function toggleMemorizeStatus(vocabId) {
         const userId = localStorage.getItem("user_id");
         if (!userId) {
@@ -235,23 +221,17 @@
                 alert(data.error);
                 return;
             }
-
             if (data.level_upgraded) {
                 alert(`*** CHÚC MỪNG! BẠN ĐÃ THUỘC TOÀN BỘ CHỦ ĐỀ.\nDanh hiệu mới của bạn là: ${data.current_level} ***`);
             }
-
             fetchLibraryData('/api/game/vocabularies', 'vocab');
         })
         .catch(err => console.error("Lỗi cập nhật tiến độ:", err));
     }
 
-    // ==========================================
-    // TẦNG 3: GỌI AI MASTER G ĐỂ SOẠN GIÁO ÁN
-    // ==========================================
     function requestWordGuide(word) {
         const aiResponseBox = document.getElementById("aiResponseBox");
         const aiFeedback = document.getElementById("aiFeedback");
-
         const userInput = document.getElementById("userInput");
         if(userInput) {
             userInput.value = word + " ";
@@ -275,9 +255,6 @@
         });
     }
 
-    // ==========================================
-    // TẦNG 4: HÀM ĐÚC UNIT MỚI BẰNG AI
-    // ==========================================
     function generateCustomUnit() {
         const topicInput = document.getElementById("newTopicInput");
         const btnGenerate = document.getElementById("btn-generate-unit");
@@ -319,9 +296,6 @@
         });
     }
 
-    // ==========================================
-    // TẦNG EXAM: CHẾ ĐỘ THỬ THÁCH 50 TỪ (SRS)
-    // ==========================================
     function startExamMode() {
         const userId = localStorage.getItem("user_id");
         if (!userId) return alert("Vui lòng đăng nhập!");
@@ -349,9 +323,8 @@
 
     function renderExamPaper() {
         const workspace = document.getElementById("dynamic-workspace");
-
         let html = `
-        <div style="margin-bottom: 15px; color: #94a3b8; font-size: 14px;">
+        <div style="margin-bottom: 15px; color: #94a3b8; font-size: 14px; line-height: 1.6;">
             Nhiệm vụ: Nhập nghĩa tiếng Việt. Những từ bạn đánh dấu "Chưa thuộc" sẽ tiếp tục ám ảnh bạn vào lần kiểm tra sau!
         </div>
         <div id="exam-list" style="max-height: 450px; overflow-y: auto; padding-right: 10px;">`;
@@ -359,9 +332,11 @@
         currentExamData.forEach((item, index) => {
             html += `
             <div class="bento-card" style="margin-bottom: 15px; padding: 15px;">
-                <div style="font-size: 20px; color: var(--neon-cyan); margin-bottom: 10px; font-weight: bold;">[${index + 1}] ${item.word}</div>
+                <div style="font-family: var(--text-main); font-size: 18px; color: var(--neon-cyan); margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px;">
+                    [${index + 1}] ${item.word}
+                </div>
                 <input type="text" id="exam-input-${item.id}" placeholder="Nhập nghĩa tiếng Việt..."
-                       style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 16px; border-radius: 4px; box-sizing: border-box;">
+                       style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 15px; border-radius: 4px; box-sizing: border-box;">
 
                 <div id="exam-result-${item.id}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2);">
                     <div style="color: var(--neon-amber); font-size: 15px; margin-bottom: 15px;">Nghĩa đúng: ${item.meaning}</div>
@@ -376,11 +351,10 @@
 
         html += `
         </div>
-        <button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 20px; font-size: 16px;">
+        <button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 20px; font-size: 14px;">
             NỘP BÀI & ĐỐI CHIẾU
         </button>
         `;
-
         workspace.innerHTML = html;
     }
 
