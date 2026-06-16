@@ -3,25 +3,25 @@
 {% block title %}TRAINING CHAMBER{% endblock %}
 
 {% block content %}
-<div class="bento-container" style="grid-template-columns: repeat(4, 1fr);">
+<div class="bento-container" style="grid-template-columns: repeat(4, 1fr); max-width: 1500px; margin: 0 auto; gap: 25px;">
 
-    <div class="bento-card card-tall" style="grid-column: span 1; display: flex; flex-direction: column;">
-        <div class="pixel-title" id="library-title" style="color: var(--neon-amber); font-size: 14px; text-align: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px;">
+    <div class="bento-card card-tall" style="grid-column: span 1; display: flex; flex-direction: column; min-height: 650px; padding: 24px;">
+        <div class="pixel-title" id="library-title" style="color: var(--neon-amber); font-size: 11px; text-align: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; letter-spacing: 1px;">
             DATA_LIBRARY
         </div>
 
-        <div id="library-content" style="flex-grow: 1; overflow-y: auto; max-height: 65vh; margin-top: 15px; padding-right: 8px;">
+        <div id="library-content" style="flex-grow: 1; overflow-y: auto; max-height: 72vh; margin-top: 15px; padding-right: 8px;">
             <div class="typing-effect" style="color: var(--neon-cyan); font-size: 13px;">Đang trích xuất dữ liệu lõi...</div>
         </div>
     </div>
 
-    <div class="bento-card card-large" id="battle-card" style="grid-column: span 3; padding: 40px;">
+    <div class="bento-card card-large" id="battle-card" style="grid-column: span 3; display: flex; flex-direction: column; min-height: 650px; padding: 40px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
-            <div class="pixel-title" id="training-title" style="font-size: 14px; color: var(--neon-cyan); letter-spacing: 1px;">
+            <div class="pixel-title" id="training-title" style="font-size: 13px; color: var(--neon-cyan); letter-spacing: 1px;">
                 TRAINING_CHAMBER // LOADING...
             </div>
 
-            <div style="width: 80px; height: 40px; transform: scale(1.3);">
+            <div style="width: 80px; height: 40px; transform: scale(1.2); transform-origin: top right;">
                 <div class="character-container">
                     <div class="character">
                         <div class="head">
@@ -47,12 +47,12 @@
             </div>
         </div>
 
-        <div id="dynamic-workspace" style="min-height: 180px;">
+        <div id="dynamic-workspace" style="flex-grow: 1; min-height: 380px; display: flex; flex-direction: column; justify-content: flex-start; gap: 15px;">
         </div>
 
-        <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 30px; padding: 25px;">
-            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 14px; letter-spacing: 0.5px;">MASTER_G FEEDBACK:</div>
-            <div id="aiFeedback" class="pixel-text" style="font-size: 17px; color: #fff; line-height: 1.6;"></div>
+        <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 25px; padding: 25px; background: rgba(10, 10, 20, 0.95);">
+            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 11px; letter-spacing: 0.5px;">MASTER_G FEEDBACK:</div>
+            <div id="aiFeedback" class="pixel-text" style="font-size: 16px; color: #fff; line-height: 1.6;"></div>
         </div>
     </div>
 
@@ -106,10 +106,10 @@
                 let html = "";
                 data.grammars.forEach(g => {
                     html += `
-                    <div style="margin-bottom: 18px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border-left: 3px solid var(--neon-amber);">
-                        <strong style="color: var(--neon-amber); font-size: 15px; display: block; margin-bottom: 6px;">${g.structure}</strong>
-                        <span style="font-size: 13px; color: #cbd5e1; display: block; margin-bottom: 8px; font-style: italic;">${g.explanation}</span>
-                        <div style="font-family: var(--text-mono); font-size: 12px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 6px; border-radius: 4px;">
+                    <div style="margin-bottom: 18px; background: rgba(0,0,0,0.4); padding: 14px; border-radius: 8px; border-left: 3px solid var(--neon-amber);">
+                        <strong style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 15px; display: block; margin-bottom: 6px;">${g.structure}</strong>
+                        <span style="font-size: 14px; color: #cbd5e1; display: block; margin-bottom: 8px; line-height: 1.5;">${g.explanation}</span>
+                        <div style="font-family: var(--text-mono); font-size: 13px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
                             Ex: ${g.example}
                         </div>
                     </div>`;
@@ -125,14 +125,14 @@
     function renderThemesList() {
         const container = document.getElementById("library-content");
         let html = `
-        <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 20px; font-size: 11px; padding: 15px;">
+        <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 20px; font-size: 10px; padding: 15px;">
             [!] THỬ THÁCH NHỒI 50 TỪ (EXAM) [!]
         </button>
 
         <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 2px dashed var(--neon-purple); margin-bottom: 25px;">
-            <div style="color: var(--neon-purple); font-family: var(--text-pixel); font-size: 10px; margin-bottom: 10px;">[ CREATE_NEW_UNIT ]</div>
+            <div style="color: var(--neon-purple); font-family: var(--text-pixel); font-size: 9px; margin-bottom: 10px;">[ CREATE_NEW_UNIT ]</div>
             <input type="text" id="newTopicInput" placeholder="VD: Thể thao eSports..."
-                   style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: #fff; padding: 8px; font-family: var(--text-mono); font-size: 14px; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px;">
+                   style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 14px; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px;">
             <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); width: 100%; font-size: 10px; padding: 8px; box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000, inset -2px -2px 0 0 #6b21a8;">
                 YÊU CẦU AI ĐÚC UNIT
             </button>
@@ -162,7 +162,7 @@
         <button onclick="renderThemesList()" class="pixel-btn" style="background: transparent; border: none; box-shadow: none; color: var(--neon-pink); padding: 0; margin-bottom: 20px;">
             < QUAY LẠI CÁC UNITS
         </button>
-        <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 11px; margin-bottom: 15px;">UNIT ĐANG HỌC: ${theme.toUpperCase()}</div>
+        <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 10px; margin-bottom: 15px;">UNIT ĐANG HỌC: ${theme.toUpperCase()}</div>
         `;
 
         words.forEach((w, index) => {
@@ -175,12 +175,12 @@
             html += `
             <div style="margin-bottom: 12px; background: rgba(0,0,0,0.6); border-left: 3px solid var(--neon-cyan); padding: 12px; border-radius: 6px; opacity: ${opacity};">
                 <div onclick="toggleWordDetail(${index})" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                    <strong style="color: var(--neon-cyan); font-size: 16px;">${w.word}</strong>
-                    <span style="font-size: 10px; color: #cbd5e1;">${icon}</span>
+                    <strong style="color: var(--neon-cyan); font-size: 16px; font-family: var(--text-main); font-weight: 600;">${w.word}</strong>
+                    <span style="font-size: 9px; color: #cbd5e1; font-family: var(--text-pixel);">${icon}</span>
                 </div>
 
                 <div id="word-detail-${index}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
-                    <span style="font-size: 14px; color: #cbd5e1; display: block; line-height: 1.4; margin-bottom: 12px;">Nghĩa: ${w.meaning}</span>
+                    <span style="font-size: 14px; color: #cbd5e1; display: block; line-height: 1.5; margin-bottom: 12px;">Nghĩa: ${w.meaning}</span>
 
                     <div style="display: flex; gap: 8px;">
                         <button class="pixel-btn" onclick="requestWordGuide('${safeWord}')" style="background: var(--neon-purple); box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000; font-size: 9px; padding: 8px; flex: 1;">
@@ -296,6 +296,9 @@
         });
     }
 
+    // ==========================================================
+    // CẬP NHẬT TRONG CHẾ ĐỘ EXAM 50 TỪ TRÊN TERMINAL RỘNG
+    // ==========================================================
     function startExamMode() {
         const userId = localStorage.getItem("user_id");
         if (!userId) return alert("Vui lòng đăng nhập!");
@@ -304,7 +307,7 @@
         document.getElementById("training-title").style.color = "var(--neon-pink)";
 
         const workspace = document.getElementById("dynamic-workspace");
-        workspace.innerHTML = `<div class="typing-effect" style="color: var(--neon-amber);">Đang thiết lập ma trận từ vựng...</div>`;
+        workspace.innerHTML = `<div class="typing-effect" style="color: var(--neon-amber); font-family: var(--text-mono);">Đang thiết lập ma trận từ vựng...</div>`;
 
         fetch('/api/game/exam/generate', {
             method: 'POST',
@@ -317,7 +320,7 @@
             renderExamPaper();
         })
         .catch(err => {
-            workspace.innerHTML = `<div style="color: var(--neon-pink);">Lỗi kết nối tới Server Đề Thi!</div>`;
+            workspace.innerHTML = `<div style="color: var(--neon-pink); font-family: var(--text-mono);">Lỗi kết nối tới Server Đề Thi!</div>`;
         });
     }
 
@@ -327,19 +330,19 @@
         <div style="margin-bottom: 15px; color: #94a3b8; font-size: 14px; line-height: 1.6;">
             Nhiệm vụ: Nhập nghĩa tiếng Việt. Những từ bạn đánh dấu "Chưa thuộc" sẽ tiếp tục ám ảnh bạn vào lần kiểm tra sau!
         </div>
-        <div id="exam-list" style="max-height: 450px; overflow-y: auto; padding-right: 10px;">`;
+        <div id="exam-list" style="max-height: 480px; overflow-y: auto; padding-right: 10px;">`;
 
         currentExamData.forEach((item, index) => {
             html += `
-            <div class="bento-card" style="margin-bottom: 15px; padding: 15px;">
+            <div class="bento-card" style="margin-bottom: 15px; padding: 18px; background: rgba(0,0,0,0.4);">
                 <div style="font-family: var(--text-main); font-size: 18px; color: var(--neon-cyan); margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px;">
                     [${index + 1}] ${item.word}
                 </div>
                 <input type="text" id="exam-input-${item.id}" placeholder="Nhập nghĩa tiếng Việt..."
-                       style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 15px; border-radius: 4px; box-sizing: border-box;">
+                       style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 4px; box-sizing: border-box;">
 
                 <div id="exam-result-${item.id}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2);">
-                    <div style="color: var(--neon-amber); font-size: 15px; margin-bottom: 15px;">Nghĩa đúng: ${item.meaning}</div>
+                    <div style="color: var(--neon-amber); font-size: 14px; margin-bottom: 15px; font-weight: 500;">Nghĩa đúng: ${item.meaning}</div>
                     <div style="display: flex; gap: 10px;">
                         <button class="pixel-btn" id="btn-thuoc-${item.id}" onclick="setExamStatus(${item.id}, 'DA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--pixel-green); flex: 1; padding: 8px;">ĐÃ THUỘC</button>
                         <button class="pixel-btn" id="btn-hoi-${item.id}" onclick="setExamStatus(${item.id}, 'HOI_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-amber); flex: 1; padding: 8px;">HƠI THUỘC</button>
@@ -351,7 +354,7 @@
 
         html += `
         </div>
-        <button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 20px; font-size: 14px;">
+        <button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 20px; font-size: 12px; padding: 15px;">
             NỘP BÀI & ĐỐI CHIẾU
         </button>
         `;
@@ -386,4 +389,4 @@
         });
     }
 </script>
-{% endblock %}
+{% endblock %} 
