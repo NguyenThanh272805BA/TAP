@@ -223,11 +223,20 @@ def get_guide():
 @ai_bp.route('/generate_unit', methods=['POST'])
 def generate_unit():
     data = request.get_json()
-    topic = data.get('topic')
+    topic = data.get('topic', '').strip().upper()
 
     if not topic:
         return jsonify({"error": "Vui lòng nhập chủ đề muốn học!"}), 400
 
+    # KIỂM TRA CACHE TRONG DATABASE: Nếu chủ đề này đã từng được đúc, lấy ra luôn
+    existing_vocab_count = Vocabulary.query.filter_by(theme=topic).count()
+    if existing_vocab_count >= 10:  # Nếu đã có sẵn bộ từ vựng cho chủ đề này
+        return jsonify({
+            "message": f"[CACHE HIT] Đã nạp thành công dữ liệu có sẵn của Unit '{topic}' từ Database!",
+            "added": 0
+        }), 200
+
+    # Nếu chưa có trong DB, lúc này mới tốn phí gọi Gemini API
     prompt = f"""
     Bạn là hệ thống thiết kế bài giảng. Người dùng muốn học tiếng Anh về chủ đề: '{topic}'.
     Hãy tạo ra 50 từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
@@ -240,32 +249,17 @@ def generate_unit():
 
     try:
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
-
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
         clean_json = response.text.strip().replace('```json', '').replace('```', '')
         items = json.loads(clean_json)
-        is_offline = False
 
-    except Exception as e:
-        print(f"[-] AI Tạm ngưng do Quota/Lỗi: {e}")
-        items = [
-            {"word": f"Basic {topic}", "meaning": f"Kiến thức cơ bản về {topic}", "theme": topic},
-            {"word": f"Advanced {topic}", "meaning": f"Kỹ năng nâng cao trong {topic}", "theme": topic},
-            {"word": f"{topic} Master", "meaning": f"Bậc thầy trong lĩnh vực {topic}", "theme": topic}
-        ]
-        is_offline = True
-
-    try:
         added_count = 0
         for item in items:
             if not Vocabulary.query.filter_by(word=item['word']).first():
                 new_v = Vocabulary(
                     word=item['word'],
                     meaning=item['meaning'],
-                    theme=item['theme'].upper(),
+                    theme=topic,
                     image_url="default.png",
                     is_unlocked=True
                 )
@@ -273,19 +267,13 @@ def generate_unit():
                 added_count += 1
 
         db.session.commit()
-
-        msg = f"Đã đúc thành công Unit '{topic}' với {added_count} từ vựng mới!"
-        if is_offline:
-            msg = f"[OFFLINE MODE] Server bận, hệ thống tự cấp phát Unit dự phòng cho '{topic}'!"
-
         return jsonify({
-            "message": msg,
+            "message": f"[AI MINTED] Đã đúc thành công Unit '{topic}' với {added_count} từ vựng mới bằng AI!",
             "added": added_count
         }), 200
 
-    except Exception as db_err:
-        return jsonify({"error": f"Lỗi lưu trữ Database: {str(db_err)}"}), 500
-
+    except Exception as e:
+        return jsonify({"error": f"Lò đúc AI gặp sự cố kỹ thuật hoặc hết hạn ngạch: {str(e)}"}), 500
 
 @ai_bp.route('/story/init', methods=['POST'])
 def init_story():
