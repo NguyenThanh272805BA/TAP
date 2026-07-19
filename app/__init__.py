@@ -1,4 +1,3 @@
-# app/__init__.py
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -9,6 +8,7 @@ load_dotenv()
 
 # Khởi tạo instance database SQLAlchemy để quản lý ORM
 db = SQLAlchemy()
+
 
 def create_app():
     # Định vị chính xác tuyệt đối từ thư mục gốc của phân vùng app
@@ -31,7 +31,10 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Gắn kết cấu cấu hình Database vào Flask Application instance
+    # Cấu hình SECRET_KEY mã hóa Session an toàn
+    app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "Monimeo2005?")
+
+    # Gắn kết cấu cấu hình Database vào Flask Application instance (CHỈ GỌI 1 LẦN Ở ĐÂY)
     db.init_app(app)
 
     # --- HỆ THỐNG ROUTE ĐIỀU HƯỚNG GIAO DIỆN CHÍNH ---
@@ -53,9 +56,16 @@ def create_app():
     @app.route('/test')
     def test_page():
         return render_template('test.html')
+
     @app.route('/auth')
     def auth_portal():
         return render_template('auth.html')
+
+    # Đã gom cụm route Story lên đây cho đồng bộ tầng Giao diện
+    @app.route('/story')
+    def story_page():
+        return render_template('story.html')
+
     # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
     from app.controllers.game_controller import game_bp
@@ -65,8 +75,4 @@ def create_app():
     app.register_blueprint(game_bp)
     app.register_blueprint(ai_bp)
 
-    @app.route('/story')
-    def story_page():
-        return render_template('story.html')
     return app
-

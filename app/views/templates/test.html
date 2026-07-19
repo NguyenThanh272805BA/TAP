@@ -49,6 +49,7 @@
     let currentVocabId = null;
     let countdownInterval = null;
     let timeLeft = 5.0;
+    let questionStartTime = 0; // Biến tracking thời gian phản xạ (ML Feature)
 
     document.addEventListener("DOMContentLoaded", () => {
         const userId = localStorage.getItem("user_id");
@@ -91,7 +92,7 @@
                 btn.className = "pixel-btn";
                 btn.style.background = "rgba(0,0,0,0.5)";
                 btn.style.textTransform = "none";
-                btn.style.fontSize = "15px"; // Đồng bộ cỡ chữ lựa chọn dễ nhìn
+                btn.style.fontSize = "15px";
                 btn.style.fontFamily = "var(--text-main)";
                 btn.innerText = opt;
                 btn.onclick = () => submitAnswer(opt);
@@ -107,6 +108,8 @@
         const timerBar = document.getElementById("timer-bar");
         timerBar.style.width = "100%";
         timerBar.style.background = "var(--neon-pink)";
+
+        questionStartTime = Date.now(); // Bắt đầu bấm giờ đo tốc độ phản xạ
 
         countdownInterval = setInterval(() => {
             timeLeft -= 0.1;
@@ -149,6 +152,9 @@
         const resultTitle = document.getElementById("result-title");
         const resultMsg = document.getElementById("result-msg");
 
+        // Tính toán thời gian phản xạ (Tính bằng ms)
+        const responseTimeMs = isTimeout ? 5000 : (Date.now() - questionStartTime);
+
         fetch('/api/game/gacha/verify', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -156,7 +162,8 @@
                 user_id: userId,
                 vocab_id: currentVocabId,
                 answer: answer,
-                timeout: isTimeout
+                timeout: isTimeout,
+                response_time_ms: responseTimeMs // Đẩy Data lên Backend cho ML
             })
         })
         .then(res => res.json())

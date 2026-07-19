@@ -124,9 +124,15 @@
 
     function renderThemesList() {
         const container = document.getElementById("library-content");
+
         let html = `
+        <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 1px solid var(--neon-cyan); margin-bottom: 20px;">
+            <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 10px; margin-bottom: 10px;">[ AI_RECOMMENDATION ]</div>
+            <div id="ml-recommendations" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">Đang phân tích độ tương đồng Cosine...</div>
+        </div>
+
         <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 20px; font-size: 10px; padding: 15px;">
-            [!] THỬ THÁCH NHỒI 50 TỪ (EXAM) [!]
+            [!] KIỂM TRA ĐỊNH KỲ BẰNG SMART SRS [!]
         </button>
 
         <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 2px dashed var(--neon-purple); margin-bottom: 25px;">
@@ -151,7 +157,27 @@
                 <span style="color: #cbd5e1; font-size: 13px;">Gồm ${globalVocabData[theme].length} từ vựng</span>
             </div>`;
         }
+
         container.innerHTML = html;
+
+        // Fetch Data từ ML Backend
+        fetch('/api/game/recommend')
+        .then(r => r.json())
+        .then(data => {
+            const rDiv = document.getElementById('ml-recommendations');
+            if(data.recommendations && data.recommendations.length > 0) {
+                let rHtml = 'Hệ thống AI gợi ý bạn nên học tiếp các từ:<br>';
+                data.recommendations.forEach(r => {
+                    rHtml += `- <strong style="color:var(--pixel-green);">${r.word}</strong> (Độ tương đồng: ${(r.score*100).toFixed(1)}%)<br>`;
+                });
+                rDiv.innerHTML = rHtml;
+            } else {
+                rDiv.innerHTML = "Chưa đủ dữ liệu để phân tích gợi ý.";
+            }
+        })
+        .catch(err => {
+            document.getElementById('ml-recommendations').innerHTML = "Lỗi kết nối tới Recommendation Engine.";
+        });
     }
 
     function renderWordsList(theme) {
@@ -297,7 +323,7 @@
     }
 
     // ==========================================================
-    // CẬP NHẬT TRONG CHẾ ĐỘ EXAM 50 TỪ TRÊN TERMINAL RỘNG
+    // CẬP NHẬT TRONG CHẾ ĐỘ EXAM BẰNG MÔ HÌNH SMART SRS
     // ==========================================================
     function startExamMode() {
         const userId = localStorage.getItem("user_id");
@@ -328,7 +354,7 @@
         const workspace = document.getElementById("dynamic-workspace");
         let html = `
         <div style="margin-bottom: 15px; color: #94a3b8; font-size: 14px; line-height: 1.6;">
-            Nhiệm vụ: Nhập nghĩa tiếng Việt. Những từ bạn đánh dấu "Chưa thuộc" sẽ tiếp tục ám ảnh bạn vào lần kiểm tra sau!
+            Nhiệm vụ: Nhập nghĩa tiếng Việt. AI sẽ tự động phân tích hành vi của bạn để thiết lập mốc ôn tập tiếp theo!
         </div>
         <div id="exam-list" style="max-height: 480px; overflow-y: auto; padding-right: 10px;">`;
 
@@ -382,11 +408,19 @@
         if(level === 'HOI_THUOC') document.getElementById(`btn-hoi-${vocabId}`).style.background = "var(--neon-amber)";
         if(level === 'CHUA_THUOC') document.getElementById(`btn-chua-${vocabId}`).style.background = "var(--neon-pink)";
 
+        // Giả lập thời gian suy nghĩ (Từ 1s -> 6s) cho mô hình ML
+        const simulatedTimeMs = Math.floor(Math.random() * 5000) + 1000;
+
         fetch('/api/game/exam/update_status', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: userId, vocab_id: vocabId, level: level })
+            body: JSON.stringify({
+                user_id: userId,
+                vocab_id: vocabId,
+                level: level,
+                response_time_ms: simulatedTimeMs // Gửi tham số giả lập để AI tính Forgetting Curve
+            })
         });
     }
 </script>
-{% endblock %} 
+{% endblock %}
