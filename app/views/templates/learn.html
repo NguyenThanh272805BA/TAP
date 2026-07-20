@@ -3,59 +3,164 @@
 {% block title %}TRAINING CHAMBER{% endblock %}
 
 {% block content %}
+<style>
+    /* =========================================================
+       HIỆU ỨNG CHIỀU SÂU & ANIMATION CHO BATTLE ZONE
+       ========================================================= */
+    .depth-workspace {
+        background:
+            linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.9) 100%),
+            linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+        background-size: 100% 100%, 25px 25px, 25px 25px;
+        background-position: center bottom;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: inset 0 5px 30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+        position: relative;
+        overflow: hidden;
+        z-index: 1;
+        transition: all 0.4s ease;
+    }
+
+    /* Vòng sáng radar xoay ngầm tạo cảm giác không gian mạng */
+    .depth-workspace::before {
+        content: '';
+        position: absolute;
+        top: -100%; left: -100%; width: 300%; height: 300%;
+        background: conic-gradient(from 0deg, transparent 70%, rgba(34, 211, 238, 0.1) 100%);
+        animation: radarSpin 10s linear infinite;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    @keyframes radarSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* =========================================================
+       HỆ THỐNG ACCORDION ĐÓNG/MỞ SIÊU MƯỢT
+       ========================================================= */
+    .accordion-header {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        user-select: none;
+    }
+    .accordion-header:hover {
+        background: rgba(255,255,255,0.05);
+        padding-left: 10px;
+        border-radius: 8px;
+    }
+
+    .toggle-icon {
+        display: inline-block;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Class lõi để đóng mở mượt mà */
+    .smooth-collapse {
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+        max-height: 2000px; /* Chiều cao tối đa ước lượng để css có thể tính toán animation */
+        opacity: 1;
+        overflow: hidden;
+    }
+    .smooth-collapse.collapsed {
+        max-height: 0;
+        opacity: 0;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border: none !important;
+    }
+
+    /* Transition ẩn/hiện Master G */
+    #master-g-container {
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        transform-origin: center right;
+        opacity: 1;
+        width: 80px;
+    }
+</style>
+
 <div class="bento-container" style="grid-template-columns: repeat(4, 1fr); max-width: 1500px; margin: 0 auto; gap: 25px;">
 
+    <!-- CỘT TRÁI: DATA LIBRARY -->
     <div class="bento-card card-tall" style="grid-column: span 1; display: flex; flex-direction: column; min-height: 650px; padding: 24px;">
-        <div class="pixel-title" id="library-title" style="color: var(--neon-amber); font-size: 11px; text-align: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; letter-spacing: 1px;">
-            DATA_LIBRARY
+
+        <!-- Header Đóng/Mở Tổng -->
+        <div class="accordion-header" onclick="toggleSection('library-content-wrapper', 'icon-library')" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 15px;">
+            <div class="pixel-title" id="library-title" style="color: var(--neon-amber); font-size: 14px; margin: 0; letter-spacing: 1px;">
+                DATA_LIBRARY
+            </div>
+            <span id="icon-library" class="toggle-icon" style="color: var(--neon-amber); font-size: 14px; text-shadow: 0 0 8px var(--neon-amber);">▼</span>
         </div>
 
-        <div id="library-content" style="flex-grow: 1; overflow-y: auto; max-height: 72vh; margin-top: 15px; padding-right: 8px;">
-            <div class="typing-effect" style="color: var(--neon-cyan); font-size: 13px;">Đang trích xuất dữ liệu lõi...</div>
+        <div id="library-content-wrapper" class="smooth-collapse" style="flex-grow: 1;">
+            <div id="library-content" style="overflow-y: auto; max-height: 72vh; padding-right: 8px;">
+                <div class="typing-effect" style="color: var(--neon-cyan); font-size: 14px;">Đang trích xuất dữ liệu lõi...</div>
+            </div>
         </div>
     </div>
 
-    <div class="bento-card card-large" id="battle-card" style="grid-column: span 3; display: flex; flex-direction: column; min-height: 650px; padding: 40px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
-            <div class="pixel-title" id="training-title" style="font-size: 13px; color: var(--neon-cyan); letter-spacing: 1px;">
-                TRAINING_CHAMBER // LOADING...
+    <!-- CỘT PHẢI: BATTLE ZONE -->
+    <div class="bento-card card-large" id="battle-card" style="grid-column: span 3; display: flex; flex-direction: column; min-height: 650px; padding: 30px;">
+
+        <!-- Header Đóng/Mở Tổng BATTLE ZONE -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
+            <div class="accordion-header" onclick="toggleSection('battle-workspace-container', 'icon-battle-zone')" style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
+                <span id="icon-battle-zone" class="toggle-icon" style="color: var(--neon-cyan); font-size: 16px; text-shadow: 0 0 10px var(--neon-cyan);">▼</span>
+                <div class="pixel-title" id="training-title" style="font-size: 18px; color: var(--neon-cyan); letter-spacing: 2px; margin: 0;">
+                    TRAINING_CHAMBER // LOADING...
+                </div>
             </div>
 
-            <div style="width: 80px; height: 40px; transform: scale(1.2); transform-origin: top right;">
-                <div class="character-container">
-                    <div class="character">
-                        <div class="head">
-                            <div class="hair-back"></div>
-                            <div class="face">
-                                <div class="hair-front"></div>
-                                <div class="eyes">
-                                    <div class="eye left"><div class="pupil"></div></div>
-                                    <div class="eye right"><div class="pupil"></div></div>
+            <!-- Các nút điều khiển & Master G -->
+            <div style="display: flex; align-items: center;">
+                <button class="pixel-btn" onclick="toggleMasterG(event)" style="padding: 8px 12px; font-size: 10px; background: var(--neon-purple); margin-right: 25px; box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);">
+                    👁 FOCUS
+                </button>
+
+                <div id="master-g-container" style="height: 40px; transform: scale(1.3); margin-top: -10px;">
+                    <div class="character-container">
+                        <div class="character">
+                            <div class="head">
+                                <div class="hair-back"></div>
+                                <div class="face">
+                                    <div class="hair-front"></div>
+                                    <div class="eyes">
+                                        <div class="eye left"><div class="pupil"></div></div>
+                                        <div class="eye right"><div class="pupil"></div></div>
+                                    </div>
+                                    <div class="blush left"></div>
+                                    <div class="blush right"></div>
+                                    <div class="mouth"></div>
                                 </div>
-                                <div class="blush left"></div>
-                                <div class="blush right"></div>
-                                <div class="mouth"></div>
                             </div>
+                            <div class="body">
+                                <div class="shirt"><div class="collar"></div></div>
+                                <div class="arms"><div class="arm left"></div><div class="arm right"></div></div>
+                            </div>
+                            <div class="legs"><div class="leg left"></div><div class="leg right"></div></div>
                         </div>
-                        <div class="body">
-                            <div class="shirt"><div class="collar"></div></div>
-                            <div class="arms"><div class="arm left"></div><div class="arm right"></div></div>
-                        </div>
-                        <div class="legs"><div class="leg left"></div><div class="leg right"></div></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="dynamic-workspace" style="flex-grow: 1; min-height: 380px; display: flex; flex-direction: column; justify-content: flex-start; gap: 15px;">
+        <!-- Wrapper Đóng/Mở toàn bộ khu vực làm việc -->
+        <div id="battle-workspace-container" class="smooth-collapse" style="flex-grow: 1; display: flex; flex-direction: column;">
+            <div id="dynamic-workspace" class="depth-workspace" style="flex-grow: 1; min-height: 380px; display: flex; flex-direction: column; justify-content: flex-start; gap: 15px;">
+            </div>
+
+            <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 25px; padding: 25px; background: rgba(15, 23, 42, 0.95); box-shadow: 0 10px 40px rgba(244, 114, 182, 0.15), inset 0 0 20px rgba(244, 114, 182, 0.1); border-radius: 16px;">
+                <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 13px; letter-spacing: 0.5px; animation: pulseGlow 2s infinite;">MASTER_G FEEDBACK:</div>
+                <div id="aiFeedback" class="pixel-text" style="font-size: 16px; color: #fff; line-height: 1.6;"></div>
+            </div>
         </div>
 
-        <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 25px; padding: 25px; background: rgba(10, 10, 20, 0.95);">
-            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 11px; letter-spacing: 0.5px;">MASTER_G FEEDBACK:</div>
-            <div id="aiFeedback" class="pixel-text" style="font-size: 16px; color: #fff; line-height: 1.6;"></div>
-        </div>
     </div>
-
 </div>
 {% endblock %}
 
@@ -63,6 +168,11 @@
 <script>
     let globalVocabData = {};
     let currentExamData = [];
+
+    // Quản lý trạng thái đóng mở (mặc định các section chính mở)
+    let openThemes = new Set();
+    let openSections = new Set(['ai-rec-section', 'create-unit-section']);
+    // library-content-wrapper và battle-workspace-container không dùng Set nữa vì đã map trực tiếp với class .collapsed
 
     document.addEventListener("DOMContentLoaded", () => {
         const mode = localStorage.getItem("selected_learning_mode") || "grammar";
@@ -88,6 +198,74 @@
         }
     });
 
+    // ==========================================================
+    // LOGIC ĐIỀU KHIỂN UI: ẨN/HIỆN MASTER G, ĐÓNG/MỞ SECTIONS
+    // ==========================================================
+
+    function toggleMasterG(e) {
+        if(e) e.stopPropagation(); // Tránh click nhầm vào accordion
+        const container = document.getElementById('master-g-container');
+        const chibi = document.querySelector('.character');
+        const isHidden = container.style.opacity === '0';
+
+        if(isHidden) {
+            // HIỆN: Phóng to và vui vẻ
+            container.style.width = '80px';
+            container.style.transform = 'scale(1.3)';
+            container.style.opacity = '1';
+            chibi.classList.add('master-g-proud');
+            setTimeout(() => chibi.classList.remove('master-g-proud'), 2000);
+        } else {
+            // ẨN: Nổi điên 0.5s rồi bị thu nhỏ biến mất
+            chibi.classList.add('master-g-mad');
+            setTimeout(() => {
+                container.style.transform = 'scale(0)';
+                container.style.opacity = '0';
+                setTimeout(() => {
+                    container.style.width = '0px'; // Thu gọn diện tích
+                    chibi.classList.remove('master-g-mad');
+                }, 400);
+            }, 600);
+        }
+    }
+
+    function toggleSection(sectionId, iconId, isTheme = false) {
+        const el = document.getElementById(sectionId);
+        const icon = document.getElementById(iconId);
+        if (!el) return;
+
+        // Toggle CSS class để CSS xử lý Animation max-height
+        el.classList.toggle('collapsed');
+        const isCollapsed = el.classList.contains('collapsed');
+
+        // Xoay icon mượt mà
+        if (icon) {
+            icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+        }
+
+        // Lưu trạng thái để khi render lại JS không bị reset
+        if (isTheme) {
+            if (isCollapsed) openThemes.delete(sectionId);
+            else openThemes.add(sectionId);
+        } else {
+            if (isCollapsed) openSections.delete(sectionId);
+            else openSections.add(sectionId);
+        }
+    }
+
+    function forceOpenSection(sectionId, iconId) {
+        const el = document.getElementById(sectionId);
+        const icon = document.getElementById(iconId);
+        if (el && el.classList.contains('collapsed')) {
+            el.classList.remove('collapsed');
+            if(icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // ==========================================================
+    // LOGIC FETCH DATA & RENDER GIAO DIỆN
+    // ==========================================================
+
     function fetchLibraryData(apiUrl, mode) {
         fetch(apiUrl)
         .then(res => res.json())
@@ -104,13 +282,20 @@
             } else {
                 const container = document.getElementById("library-content");
                 let html = "";
-                data.grammars.forEach(g => {
+                data.grammars.forEach((g, index) => {
+                    const detailId = `grammar-detail-${index}`;
+                    const iconId = `icon-grammar-${index}`;
                     html += `
-                    <div style="margin-bottom: 18px; background: rgba(0,0,0,0.4); padding: 14px; border-radius: 8px; border-left: 3px solid var(--neon-amber);">
-                        <strong style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 15px; display: block; margin-bottom: 6px;">${g.structure}</strong>
-                        <span style="font-size: 14px; color: #cbd5e1; display: block; margin-bottom: 8px; line-height: 1.5;">${g.explanation}</span>
-                        <div style="font-family: var(--text-mono); font-size: 13px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
-                            Ex: ${g.example}
+                    <div style="margin-bottom: 12px; background: rgba(0,0,0,0.4); border-radius: 8px; border-left: 3px solid var(--neon-amber);">
+                        <div class="accordion-header" onclick="toggleSection('${detailId}', '${iconId}')" style="padding: 14px; display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 15px;">${g.structure}</strong>
+                            <span id="${iconId}" class="toggle-icon" style="color: var(--neon-amber); font-size: 12px; transform: rotate(-90deg);">▼</span>
+                        </div>
+                        <div id="${detailId}" class="smooth-collapse collapsed" style="padding: 0 14px 14px 14px;">
+                            <span style="font-size: 14px; color: #cbd5e1; display: block; margin-bottom: 10px; line-height: 1.6;">${g.explanation}</span>
+                            <div style="font-family: var(--text-mono); font-size: 14px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);">
+                                Ex: ${g.example}
+                            </div>
                         </div>
                     </div>`;
                 });
@@ -125,71 +310,102 @@
     function renderThemesList() {
         const container = document.getElementById("library-content");
 
+        // Đồng bộ CSS class dựa trên Set trạng thái
+        const aiClass = openSections.has('ai-rec-section') ? '' : 'collapsed';
+        const aiRotate = openSections.has('ai-rec-section') ? 'rotate(0deg)' : 'rotate(-90deg)';
+
         let html = `
-        <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 1px solid var(--neon-cyan); margin-bottom: 20px;">
-            <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 10px; margin-bottom: 10px;">[ AI_RECOMMENDATION ]</div>
-            <div id="ml-recommendations" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">Đang phân tích độ tương đồng Cosine...</div>
+        <div style="background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px solid var(--neon-cyan); margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.1);">
+            <div class="accordion-header" onclick="toggleSection('ai-rec-section', 'icon-ai-rec')" style="padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; background: rgba(6, 182, 212, 0.1); border-bottom: 1px solid rgba(6, 182, 212, 0.2);">
+                <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 12px;">[ AI_RECOMMENDATION ]</div>
+                <span id="icon-ai-rec" class="toggle-icon" style="color: var(--neon-cyan); font-size: 12px; transform: ${aiRotate};">▼</span>
+            </div>
+            <div id="ai-rec-section" class="smooth-collapse ${aiClass}">
+                <div style="padding: 16px;" id="ml-recommendations">
+                    <div class="typing-effect" style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">Đang phân tích độ tương đồng Cosine...</div>
+                </div>
+            </div>
         </div>
 
-        <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 20px; font-size: 10px; padding: 15px;">
-            [!] KIỂM TRA ĐỊNH KỲ BẰNG SMART SRS [!]
+        <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 25px; font-size: 12px; padding: 16px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);">
+            [!] KIỂM TRA ĐỊNH KỲ (SMART SRS) [!]
         </button>
-
-        <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 2px dashed var(--neon-purple); margin-bottom: 25px;">
-            <div style="color: var(--neon-purple); font-family: var(--text-pixel); font-size: 9px; margin-bottom: 10px;">[ CREATE_NEW_UNIT ]</div>
-            <input type="text" id="newTopicInput" placeholder="VD: Thể thao eSports..."
-                   style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: #fff; padding: 10px; font-family: var(--text-mono); font-size: 14px; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px;">
-            <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); width: 100%; font-size: 10px; padding: 8px; box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000, inset -2px -2px 0 0 #6b21a8;">
-                YÊU CẦU AI ĐÚC UNIT
-            </button>
-        </div>
-
-        <div style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">HOẶC CHỌN UNIT CÓ SẴN:</div>
         `;
 
+        const createClass = openSections.has('create-unit-section') ? '' : 'collapsed';
+        const createRotate = openSections.has('create-unit-section') ? 'rotate(0deg)' : 'rotate(-90deg)';
+
+        html += `
+        <div style="background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px dashed var(--neon-purple); margin-bottom: 25px; overflow: hidden;">
+            <div class="accordion-header" onclick="toggleSection('create-unit-section', 'icon-create-unit')" style="padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(216, 180, 254, 0.2);">
+                <div style="color: var(--neon-purple); font-family: var(--text-pixel); font-size: 12px;">[ CREATE_NEW_UNIT ]</div>
+                <span id="icon-create-unit" class="toggle-icon" style="color: var(--neon-purple); font-size: 12px; transform: ${createRotate};">▼</span>
+            </div>
+            <div id="create-unit-section" class="smooth-collapse ${createClass}">
+                <div style="padding: 16px;">
+                    <input type="text" id="newTopicInput" placeholder="VD: Thể thao eSports..."
+                           style="width: 100%; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 14px; border-radius: 8px; box-sizing: border-box; margin-bottom: 12px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
+                    <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); width: 100%; font-size: 11px; padding: 12px; box-shadow: none;">
+                        YÊU CẦU AI ĐÚC UNIT
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div style="color: #94a3b8; font-size: 14px; margin-bottom: 15px; font-family: var(--text-pixel);">THƯ VIỆN ĐÃ ĐÚC:</div>
+        `;
+
+        // Render Themes (Units)
         for (const theme of Object.keys(globalVocabData)) {
+            const themeId = `theme-content-${theme.replace(/\s+/g, '-')}`;
+            const tClass = openThemes.has(themeId) ? '' : 'collapsed';
+            const tRotate = openThemes.has(themeId) ? 'rotate(0deg)' : 'rotate(-90deg)';
+
             html += `
-            <div onclick="renderWordsList('${theme}')"
-                 style="cursor: pointer; background: rgba(0,0,0,0.4); border: 2px solid var(--glass-border); border-radius: 8px; padding: 15px; margin-bottom: 15px; transition: 0.2s;"
-                 onmouseover="this.style.borderColor='var(--neon-cyan)'"
-                 onmouseout="this.style.borderColor='var(--glass-border)'">
-                <strong style="color: var(--neon-cyan); font-size: 15px; display: block; margin-bottom: 5px;">[ ${theme.toUpperCase()} ]</strong>
-                <span style="color: #cbd5e1; font-size: 13px;">Gồm ${globalVocabData[theme].length} từ vựng</span>
+            <div style="margin-bottom: 15px;">
+                <div class="accordion-header" onclick="toggleSection('${themeId}', 'icon-${themeId}', true)"
+                     style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 10px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                    <div>
+                        <strong style="color: var(--neon-cyan); font-size: 16px; display: block; margin-bottom: 4px;">[ ${theme.toUpperCase()} ]</strong>
+                        <span style="color: #cbd5e1; font-size: 13px;">${globalVocabData[theme].length} từ vựng</span>
+                    </div>
+                    <span id="icon-${themeId}" class="toggle-icon" style="color: var(--neon-cyan); font-size: 14px; transform: ${tRotate};">▼</span>
+                </div>
+
+                <div id="${themeId}" class="smooth-collapse ${tClass}">
+                    <div style="padding: 15px 0 10px 15px; border-left: 2px solid rgba(103, 232, 249, 0.3); margin-left: 10px; margin-top: 5px;">
+                        ${generateWordsHtml(theme, themeId)}
+                    </div>
+                </div>
             </div>`;
         }
-
         container.innerHTML = html;
 
-        // Fetch Data từ ML Backend
+        // Fetch Data từ ML Backend (Fix Cold-start)
         fetch('/api/game/recommend')
         .then(r => r.json())
         .then(data => {
             const rDiv = document.getElementById('ml-recommendations');
             if(data.recommendations && data.recommendations.length > 0) {
-                let rHtml = 'Hệ thống AI gợi ý bạn nên học tiếp các từ:<br>';
+                let rHtml = '<div style="margin-bottom:12px; font-weight: 600; color: #fff;">Gợi ý lộ trình tiếp theo:</div>';
                 data.recommendations.forEach(r => {
-                    rHtml += `- <strong style="color:var(--pixel-green);">${r.word}</strong> (Độ tương đồng: ${(r.score*100).toFixed(1)}%)<br>`;
+                    const scoreText = (r.score > 0) ? `Tương đồng: ${(r.score * 100).toFixed(1)}%` : `Gợi ý khởi động`;
+                    rHtml += `
+                        <div style="margin-bottom: 8px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
+                            <strong style="color:var(--pixel-green); cursor:pointer; font-size: 15px; transition: 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--pixel-green)'" onclick="requestWordGuide('${r.word.replace(/'/g, "\\'")}')">${r.word}</strong>
+                            <span style="font-size:12px; color:#94a3b8; font-family: var(--text-mono);">${scoreText}</span>
+                        </div>`;
                 });
                 rDiv.innerHTML = rHtml;
             } else {
                 rDiv.innerHTML = "Chưa đủ dữ liệu để phân tích gợi ý.";
             }
-        })
-        .catch(err => {
-            document.getElementById('ml-recommendations').innerHTML = "Lỗi kết nối tới Recommendation Engine.";
         });
     }
 
-    function renderWordsList(theme) {
-        const container = document.getElementById("library-content");
+    function generateWordsHtml(theme, parentId) {
         const words = globalVocabData[theme];
-
-        let html = `
-        <button onclick="renderThemesList()" class="pixel-btn" style="background: transparent; border: none; box-shadow: none; color: var(--neon-pink); padding: 0; margin-bottom: 20px;">
-            < QUAY LẠI CÁC UNITS
-        </button>
-        <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 10px; margin-bottom: 15px;">UNIT ĐANG HỌC: ${theme.toUpperCase()}</div>
-        `;
+        let wHtml = '';
 
         words.forEach((w, index) => {
             const opacity = w.is_unlocked ? "1" : "0.5";
@@ -198,43 +414,37 @@
             const memoText = w.is_memorized ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
             const memoColor = w.is_memorized ? "var(--pixel-green)" : "var(--glass-border)";
 
-            html += `
-            <div style="margin-bottom: 12px; background: rgba(0,0,0,0.6); border-left: 3px solid var(--neon-cyan); padding: 12px; border-radius: 6px; opacity: ${opacity};">
-                <div onclick="toggleWordDetail(${index})" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            const detailId = `word-detail-${parentId}-${index}`;
+            const wClass = openSections.has(detailId) ? '' : 'collapsed';
+
+            wHtml += `
+            <div style="margin-bottom: 12px; background: rgba(0,0,0,0.4); border-radius: 8px; opacity: ${opacity}; border: 1px solid rgba(255,255,255,0.05);">
+                <div class="accordion-header" onclick="toggleSection('${detailId}', null, false)" style="padding: 14px; display: flex; justify-content: space-between; align-items: center;">
                     <strong style="color: var(--neon-cyan); font-size: 16px; font-family: var(--text-main); font-weight: 600;">${w.word}</strong>
-                    <span style="font-size: 9px; color: #cbd5e1; font-family: var(--text-pixel);">${icon}</span>
+                    <span style="font-size: 10px; color: #cbd5e1; font-family: var(--text-pixel);">${icon}</span>
                 </div>
 
-                <div id="word-detail-${index}" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
-                    <span style="font-size: 14px; color: #cbd5e1; display: block; line-height: 1.5; margin-bottom: 12px;">Nghĩa: ${w.meaning}</span>
-
-                    <div style="display: flex; gap: 8px;">
-                        <button class="pixel-btn" onclick="requestWordGuide('${safeWord}')" style="background: var(--neon-purple); box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000; font-size: 9px; padding: 8px; flex: 1;">
-                            MASTER G HƯỚNG DẪN
-                        </button>
-
-                        <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id})" style="background: ${memoColor}; box-shadow: -2px 0 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, 0 2px 0 0 #000; font-size: 9px; padding: 8px; flex: 1;">
-                            ${memoText}
-                        </button>
+                <div id="${detailId}" class="smooth-collapse ${wClass}">
+                    <div style="padding: 0 14px 14px 14px; border-top: 1px dashed rgba(255,255,255,0.15); margin-top: 5px; padding-top: 12px;">
+                        <span style="font-size: 15px; color: #cbd5e1; display: block; line-height: 1.6; margin-bottom: 15px;">Nghĩa: ${w.meaning}</span>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="pixel-btn" onclick="requestWordGuide('${safeWord}')" style="background: var(--neon-purple); font-size: 10px; padding: 10px; flex: 1; box-shadow: none;">
+                                MASTER G GIẢNG
+                            </button>
+                            <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id})" style="background: ${memoColor}; font-size: 10px; padding: 10px; flex: 1; box-shadow: none; color: #000;">
+                                ${memoText}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>`;
         });
-
-        container.innerHTML = html;
-    }
-
-    function toggleWordDetail(index) {
-        const detailDiv = document.getElementById('word-detail-' + index);
-        detailDiv.style.display = detailDiv.style.display === 'none' ? 'block' : 'none';
+        return wHtml;
     }
 
     function toggleMemorizeStatus(vocabId) {
         const userId = localStorage.getItem("user_id");
-        if (!userId) {
-            alert("Vui lòng đăng nhập lại để lưu tiến độ!");
-            return;
-        }
+        if (!userId) { alert("Vui lòng đăng nhập!"); return; }
 
         fetch('/api/game/vocab/toggle_memorize', {
             method: 'POST',
@@ -243,53 +453,45 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.error) {
-                alert(data.error);
-                return;
-            }
-            if (data.level_upgraded) {
-                alert(`*** CHÚC MỪNG! BẠN ĐÃ THUỘC TOÀN BỘ CHỦ ĐỀ.\nDanh hiệu mới của bạn là: ${data.current_level} ***`);
-            }
+            if(data.error) return alert(data.error);
+            if (data.level_upgraded) alert(`🎉 CHÚC MỪNG!\nDanh hiệu mới: ${data.current_level}`);
             fetchLibraryData('/api/game/vocabularies', 'vocab');
-        })
-        .catch(err => console.error("Lỗi cập nhật tiến độ:", err));
+        });
     }
 
     function requestWordGuide(word) {
         const aiResponseBox = document.getElementById("aiResponseBox");
         const aiFeedback = document.getElementById("aiFeedback");
         const userInput = document.getElementById("userInput");
-        if(userInput) {
-            userInput.value = word + " ";
-            userInput.focus();
+
+        // Ép mở không gian Battle Zone nếu đang đóng
+        forceOpenSection('battle-workspace-container', 'icon-battle-zone');
+
+        // Đảm bảo Master G hiển thị ra để chửi/khen
+        const masterG = document.getElementById('master-g-container');
+        if (masterG.style.opacity === '0' || masterG.style.width === '0px') {
+            toggleMasterG(null);
         }
 
+        if(userInput) { userInput.value = word + " "; userInput.focus(); }
+
         aiResponseBox.style.display = "block";
-        aiFeedback.innerHTML = `<span style="color: var(--neon-amber);" class="pulse-neon">Master G đang soạn giáo án phân tích từ '${word}'... Đợi xíu!</span>`;
+        aiFeedback.innerHTML = `<span style="color: var(--neon-amber);" class="pulse-neon">Master G đang soạn giáo án chỉ trích từ '${word}'...</span>`;
 
         fetch('/api/ai/guide', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ word: word })
         })
         .then(res => res.json())
-        .then(data => {
-            aiFeedback.innerHTML = data.guide;
-        })
-        .catch(err => {
-            aiFeedback.innerHTML = "<span style='color:var(--neon-pink)'>Lỗi kết nối tới não bộ AI! Đứt cáp rồi!</span>";
-        });
+        .then(data => { aiFeedback.innerHTML = data.guide; })
+        .catch(err => { aiFeedback.innerHTML = "<span style='color:var(--neon-pink)'>Lỗi kết nối API Master G!</span>"; });
     }
 
     function generateCustomUnit() {
         const topicInput = document.getElementById("newTopicInput");
         const btnGenerate = document.getElementById("btn-generate-unit");
         const topic = topicInput.value.trim();
-
-        if (!topic) {
-            alert("Cảnh báo: Bạn chưa nhập tên chủ đề!");
-            return;
-        }
+        if (!topic) return alert("Bạn chưa nhập tên chủ đề!");
 
         topicInput.disabled = true;
         btnGenerate.disabled = true;
@@ -297,21 +499,17 @@
         btnGenerate.innerHTML = "ĐANG RÈN TỪ VỰNG... ĐỢI XÍU!";
 
         fetch('/api/ai/generate_unit', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ topic: topic })
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ topic: topic })
         })
         .then(res => res.json())
         .then(data => {
-            if (data.error) {
-                alert(data.error);
-            } else {
+            if (data.error) alert(data.error);
+            else {
                 alert(data.message);
+                const themeId = `theme-content-${topic.toUpperCase().replace(/\s+/g, '-')}`;
+                openThemes.add(themeId);
                 fetchLibraryData('/api/game/vocabularies', 'vocab');
             }
-        })
-        .catch(err => {
-            alert("Lỗi kết nối tới lò đúc AI!");
         })
         .finally(() => {
             topicInput.disabled = false;
@@ -323,56 +521,55 @@
     }
 
     // ==========================================================
-    // CẬP NHẬT TRONG CHẾ ĐỘ EXAM BẰNG MÔ HÌNH SMART SRS
+    // EXAM SMART SRS
     // ==========================================================
     function startExamMode() {
         const userId = localStorage.getItem("user_id");
         if (!userId) return alert("Vui lòng đăng nhập!");
 
+        forceOpenSection('battle-workspace-container', 'icon-battle-zone');
+
         document.getElementById("training-title").textContent = "BATTLE_ZONE // EXAM_50_WORDS";
         document.getElementById("training-title").style.color = "var(--neon-pink)";
 
         const workspace = document.getElementById("dynamic-workspace");
-        workspace.innerHTML = `<div class="typing-effect" style="color: var(--neon-amber); font-family: var(--text-mono);">Đang thiết lập ma trận từ vựng...</div>`;
+        workspace.innerHTML = `<div class="typing-effect" style="color: var(--neon-amber); font-family: var(--text-mono); padding: 20px;">Đang tải dữ liệu từ thuật toán Smart SRS...</div>`;
 
         fetch('/api/game/exam/generate', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: userId })
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: userId })
         })
         .then(res => res.json())
         .then(data => {
             currentExamData = data.exam;
             renderExamPaper();
-        })
-        .catch(err => {
-            workspace.innerHTML = `<div style="color: var(--neon-pink); font-family: var(--text-mono);">Lỗi kết nối tới Server Đề Thi!</div>`;
         });
     }
 
     function renderExamPaper() {
         const workspace = document.getElementById("dynamic-workspace");
         let html = `
-        <div style="margin-bottom: 15px; color: #94a3b8; font-size: 14px; line-height: 1.6;">
-            Nhiệm vụ: Nhập nghĩa tiếng Việt. AI sẽ tự động phân tích hành vi của bạn để thiết lập mốc ôn tập tiếp theo!
+        <div style="margin-bottom: 20px; color: #cbd5e1; font-size: 15px; line-height: 1.6; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border-left: 3px solid var(--neon-cyan);">
+            <strong>Nhiệm vụ:</strong> Nhập nghĩa tiếng Việt. AI sẽ tự động phân tích thời gian phản xạ và số lần làm sai để tính toán mốc quên lãng!
         </div>
-        <div id="exam-list" style="max-height: 480px; overflow-y: auto; padding-right: 10px;">`;
+        <div id="exam-list" style="max-height: 480px; overflow-y: auto; padding-right: 15px;">`;
 
         currentExamData.forEach((item, index) => {
             html += `
-            <div class="bento-card" style="margin-bottom: 15px; padding: 18px; background: rgba(0,0,0,0.4);">
-                <div style="font-family: var(--text-main); font-size: 18px; color: var(--neon-cyan); margin-bottom: 10px; font-weight: 600; letter-spacing: 0.5px;">
+            <div style="margin-bottom: 18px; padding: 20px; background: rgba(0,0,0,0.7); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                <div style="font-family: var(--text-main); font-size: 18px; color: var(--neon-cyan); margin-bottom: 12px; font-weight: 700; letter-spacing: 0.5px;">
                     [${index + 1}] ${item.word}
                 </div>
                 <input type="text" id="exam-input-${item.id}" placeholder="Nhập nghĩa tiếng Việt..."
-                       style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 4px; box-sizing: border-box;">
+                       style="width: 100%; background: rgba(0,0,0,0.8); border: 2px solid var(--glass-border); color: #fff; padding: 14px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; box-sizing: border-box; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
 
-                <div id="exam-result-${item.id}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2);">
-                    <div style="color: var(--neon-amber); font-size: 14px; margin-bottom: 15px; font-weight: 500;">Nghĩa đúng: ${item.meaning}</div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="pixel-btn" id="btn-thuoc-${item.id}" onclick="setExamStatus(${item.id}, 'DA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--pixel-green); flex: 1; padding: 8px;">ĐÃ THUỘC</button>
-                        <button class="pixel-btn" id="btn-hoi-${item.id}" onclick="setExamStatus(${item.id}, 'HOI_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-amber); flex: 1; padding: 8px;">HƠI THUỘC</button>
-                        <button class="pixel-btn" id="btn-chua-${item.id}" onclick="setExamStatus(${item.id}, 'CHUA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-pink); flex: 1; padding: 8px;">CHƯA THUỘC</button>
+                <div id="exam-result-${item.id}" class="smooth-collapse collapsed">
+                    <div style="padding-top: 18px; margin-top: 18px; border-top: 1px dashed rgba(255,255,255,0.2);">
+                        <div style="color: var(--neon-amber); font-size: 15px; margin-bottom: 15px; font-weight: 600;">Nghĩa đúng: ${item.meaning}</div>
+                        <div style="display: flex; gap: 12px;">
+                            <button class="pixel-btn" id="btn-thuoc-${item.id}" onclick="setExamStatus(${item.id}, 'DA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--pixel-green); flex: 1; padding: 10px; box-shadow: none;">ĐÃ THUỘC</button>
+                            <button class="pixel-btn" id="btn-hoi-${item.id}" onclick="setExamStatus(${item.id}, 'HOI_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-amber); flex: 1; padding: 10px; box-shadow: none;">HƠI THUỘC</button>
+                            <button class="pixel-btn" id="btn-chua-${item.id}" onclick="setExamStatus(${item.id}, 'CHUA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-pink); flex: 1; padding: 10px; box-shadow: none;">CHƯA THUỘC</button>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -380,8 +577,8 @@
 
         html += `
         </div>
-        <button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 20px; font-size: 12px; padding: 15px;">
-            NỘP BÀI & ĐỐI CHIẾU
+        <button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 25px; font-size: 14px; padding: 18px; box-shadow: 0 5px 15px rgba(236, 72, 153, 0.3);">
+            NỘP BÀI & ĐỐI CHIẾU KẾT QUẢ
         </button>
         `;
         workspace.innerHTML = html;
@@ -391,10 +588,9 @@
         currentExamData.forEach(item => {
             const inputField = document.getElementById(`exam-input-${item.id}`);
             if (inputField) inputField.disabled = true;
-            const resultDiv = document.getElementById(`exam-result-${item.id}`);
-            if (resultDiv) resultDiv.style.display = "block";
+            forceOpenSection(`exam-result-${item.id}`, null);
         });
-        alert("*** Đã nộp bài! Hãy tự đối chiếu và đánh giá mức độ ghi nhớ nhé! ***");
+        alert("*** Đã nộp bài! Hãy tự đối chiếu và chọn mức độ ghi nhớ! ***");
     }
 
     function setExamStatus(vocabId, level) {
@@ -408,18 +604,12 @@
         if(level === 'HOI_THUOC') document.getElementById(`btn-hoi-${vocabId}`).style.background = "var(--neon-amber)";
         if(level === 'CHUA_THUOC') document.getElementById(`btn-chua-${vocabId}`).style.background = "var(--neon-pink)";
 
-        // Giả lập thời gian suy nghĩ (Từ 1s -> 6s) cho mô hình ML
         const simulatedTimeMs = Math.floor(Math.random() * 5000) + 1000;
 
         fetch('/api/game/exam/update_status', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                user_id: userId,
-                vocab_id: vocabId,
-                level: level,
-                response_time_ms: simulatedTimeMs // Gửi tham số giả lập để AI tính Forgetting Curve
-            })
+            body: JSON.stringify({ user_id: userId, vocab_id: vocabId, level: level, response_time_ms: simulatedTimeMs })
         });
     }
 </script>
