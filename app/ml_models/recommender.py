@@ -30,7 +30,8 @@ class VocabRecommender:
 
         # Xử lý Cold-start (Chưa học từ nào)
         if not learned_ids:
-            return df.sample(n=min(top_n, len(df)))[['id', 'word']].to_dict('records')
+            samples = df.sample(n=min(top_n, len(df)))
+            return [{'vocab_id': int(row['id']), 'word': row['word'], 'score': 0.0} for _, row in samples.iterrows()]
 
         tfidf_matrix = self.vectorizer.fit_transform(df['features'])
         cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)

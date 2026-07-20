@@ -1,34 +1,35 @@
 /* app/views/static/css/style.css */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
-    --bg-gradient: linear-gradient(135deg, #090d16 0%, #110c26 50%, #1a103c 100%);
-    --glass-bg: rgba(22, 32, 66, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.18);
-    --pixel-border: rgba(129, 140, 248, 0.4);
+    /* Nền sáng hơn, màu Synthwave/Cyberpunk sâu thẳm nhưng rực rỡ */
+    --bg-gradient: linear-gradient(135deg, #17103a 0%, #201b54 50%, #173873 100%);
+    --glass-bg: rgba(30, 41, 75, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.25);
+    --pixel-border: rgba(129, 140, 248, 0.5);
 
     /* Bảng màu Neon Siêu Sáng */
-    --neon-purple: #c084fc;
-    --neon-cyan: #22d3ee;
-    --neon-pink: #f472b6;
-    --neon-amber: #fbbf24;
-    --pixel-green: #34d399;
+    --neon-purple: #d8b4fe;
+    --neon-cyan: #67e8f9;
+    --neon-pink: #f9a8d4;
+    --neon-amber: #fde047;
+    --pixel-green: #6ee7b7;
 
-    /* Hệ thống Font chữ mới - Đều, mượt và dễ đọc hơn */
-    --text-pixel: 'Press Start 2P', cursive;
-    --text-main: 'Space Grotesk', sans-serif; /* Dùng cho văn bản chính */
-    --text-mono: 'JetBrains Mono', monospace; /* Dùng cho input/code */
+    /* Đổi font Pixel vỡ tiếng Việt sang Chakra Petch (Tech/Cyberpunk hỗ trợ VN) */
+    --text-pixel: 'Chakra Petch', sans-serif;
+    --text-main: 'Space Grotesk', sans-serif;
+    --text-mono: 'JetBrains Mono', monospace;
 }
 
 body {
     margin: 0;
-    padding: 30px;
+    padding: 0;
     background: var(--bg-gradient);
     background-attachment: fixed;
     color: #f1f5f9;
-    font-family: var(--text-main); /* Chuyển sang font mượt hơn */
-    font-size: 16px; /* Giảm nhẹ base size cho tinh tế */
-    line-height: 1.6; /* Tăng khoảng cách dòng để dễ thở */
+    font-family: var(--text-main);
+    font-size: 15px;
+    line-height: 1.6;
     letter-spacing: 0.3px;
     min-height: 100vh;
     box-sizing: border-box;
@@ -41,7 +42,7 @@ body::after {
     display: block;
     position: fixed;
     top: 0; left: 0; bottom: 0; right: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(255, 255, 255, 0.03) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
     z-index: 99999;
     pointer-events: none;
     background-size: 100% 3px, 6px 100%;
@@ -52,35 +53,95 @@ body::before {
     content: "";
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0.03;
+    opacity: 0.04;
     pointer-events: none;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
     z-index: 1;
 }
 
-/* LƯỚI BENTO MẪU MỰC CỐ ĐỊNH 4 CỘT */
-.bento-container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: minmax(160px, auto);
-    gap: 25px;
-    max-width: 1500px;
-    margin: 0 auto;
+/* =========================================================
+   LAYOUT CHÍNH (TÍCH HỢP SIDEBAR & BENTO GRID)
+   ========================================================= */
+.app-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
     position: relative;
     z-index: 2;
 }
 
-/* Thẻ Bento Nghệ Thuật */
+.sidebar {
+    width: 280px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-right: 2px solid var(--glass-border);
+    padding: 25px 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: var(--neon-cyan) rgba(0,0,0,0.2);
+}
+
+.main-content::-webkit-scrollbar { width: 8px; }
+.main-content::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 10px; }
+
+.nav-item {
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    color: #e2e8f0;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid transparent;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.nav-item:hover, .nav-item.active {
+    background: rgba(103, 232, 249, 0.15);
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    transform: translateX(8px);
+    box-shadow: -4px 0 15px rgba(103, 232, 249, 0.3);
+}
+
+/* LƯỚI BENTO MẪU MỰC CỐ ĐỊNH 3 CỘT CHO MAIN CONTENT */
+.bento-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: minmax(160px, auto);
+    gap: 25px;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+/* Thẻ Bento Nghệ Thuật - Bo góc chuyên nghiệp */
 .bento-card {
     background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
     border: 2px solid var(--glass-border);
-    border-radius: 18px;
-    padding: 24px;
+    border-radius: 20px;
+    padding: 26px;
     box-shadow:
-        0 15px 45px -10px rgba(0, 0, 0, 0.6),
-        inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        0 15px 35px -5px rgba(0, 0, 0, 0.4),
+        inset 0 2px 3px rgba(255, 255, 255, 0.3);
     position: relative;
     overflow: hidden;
     display: flex;
@@ -90,137 +151,208 @@ body::before {
 }
 
 .bento-card:hover {
-    transform: translateY(-6px) scale(1.01);
+    transform: translateY(-8px) scale(1.015);
     border-color: var(--neon-cyan);
     box-shadow:
-        0 20px 50px -10px rgba(34, 211, 238, 0.3),
-        inset 0 1px 1px rgba(255, 255, 255, 0.3);
+        0 25px 50px -10px rgba(34, 211, 238, 0.4),
+        inset 0 2px 3px rgba(255, 255, 255, 0.5);
 }
 
-/* Phân mảnh kích thước hình học hình khối */
 .card-large { grid-column: span 2; grid-row: span 2; }
-.card-wide { grid-column: span 2; }
+.card-wide { grid-column: span 3; }
+.card-medium { grid-column: span 2; }
 .card-tall { grid-row: span 2; }
 
+/* =========================================================
+   TYPOGRAPHY & COMPONENTS
+   ========================================================= */
 .pixel-title {
     font-family: var(--text-pixel);
-    font-size: 11px; /* Cân chỉnh lại để font pixel không quá thô */
+    font-size: 16px; /* Chỉnh to hơn vì font mới dễ nhìn hơn */
+    font-weight: 700;
     line-height: 1.5;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     color: var(--neon-cyan);
-    text-shadow: 2px 2px 0px rgba(34, 211, 238, 0.3);
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
     margin-top: 0;
     margin-bottom: 12px;
+    text-transform: uppercase;
 }
 
 .pixel-text {
-    font-family: var(--text-main); /* Chữ thường rất dễ đọc */
-    font-size: 17px;
+    font-family: var(--text-main);
+    font-size: 16px;
     font-weight: 500;
     line-height: 1.6;
-    color: #e2e8f0;
+    color: #f1f5f9;
     margin: 0;
 }
 
 /* Nút Bấm Game Retro Phát Sáng */
 .pixel-btn {
     font-family: var(--text-pixel);
-    font-size: 10px;
-    line-height: 1.4;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
     color: #ffffff;
-    background: #2563eb;
+    background: #3b82f6;
     border: none;
-    padding: 12px 20px;
+    padding: 12px 24px;
+    border-radius: 8px; /* Bo góc nút nhẹ nhàng */
     cursor: pointer;
     position: relative;
-    box-shadow:
-        -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000,
-        inset -4px -4px 0 0 #1d4ed8, 0 0 15px rgba(37, 99, 235, 0.4);
-    image-rendering: pixelated;
-    transition: all 0.1s;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3), inset 0 2px 2px rgba(255,255,255,0.4);
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.pixel-btn:hover {
+    filter: brightness(1.2);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.5), inset 0 2px 2px rgba(255,255,255,0.5);
 }
 
 .pixel-btn:active {
-    transform: translate(2px, 2px);
-    box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000, inset 2px 2px 0 0 #1d4ed8;
+    transform: translateY(2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 4px 4px rgba(0,0,0,0.3);
 }
 
-.pixel-fire-icon {
-    width: 20px;
-    height: 26px;
-    background: var(--neon-amber);
-    display: inline-block;
-    position: relative;
-    clip-path: polygon(50% 0%, 83% 25%, 100% 55%, 83% 100%, 16% 100%, 0% 55%, 16% 25%);
-    filter: drop-shadow(0 0 8px var(--neon-amber));
+.pixel-btn:disabled {
+    background: #475569 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: none;
+    transform: none;
 }
 
-.ai-dialog-box {
-    border: 4px solid var(--neon-pink);
-    background: rgba(10, 10, 20, 0.9);
-    padding: 15px;
-    position: relative;
-    box-shadow: 0 0 20px rgba(244, 114, 182, 0.3);
-}
-
-.auth-input {
+/* Các Input Field */
+.auth-input, textarea, input[type="text"], input[type="password"] {
     width: 100%;
     background: rgba(0, 0, 0, 0.4);
-    border: 2px solid var(--pixel-border);
+    border: 2px solid var(--glass-border);
     color: #fff;
-    padding: 12px;
-    font-family: var(--text-mono); /* Giữ font monospace chuẩn cho ô nhập liệu */
+    padding: 14px;
+    font-family: var(--text-mono);
     font-size: 15px;
+    border-radius: 12px; /* Bo góc mượt mà */
     margin-bottom: 15px;
     box-sizing: border-box;
+    transition: all 0.3s;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
 }
 
-.auth-input:focus {
+.auth-input:focus, textarea:focus, input:focus {
     border-color: var(--neon-cyan);
     outline: none;
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 0 15px rgba(34, 211, 238, 0.3);
 }
 
-/* Hiệu ứng Text Chữ chạy (Typewriter) tăng tính nghệ thuật */
+/* =========================================================
+   UI CỦA CÁC CHỨC NĂNG GAME (SHOP, STREAK)
+   ========================================================= */
+.streak-tracker {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 10px;
+}
+.streak-day {
+    flex: 1;
+    height: 45px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.4);
+    border: 2px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #94a3b8;
+    position: relative;
+    transition: all 0.3s;
+    font-family: var(--text-pixel);
+}
+.streak-day.active {
+    background: rgba(110, 231, 183, 0.2);
+    border-color: var(--pixel-green);
+    color: var(--pixel-green);
+    box-shadow: 0 0 15px rgba(110, 231, 183, 0.3);
+    transform: scale(1.05);
+}
+.streak-day.gift::after {
+    content: "🎁";
+    position: absolute;
+    top: -12px;
+    right: -10px;
+    font-size: 18px;
+    filter: drop-shadow(0 0 5px var(--neon-amber));
+    animation: pulseGlow 2s infinite ease-in-out;
+}
+
+.shop-item {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    transition: all 0.3s;
+}
+.shop-item:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--neon-amber);
+    transform: translateX(5px);
+}
+
+/* Hộp thoại AI */
+.ai-dialog-box {
+    border: 3px solid var(--neon-pink);
+    background: rgba(15, 23, 42, 0.85);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    box-shadow: 0 0 25px rgba(244, 114, 182, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+/* =========================================================
+   ANIMATIONS & CHIBI CSS ART
+   ========================================================= */
 .typing-effect {
     overflow: hidden;
     white-space: nowrap;
     border-right: 3px solid var(--neon-cyan);
     animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
 }
-
 @keyframes typing { from { width: 0 } to { width: 100% } }
 @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--neon-cyan); } }
 
-/* Hiệu ứng rung lắc Bento Card dạng Pixel Art khi lỗi / điểm thấp */
 .error-shake {
-    animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
     transform: translate3d(0, 0, 0);
     border-color: var(--neon-pink) !important;
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.5) !important;
 }
-
 @keyframes shake {
     10%, 90% { transform: translate3d(-2px, 0, 0); }
     20%, 80% { transform: translate3d(4px, 0, 0); }
-    30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
-    40%, 60% { transform: translate3d(6px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+    40%, 60% { transform: translate3d(8px, 0, 0); }
 }
 
-/* Hiệu ứng thở phát sáng tổng quát */
 @keyframes pulseGlow {
-    0%, 100% { text-shadow: 0 0 5px var(--neon-pink); opacity: 0.9; }
-    50% { text-shadow: 0 0 20px var(--neon-pink), 0 0 30px var(--neon-pink); opacity: 1; }
+    0%, 100% { text-shadow: 0 0 5px var(--neon-amber); opacity: 0.8; }
+    50% { text-shadow: 0 0 20px var(--neon-amber), 0 0 30px var(--neon-amber); opacity: 1; }
 }
-
 .pulse-neon {
     animation: pulseGlow 2s infinite ease-in-out;
     color: var(--neon-amber);
+    font-weight: bold;
 }
 
-/* ==========================================================================
-   HỆ THỐNG CSS ART: NHÂN VẬT CHIBI "MASTER G" TƯƠNG TÁC ĐỘNG
-   ========================================================================== */
-
-/* Container neo giữ vị trí nhân vật ở góc Card Bento */
+/* --- NHÂN VẬT CHIBI "MASTER G" --- */
 .character-container {
     width: 90px;
     height: 110px;
@@ -231,8 +363,6 @@ body::before {
     margin-top: -15px;
     margin-right: 10px;
 }
-
-/* Khung xương chính của nhân vật - Kích hoạt hiệu ứng nhún nhảy toàn thân */
 .character {
     width: 65px;
     height: 95px;
@@ -240,8 +370,6 @@ body::before {
     animation: chibiBounce 1.4s infinite ease-in-out;
     transform-origin: bottom center;
 }
-
-/* --- 1. PHẦN ĐẦU & CÁC CHI TIẾT KHUÔN MẶT --- */
 .character .head {
     width: 52px;
     height: 48px;
@@ -251,8 +379,6 @@ body::before {
     transform: translateX(-50%);
     z-index: 5;
 }
-
-/* Khuôn mặt Chibi */
 .character .face {
     width: 100%;
     height: 100%;
@@ -263,8 +389,6 @@ body::before {
     border: 2px solid #000;
     box-sizing: border-box;
 }
-
-/* Tóc phía sau */
 .character .hair-back {
     width: 56px;
     height: 52px;
@@ -276,8 +400,6 @@ body::before {
     border: 2px solid #000;
     z-index: -1;
 }
-
-/* Tóc mái phía trước */
 .character .hair-front {
     width: 110%;
     height: 40%;
@@ -288,8 +410,6 @@ body::before {
     clip-path: polygon(0% 0%, 100% 0%, 100% 60%, 85% 100%, 70% 50%, 50% 95%, 30% 45%, 15% 100%, 0% 50%);
     border-bottom: 2px solid #000;
 }
-
-/* Đôi mắt to tròn - Kích hoạt hoạt ảnh tự động chớp mắt */
 .character .eyes {
     width: 100%;
     position: absolute;
@@ -299,7 +419,6 @@ body::before {
     padding: 0 6px;
     box-sizing: border-box;
 }
-
 .character .eye {
     width: 10px;
     height: 10px;
@@ -308,8 +427,6 @@ body::before {
     position: relative;
     animation: chibiBlink 4s infinite ease-in-out;
 }
-
-/* Con ngươi phản chiếu ánh sáng */
 .character .pupil {
     width: 3px;
     height: 3px;
@@ -319,8 +436,6 @@ body::before {
     top: 2px;
     left: 2px;
 }
-
-/* Má hồng đáng yêu */
 .character .blush {
     width: 6px;
     height: 4px;
@@ -332,8 +447,6 @@ body::before {
 }
 .character .blush.left { left: 4px; }
 .character .blush.right { right: 4px; }
-
-/* Chiếc miệng nhỏ cười bộc trực */
 .character .mouth {
     width: 8px;
     height: 5px;
@@ -345,8 +458,6 @@ body::before {
     transform: translateX(-50%);
     transition: all 0.2s;
 }
-
-/* --- 2. PHẦN THÂN & TRANG PHỤC --- */
 .character .body {
     width: 32px;
     height: 30px;
@@ -356,8 +467,6 @@ body::before {
     transform: translateX(-50%);
     z-index: 4;
 }
-
-/* Áo thun Cyberpunk */
 .character .shirt {
     width: 100%;
     height: 100%;
@@ -367,8 +476,6 @@ body::before {
     box-sizing: border-box;
     position: relative;
 }
-
-/* Cổ áo hình chữ V */
 .character .collar {
     width: 10px;
     height: 6px;
@@ -381,8 +488,6 @@ body::before {
     left: 50%;
     transform: translateX(-50%);
 }
-
-/* Đôi tay phối hợp chuyển động nhịp nhàng */
 .character .arms {
     width: 140%;
     position: absolute;
@@ -391,7 +496,6 @@ body::before {
     display: flex;
     justify-content: space-between;
 }
-
 .character .arm {
     width: 8px;
     height: 18px;
@@ -403,8 +507,6 @@ body::before {
 }
 .character .arm.left { transform: rotate(15deg); animation: leftArmMove 1.4s infinite ease-in-out; }
 .character .arm.right { transform: rotate(-15deg); animation: rightArmMove 1.4s infinite ease-in-out; }
-
-/* --- 3. ĐÔI CHÂN --- */
 .character .legs {
     width: 24px;
     position: absolute;
@@ -415,7 +517,6 @@ body::before {
     justify-content: space-between;
     z-index: 3;
 }
-
 .character .leg {
     width: 9px;
     height: 16px;
@@ -425,8 +526,6 @@ body::before {
     box-sizing: border-box;
     position: relative;
 }
-
-/* Giày Pixel phát sáng ở bàn chân */
 .character .leg::after {
     content: '';
     width: 11px;
@@ -438,69 +537,49 @@ body::before {
     bottom: -2px;
     left: -2px;
 }
-
-/* ==========================================================================
-   HỆ THỐNG HOẠT ẢNH ANIMATION TỰ NHIÊN (KEYFRAMES)
-   ========================================================================== */
-
-/* 1. Hoạt ảnh nhún nhảy toàn thân (Thở và nhún chân) */
 @keyframes chibiBounce {
     0%, 100% { transform: scaleY(1) translateY(0); }
-    50% { transform: scaleY(0.95) translateY(3px); }
+    50% { transform: scaleY(0.95) translateY(4px); }
 }
-
-/* 2. Hoạt ảnh chớp mắt ngẫu nhiên của con người */
 @keyframes chibiBlink {
     0%, 9%, 11%, 49%, 51%, 100% { transform: scaleY(1); height: 10px; }
     10%, 50% { transform: scaleY(0.1); height: 1px; }
 }
-
-/* 3. Hoạt ảnh vung vẩy tay trái nhẹ nhàng khi nhún nhảy */
 @keyframes leftArmMove {
     0%, 100% { transform: rotate(15deg); }
     50% { transform: rotate(28deg) translateY(-1px); }
 }
-
-/* 4. Hoạt ảnh vung vẩy tay phải nhẹ nhàng khi nhún nhảy */
 @keyframes rightArmMove {
     0%, 100% { transform: rotate(-15deg); }
     50% { transform: rotate(-28deg) translateY(-1px); }
 }
-
-/* --- TRẠNG THÁI CHIBI BIẾN HÌNH THEO ĐIỂM SỐ --- */
-
-/* 1. Trạng thái Master G nổi điên (Khi điểm < 5.0) */
-.master-g-mad {
-    animation: chibiShake 0.1s infinite alternate !important; /* Rung giật liên tục */
-}
-.master-g-mad .face {
-    background: #ff7675 !important; /* Mặt đỏ rực rỡ bốc hỏa */
-}
-.master-g-mad .blush {
-    background: #d63031 !important; /* Má hồng đổi thành vệt giận dữ */
-    width: 10px;
-}
-.master-g-mad .mouth {
-    width: 12px;
-    height: 4px;
-    border-radius: 50% 50% 0 0; /* Miệng há hốc tức giận */
-    border-top: 3px solid #000;
-    border-bottom: none;
-}
-
-/* 2. Trạng thái Master G ngạo nghễ tự hào (Khi điểm >= 8.0) */
-.master-g-proud {
-    animation: chibiBounce 0.5s infinite ease-in-out !important; /* Nhún nhảy với tốc độ cực nhanh */
-}
-.master-g-proud .mouth {
-    width: 14px;
-    height: 8px;
-    border-radius: 0 0 50% 50%; /* Miệng cười ngoác rộng rạng rỡ */
-    background: #000;
-}
-
-/* Hoạt ảnh rung giật đặc quyền của trạng thái nổi điên */
+.master-g-mad { animation: chibiShake 0.1s infinite alternate !important; }
+.master-g-mad .face { background: #ff7675 !important; }
+.master-g-mad .blush { background: #d63031 !important; width: 10px; }
+.master-g-mad .mouth { width: 12px; height: 4px; border-radius: 50% 50% 0 0; border-top: 3px solid #000; border-bottom: none; }
+.master-g-proud { animation: chibiBounce 0.4s infinite ease-in-out !important; }
+.master-g-proud .mouth { width: 14px; height: 8px; border-radius: 0 0 50% 50%; background: #000; }
 @keyframes chibiShake {
-    0% { transform: translateX(-2px) scaleY(0.95); }
-    100% { transform: translateX(2px) scaleY(1); }
+    0% { transform: translateX(-3px) scaleY(0.95); }
+    100% { transform: translateX(3px) scaleY(1); }
+}
+
+/* =========================================================
+   RESPONSIVE (Tương thích Đa thiết bị)
+   ========================================================= */
+@media (max-width: 1024px) {
+    .bento-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .card-wide { grid-column: span 2; }
+}
+
+@media (max-width: 768px) {
+    .app-layout { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; padding: 15px; border-right: none; border-bottom: 2px solid var(--glass-border); }
+    nav { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .nav-item { margin-bottom: 0; padding: 10px; font-size: 13px; }
+    .main-content { padding: 15px; }
+    .bento-container { grid-template-columns: 1fr; }
+    .card-large, .card-wide, .card-medium, .card-tall { grid-column: span 1; grid-row: auto; }
 }

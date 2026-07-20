@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const currentPath = window.location.pathname;
 
     // Xác thực và đồng bộ dữ liệu thực tế từ DB lên UI (Sử dụng API Endpoint /me bảo mật)
-    if (currentPath === '/dashboard' || currentPath === '/learn' || currentPath === '/test' || currentPath === '/story') {
+    if (currentPath !== '/auth' && currentPath !== '/') {
         fetch('/api/auth/user/me')
             .then(res => {
                 if (res.status === 401) {
@@ -20,15 +20,27 @@ document.addEventListener("DOMContentLoaded", () => {
             })
             .then(data => {
                 if (data && !data.error) {
-                    // Cập nhật thông tin định danh lên Dashboard Hub
-                    const dashUsername = document.getElementById("dash-username");
-                    const dashRank = document.getElementById("dash-rank");
-                    const dashStreak = document.getElementById("dash-streak");
-                    const gachaStreak = document.getElementById("gacha-streak");
+                    // Đổ data lên Sidebar (UI Mới)
+                    const sidebarUser = document.getElementById("sidebar-user");
+                    const sidebarRank = document.getElementById("sidebar-rank");
+                    const sidebarStreak = document.getElementById("sidebar-streak");
+                    const sidebarCoins = document.getElementById("sidebar-coins");
 
-                    if (dashUsername) dashUsername.innerText = data.username;
-                    if (dashRank) dashRank.innerText = data.level;
-                    if (dashStreak) dashStreak.innerText = data.streak;
+                    if (sidebarUser) sidebarUser.innerText = data.username;
+                    if (sidebarRank) sidebarRank.innerText = data.level;
+                    if (sidebarStreak) sidebarStreak.innerText = data.streak;
+                    if (sidebarCoins) sidebarCoins.innerText = data.coins;
+
+                    // Xử lý UI Check-in 7 ngày ở Dashboard
+                    if (currentPath === '/dashboard') {
+                        renderStreakUI(data.streak);
+                        if (data.is_checked_in) {
+                            lockCheckinButton();
+                        }
+                    }
+
+                    // Cập nhật riêng cho màn Gacha
+                    const gachaStreak = document.getElementById("gacha-streak");
                     if (gachaStreak) gachaStreak.innerText = data.streak;
                 }
             })
@@ -51,8 +63,92 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * ĐIỀU HƯỚNG VÀ CHUYỂN ĐỔI MODULE TÍNH NĂNG TRÊN BENTO GRID
+ * =======================================================
+ * CÁC HÀM XỬ LÝ GIAO DIỆN MỚI (STREAK, ĐIỂM DANH, SHOP)
+ * =======================================================
  */
+
+function renderStreakUI(streakCount) {
+    const activeDays = streakCount % 7 === 0 && streakCount > 0 ? 7 : streakCount % 7;
+    for (let i = 1; i <= 7; i++) {
+        const block = document.getElementById(`day-${i}`);
+        if(block) {
+            if (i <= activeDays) block.classList.add('active');
+            else block.classList.remove('active');
+        }
+    }
+}
+
+function lockCheckinButton() {
+    const btn = document.getElementById("btn-checkin");
+    const timerText = document.getElementById("checkin-timer");
+    if(btn && timerText) {
+        btn.disabled = true;
+        btn.innerText = "ĐÃ ĐIỂM DANH HÔM NAY";
+        timerText.style.display = "block";
+
+        // Tính toán đếm ngược đến 00:00 ngày mai
+        setInterval(() => {
+            const now = new Date();
+            const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+            const diff = tomorrow - now;
+
+            const h = Math.floor((diff % 86400000) / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+            timerText.innerText = `Lượt tiếp theo: ${h}:${m}:${s}`;
+        }, 1000);
+    }
+}
+
+function triggerCheckin() {
+    fetch('/api/game/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        alert(data.message);
+        const sidebarStreak = document.getElementById("sidebar-streak");
+        const sidebarCoins = document.getElementById("sidebar-coins");
+
+        if(sidebarStreak) sidebarStreak.innerText = data.current_streak;
+        if(sidebarCoins) sidebarCoins.innerText = data.new_coins;
+
+        renderStreakUI(data.current_streak);
+        lockCheckinButton();
+        triggerFireworksEffect();
+        loadVocabQuests();
+    });
+}
+
+function buyItem(itemId, price) {
+    fetch('/api/game/shop/buy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: itemId, price: price })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error) { alert(data.error); }
+        else {
+            alert(data.message);
+            const sidebarCoins = document.getElementById("sidebar-coins");
+            if(sidebarCoins) sidebarCoins.innerText = data.new_coins;
+        }
+    });
+}
+
+/**
+ * =======================================================
+ * CÁC HÀM XỬ LÝ LÕI GAME (BATTLE ZONE, AI, LOTTIE)
+ * =======================================================
+ */
+
 function switchFeature(featureName) {
     const currentPath = window.location.pathname;
 
@@ -125,9 +221,6 @@ function switchFeature(featureName) {
     initKeyboardShortcuts();
 }
 
-/**
- * CẬP NHẬT TRẠNG THÁI BIỂU CẢM NHÂN VẬT CHIBI DỰA TRÊN ĐIỂM SỐ CHẤM ĐIỂM
- */
 function updateChibeEmotion(score) {
     const chibiCharacter = document.querySelector(".character");
     if (!chibiCharacter) return;
@@ -146,9 +239,6 @@ function updateChibeEmotion(score) {
     }, 5000);
 }
 
-/**
- * GỬI CÂU THÁCH ĐẤU LÊN AI ĐỂ ĐÁNH GIÁ (VOCABULARY / GRAMMAR)
- */
 function submitChallenge() {
     const userInputField = document.getElementById("userInput");
     const aiResponseBox = document.getElementById("aiResponseBox");
@@ -206,9 +296,6 @@ function submitChallenge() {
     });
 }
 
-/**
- * TẢI DANH SÁCH QUEST TỪ VỰNG CÁ NHÂN HÓA (SRS) TỪ BACKEND LEFT JOIN
- */
 function loadVocabQuests() {
     const container = document.querySelector("#vocab-card .pixel-text");
     if (!container) return;
@@ -273,9 +360,6 @@ function loadVocabQuests() {
     });
 }
 
-/**
- * ĐÁNH DẤU THUỘC / CHƯA THUỘC TỪ VỰNG CHỦ ĐỀ CÁ NHÂN HÓA
- */
 function toggleVocabMark(vocabId) {
     fetch('/api/game/vocab/toggle_memorize', {
         method: 'POST',
@@ -290,36 +374,13 @@ function toggleVocabMark(vocabId) {
         if (data.level_upgraded) {
             triggerFireworksEffect();
             alert(`🎉 CHÚC MỪNG! Bạn đã hoàn thành xuất sắc ải từ vựng.\nĐẲNG CẤP MỚI: ${data.current_level}`);
-            const dashRank = document.getElementById("dash-rank");
-            if (dashRank) dashRank.innerText = data.current_level;
+            const sidebarRank = document.getElementById("sidebar-rank");
+            if (sidebarRank) sidebarRank.innerText = data.current_level;
             updateChibeEmotion(10.0);
         }
     });
 }
 
-/**
- * KÍCH HOẠT ĐIỂM DANH DAILY CHECK-IN TĂNG CHUỖI STREAK KẾT NỐI REAL-TIME
- */
-function triggerCheckin() {
-    fetch('/api/game/checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) return;
-        const streakText = document.getElementById("dash-streak") || document.querySelector(".pulse-neon");
-        if (streakText && data.current_streak !== undefined) {
-            streakText.textContent = data.current_streak;
-            triggerFireworksEffect();
-        }
-        loadVocabQuests();
-    });
-}
-
-/**
- * HIỆU ỨNG RUNG LẮC THẺ RETRO KHI TRẢ LỜI SAI HOẶC ĐỂ TRỐNG
- */
 function triggerCardShake() {
     const battleCard = document.getElementById("battle-card");
     if (battleCard) {
@@ -328,9 +389,6 @@ function triggerCardShake() {
     }
 }
 
-/**
- * KHỞI TẠO ĐƯỜNG TẮT BÀN PHÍM (ENTER ĐỂ EXECUTE) KHÔNG TRÙNG LẶP LISTENER
- */
 function initKeyboardShortcuts() {
     ['userInput', 'storyInput'].forEach(inputId => {
         const el = document.getElementById(inputId);
@@ -352,9 +410,6 @@ function initKeyboardShortcuts() {
     });
 }
 
-/**
- * KHỞI TẠO LOTTIE WEB ANIMATION LIBRARY
- */
 function initLottieLibrary() {
     if (!window.lottie) {
         const script = document.createElement("script");
@@ -364,9 +419,6 @@ function initLottieLibrary() {
     }
 }
 
-/**
- * PHUN PHÁO HOA ĂN MỪNG CHIẾN TÍCH TRÊN TOÀN MÀN HÌNH
- */
 function triggerFireworksEffect() {
     if (!window.lottie) return;
 
@@ -393,9 +445,11 @@ function triggerFireworksEffect() {
     });
 }
 
-// =======================================================
-// LOGIC RPG STORY (CÓ TRÍ NHỚ, BỘ ĐẾM LƯỢT + GỢI Ý ĐIỀN TỪ CHỔ TRỐNG)
-// =======================================================
+/**
+ * =======================================================
+ * LOGIC RPG STORY (CÓ TRÍ NHỚ, BỘ ĐẾM LƯỢT + GỢI Ý ĐIỀN TỪ)
+ * =======================================================
+ */
 let currentStoryTurn = 1;
 let storyHistory = "";
 
@@ -431,7 +485,7 @@ function appendStoryScene(data, isInit = false) {
 
     if (!terminal || !hintBox) return;
 
-    // 1. Phún in nội dung bối cảnh ra màn hình Terminal song song EN - VN
+    // Phun in nội dung bối cảnh ra màn hình Terminal song song EN - VN
     terminal.innerHTML += `
         <div style="background: rgba(26, 16, 60, 0.5); border-left: 3px solid var(--neon-purple); padding: 14px; border-radius: 6px; margin-bottom: 12px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
             <div style="color: #fff; font-family: var(--text-main); font-size: 16px; margin-bottom: 8px; line-height: 1.6; font-weight:500;">${data.scene_en}</div>
@@ -446,7 +500,7 @@ function appendStoryScene(data, isInit = false) {
     const storyInput = document.getElementById("storyInput");
     const btnExecute = document.getElementById("btn-story-execute");
 
-    // 2. Kiểm tra xem đã cán mốc lượt thứ 10 (Hạ màn game) hay chưa
+    // Kiểm tra xem đã cán mốc lượt thứ 10 (Hạ màn game) hay chưa
     if (data.is_end === "true" || data.is_end === true) {
         hintBox.innerHTML = `
             <div style="color: var(--pixel-green); font-family: var(--text-pixel); font-size: 13px; text-align: center; margin-bottom: 12px; letter-spacing:0.5px;">MISSION ACCOMPLISHED!</div>

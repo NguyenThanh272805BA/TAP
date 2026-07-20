@@ -4,7 +4,7 @@ from app.models.vocabulary import Vocabulary
 from app import db
 from app.models.user_vocabulary import UserVocabulary
 from app.models.grammar import Grammar
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import random
 
 # Import Core ML
@@ -23,13 +23,33 @@ def checkin():
         return jsonify({"error": "Yêu cầu đăng nhập hệ thống!"}), 401
 
     user = User.query.get(user_id)
-    if not user:
-        return jsonify({"error": "Không tìm thấy người dùng!"}), 404
+    today = date.today()
 
-    user.streak_count += 1
+    if user.last_checkin == today:
+        return jsonify({"error": "Bạn đã điểm danh hôm nay rồi! Vui lòng quay lại vào ngày mai."}), 400
+
+    # Tính toán Streak Logic
+    if user.last_checkin and (today - user.last_checkin).days == 1:
+        user.streak_count += 1
+    else:
+        user.streak_count = 1  # Reset về 1 nếu lỡ dở
+
+    user.last_checkin = today
+
+    # Tính toán thưởng Coins
+    reward_coins = 10
+    bonus_msg = ""
+
+    # Chu kỳ 7 ngày thưởng lớn
+    if user.streak_count % 7 == 0:
+        reward_coins += 50
+        bonus_msg = " + 50 Xu (Thưởng Chuỗi 7 Ngày)"
+
+    user.coins += reward_coins
+
+    # Unlock ngẫu nhiên từ vựng
     unlocked_subquery = db.session.query(UserVocabulary.vocab_id).filter(
-        UserVocabulary.user_id == user_id,
-        UserVocabulary.is_unlocked == True
+        UserVocabulary.user_id == user_id, UserVocabulary.is_unlocked == True
     )
     words_to_unlock = Vocabulary.query.filter(~Vocabulary.id.in_(unlocked_subquery)).limit(2).all()
     unlocked_words_list = []
@@ -44,10 +64,35 @@ def checkin():
         unlocked_words_list.append(word.word)
 
     db.session.commit()
+
     return jsonify({
-        "message": "Điểm danh thời gian thực thành công!",
+        "message": f"Điểm danh thành công! Bạn nhận được {reward_coins} Xu{bonus_msg}.",
         "current_streak": user.streak_count,
+        "new_coins": user.coins,
         "new_words_unlocked": unlocked_words_list
+    }), 200
+
+
+@game_bp.route('/shop/buy', methods=['POST'])
+def shop_buy():
+    data = request.get_json()
+    item_id = data.get('item_id')
+    price = data.get('price', 0)
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    user = User.query.get(user_id)
+    if user.coins < price:
+        return jsonify({"error": "Không đủ Xu! Hãy học và điểm danh thêm."}), 400
+
+    user.coins -= price
+    db.session.commit()
+
+    return jsonify({
+        "message": f"Mua vật phẩm thành công! (Trừ {price} Xu)",
+        "new_coins": user.coins
     }), 200
 
 

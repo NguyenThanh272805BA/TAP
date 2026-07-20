@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models.user import User
 from app import db
+from datetime import date
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
@@ -24,7 +25,6 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    # Tự động đăng nhập sau khi đăng ký thành công
     session['user_id'] = new_user.id
     return jsonify({"message": "Đăng ký thành công!", "user_id": new_user.id}), 201
 
@@ -38,7 +38,6 @@ def login():
     user = User.query.filter_by(username=username).first()
 
     if user and check_password_hash(user.password_hash, password):
-        # Lưu user_id vào session bảo mật của Flask
         session['user_id'] = user.id
         return jsonify({
             "message": "Đăng nhập thành công!",
@@ -53,14 +52,18 @@ def login():
 
 @auth_bp.route('/user/me', methods=['GET'])
 def get_current_user_profile():
-    # Lấy user_id trực tiếp từ session, không tin tưởng vào id từ frontend gửi lên
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({"error": "Chưa đăng nhập hệ thống!"}), 401
 
     user = User.query.get(user_id)
+    today = date.today()
+    is_checked_in = (user.last_checkin == today)
+
     return jsonify({
         "username": user.username,
         "level": user.current_level,
-        "streak": user.streak_count
+        "streak": user.streak_count,
+        "coins": user.coins,
+        "is_checked_in": is_checked_in
     }), 200

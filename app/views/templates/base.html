@@ -3,17 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Fluent - {% block title %}BATTLE ZONE{% endblock %}</title>
+    <title>Global Fluent - {% block title %}HUB{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div style="margin-bottom: 20px;">
-        <button class="pixel-btn" onclick="window.location.href='/dashboard'" style="background: var(--neon-purple); font-size: 10px;">
-            < RETURN_TO_HUB
-        </button>
-    </div>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="pixel-title" style="font-size: 14px; text-align: center; margin-bottom: 30px; color: var(--neon-pink);">
+                GLOBAL FLUENT
+            </div>
 
-    {% block content %}{% endblock %}
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--glass-border); margin-bottom: 25px;">
+                <div style="color: var(--neon-cyan); font-weight: bold; font-size: 16px;" id="sidebar-user">Khách</div>
+                <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;" id="sidebar-rank">Level 1</div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                    <span style="color: var(--neon-amber);">🔥 <span id="sidebar-streak">0</span></span>
+                    <span style="color: var(--pixel-green);">💰 <span id="sidebar-coins">0</span> Xu</span>
+                </div>
+            </div>
+
+            <nav style="display: flex; flex-direction: column;">
+                <a href="/dashboard" class="nav-item">🏠 Bảng Điều Khiển</a>
+                <a href="/learn" class="nav-item">📚 Lò Đúc & Học Tập</a>
+                <a href="/test" class="nav-item">⚔️ Đấu Trường Gacha</a>
+                <a href="/story" class="nav-item">📖 Text-RPG Sinh Tồn</a>
+            </nav>
+
+            <div style="margin-top: auto;">
+                <button class="pixel-btn" onclick="window.location.href='/auth'" style="width: 100%; background: #ef4444;">LOGOUT</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
