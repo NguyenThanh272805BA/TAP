@@ -2,12 +2,13 @@ import os
 import json
 import random
 from google import genai
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from app.utils.gemini_helper import evaluate_english_skill
 from app.models.test import TestLog
 from app.models.user import User
 from app.models.grammar import Grammar
 from app.models.vocabulary import Vocabulary
+from app.models.user_vocabulary import UserVocabulary  # <-- Bổ sung import Model
 from app import db
 
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
@@ -15,95 +16,93 @@ ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
 
 @ai_bp.route('/evaluate', methods=['POST'])
 def evaluate():
-    data = request.get_json() or {}
-    user_id = data.get('user_id')
+    data = request.get_json(silent=True) or {}
+    user_id = session.get('user_id')
     user_input = data.get('text')
     mode = data.get('mode', 'grammar')
 
     if not user_input or not user_id:
-        return jsonify({"error": "Thiếu dữ liệu đầu vào!"}), 400
+        return jsonify({"error": "Thiếu dữ liệu đầu vào hoặc phiên đăng nhập hết hạn!"}), 400
 
-    context_challenge = ""
     try:
-        if mode == 'grammar':
-            grammar_list = Grammar.query.all()
-            if grammar_list:
-                chosen = random.choice(grammar_list)
-                context_challenge = f"Cấu trúc bắt buộc: {chosen.structure} ({chosen.explanation}). Ví dụ mẫu: {chosen.example}"
-            else:
-                context_challenge = "Cấu trúc bắt buộc: S + wish + S + V(past) (Câu điều ước ở hiện tại)"
-
-        elif mode == 'vocab':
-            vocab_list = Vocabulary.query.filter_by(is_unlocked=True).all()
-            if vocab_list:
-                chosen = random.choice(vocab_list)
-                context_challenge = f"Từ vựng/Từ lóng bắt buộc phải dùng: '{chosen.word}' nghĩa là ({chosen.meaning})"
-            else:
-                context_challenge = "Từ vựng bắt buộc phải dùng: 'Annihilate' (Tiêu diệt hoàn toàn)"
-
-        elif mode == 'story':
+        # ==============================================================
+        # NHÁNH 1: XỬ LÝ TEXT-RPG STORY (GỌI TRỰC TIẾP API GEMINI)
+        # ==============================================================
+        if mode == 'story':
             user = User.query.get(user_id)
             user_level = user.current_level if user else "Beginner"
-
-            # Nhận thêm Lịch sử truyện và Số lượt từ Frontend gửi lên
             story_turn = data.get('turn', 1)
             story_history = data.get('history', '')
-
             is_final_turn = True if story_turn >= 10 else False
 
-            # Cấu hình Prompt có trí nhớ cho Game Master
-            context_challenge = f"""
-            Ngữ cảnh: Bạn là Game Master game Text-RPG Sinh tồn. Trình độ người chơi: {user_level}.
-            Đang ở LƯỢT {story_turn}/10.
+            prompt_story = f"""
+            Ngữ cảnh: Bạn là Game Master xéo xắt, mỏ hỗn của game Text-RPG Sinh tồn hậu tận thế. 
+            Trình độ người chơi: {user_level}. Đang ở LƯỢT {story_turn}/10.
 
             TÓM TẮT CỐT TRUYỆN TỪ TRƯỚC ĐẾN NAY: 
             {story_history}
 
             HÀNH ĐỘNG MỚI NHẤT CỦA NGƯỜI CHƠI: "{user_input}"
 
-            YÊU CẦU:
-            1. Chấm điểm ngữ pháp hành động mới nhất (0-10) và nhận xét siêu ngắn.
-            2. Nếu điểm >= 5: Hành động thành công, kể tiếp diễn biến có lợi.
-               Nếu điểm < 5: Hành động thất bại (bị vấp ngã, bị quái cắn...), kể diễn biến bất lợi.
-            3. Trả về một Gợi ý điền vào chỗ trống (___) cho lượt tiếp theo (chỉ ẩn 1-2 từ).
-            4. NẾU LÀ LƯỢT 10 (is_final_turn=True): Tạo ra cái kết (Boss chết hoặc trốn thoát), KHÔNG cần hint nữa, set is_end = true.
+            YÊU CẦU BẮT BUỘC (Trọng tâm cốt truyện):
+            1. Chấm điểm ngữ pháp (0-10) và đưa ra 'feedback' (Chửi thẳng mặt nếu sai ngữ pháp cơ bản, khen ngạo nghễ nếu đúng).
+            2. Dựa vào hành động, sáng tạo tiếp cốt truyện kịch tính (scene_en, scene_vn). Nếu điểm < 5, cho nhân vật chịu hậu quả thê thảm.
+            3. Tạo một gợi ý điền từ (hint_en, hint_vn) ẩn 1-2 từ khóa bằng dấu ___ cho lượt tới.
+            4. LƯỢT 10: Tạo kết cục game, set is_end = true.
 
-            CHỈ TRẢ VỀ ĐÚNG 1 OBJECT JSON (không markdown). Cấu trúc:
+            TUYỆT ĐỐI CHỈ TRẢ VỀ ĐÚNG 1 JSON OBJECT:
             {{
-                "score": 8,
-                "feedback": "Dùng đúng thì quá khứ đơn, rất tốt.",
-                "scene_en": "Câu chuyện tiếp diễn bằng tiếng Anh (1-2 câu ngầu)...",
-                "scene_vn": "Dịch tiếng Việt...",
-                "hint_en": "I ___ to ___ away.",
-                "hint_vn": "Tôi (cố gắng) (chạy) thoát.",
+                "score": <điểm_số>,
+                "feedback": "<nhận_xét_ngữ_pháp>",
+                "scene_en": "<Cốt_truyện_tiếp_diễn_tiếng_Anh>",
+                "scene_vn": "<Dịch_Việt>",
+                "hint_en": "<Gợi_ý_có_chỗ_trống>",
+                "hint_vn": "<Dịch_gợi_ý>",
                 "is_end": {"true" if is_final_turn else "false"}
             }}
             """
+            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+            response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_story)
+            clean_json_str = response.text.strip().replace('```json', '').replace('```', '')
+            result = json.loads(clean_json_str)
 
-        # Gọi AI chấm điểm
-        ai_response_str = evaluate_english_skill(user_input, context_challenge)
+        # ==============================================================
+        # NHÁNH 2: XỬ LÝ HỌC TẬP (GRAMMAR/VOCAB) DÙNG GEMINI HELPER
+        # ==============================================================
+        else:
+            context_challenge = ""
+            if mode == 'grammar':
+                grammar_list = Grammar.query.all()
+                if grammar_list:
+                    chosen = random.choice(grammar_list)
+                    context_challenge = f"Cấu trúc bắt buộc: {chosen.structure} ({chosen.explanation}). Ví dụ: {chosen.example}"
+                else:
+                    context_challenge = "Cấu trúc bắt buộc: S + wish + S + V(past) (Câu điều ước ở hiện tại)"
+            elif mode == 'vocab':
+                vocab_list = Vocabulary.query.filter_by(is_unlocked=True).all()
+                if vocab_list:
+                    chosen = random.choice(vocab_list)
+                    context_challenge = f"Từ vựng bắt buộc phải dùng: '{chosen.word}' nghĩa là ({chosen.meaning})"
 
-        # Xử lý dọn dẹp JSON từ Gemini trả về để tránh lỗi parse
-        clean_json_str = ai_response_str.strip().replace('```json', '').replace('```', '')
-        result = json.loads(clean_json_str)
+            ai_response_str = evaluate_english_skill(user_input, context_challenge)
+            clean_json_str = ai_response_str.strip().replace('```json', '').replace('```', '')
+            result = json.loads(clean_json_str)
 
-        # --- TỰ ĐỘNG ĐÀO DATA TỪ BÊN NGOÀI BẰNG AI (AUTOMATIC DATA MINING) ---
-        score = result.get("score", 0)
-        if score >= 8.0:
-            mine_new_data_via_ai(mode)
+            score = result.get("score", 0)
+            if score >= 8.0:
+                mine_new_data_via_ai(mode)
 
     except Exception as e:
         result = {
             "score": 4.0,
             "feedback": f"Hệ thống lõi gặp xung đột dữ liệu rồi! Lỗi: {str(e)}",
-            "scene_en": "The system crashed. You are bleeding.",
-            "scene_vn": "Hệ thống sụp đổ. Bạn đang chảy máu.",
-            "hint_en": "I must ___ help.",
-            "hint_vn": "Tôi phải (tìm) sự giúp đỡ.",
+            "scene_en": "The system crashed. Reality is torn apart.",
+            "scene_vn": "Hệ thống sụp đổ. Thực tại bị xé toạc.",
+            "hint_en": "I must ___ the truth.",
+            "hint_vn": "Tôi phải (tìm_ra) sự thật.",
             "is_end": False
         }
 
-    # Lưu vết kết quả vào Database
     new_log = TestLog(
         user_id=user_id,
         score=result.get("score", 0),
@@ -112,17 +111,10 @@ def evaluate():
     db.session.add(new_log)
     db.session.commit()
 
-    return jsonify({
-        "message": "Master G đã xử lý xong!",
-        "result": result
-    }), 200
+    return jsonify({"message": "Master G đã xử lý xong!", "result": result}), 200
 
 
 def mine_new_data_via_ai(current_mode):
-    """
-    Hàm nội bộ tự động đào sâu kiến thức tiếng Anh trên Internet/AI tri thức
-    để nạp thêm tài nguyên mới cho game.
-    """
     try:
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -191,7 +183,7 @@ def mine_new_data_via_ai(current_mode):
 
 @ai_bp.route('/guide', methods=['POST'])
 def get_guide():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     word = data.get('word')
 
     if not word:
@@ -222,21 +214,32 @@ def get_guide():
 
 @ai_bp.route('/generate_unit', methods=['POST'])
 def generate_unit():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     topic = data.get('topic', '').strip().upper()
+    user_id = session.get('user_id')
 
     if not topic:
         return jsonify({"error": "Vui lòng nhập chủ đề muốn học!"}), 400
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
-    # KIỂM TRA CACHE TRONG DATABASE: Nếu chủ đề này đã từng được đúc, lấy ra luôn
-    existing_vocab_count = Vocabulary.query.filter_by(theme=topic).count()
-    if existing_vocab_count >= 10:  # Nếu đã có sẵn bộ từ vựng cho chủ đề này
+    # [ VÁ LỖI ]: Kiểm tra xem Unit này đã từng được đúc trên hệ thống chưa
+    existing_vocabs = Vocabulary.query.filter_by(theme=topic).all()
+    if len(existing_vocabs) >= 10:
+        added_to_user = 0
+        for v in existing_vocabs:
+            uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=v.id).first()
+            if not uv:
+                new_uv = UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True)
+                db.session.add(new_uv)
+                added_to_user += 1
+        db.session.commit()
         return jsonify({
-            "message": f"[CACHE HIT] Đã nạp thành công dữ liệu có sẵn của Unit '{topic}' từ Database!",
-            "added": 0
+            "message": f"[CACHE HIT] Đã nạp thành công {added_to_user} từ vựng Unit '{topic}' từ DB tổng vào thư viện cá nhân!",
+            "added": added_to_user
         }), 200
 
-    # Nếu chưa có trong DB, lúc này mới tốn phí gọi Gemini API
+    # Khởi tạo qua Gemini
     prompt = f"""
     Bạn là hệ thống thiết kế bài giảng. Người dùng muốn học tiếng Anh về chủ đề: '{topic}'.
     Hãy tạo ra 50 từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
@@ -255,33 +258,40 @@ def generate_unit():
 
         added_count = 0
         for item in items:
-            if not Vocabulary.query.filter_by(word=item['word']).first():
-                new_v = Vocabulary(
+            # 1. Thêm vào kho tổng
+            v = Vocabulary.query.filter_by(word=item['word']).first()
+            if not v:
+                v = Vocabulary(
                     word=item['word'],
                     meaning=item['meaning'],
                     theme=topic,
                     image_url="default.png",
                     is_unlocked=True
                 )
-                db.session.add(new_v)
+                db.session.add(v)
+                db.session.flush()  # Để lấy ID ngay lập tức
+
+            # 2. Gán quyền sở hữu vào thư viện User
+            uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=v.id).first()
+            if not uv:
+                new_uv = UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True)
+                db.session.add(new_uv)
                 added_count += 1
 
         db.session.commit()
         return jsonify({
-            "message": f"[AI MINTED] Đã đúc thành công Unit '{topic}' với {added_count} từ vựng mới bằng AI!",
+            "message": f"[AI MINTED] Đã đúc & thêm {added_count} từ vựng Unit '{topic}' vào thư viện của bạn!",
             "added": added_count
         }), 200
 
     except Exception as e:
         return jsonify({"error": f"Lò đúc AI gặp sự cố kỹ thuật hoặc hết hạn ngạch: {str(e)}"}), 500
 
+
 @ai_bp.route('/story/init', methods=['POST'])
 def init_story():
-    """Hàm mồi: Tạo bối cảnh mở màn và gợi ý điền từ đầu tiên"""
-    data = request.get_json() or {}
-    user_id = data.get('user_id')
-
-    user = User.query.get(user_id)
+    user_id = session.get('user_id')
+    user = User.query.get(user_id) if user_id else None
     user_level = user.current_level if user else "Beginner"
 
     prompt = f"""

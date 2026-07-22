@@ -11,7 +11,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     current_level = db.Column(db.String(20), default='Beginner')
     streak_count = db.Column(db.Integer, default=0)
-
+    role = db.Column(db.String(20), default='user')
     # Các trường phục vụ Game UI mới
     coins = db.Column(db.Integer, default=0)
     last_checkin = db.Column(db.Date, nullable=True)

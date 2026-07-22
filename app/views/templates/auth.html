@@ -5,53 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Fluent - Portal Authentication</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .tab-btn {
+            flex: 1;
+            background: rgba(0,0,0,0.4);
+            border: 2px solid var(--glass-border);
+            color: #94a3b8;
+            padding: 12px;
+            cursor: pointer;
+            font-family: var(--text-pixel);
+            font-size: 10px;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background: rgba(6, 182, 212, 0.2);
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+    </style>
 </head>
 <body>
 
-    <div class="bento-container" style="margin-top: 10vh; max-width: 500px;">
+    <div class="bento-container" style="margin-top: 10vh; max-width: 450px;">
+        <div class="bento-card" style="grid-column: span 4; padding: 35px;">
+            <div class="pixel-title" style="font-size: 18px; color: var(--neon-pink); text-align: center; margin-bottom: 25px;">
+                GLOBAL FLUENT
+            </div>
 
-        <div class="bento-card" style="grid-column: span 4; padding: 40px;">
-            <div class="pixel-title" id="auth-title" style="font-size: 14px; color: var(--neon-cyan); text-align: center; margin-bottom: 30px; letter-spacing: 1px;">
-                LOGIN_TO_ACCOUNT
+            <!-- TABS -->
+            <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+                <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">LOGIN</button>
+                <button class="tab-btn" id="tab-register" onclick="switchTab('register')">REGISTER</button>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <div class="pixel-title" style="font-size: 10px; margin-bottom: 8px;">PLAYER_NAME:</div>
-                <input type="text" id="username" style="width: 100%; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; box-sizing: border-box;">
+                <input type="text" id="username" class="auth-input" placeholder="Nhập tên tài khoản...">
             </div>
 
             <div style="margin-bottom: 30px;">
                 <div class="pixel-title" style="font-size: 10px; margin-bottom: 8px;">ACCESS_PASSWORD:</div>
-                <input type="password" id="password" style="width: 100%; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; box-sizing: border-box;">
+                <input type="password" id="password" class="auth-input" placeholder="Nhập mật khẩu...">
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 15px;">
-                <button class="pixel-btn" style="background: var(--pixel-green); width: 100%;" onclick="handleAuth('login')">EXECUTE_LOGIN</button>
-                <button class="pixel-btn" style="background: #3b82f6; width: 100%;" onclick="handleAuth('register')">CREATE_NEW_HERO (REGISTER)</button>
+                <button id="btn-submit" class="pixel-btn" style="background: var(--neon-cyan); color: #000; width: 100%; font-size: 12px;" onclick="handleAuth()">XÁC NHẬN ĐĂNG NHẬP</button>
             </div>
 
             <div class="pixel-text" id="auth-msg" style="font-size: 14px; color: var(--neon-pink); margin-top: 20px; text-align: center; display: none;"></div>
         </div>
-
     </div>
 
     <script>
-        function handleAuth(type) {
+        let currentMode = 'login';
+
+        function switchTab(mode) {
+            currentMode = mode;
+            document.getElementById('auth-msg').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+
+            const btnSubmit = document.getElementById('btn-submit');
+            const tabLogin = document.getElementById('tab-login');
+            const tabRegister = document.getElementById('tab-register');
+
+            if (mode === 'login') {
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                btnSubmit.innerText = "XÁC NHẬN ĐĂNG NHẬP";
+                btnSubmit.style.background = "var(--neon-cyan)";
+            } else {
+                tabRegister.classList.add('active');
+                tabLogin.classList.remove('active');
+                btnSubmit.innerText = "TẠO TÀI KHOẢN MỚI";
+                btnSubmit.style.background = "var(--pixel-green)";
+            }
+        }
+
+        function handleAuth() {
             const user = document.getElementById("username").value.trim();
             const pass = document.getElementById("password").value.trim();
             const msg = document.getElementById("auth-msg");
 
             if(!user || !pass) {
                 msg.style.display = "block";
+                msg.style.color = "var(--neon-pink)";
                 msg.innerText = "LỖI: Không được bỏ trống thông tin!";
                 return;
             }
 
             msg.style.display = "block";
             msg.style.color = "var(--neon-amber)";
-            msg.innerText = "ĐANG XỬ LÝ DỮ LIỆU CỐT LÕI...";
+            msg.innerText = "ĐANG XỬ LÝ DỮ LIỆU LÕI...";
 
-            fetch(`/api/auth/${type}`, {
+            fetch(`/api/auth/${currentMode}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ username: user, password: pass })
@@ -73,6 +120,13 @@
                 }
             });
         }
+
+        // Hỗ trợ gõ phím Enter để thao tác nhanh
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                handleAuth();
+            }
+        });
     </script>
 </body>
 </html>

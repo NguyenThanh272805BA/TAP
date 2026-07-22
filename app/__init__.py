@@ -66,13 +66,20 @@ def create_app():
     def story_page():
         return render_template('story.html')
 
+    # --- THÊM ROUTE CHO GIAO DIỆN ADMIN ---
+    @app.route('/admin')
+    def admin_page():
+        return render_template('admin.html')
+
     # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
     from app.controllers.game_controller import game_bp
     from app.controllers.ai_controller import ai_bp
+    from app.controllers.admin_controller import admin_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(game_bp)
     app.register_blueprint(ai_bp)
+    app.register_blueprint(admin_bp)
 
     return app

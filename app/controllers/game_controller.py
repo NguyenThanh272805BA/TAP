@@ -6,8 +6,6 @@ from app.models.user_vocabulary import UserVocabulary
 from app.models.grammar import Grammar
 from datetime import datetime, date, timedelta
 import random
-
-# Import Core ML
 from app.ml_models.recommender import VocabRecommender
 from app.ml_models.srs_predictor import SmartSRS
 
@@ -19,8 +17,7 @@ srs_engine = SmartSRS()
 @game_bp.route('/checkin', methods=['POST'])
 def checkin():
     user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({"error": "Yêu cầu đăng nhập hệ thống!"}), 401
+    if not user_id: return jsonify({"error": "Yêu cầu đăng nhập hệ thống!"}), 401
 
     user = User.query.get(user_id)
     today = date.today()
@@ -28,26 +25,21 @@ def checkin():
     if user.last_checkin == today:
         return jsonify({"error": "Bạn đã điểm danh hôm nay rồi! Vui lòng quay lại vào ngày mai."}), 400
 
-    # Tính toán Streak Logic
     if user.last_checkin and (today - user.last_checkin).days == 1:
         user.streak_count += 1
     else:
-        user.streak_count = 1  # Reset về 1 nếu lỡ dở
+        user.streak_count = 1
 
     user.last_checkin = today
 
-    # Tính toán thưởng Coins
     reward_coins = 10
     bonus_msg = ""
-
-    # Chu kỳ 7 ngày thưởng lớn
     if user.streak_count % 7 == 0:
         reward_coins += 50
         bonus_msg = " + 50 Xu (Thưởng Chuỗi 7 Ngày)"
 
     user.coins += reward_coins
 
-    # Unlock ngẫu nhiên từ vựng
     unlocked_subquery = db.session.query(UserVocabulary.vocab_id).filter(
         UserVocabulary.user_id == user_id, UserVocabulary.is_unlocked == True
     )
@@ -64,7 +56,6 @@ def checkin():
         unlocked_words_list.append(word.word)
 
     db.session.commit()
-
     return jsonify({
         "message": f"Điểm danh thành công! Bạn nhận được {reward_coins} Xu{bonus_msg}.",
         "current_streak": user.streak_count,
@@ -80,8 +71,7 @@ def shop_buy():
     price = data.get('price', 0)
 
     user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+    if not user_id: return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     user = User.query.get(user_id)
     if user.coins < price:
@@ -89,11 +79,7 @@ def shop_buy():
 
     user.coins -= price
     db.session.commit()
-
-    return jsonify({
-        "message": f"Mua vật phẩm thành công! (Trừ {price} Xu)",
-        "new_coins": user.coins
-    }), 200
+    return jsonify({"message": f"Mua vật phẩm thành công! (Trừ {price} Xu)", "new_coins": user.coins}), 200
 
 
 @game_bp.route('/vocabularies', methods=['GET'])
@@ -102,11 +88,14 @@ def get_vocabularies():
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
+    # [ VÁ LỖI TẠI ĐÂY ]: Đổi sang INNER JOIN. Chỉ lấy từ vựng thuộc về đích danh User này.
     results = db.session.query(
         Vocabulary.id, Vocabulary.word, Vocabulary.meaning, Vocabulary.image_url, Vocabulary.theme,
         UserVocabulary.is_unlocked, UserVocabulary.memorization_level, UserVocabulary.next_review_time
-    ).outerjoin(
-        UserVocabulary, (Vocabulary.id == UserVocabulary.vocab_id) & (UserVocabulary.user_id == user_id)
+    ).join(
+        UserVocabulary, (Vocabulary.id == UserVocabulary.vocab_id)
+    ).filter(
+        UserVocabulary.user_id == user_id
     ).all()
 
     output = []
@@ -230,7 +219,6 @@ def gacha_verify():
 
     is_correct = vocab.meaning.strip() == user_answer.strip()
 
-    # ML INTEGRATION
     uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=vocab_id).first()
     if not uv:
         uv = UserVocabulary(user_id=user_id, vocab_id=vocab_id, is_unlocked=True)
@@ -238,14 +226,18 @@ def gacha_verify():
     else:
         uv.is_unlocked = True
 
+    current_fail = uv.fail_count if uv.fail_count is not None else 0
+    current_avg = uv.avg_response_time if uv.avg_response_time is not None else 0.0
+
     if not is_correct:
-        uv.fail_count += 1
+        uv.fail_count = current_fail + 1
         user.streak_count = 0
     else:
+        uv.fail_count = current_fail
         user.streak_count += 1
 
     time_sec = response_time_ms / 1000.0
-    uv.avg_response_time = time_sec if uv.avg_response_time == 0 else (uv.avg_response_time + time_sec) / 2
+    uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2
 
     next_review_dt, interval_hrs = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time, len(vocab.word))
     uv.next_review_time = next_review_dt
@@ -262,7 +254,6 @@ def generate_exam():
     user_id = session.get('user_id')
     if not user_id: return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
-    # Lấy các từ đã đến hạn ôn tập dựa theo ML
     now = datetime.now()
     needs_review = UserVocabulary.query.filter(
         UserVocabulary.user_id == user_id,
@@ -299,10 +290,17 @@ def update_exam_status():
     vocab = Vocabulary.query.get(vocab_id)
     if uv and vocab:
         is_correct = (level == 'DA_THUOC')
-        if not is_correct: uv.fail_count += 1
+
+        current_fail = uv.fail_count if uv.fail_count is not None else 0
+        current_avg = uv.avg_response_time if uv.avg_response_time is not None else 0.0
+
+        if not is_correct:
+            uv.fail_count = current_fail + 1
+        else:
+            uv.fail_count = current_fail
 
         time_sec = response_time_ms / 1000.0
-        uv.avg_response_time = time_sec if uv.avg_response_time == 0 else (uv.avg_response_time + time_sec) / 2
+        uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2
 
         next_dt, _ = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time, len(vocab.word))
         uv.next_review_time = next_dt

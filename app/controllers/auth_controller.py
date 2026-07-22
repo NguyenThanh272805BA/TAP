@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models.user import User
+from app.models.vocabulary import Vocabulary
+from app.models.user_vocabulary import UserVocabulary # <-- Bổ sung import Model
 from app import db
 from datetime import date
 
@@ -23,6 +25,13 @@ def register():
     new_user = User(username=username, password_hash=hashed_password)
 
     db.session.add(new_user)
+    db.session.commit()
+
+    # [ VÁ LỖI ]: Cấp Starter Pack (5 từ vựng mẫu đầu tiên) cho User mới để thư viện không bị trống
+    starter_vocabs = Vocabulary.query.limit(5).all()
+    for v in starter_vocabs:
+        uv = UserVocabulary(user_id=new_user.id, vocab_id=v.id, is_unlocked=True)
+        db.session.add(uv)
     db.session.commit()
 
     session['user_id'] = new_user.id
@@ -50,6 +59,7 @@ def login():
     else:
         return jsonify({"error": "Tài khoản hoặc mật khẩu không chính xác!"}), 401
 
+
 @auth_bp.route('/user/me', methods=['GET'])
 def get_current_user_profile():
     user_id = session.get('user_id')
@@ -65,5 +75,6 @@ def get_current_user_profile():
         "level": user.current_level,
         "streak": user.streak_count,
         "coins": user.coins,
-        "is_checked_in": is_checked_in
+        "is_checked_in": is_checked_in,
+        "role": user.role
     }), 200

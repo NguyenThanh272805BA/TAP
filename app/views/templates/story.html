@@ -3,25 +3,22 @@
 {% block title %}RPG SURVIVAL STORY{% endblock %}
 
 {% block content %}
-<div class="bento-container" style="grid-template-columns: repeat(3, 1fr); max-width: 1200px; margin: 0 auto;">
+<!-- THIẾT LẬP CHIỀU CAO CỐ ĐỊNH, KHÔNG BỊ TRÀN KHI TRUYỆN DÀI -->
+<div class="bento-container" style="height: calc(100vh - 100px); display: grid; grid-template-columns: 2fr 1fr; gap: 25px; max-width: 1300px; margin: 0 auto; align-items: stretch;">
 
-    <div class="bento-card" style="grid-column: span 2; display: flex; flex-direction: column; min-height: 500px; padding: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-            <div class="pixel-title" style="color: var(--neon-purple); font-size: 22px;">TERMINAL // CYBER_SURVIVAL</div>
-
-            <div style="width: 70px; height: 35px; transform: scale(1.2);">
+    <!-- CỘT TRÁI: TERMINAL SINH TỒN -->
+    <div class="bento-card" style="display: flex; flex-direction: column; padding: 25px; height: 100%; box-sizing: border-box; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-shrink: 0;">
+            <div class="pixel-title" style="color: var(--neon-purple); font-size: 20px; margin: 0;">TERMINAL // CYBER_SURVIVAL</div>
+            <div style="width: 70px; height: 35px; transform: scale(1.1); transform-origin: top right;">
                 <div class="character-container">
                     <div class="character">
                         <div class="head">
                             <div class="hair-back"></div>
                             <div class="face">
                                 <div class="hair-front"></div>
-                                <div class="eyes">
-                                    <div class="eye left"><div class="pupil"></div></div>
-                                    <div class="eye right"><div class="pupil"></div></div>
-                                </div>
-                                <div class="blush left"></div>
-                                <div class="blush right"></div>
+                                <div class="eyes"><div class="eye left"><div class="pupil"></div></div><div class="eye right"><div class="pupil"></div></div></div>
+                                <div class="blush left"></div><div class="blush right"></div>
                                 <div class="mouth"></div>
                             </div>
                         </div>
@@ -35,30 +32,37 @@
             </div>
         </div>
 
-        <div id="story-terminal" style="flex-grow: 1; background: rgba(0,0,0,0.7); border: 2px solid var(--neon-purple); border-radius: 8px; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;">
-            <div class="typing-effect" style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 14px;">[SYSTEM] Đang kết nối tới máy chủ Game Master...</div>
+        <!-- KHUNG CHỨA TRUYỆN CÓ THANH CUỘN ĐỘC LẬP -->
+        <div id="story-terminal" style="flex-grow: 1; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); border-radius: 12px; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;">
+            <div class="typing-effect" style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 15px;">[SYSTEM] Đang kết nối tới máy chủ Game Master...</div>
         </div>
     </div>
 
-    <div class="bento-card" style="grid-column: span 1; display: flex; flex-direction: column; padding: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--glass-border); padding-bottom: 10px;">
-            <div class="pixel-title" style="color: var(--neon-amber); font-size: 16px; margin: 0;">ACTION_MENU</div>
-            <div class="pixel-title" style="color: var(--neon-cyan); font-size: 12px; margin: 0;">TURN: <span id="story-turn-counter">1/10</span></div>
+    <!-- CỘT PHẢI: ACTION MENU -->
+    <div class="bento-card" style="display: flex; flex-direction: column; padding: 25px; height: 100%; box-sizing: border-box;">
+
+        <div style="flex-shrink: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px;">
+                <div class="pixel-title" style="color: var(--neon-amber); margin: 0;">ACTION_MENU</div>
+                <div class="pixel-title" style="color: var(--neon-cyan); margin: 0; font-size: 13px;">TURN: <span id="story-turn-counter">1/10</span></div>
+            </div>
+
+            <div class="pixel-text" style="font-size: 15px; color: #94a3b8; margin-bottom: 20px;">
+                Dựa vào gợi ý dưới đây, hãy gõ một câu tiếng Anh hoàn chỉnh vào ô lệnh:
+            </div>
+
+            <div id="story-hint-box" style="background: rgba(34, 211, 238, 0.05); border: 1px dashed var(--neon-cyan); padding: 18px; border-radius: 12px; margin-bottom: 20px;">
+                <div class="typing-effect" style="color: var(--neon-cyan); font-size: 14px;">Đang giải mã gợi ý...</div>
+            </div>
         </div>
 
-        <div class="pixel-text" style="font-size: 14px; color: #94a3b8; margin-bottom: 15px;">
-            Dựa vào gợi ý dưới đây, hãy gõ một câu tiếng Anh hoàn chỉnh vào ô lệnh:
-        </div>
-
-        <div id="story-hint-box" style="background: rgba(34, 211, 238, 0.1); border: 1px dashed var(--neon-cyan); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <div class="typing-effect" style="color: var(--neon-cyan); font-size: 12px;">Đang giải mã gợi ý...</div>
-        </div>
-
+        <!-- FORM NHẬP LIỆU BÁM ĐÁY GIAO DIỆN -->
         <div style="margin-top: auto;">
-            <div class="pixel-text" style="font-size: 12px; color: var(--neon-purple); margin-bottom: 8px;">> TERMINAL_INPUT:</div>
-            <textarea id="storyInput" style="width: 100%; height: 100px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 16px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Type your full sentence here..."></textarea>
-            <button id="btn-story-execute" class="pixel-btn" style="background: var(--neon-purple); width: 100%; margin-top: 15px; padding: 15px; font-size: 14px;" onclick="executeStoryAction()">THỰC THI (ENTER)</button>
+            <div class="pixel-text" style="font-size: 13px; color: var(--neon-purple); margin-bottom: 10px; font-weight: bold;">> TERMINAL_INPUT:</div>
+            <textarea id="storyInput" style="width: 100%; height: 110px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 15px; font-family: var(--text-mono); font-size: 16px; border-radius: 12px; resize: none; box-sizing: border-box; transition: 0.3s;" placeholder="Type your full sentence here..."></textarea>
+            <button id="btn-story-execute" class="pixel-btn" style="background: var(--neon-purple); width: 100%; margin-top: 15px; padding: 16px; font-size: 14px; border-radius: 8px;" onclick="executeStoryAction()">THỰC THI LỆNH (ENTER)</button>
         </div>
+
     </div>
 
 </div>
@@ -66,7 +70,6 @@
 
 {% block extra_js %}
 <script>
-    // Định nghĩa hàm gọi truyện khi trang load (Logic nằm bên main.js)
     document.addEventListener("DOMContentLoaded", () => {
         initRPGStory();
     });

@@ -31,6 +31,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (sidebarStreak) sidebarStreak.innerText = data.streak;
                     if (sidebarCoins) sidebarCoins.innerText = data.coins;
 
+                    // Phân quyền Admin: Hiển thị nút God Mode nếu role là admin
+                    if (data.role === 'admin') {
+                        const adminNav = document.getElementById('nav-admin');
+                        if (adminNav) adminNav.style.display = 'flex';
+                    }
+
                     // Xử lý UI Check-in 7 ngày ở Dashboard
                     if (currentPath === '/dashboard') {
                         renderStreakUI(data.streak);
@@ -193,7 +199,7 @@ function switchFeature(featureName) {
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px; line-height: 1.6;">
                     NHIỆM VỤ TỪ VỰNG: Đặt một câu có nghĩa chứa từ lóng / từ vựng hệ thống yêu cầu dưới đây.
                 </div>
-                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Master G đang đợi câu từ vựng của bạn..."></textarea>
+                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: none; box-sizing: border-box;" placeholder="Master G đang đợi câu từ vựng của bạn..."></textarea>
                 <div style="margin-top: 10px; display: flex; gap: 12px;">
                     <button class="pixel-btn" onclick="submitChallenge()">SEND_VOCAB</button>
                 </div>
@@ -210,7 +216,7 @@ function switchFeature(featureName) {
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px; line-height: 1.6;">
                     NHIỆM VỤ NGỮ PHÁP: Sử dụng đúng cấu trúc ngữ pháp quy định để vượt ải thành công.
                 </div>
-                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 8px; resize: none; box-sizing: border-box;" placeholder="Nhập câu ngữ pháp tại đây..."></textarea>
+                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: none; box-sizing: border-box;" placeholder="Nhập câu ngữ pháp tại đây..."></textarea>
                 <div style="margin-top: 10px; display: flex; gap: 12px;">
                     <button class="pixel-btn" onclick="submitChallenge()">SEND_COMMAND</button>
                 </div>
@@ -284,7 +290,7 @@ function submitChallenge() {
 
         aiFeedbackDiv.innerHTML = `
             <div style="margin-bottom: 10px; line-height: 1.6; color: #fff; font-family: var(--text-main); font-size:16px;">${feedback}</div>
-            <div style="font-family: var(--text-pixel); font-size: 11px; color: ${scoreColor}; margin-top: 8px; letter-spacing: 0.5px;">
+            <div style="font-family: var(--text-pixel); font-size: 12px; color: ${scoreColor}; margin-top: 10px; letter-spacing: 0.5px;">
                 RATING_SCORE: ${score}/10
             </div>
         `;
@@ -319,12 +325,12 @@ function loadVocabQuests() {
             themes[themeName].push(item);
         });
 
-        let html = '<div style="max-height: 380px; overflow-y: auto; padding-right: 4px;">';
+        let html = '<div style="max-height: 380px; overflow-y: auto; padding-right: 8px;">';
 
         for (const [theme, words] of Object.entries(themes)) {
             html += `
                 <div style="margin-bottom: 16px;">
-                    <div class="pixel-title" style="color: var(--neon-amber); font-size: 10px; border-left: 3px solid var(--neon-amber); padding-left: 6px; margin-bottom: 8px; letter-spacing: 0.5px;">
+                    <div class="pixel-title" style="color: var(--neon-amber); font-size: 11px; border-left: 3px solid var(--neon-amber); padding-left: 8px; margin-bottom: 10px; letter-spacing: 0.5px;">
                         ${theme.toUpperCase()}
                     </div>
                     <ul style="list-style: none; padding:0; margin:0;">
@@ -337,12 +343,12 @@ function loadVocabQuests() {
                 const checkColor = item.is_memorized ? "var(--pixel-green)" : "#64748b";
 
                 html += `
-                    <li style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; opacity: ${opacity}; pointer-events: ${pointerEvents};">
+                    <li style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; opacity: ${opacity}; pointer-events: ${pointerEvents};">
                         <div style="flex-grow: 1; padding-right: 10px;">
                             <strong style="color: var(--neon-cyan); font-family: var(--text-main); font-size: 16px; font-weight:600;">${item.word}</strong>
                             <span style="font-size: 13px; color: #94a3b8; display: block; margin-top: 3px; font-family: var(--text-main); line-height: 1.4;">${item.meaning}</span>
                         </div>
-                        <button onclick="toggleVocabMark(${item.id})" style="background: transparent; border: none; color: ${checkColor}; font-family: var(--text-pixel); font-size: 9px; cursor: pointer; padding: 4px;">
+                        <button onclick="toggleVocabMark(${item.id})" class="pixel-btn" style="background: rgba(0,0,0,0.4); border: 1px solid ${checkColor}; color: ${checkColor}; font-size: 10px; cursor: pointer; padding: 6px 10px; box-shadow: none;">
                             ${checkSign}
                         </button>
                     </li>
@@ -385,7 +391,7 @@ function triggerCardShake() {
     const battleCard = document.getElementById("battle-card");
     if (battleCard) {
         battleCard.classList.add("error-shake");
-        setTimeout(() => battleCard.classList.remove("error-shake"), 300);
+        setTimeout(() => battleCard.classList.remove("error-shake"), 400);
     }
 }
 
@@ -487,8 +493,8 @@ function appendStoryScene(data, isInit = false) {
 
     // Phun in nội dung bối cảnh ra màn hình Terminal song song EN - VN
     terminal.innerHTML += `
-        <div style="background: rgba(26, 16, 60, 0.5); border-left: 3px solid var(--neon-purple); padding: 14px; border-radius: 6px; margin-bottom: 12px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
-            <div style="color: #fff; font-family: var(--text-main); font-size: 16px; margin-bottom: 8px; line-height: 1.6; font-weight:500;">${data.scene_en}</div>
+        <div style="background: rgba(30, 41, 75, 0.7); border-left: 3px solid var(--neon-purple); padding: 16px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+            <div style="color: #fff; font-family: var(--text-main); font-size: 16px; margin-bottom: 10px; line-height: 1.6; font-weight:600;">${data.scene_en}</div>
             <div style="color: #94a3b8; font-family: var(--text-main); font-size: 14px; font-style: italic; line-height: 1.5;">${data.scene_vn}</div>
         </div>
     `;
@@ -503,9 +509,9 @@ function appendStoryScene(data, isInit = false) {
     // Kiểm tra xem đã cán mốc lượt thứ 10 (Hạ màn game) hay chưa
     if (data.is_end === "true" || data.is_end === true) {
         hintBox.innerHTML = `
-            <div style="color: var(--pixel-green); font-family: var(--text-pixel); font-size: 13px; text-align: center; margin-bottom: 12px; letter-spacing:0.5px;">MISSION ACCOMPLISHED!</div>
-            <div style="color: #cbd5e1; font-family: var(--text-main); font-size: 14px; text-align: center; line-height:1.5;">Hành trình sinh tồn hoàn tất. Bạn xuất sắc vượt qua 10 lượt cân não!</div>
-            <button class="pixel-btn" style="background: var(--neon-amber); width: 100%; margin-top: 15px; padding:12px; font-size:11px;" onclick="initRPGStory()">CHƠI LẠI MÀN MỚI</button>
+            <div style="color: var(--pixel-green); font-family: var(--text-pixel); font-size: 14px; text-align: center; margin-bottom: 15px; letter-spacing:1px;">MISSION ACCOMPLISHED!</div>
+            <div style="color: #cbd5e1; font-family: var(--text-main); font-size: 15px; text-align: center; line-height:1.6;">Hành trình sinh tồn hoàn tất. Bạn xuất sắc vượt qua 10 lượt cân não!</div>
+            <button class="pixel-btn" style="background: var(--neon-amber); width: 100%; margin-top: 15px; padding:15px; font-size:12px;" onclick="initRPGStory()">CHƠI LẠI MÀN MỚI</button>
         `;
         if (storyInput) storyInput.disabled = true;
         if (btnExecute) btnExecute.disabled = true;
@@ -514,8 +520,8 @@ function appendStoryScene(data, isInit = false) {
     } else {
         // Render ma trận gợi ý điền từ vào chỗ trống (Fill-in-the-blanks)
         hintBox.innerHTML = `
-            <div style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 16px; font-weight: 700; line-height: 1.5; margin-bottom: 8px; letter-spacing: 0.5px;">${data.hint_en || "I need to ___ carefully."}</div>
-            <div style="color: #94a3b8; font-family: var(--text-main); font-size: 13px; font-style: italic; line-height: 1.4;">Ý nghĩa gợi mở: ${data.hint_vn || "Tôi cần hành động cẩn trọng"}</div>
+            <div style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 16px; font-weight: 700; line-height: 1.5; margin-bottom: 10px; letter-spacing: 0.5px;">${data.hint_en || "I need to ___ carefully."}</div>
+            <div style="color: #94a3b8; font-family: var(--text-main); font-size: 14px; font-style: italic; line-height: 1.5;">Ý nghĩa gợi mở: ${data.hint_vn || "Tôi cần hành động cẩn trọng"}</div>
         `;
         if (storyInput) {
             storyInput.disabled = false;
@@ -551,8 +557,8 @@ function executeStoryAction() {
 
     // Đẩy hành động người dùng lên màn hình Terminal
     terminal.innerHTML += `
-        <div style="text-align: right; margin: 12px 0;">
-            <span style="background: var(--neon-cyan); color: #000; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-family: var(--text-mono); font-size:15px; display:inline-block; box-shadow:0 4px 10px rgba(34,211,238,0.2);">> ${actionText}</span>
+        <div style="text-align: right; margin: 15px 0;">
+            <span style="background: var(--neon-cyan); color: #000; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-family: var(--text-mono); font-size:15px; display:inline-block; box-shadow:0 4px 15px rgba(103,232,249,0.3);">> ${actionText}</span>
         </div>
     `;
     inputEle.value = "";
@@ -560,7 +566,7 @@ function executeStoryAction() {
 
     // Kích hoạt dòng trạng thái Loading thời gian thực của Game Master
     const loadId = "loading-" + Date.now();
-    terminal.innerHTML += `<div id="${loadId}" class="pulse-neon" style="margin-bottom: 12px; font-family:var(--text-main); font-size:14px; color:var(--neon-purple);">[GM] Đang phân tích ngữ pháp và dắt cốt truyện...</div>`;
+    terminal.innerHTML += `<div id="${loadId}" class="pulse-neon" style="margin-bottom: 15px; font-family:var(--text-main); font-size:15px; color:var(--neon-purple);">[GM] Đang phân tích ngữ pháp và dắt cốt truyện...</div>`;
     terminal.scrollTop = terminal.scrollHeight;
 
     // Thực hiện Fetch đẩy hành động + Trí nhớ ngữ cảnh câu chuyện lên cho AI
@@ -588,7 +594,7 @@ function executeStoryAction() {
         // Render bảng điểm kiểm duyệt ngữ pháp của Master G xéo xắt lên góc phải Terminal
         const scoreColor = score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
         terminal.innerHTML += `
-            <div style="font-size: 11px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 16px; text-align: right; letter-spacing:0.5px;">
+            <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 18px; text-align: right; letter-spacing:0.5px;">
                 [GM RATING: ${score}/10] - <span style="font-family:var(--text-main); font-size:14px; font-weight:normal; color:#fff;">${result.feedback || "Cú pháp chấp nhận được."}</span>
             </div>
         `;
@@ -599,7 +605,7 @@ function executeStoryAction() {
     .catch(err => {
         const loadEl = document.getElementById(loadId);
         if (loadEl) loadEl.remove();
-        hintBox.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:14px;'>[ERROR] Lỗi kết nối Game Master! Đứt cáp mạng không gian!</span>";
+        hintBox.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>[ERROR] Lỗi kết nối Game Master! Đứt cáp mạng không gian!</span>";
 
         // Rollback hoàn tác bộ đếm lượt nếu tiến trình gọi API đổ bể
         currentStoryTurn--;

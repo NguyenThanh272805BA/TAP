@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}GOD MODE - ADMIN PANEL{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 25px;">
+    <div class="pixel-title" style="font-size: 24px; color: var(--neon-pink); margin-bottom: 5px;">[ GOD_MODE ] TERMINAL</div>
+    <div style="color: #94a3b8; font-size: 15px;">Hệ thống quản trị dữ liệu tối cao. Mọi thay đổi ở đây đều ảnh hưởng trực tiếp đến máy chủ.</div>
+</div>
+
+<!-- THỐNG KÊ TỔNG QUAN -->
+<div class="bento-container" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 25px;">
+    <div class="bento-card" style="padding: 20px; text-align: center;">
+        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 11px;">TỔNG PLAYER</div>
+        <div id="stat-users" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
+    </div>
+    <div class="bento-card" style="padding: 20px; text-align: center;">
+        <div class="pixel-title" style="color: var(--pixel-green); font-size: 11px;">TỪ VỰNG (UNIT)</div>
+        <div id="stat-vocab" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
+    </div>
+    <div class="bento-card" style="padding: 20px; text-align: center;">
+        <div class="pixel-title" style="color: var(--neon-amber); font-size: 11px;">NGỮ PHÁP</div>
+        <div id="stat-grammar" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
+    </div>
+    <div class="bento-card" style="padding: 20px; text-align: center;">
+        <div class="pixel-title" style="color: var(--neon-purple); font-size: 11px;">LƯỢT CHẤM ĐIỂM</div>
+        <div id="stat-tests" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
+    </div>
+</div>
+
+<!-- QUẢN LÝ NGƯỜI CHƠI -->
+<div class="bento-card card-wide" style="min-height: 400px; padding: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 16px;">DATA_TABLE // USERS</div>
+        <button class="pixel-btn" onclick="fetchAdminData()" style="background: var(--neon-purple); font-size: 10px;">REFRESH DATA</button>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--glass-border); color: var(--neon-pink); font-family: var(--text-pixel); font-size: 10px;">
+                    <th style="padding: 12px;">ID</th>
+                    <th style="padding: 12px;">USERNAME</th>
+                    <th style="padding: 12px;">ROLE</th>
+                    <th style="padding: 12px;">LEVEL</th>
+                    <th style="padding: 12px;">COINS</th>
+                    <th style="padding: 12px;">CREATED</th>
+                    <th style="padding: 12px; text-align: right;">ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="admin-user-list" style="font-family: var(--text-mono); font-size: 14px; color: #e2e8f0;">
+                <!-- Dữ liệu render bằng JS -->
+                <tr><td colspan="7" style="text-align: center; padding: 20px;">Đang tải dữ liệu lõi...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchAdminData();
+    });
+
+    function fetchAdminData() {
+        // Lấy thống kê
+        fetch('/api/admin/stats')
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) {
+                    alert(data.error);
+                    window.location.href = '/dashboard';
+                    return;
+                }
+                document.getElementById('stat-users').innerText = data.users;
+                document.getElementById('stat-vocab').innerText = data.vocab;
+                document.getElementById('stat-grammar').innerText = data.grammar;
+                document.getElementById('stat-tests').innerText = data.tests;
+            })
+            .catch(err => console.error("Admin Auth Error"));
+
+        // Lấy danh sách user
+        fetch('/api/admin/users')
+            .then(res => res.json())
+            .then(users => {
+                const tbody = document.getElementById('admin-user-list');
+                tbody.innerHTML = '';
+                
+                users.forEach(u => {
+                    const roleColor = u.role === 'admin' ? 'color: var(--neon-pink); font-weight: bold;' : 'color: #94a3b8;';
+                    tbody.innerHTML += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 12px;">#${u.id}</td>
+                            <td style="padding: 12px; color: var(--neon-cyan);">${u.username}</td>
+                            <td style="padding: 12px; ${roleColor}">${u.role.toUpperCase()}</td>
+                            <td style="padding: 12px;">${u.level}</td>
+                            <td style="padding: 12px; color: var(--neon-amber);">${u.coins}</td>
+                            <td style="padding: 12px; color: #94a3b8;">${u.created_at}</td>
+                            <td style="padding: 12px; text-align: right;">
+                                <button onclick="deleteUser(${u.id})" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid #ef4444; color: #ef4444; padding: 6px 12px; font-size: 9px; box-shadow: none;">BAN / XÓA</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+    }
+
+    function deleteUser(userId) {
+        if(!confirm("CẢNH BÁO TỐI CAO: Bạn có chắc chắn muốn xóa vĩnh viễn Player này khỏi cơ sở dữ liệu?")) return;
+        
+        fetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) alert(data.error);
+                else {
+                    alert(data.message);
+                    fetchAdminData(); // Refresh bảng
+                }
+            });
+    }
+</script>
+{% endblock %}
