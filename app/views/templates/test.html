@@ -3,55 +3,89 @@
 {% block title %}GACHA REFLEX ARENA{% endblock %}
 
 {% block content %}
-<div class="bento-container" style="max-width: 800px; margin: 5vh auto;">
+<div class="bento-container" style="max-width: 1000px; margin: 2vh auto; display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
 
-    <div class="bento-card" style="grid-column: span 4; text-align: center; padding: 40px; position: relative;">
+    <!-- CỘT TRÁI: ARENA MAIN SCREEN -->
+    <div class="bento-card" style="padding: 40px; position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px;">
-            <div class="pixel-title" style="color: var(--pixel-green); font-size: 11px; margin: 0; letter-spacing: 0.5px;">GACHA_ARENA // REFLEX_5S</div>
-            <div class="pixel-title" style="color: var(--neon-amber); font-size: 11px; margin: 0; letter-spacing: 0.5px;">STREAK: <span id="gacha-streak">0</span></div>
+            <div class="pixel-title" style="color: var(--pixel-green); font-size: 14px; margin: 0; letter-spacing: 0.5px;" id="arena-title">GACHA_ARENA // SELECT_MODE</div>
+            <div class="pixel-title" style="color: var(--neon-amber); font-size: 12px; margin: 0; letter-spacing: 0.5px;">STREAK: <span id="gacha-streak">0</span></div>
         </div>
 
+        <!-- Màn hình chọn chế độ -->
         <div id="start-screen">
-            <div class="pixel-title" style="font-size: 14px; color: #fff; margin-bottom: 20px; text-shadow: 2px 2px var(--neon-pink); letter-spacing: 1px;">READY FOR THE ROLL?</div>
-            <p class="pixel-text" style="color: #94a3b8; font-size: 15px; margin-bottom: 30px; line-height: 1.6;">
-                Hệ thống sẽ bốc một từ vựng bất kỳ đang bị KHÓA.<br> Bạn có chính xác 5 giây để tìm ra nghĩa đúng. Thua = Reset Streak!
-            </p>
-            <button class="pixel-btn" onclick="rollNewChallenge()" style="background: var(--pixel-green); padding: 12px 30px; font-size: 11px;">
-                PRESS START TO ROLL
-            </button>
+            <div class="pixel-title" style="font-size: 16px; color: #fff; margin-bottom: 20px; text-shadow: 2px 2px var(--neon-pink); letter-spacing: 1px;">CHỌN CHẾ ĐỘ CHIẾN ĐẤU</div>
+
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <button class="pixel-btn" onclick="startMode('stage')" style="background: var(--neon-cyan); color: #000; padding: 15px;">
+                    ▶ VƯỢT ẢI (10 STAGES)
+                    <div style="font-size: 10px; font-family: var(--text-main); margin-top: 5px;">Độ khó và tốc độ tăng dần theo từng ải.</div>
+                </button>
+
+                <button class="pixel-btn" onclick="startMode('infinity')" style="background: var(--neon-purple); padding: 15px;">
+                    ♾ SINH TỒN VÔ CỰC
+                    <div style="font-size: 10px; font-family: var(--text-main); margin-top: 5px;">Kiểm tra phản xạ liên tục. Sai 1 lần = Chết.</div>
+                </button>
+            </div>
         </div>
 
+        <!-- Màn hình In-game -->
         <div id="arena-screen" style="display: none;">
-            <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 30px; overflow: hidden;">
-                <div id="timer-bar" style="width: 100%; height: 100%; background: var(--neon-pink); transition: width 0.1s linear;"></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <span id="game-status-left" style="color: var(--neon-cyan); font-family: var(--text-pixel);">STAGE: 1</span>
+                <span id="game-status-right" style="color: var(--neon-amber); font-family: var(--text-pixel);">TIME: 5.0s</span>
             </div>
 
-            <div id="target-word" style="font-family: var(--text-mono); font-size: 38px; font-weight: 700; color: var(--neon-cyan); margin-bottom: 35px; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 12px rgba(34, 211, 238, 0.4);">
+            <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 30px; overflow: hidden;">
+                <div id="timer-bar" style="width: 100%; height: 100%; background: var(--pixel-green); transition: width 0.1s linear;"></div>
+            </div>
+
+            <div id="target-word" style="font-family: var(--text-mono); font-size: 42px; font-weight: 700; color: #fff; margin-bottom: 35px; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 15px rgba(255, 255, 255, 0.4); text-align: center;">
                 WORD
             </div>
 
             <div id="options-box" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                <!-- Buttons injected by JS -->
             </div>
         </div>
 
+        <!-- Màn hình Kết quả sau 1 Roll -->
         <div class="ai-dialog-box" id="result-box" style="display: none; margin-top: 20px; text-align: left;">
-            <div class="pixel-title" id="result-title" style="color: var(--neon-pink); margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">MASTER_G CHẤM ĐIỂM:</div>
-            <div id="result-msg" class="pixel-text" style="font-size: 15px; color: #fff; line-height: 1.5;"></div>
-            <button class="pixel-btn" id="btn-next" onclick="rollNewChallenge()" style="background: var(--neon-purple); margin-top: 15px; font-size: 9px; padding: 8px 16px;">TIẾP TỤC ĐẤU TRƯỜNG ></button>
+            <div class="pixel-title" id="result-title" style="color: var(--neon-pink); margin-bottom: 8px; font-size: 11px; letter-spacing: 0.5px;">BÁO CÁO HỆ THỐNG:</div>
+            <div id="result-msg" class="pixel-text" style="font-size: 16px; color: #fff; line-height: 1.5; font-weight: bold;"></div>
+            <button class="pixel-btn" id="btn-next" onclick="rollNewChallenge()" style="background: var(--pixel-green); margin-top: 15px; font-size: 10px; width: 100%; padding: 12px;">TIẾP TỤC ĐẤU TRƯỜNG</button>
+            <button class="pixel-btn" id="btn-exit" onclick="exitToLobby()" style="background: #ef4444; margin-top: 10px; font-size: 10px; width: 100%; padding: 12px; display: none;">THOÁT VỀ MENU</button>
         </div>
+    </div>
 
+    <!-- CỘT PHẢI: LEADERBOARD -->
+    <div class="bento-card" style="padding: 25px;">
+        <div class="pixel-title" style="color: var(--neon-amber); font-size: 16px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 15px;">
+            🏆 TOP INFINITY RANK
+        </div>
+        <div id="leaderboard-container" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang quét mạng lưới...</div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    let currentMode = 'stage';
     let currentVocabId = null;
     let countdownInterval = null;
+    let maxTime = 5.0;
     let timeLeft = 5.0;
-    let questionStartTime = 0; // Biến tracking thời gian phản xạ (ML Feature)
+    let questionStartTime = 0;
+    let infinityScore = 0;
 
     document.addEventListener("DOMContentLoaded", () => {
+        loadLeaderboard();
+        fetchUserData();
+    });
+
+    function fetchUserData() {
         const userId = localStorage.getItem("user_id");
         if (userId) {
             fetch(`/api/auth/user/${userId}`)
@@ -60,32 +94,67 @@
                     document.getElementById("gacha-streak").innerText = data.streak;
                 });
         }
-    });
+    }
+
+    function loadLeaderboard() {
+        fetch('/api/game/gacha/leaderboard')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById("leaderboard-container");
+            let html = '';
+            data.leaderboard.forEach((u, idx) => {
+                let color = idx === 0 ? "var(--neon-amber)" : (idx === 1 ? "#cbd5e1" : "#d97706");
+                if(idx > 2) color = "#94a3b8";
+                html += `
+                <div style="display: flex; justify-content: space-between; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border-left: 3px solid ${color};">
+                    <span style="color: ${color}; font-weight: bold; font-family: var(--text-mono);">#${idx+1} ${u.username}</span>
+                    <span style="color: #fff; font-family: var(--text-pixel);">${u.score} pts</span>
+                </div>`;
+            });
+            container.innerHTML = html;
+        });
+    }
+
+    function startMode(mode) {
+        currentMode = mode;
+        infinityScore = 0;
+        document.getElementById("start-screen").style.display = "none";
+        document.getElementById("arena-screen").style.display = "block";
+        document.getElementById("arena-title").innerText = mode === 'stage' ? "ARENA // 10_STAGES" : "ARENA // INFINITY";
+        rollNewChallenge();
+    }
 
     function rollNewChallenge() {
         const userId = localStorage.getItem("user_id");
-        document.getElementById("start-screen").style.display = "none";
         document.getElementById("result-box").style.display = "none";
-        document.getElementById("arena-screen").style.display = "block";
+        document.getElementById("btn-next").style.display = "block";
+        document.getElementById("btn-exit").style.display = "none";
         document.getElementById("options-box").innerHTML = "";
         clearInterval(countdownInterval);
 
         fetch('/api/game/gacha/roll', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: userId })
+            body: JSON.stringify({ mode: currentMode })
         })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'empty') {
-                document.getElementById("arena-screen").style.display = "none";
-                document.getElementById("start-screen").style.display = "block";
-                document.getElementById("start-screen").innerHTML = `<div class='pixel-title' style='color:var(--pixel-green); font-size: 11px;'>${data.message}</div>`;
+                alert(data.message);
+                exitToLobby();
                 return;
             }
 
             currentVocabId = data.vocab_id;
+            maxTime = data.timer;
+
             document.getElementById("target-word").innerText = data.word;
+
+            if (currentMode === 'stage') {
+                document.getElementById("game-status-left").innerText = `STAGE: ${data.current_stage}/10`;
+            } else {
+                document.getElementById("game-status-left").innerText = `COMBO: ${infinityScore}`;
+            }
 
             data.options.forEach(opt => {
                 const btn = document.createElement("button");
@@ -93,7 +162,6 @@
                 btn.style.background = "rgba(0,0,0,0.5)";
                 btn.style.textTransform = "none";
                 btn.style.fontSize = "15px";
-                btn.style.fontFamily = "var(--text-main)";
                 btn.innerText = opt;
                 btn.onclick = () => submitAnswer(opt);
                 document.getElementById("options-box").appendChild(btn);
@@ -104,21 +172,23 @@
     }
 
     function startArenaTimer() {
-        timeLeft = 5.0;
+        timeLeft = maxTime;
         const timerBar = document.getElementById("timer-bar");
-        timerBar.style.width = "100%";
-        timerBar.style.background = "var(--neon-pink)";
+        const timerText = document.getElementById("game-status-right");
 
-        questionStartTime = Date.now(); // Bắt đầu bấm giờ đo tốc độ phản xạ
+        timerBar.style.width = "100%";
+        timerBar.style.background = "var(--pixel-green)";
+        questionStartTime = Date.now();
 
         countdownInterval = setInterval(() => {
             timeLeft -= 0.1;
-            const percentage = (timeLeft / 5.0) * 100;
+            timerText.innerText = `TIME: ${Math.max(0, timeLeft).toFixed(1)}s`;
+
+            const percentage = (timeLeft / maxTime) * 100;
             timerBar.style.width = percentage + "%";
 
-            if (timeLeft <= 2.0) {
-                timerBar.style.background = "red";
-            }
+            if (timeLeft <= (maxTime * 0.4)) timerBar.style.background = "var(--neon-amber)";
+            if (timeLeft <= (maxTime * 0.2)) timerBar.style.background = "var(--neon-pink)";
 
             if (timeLeft <= 0) {
                 clearInterval(countdownInterval);
@@ -127,64 +197,61 @@
         }, 100);
     }
 
-    function handleTimeout() {
-        lockOptions();
-        sendVerification(null, true);
-    }
-
-    function submitAnswer(selectedAnswer) {
-        clearInterval(countdownInterval);
-        lockOptions();
-        sendVerification(selectedAnswer, false);
-    }
+    function handleTimeout() { lockOptions(); sendVerification(null, true); }
+    function submitAnswer(ans) { clearInterval(countdownInterval); lockOptions(); sendVerification(ans, false); }
 
     function lockOptions() {
         const buttons = document.getElementById("options-box").getElementsByTagName("button");
-        for (let btn of buttons) {
-            btn.disabled = true;
-            btn.style.opacity = "0.6";
-        }
+        for (let btn of buttons) { btn.disabled = true; btn.style.opacity = "0.5"; }
     }
 
     function sendVerification(answer, isTimeout) {
         const userId = localStorage.getItem("user_id");
-        const resultBox = document.getElementById("result-box");
-        const resultTitle = document.getElementById("result-title");
-        const resultMsg = document.getElementById("result-msg");
-
-        // Tính toán thời gian phản xạ (Tính bằng ms)
-        const responseTimeMs = isTimeout ? 5000 : (Date.now() - questionStartTime);
+        const responseTimeMs = isTimeout ? (maxTime * 1000) : (Date.now() - questionStartTime);
 
         fetch('/api/game/gacha/verify', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                user_id: userId,
-                vocab_id: currentVocabId,
-                answer: answer,
-                timeout: isTimeout,
-                response_time_ms: responseTimeMs // Đẩy Data lên Backend cho ML
+                user_id: userId, vocab_id: currentVocabId, answer: answer,
+                timeout: isTimeout, response_time_ms: responseTimeMs,
+                mode: currentMode, current_score: infinityScore
             })
         })
         .then(res => res.json())
         .then(data => {
-            resultBox.style.display = "block";
+            const resultBox = document.getElementById("result-box");
             document.getElementById("gacha-streak").innerText = data.new_streak;
+            resultBox.style.display = "block";
 
+            const title = document.getElementById("result-title");
             if (data.correct) {
-                resultTitle.innerText = "MASTER_G: CỰC TỐT!";
-                resultTitle.style.color = "var(--pixel-green)";
-                resultMsg.innerText = data.message;
-
-                if(typeof triggerFireworksEffect === 'function') {
-                    triggerFireworksEffect();
-                }
+                title.innerText = "SUCCESS!";
+                title.style.color = "var(--pixel-green)";
+                if (currentMode === 'infinity') infinityScore++;
+                if (typeof triggerFireworksEffect === 'function') triggerFireworksEffect();
             } else {
-                resultTitle.innerText = "MASTER_G SỈ VẢ:";
-                resultTitle.style.color = "var(--neon-pink)";
-                resultMsg.innerText = data.message;
+                title.innerText = "FAILED!";
+                title.style.color = "var(--neon-pink)";
+            }
+
+            document.getElementById("result-msg").innerText = data.message;
+
+            // Xử lý GameOver (Chết ở Infinity hoặc Thua ở Stage / Phá đảo Stage 10)
+            if (data.is_game_over) {
+                document.getElementById("btn-next").style.display = "none";
+                document.getElementById("btn-exit").style.display = "block";
+                loadLeaderboard(); // Cập nhật lại top nếu có record mới
             }
         });
+    }
+
+    function exitToLobby() {
+        document.getElementById("result-box").style.display = "none";
+        document.getElementById("arena-screen").style.display = "none";
+        document.getElementById("start-screen").style.display = "block";
+        document.getElementById("arena-title").innerText = "GACHA_ARENA // SELECT_MODE";
+        fetchUserData(); // Cập nhật lại UI streak
     }
 </script>
 {% endblock %}

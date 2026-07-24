@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}ITEM SHOP{% endblock %}
+
+{% block content %}
+<div class="bento-container" style="max-width: 800px; margin: 0 auto;">
+    <div class="bento-card card-wide">
+        <div class="pixel-title" style="color: var(--pixel-green); font-size: 20px;">ITEM SHOP // CỬA HÀNG VẬT PHẨM</div>
+        <div style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">Dùng Xu kiếm được từ điểm danh và làm nhiệm vụ để mua đặc quyền.</div>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="shop-item">
+                <div>
+                    <strong style="color: #fff; font-size: 16px;">Khiên Bảo Vệ Streak</strong>
+                    <div style="font-size: 13px; color: #94a3b8;">Tránh bị vỡ chuỗi nếu lỡ quên 1 ngày.</div>
+                </div>
+                <button class="pixel-btn" style="background: var(--pixel-green);" onclick="buyItem('streak_shield', 150)">150 Xu</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <strong style="color: #fff; font-size: 16px;">Theme Giao Diện Master G</strong>
+                    <div style="font-size: 13px; color: #94a3b8;">Đổi màu nhân vật trong Battle Zone.</div>
+                </div>
+                <button class="pixel-btn" style="background: var(--pixel-green);" onclick="buyItem('theme_master', 500)">500 Xu</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <strong style="color: #fff; font-size: 16px;">Unlock: Kho từ vựng cấp S</strong>
+                    <div style="font-size: 13px; color: #94a3b8;">Mở khóa ngay 5 từ vựng cực hiếm.</div>
+                </div>
+                <button class="pixel-btn" style="background: var(--pixel-green);" onclick="buyItem('vocab_s', 300)">300 Xu</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

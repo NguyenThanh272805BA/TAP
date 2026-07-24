@@ -71,6 +71,9 @@ def create_app():
     def admin_page():
         return render_template('admin.html')
 
+    @app.route('/shop')
+    def shop_page():
+        return render_template('shop.html')
     # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
     from app.controllers.game_controller import game_bp

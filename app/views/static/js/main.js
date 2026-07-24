@@ -42,6 +42,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                         // [ PHASE 2 ] Tải Quest hàng ngày
                         loadDailyQuests();
+
+                        // Kích hoạt hướng dẫn Tân thủ
+                        checkAndRunTutorial(data);
                     }
 
                     const gachaStreak = document.getElementById("gacha-streak");
@@ -297,7 +300,7 @@ function submitChallenge() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             text: textValue,
-            mode: activeFeature
+            mode: 'free'
         })
     })
     .then(response => {
@@ -319,10 +322,23 @@ function submitChallenge() {
 
         updateChibeEmotion(score);
 
+        // Tự động refresh UI nếu hoàn thành Quest
+        if (result.quest_notification) {
+            triggerFireworksEffect();
+            if (typeof loadDailyQuests === 'function') loadDailyQuests();
+            fetch('/api/auth/user/me')
+                .then(r => r.json())
+                .then(ud => {
+                    const sidebarCoins = document.getElementById("sidebar-coins");
+                    if (sidebarCoins) sidebarCoins.innerText = ud.coins;
+                });
+        }
+
         aiFeedbackDiv.innerHTML = `
             <div style="margin-bottom: 10px; line-height: 1.6; color: #fff; font-family: var(--text-main); font-size:16px;">${feedback}</div>
             <div style="font-family: var(--text-pixel); font-size: 12px; color: ${scoreColor}; margin-top: 10px; letter-spacing: 0.5px;">
                 RATING_SCORE: ${score}/10
+                ${result.quest_notification ? `<br><span style="color: var(--pixel-green);">[+] ${result.quest_notification}</span>` : ''}
             </div>
         `;
         userInputField.value = "";
@@ -332,7 +348,25 @@ function submitChallenge() {
         aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>ERROR: KHÔNG THỂ KẾT NỐI VỚI NÃO BỘ AI!</span>";
     });
 }
-
+function loadDashboardLeaderboard() {
+    const lbContainer = document.getElementById("dashboard-leaderboard");
+    if (!lbContainer) return;
+    fetch('/api/game/gacha/leaderboard')
+    .then(res => res.json())
+    .then(data => {
+        if (!data.leaderboard || data.leaderboard.length === 0) {
+            lbContainer.innerHTML = '<span style="color: #94a3b8;">Chưa có cao thủ nào.</span>';
+            return;
+        }
+        let html = '';
+        data.leaderboard.forEach((u, idx) => {
+            let color = idx === 0 ? "var(--neon-amber)" : (idx === 1 ? "#cbd5e1" : "#d97706");
+            if(idx > 2) color = "#94a3b8";
+            html += `<div style="color: ${color}; margin-bottom: 8px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">#${idx+1} ${u.username} - <span style="color:#fff;">${u.score} pts</span></div>`;
+        });
+        lbContainer.innerHTML = html;
+    });
+}
 function loadVocabQuests() {
     const container = document.querySelector("#vocab-card .pixel-text");
     if (!container) return;
@@ -491,32 +525,58 @@ let currentStoryTurn = 1;
 let storyHistory = "";
 
 function loadStoryLobby() {
-    fetch('/api/admin/topics')
+    // 1. Fetch Archive (Lịch sử sinh tồn)
+    fetch('/api/game/story/archive')
     .then(res => res.json())
     .then(data => {
-        const container = document.getElementById("topics-container");
-        if(!container) return;
+        const archiveContainer = document.getElementById("archive-container");
+        if(!archiveContainer) return;
+        if(!data.archive || data.archive.length === 0) {
+            archiveContainer.innerHTML = '<div style="color: #94a3b8; font-size: 14px; font-style: italic;">Chưa có dữ liệu hành trình.</div>';
+            return;
+        }
         let html = '';
-        data.forEach(t => {
+        data.archive.forEach(s => {
+            const statusColor = s.status === 'Survived' ? 'var(--pixel-green)' : 'var(--neon-pink)';
             html += `
-            <div class="bento-card" style="padding: 15px; border: 1px solid var(--glass-border); cursor: pointer; transition: 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='var(--glass-border)'" onclick="startStoryWithTopic(${t.id}, '${t.title}')">
-                <img src="/static/uploads/covers/${t.cover_image}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;" onerror="this.src='/static/uploads/covers/default_cover.jpg'">
-                <div class="pixel-title" style="font-size: 14px; margin-bottom: 5px; color: var(--neon-amber);">${t.title}</div>
-                <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">Thể loại: ${t.genre}</div>
+            <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid ${statusColor}; margin-bottom: 10px;">
+                <strong style="color: #fff; display: block; font-size: 14px;">[${s.status}] ${s.topic}</strong>
+                <span style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 8px;">Ngày: ${s.date}</span>
+                <div style="color: #cbd5e1; font-size: 13px; font-style: italic; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;">
+                    "${s.summary_vn}"
+                </div>
             </div>`;
         });
-        container.innerHTML = html;
+        archiveContainer.innerHTML = html;
     });
 
-    const archiveContainer = document.getElementById("archive-container");
-    if(archiveContainer) {
-        archiveContainer.innerHTML = `
-            <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid var(--pixel-green);">
-                <strong style="color: #fff; display: block; font-size: 14px;">[Survived] Rừng Nguyên Sinh</strong>
-                <span style="color: #94a3b8; font-size: 12px;">Ngày: 2026-07-24 | Điểm: 8.5</span>
-            </div>
-        `;
-    }
+    // 2. Fetch Topics (Các bối cảnh để chọn)
+    fetch('/api/game/story/topics')
+    .then(res => res.json())
+    .then(topics => {
+        const topicsContainer = document.getElementById("topics-container");
+        if (!topicsContainer) return;
+
+        if (!topics || topics.length === 0) {
+            topicsContainer.innerHTML = '<div style="color: #94a3b8; font-size: 14px;">Admin chưa thiết lập bối cảnh nào.</div>';
+            return;
+        }
+
+        let html = '';
+        topics.forEach(t => {
+            const coverUrl = `/static/uploads/covers/${t.cover_image}`;
+            html += `
+            <div class="bento-card" style="padding: 15px; cursor: pointer; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); transition: 0.3s;" 
+                 onmouseover="this.style.borderColor='var(--neon-cyan)'; this.style.transform='scale(1.02)';" 
+                 onmouseout="this.style.borderColor='var(--glass-border)'; this.style.transform='scale(1)';" 
+                 onclick="startStoryWithTopic(${t.id}, '${t.title}')">
+                <img src="${coverUrl}" onerror="this.src='/static/uploads/covers/default_cover.jpg'" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
+                <div class="pixel-title" style="font-size: 14px; margin-bottom: 5px;">${t.title}</div>
+                <div style="font-size: 11px; color: var(--neon-purple); border: 1px solid var(--neon-purple); display: inline-block; padding: 3px 8px; border-radius: 4px;">${t.genre}</div>
+            </div>`;
+        });
+        topicsContainer.innerHTML = html;
+    });
 }
 
 function startStoryWithTopic(topicId, topicName) {
@@ -675,4 +735,123 @@ function executeStoryAction() {
         currentStoryTurn--;
         if (turnCounter) turnCounter.innerText = `${currentStoryTurn}/10`;
     });
+}
+
+function submitQuickQuest() {
+    const inputEl = document.getElementById('quickQuestInput');
+    const feedbackBox = document.getElementById('quickQuestFeedback');
+    const textValue = inputEl.value.trim();
+
+    if (!textValue) return;
+
+    feedbackBox.style.display = "block";
+    feedbackBox.innerHTML = "<span style='color: var(--neon-amber);' class='pulse-neon'>MASTER_G ĐANG KIỂM TRA CÂU...</span>";
+
+    // Mượn tạm API evaluate với mode 'vocab' để xử lý
+    fetch('/api/ai/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            text: textValue,
+            mode: 'vocab'
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const result = data.result || data;
+        const score = result.score || 0;
+        const color = score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
+
+        feedbackBox.innerHTML = `
+            <div style="color: ${color}; font-family: var(--text-pixel); margin-bottom: 5px;">[ ĐIỂM: ${score}/10 ]</div>
+            <div style="color: #fff;">${result.feedback}</div>
+        `;
+
+        inputEl.value = ""; // Xóa text input sau khi phản hồi thành công
+
+        // Load lại quest để xem nó đã chuyển trạng thái chưa
+        loadDailyQuests();
+
+        // Reload xu trên UI
+        fetch('/api/auth/user/me')
+            .then(r => r.json())
+            .then(ud => {
+                const sidebarCoins = document.getElementById("sidebar-coins");
+                if (sidebarCoins) sidebarCoins.innerText = ud.coins;
+            });
+    })
+    .catch(err => {
+        feedbackBox.innerHTML = "<span style='color: var(--neon-pink);'>Lỗi AI. Hãy thử lại.</span>";
+    });
+}
+
+// Bắt phím Enter cho ô Quick Quest
+document.addEventListener("DOMContentLoaded", () => {
+    const quickInput = document.getElementById('quickQuestInput');
+    if (quickInput) {
+        quickInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                submitQuickQuest();
+            }
+        });
+    }
+});
+
+/**
+ * =======================================================
+ * TUTORIAL MODE TÂN THỦ (MASTER G HƯỚNG DẪN)
+ * =======================================================
+ */
+function checkAndRunTutorial(userData) {
+    // Kích hoạt nếu là người mới, chưa có streak/xu và chưa bypass qua Tutorial
+    if (userData.level === 'Beginner' && userData.streak === 0 && userData.coins === 0) {
+        if (!localStorage.getItem('tutorial_completed')) {
+            showMasterGTutorial();
+        }
+    }
+}
+
+function showMasterGTutorial() {
+    const overlay = document.createElement("div");
+    overlay.id = "tutorial-overlay";
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.85); z-index: 999999; display: flex; 
+        justify-content: center; align-items: center; flex-direction: column;
+    `;
+
+    overlay.innerHTML = `
+        <div style="max-width: 500px; background: rgba(15, 23, 42, 0.95); border: 3px solid var(--neon-cyan); border-radius: 16px; padding: 30px; box-shadow: 0 0 30px rgba(103, 232, 249, 0.2); position: relative; text-align: center;">
+            <div class="pixel-title" style="color: var(--neon-cyan); margin-bottom: 20px; font-size: 20px;">[ SYSTEM_ALERT ] MASTER G XUẤT HIỆN!</div>
+            
+            <div class="pixel-text" style="font-size: 16px; margin-bottom: 20px; color: #fff; line-height: 1.6;">
+                "Chà chà, một kẻ sinh tồn mới bước chân vào Global Fluent? Nghe đây tân binh:
+                <br><br>
+                1. <b>Góc trái</b> là bảng Nhiệm Vụ Hàng Ngày. Làm để lấy xu, không làm thì đói.
+                <br>2. Ở mục <b>Lò Đúc & Học Tập</b>, ngươi phải gõ tiếng Anh để ta đánh giá. Sai là ta chê không thương tiếc!
+                <br>3. Điểm danh đều đặn. Mất chuỗi thì đừng khóc lóc."
+            </div>
+
+            <button class="pixel-btn" onclick="closeTutorial()" style="background: var(--neon-purple); width: 100%; font-size: 14px; padding: 15px;">
+                ĐÃ HIỂU! (BẮT ĐẦU CHƠI)
+            </button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function closeTutorial() {
+    const overlay = document.getElementById("tutorial-overlay");
+    if (overlay) overlay.remove();
+    localStorage.setItem('tutorial_completed', 'true');
+
+    // Gợi ý cho người dùng làm nhiệm vụ điểm danh luôn bằng CSS class nhấp nháy
+    setTimeout(() => {
+        const btnCheckin = document.getElementById("btn-checkin");
+        if(btnCheckin && !btnCheckin.disabled) {
+            btnCheckin.classList.add('error-shake');
+            btnCheckin.style.boxShadow = "0 0 20px var(--neon-amber)";
+        }
+    }, 500);
 }

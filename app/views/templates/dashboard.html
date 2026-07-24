@@ -26,55 +26,36 @@
             <div class="streak-day" id="day-6">6</div>
             <div class="streak-day gift" id="day-7">7</div>
         </div>
-        <div class="bento-card card-medium" id="daily-quest-card">
+    </div>
+
+    <!-- BẢNG NHIỆM VỤ HÀNG NGÀY (DAILY QUESTS) CẢI TIẾN -->
+    <div class="bento-card card-medium" id="daily-quest-card">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 15px;">
             <div class="pixel-title" style="color: var(--neon-cyan); margin: 0;">DAILY_QUESTS // NHIỆM VỤ HÀNG NGÀY</div>
             <div style="color: var(--neon-amber); font-family: var(--text-pixel); font-size: 12px;">+20 XU/QUEST</div>
         </div>
-        <div id="daily-quests-container" style="display: flex; flex-direction: column; gap: 12px;">
+
+        <div id="daily-quests-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
             <div class="typing-effect" style="color: #94a3b8; font-size: 14px;">Đang đồng bộ dữ liệu nhiệm vụ từ hệ thống...</div>
         </div>
-        <div style="margin-top: 15px; font-size: 13px; color: #94a3b8; font-style: italic;">
-            * Mẹo: Mang các từ vựng này vào không gian "Battle Zone" để đặt câu. Master G sẽ tự động quét và duyệt nhiệm vụ cho bạn nếu câu hợp lệ!
-        </div>
-    </div>
-    </div>
 
-    <!-- CỬA HÀNG VẬT PHẨM (ITEM SHOP) -->
-    <div class="bento-card card-medium">
-        <div class="pixel-title" style="color: var(--pixel-green);">ITEM SHOP // CỬA HÀNG VẬT PHẨM</div>
-        <div style="margin-top: 15px;">
-            <div class="shop-item">
-                <div>
-                    <strong style="color: #fff;">Khiên Bảo Vệ Streak</strong>
-                    <div style="font-size: 12px; color: #94a3b8;">Tránh bị vỡ chuỗi nếu lỡ quên 1 ngày.</div>
-                </div>
-                <button class="pixel-btn" style="background: var(--pixel-green);" onclick="buyItem('streak_shield', 150)">150 Xu</button>
+        <!-- QUICK CHAT CHO NHIỆM VỤ -->
+        <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; border: 1px dashed var(--neon-purple);">
+            <div style="font-size: 13px; color: var(--neon-purple); margin-bottom: 10px; font-weight: bold;">> QUICK_ACTION: HOÀN THÀNH NHIỆM VỤ NHANH</div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="quickQuestInput" class="auth-input" style="margin-bottom: 0;" placeholder="Nhập câu chứa từ vựng nhiệm vụ vào đây...">
+                <button class="pixel-btn" style="background: var(--neon-purple);" onclick="submitQuickQuest()">GỬI (ENTER)</button>
             </div>
-            <div class="shop-item">
-                <div>
-                    <strong style="color: #fff;">Theme Giao Diện Master G (Đặc biệt)</strong>
-                    <div style="font-size: 12px; color: #94a3b8;">Đổi màu nhân vật trong Battle Zone.</div>
-                </div>
-                <button class="pixel-btn" style="background: var(--pixel-green);" onclick="buyItem('theme_master', 500)">500 Xu</button>
-            </div>
-            <div class="shop-item">
-                <div>
-                    <strong style="color: #fff;">Unlock: Kho từ vựng cấp S</strong>
-                    <div style="font-size: 12px; color: #94a3b8;">Mở khóa ngay 5 từ vựng cực hiếm.</div>
-                </div>
-                <button class="pixel-btn" style="background: var(--pixel-green);" onclick="buyItem('vocab_s', 300)">300 Xu</button>
-            </div>
+            <!-- Hiển thị kết quả AI -->
+            <div id="quickQuestFeedback" style="display: none; margin-top: 15px; font-size: 14px; background: rgba(15, 23, 42, 0.9); padding: 12px; border-left: 3px solid var(--neon-pink); border-radius: 6px; line-height: 1.5;"></div>
         </div>
     </div>
 
     <!-- BẢNG XẾP HẠNG (LEADERBOARD NHỎ) -->
-    <div class="bento-card">
-        <div class="pixel-title">TOP RANKING</div>
-        <div style="font-size: 14px; line-height: 2;">
-            <span style="color: var(--neon-amber);">#1 Kim Thành</span> - Lvl.99<br>
-            <span style="color: #cbd5e1;">#2 Player_02</span> - Lvl.45<br>
-            <span style="color: #cbd5e1;">#3 GachaMaster</span> - Lvl.30
+   <div class="bento-card" style="align-self: start; position: sticky; top: 20px;">
+        <div class="pixel-title">TOP RANKING (INFINITY)</div>
+        <div id="dashboard-leaderboard" style="font-size: 14px; line-height: 2; margin-top: 10px;">
+            <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang tải dữ liệu mạng...</div>
         </div>
     </div>
 </div>

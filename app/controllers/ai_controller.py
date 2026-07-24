@@ -137,29 +137,36 @@ def evaluate():
         # ==============================================================
         else:
             context_challenge = ""
+
             if mode == 'grammar':
                 grammar_list = Grammar.query.all()
                 if grammar_list:
                     chosen = random.choice(grammar_list)
-                    context_challenge = f"Cấu trúc bắt buộc: {chosen.structure} ({chosen.explanation}). Ví dụ: {chosen.example}"
+                    context_challenge = f"Hãy ép người dùng phải dùng hoặc kiểm tra xem họ có dùng đúng cấu trúc này không: {chosen.structure} ({chosen.explanation})."
                 else:
-                    context_challenge = "Cấu trúc bắt buộc: S + wish + S + V(past) (Câu điều ước ở hiện tại)"
+                    context_challenge = "Kiểm tra ngữ pháp chung."
+
             elif mode == 'vocab':
-                vocab_list = Vocabulary.query.filter_by(is_unlocked=True).all()
-                if vocab_list:
-                    chosen = random.choice(vocab_list)
-                    context_challenge = f"Từ vựng bắt buộc phải dùng: '{chosen.word}' nghĩa là ({chosen.meaning})"
+                # Đã bỏ random bắt buộc. Chỉ yêu cầu kiểm tra từ vựng người dùng gõ
+                context_challenge = "Hãy tập trung kiểm tra cách sử dụng từ vựng, collocation và chỉ ra lỗi dùng từ lóng/từ vựng (nếu có)."
+
+            elif mode == 'free':
+                # Chế độ tự do cho Quick Quest: Chấm điểm bình thường, xéo xắt nếu sai, khen nếu đúng
+                context_challenge = "Đây là câu tự do. Hãy chấm điểm ngữ pháp tiếng Anh cơ bản. Khen ngạo nghễ nếu tốt, chê xéo xắt nếu sai."
 
             ai_response_str = evaluate_english_skill(user_input, context_challenge)
             clean_json_str = ai_response_str.strip().replace('```json', '').replace('```', '')
             result = json.loads(clean_json_str)
 
             score = result.get("score", 0)
+
+            # [ QUAN TRỌNG ] LUÔN KIỂM TRA QUEST DÙ Ở MODE NÀO (Nếu người dùng viết đúng từ Quest -> Xong quest)
+            quest_completed_word = check_and_complete_quest(user_id, user_input)
+
             if score >= 8.0:
-                # Kiểm tra Quest hàng ngày
-                quest_completed_word = check_and_complete_quest(user_id, user_input)
-                # Đào thêm dữ liệu
-                mine_new_data_via_ai(mode)
+                # Đào thêm dữ liệu nếu làm tốt
+                if mode in ['vocab', 'grammar']:
+                    mine_new_data_via_ai(mode)
 
     except Exception as e:
         result = {
@@ -330,7 +337,7 @@ def generate_unit():
 
     prompt = f"""
     Bạn là hệ thống thiết kế bài giảng. Người dùng muốn học tiếng Anh về chủ đề: '{topic}'.
-    Hãy tạo ra 50 từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
+    Hãy tạo ra 50 tới 100 từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
     Tuyệt đối chỉ trả về 1 mảng JSON hợp lệ, KHÔNG chứa ký hiệu markdown.
     Cấu trúc:
     [

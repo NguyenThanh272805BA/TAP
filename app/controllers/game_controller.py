@@ -9,16 +9,27 @@ from datetime import datetime, date, timedelta
 import random
 from app.ml_models.recommender import VocabRecommender
 from app.ml_models.srs_predictor import SmartSRS
-
+from app.models.story_session import StorySession
+from app.models.story_topic import StoryTopic
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
 recommender_engine = VocabRecommender()
 srs_engine = SmartSRS()
 
-
+@game_bp.route('/story/topics', methods=['GET'])
+def get_story_topics():
+    topics = StoryTopic.query.all()
+    return jsonify([{
+        "id": t.id,
+        "title": t.title,
+        "genre": t.genre,
+        "cover_image": t.cover_image,
+        "system_prompt": t.system_prompt
+    } for t in topics]), 200
 @game_bp.route('/checkin', methods=['POST'])
 def checkin():
     user_id = session.get('user_id')
-    if not user_id: return jsonify({"error": "Yêu cầu đăng nhập hệ thống!"}), 401
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập hệ thống!"}), 401
 
     user = User.query.get(user_id)
     today = date.today()
@@ -67,12 +78,13 @@ def checkin():
 
 @game_bp.route('/shop/buy', methods=['POST'])
 def shop_buy():
-    data = request.get_json()
+    data = request.get_json() or {}
     item_id = data.get('item_id')
     price = data.get('price', 0)
 
     user_id = session.get('user_id')
-    if not user_id: return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     user = User.query.get(user_id)
     if user.coins < price:
@@ -164,8 +176,10 @@ def toggle_memorize():
         db.session.commit()
 
     return jsonify({
-        "is_memorized": is_memorized_now, "theme_progress": f"{memorized_words_in_theme}/{total_words_in_theme}",
-        "level_upgraded": level_upgraded, "current_level": user.current_level
+        "is_memorized": is_memorized_now,
+        "theme_progress": f"{memorized_words_in_theme}/{total_words_in_theme}",
+        "level_upgraded": level_upgraded,
+        "current_level": user.current_level
     }), 200
 
 
@@ -182,40 +196,48 @@ def get_grammars():
 @game_bp.route('/gacha/roll', methods=['POST'])
 def gacha_roll():
     data = request.get_json() or {}
-    mode = data.get('mode', 'infinity')  # 'stage' hoặc 'infinity'
-    user_id = session.get('user_id')
+    mode = data.get('mode', 'stage')  # 'stage' hoặc 'infinity'
 
+    user_id = session.get('user_id')
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     user = User.query.get(user_id)
-    unlocked_subquery = db.session.query(UserVocabulary.vocab_id).filter(UserVocabulary.user_id == user_id,
-                                                                         UserVocabulary.is_unlocked == True)
-    locked_vocab = Vocabulary.query.filter(~Vocabulary.id.in_(unlocked_subquery)).all()
 
-    if not locked_vocab:
-        locked_vocab = Vocabulary.query.all()
-        if not locked_vocab:
-            return jsonify({"status": "empty", "message": "[ SYSTEM ] Máy chủ chưa có từ vựng nào!"}), 200
-
-    target = random.choice(locked_vocab)
-
-    # Tính toán thời gian (Stage cao -> Thời gian phản hồi bị rút ngắn)
-    time_limit = 5.0
+    # Lọc từ vựng để test
     if mode == 'stage':
-        current_stage = user.arena_stage if user.arena_stage else 1
-        time_limit = max(1.5, 5.0 - (current_stage * 0.35))
+        # Chế độ vượt ải: Lấy từ vựng chưa thuộc
+        unlocked_subquery = db.session.query(UserVocabulary.vocab_id).filter(
+            UserVocabulary.user_id == user_id,
+            UserVocabulary.is_unlocked == True
+        )
+        locked_vocab = Vocabulary.query.filter(~Vocabulary.id.in_(unlocked_subquery)).all()
+        if not locked_vocab:
+            return jsonify(
+                {"status": "empty", "message": "[ SYSTEM ] Tuyệt đỉnh! Bạn đã giải cứu toàn bộ kho từ vựng!"}), 200
+        target = random.choice(locked_vocab)
+    else:
+        # Chế độ vô cực: Lấy random toàn bộ từ vựng trong hệ thống
+        target = Vocabulary.query.order_by(db.func.rand()).first()
 
     distractors = Vocabulary.query.filter(Vocabulary.id != target.id).order_by(db.func.rand()).limit(3).all()
     options = [target.meaning] + [d.meaning for d in distractors]
     random.shuffle(options)
+
+    # Tính toán thời gian cho phép (Timer)
+    base_time = 5.0
+    if mode == 'stage':
+        timer = max(2.0, base_time - ((user.arena_stage or 1) * 0.3))
+    else:
+        timer = random.uniform(2.0, 4.0)
 
     return jsonify({
         "status": "success",
         "vocab_id": target.id,
         "word": target.word,
         "options": options,
-        "time_limit": time_limit
+        "timer": timer,
+        "current_stage": user.arena_stage or 1
     }), 200
 
 
@@ -223,11 +245,11 @@ def gacha_roll():
 def gacha_verify():
     data = request.get_json() or {}
     vocab_id = data.get('vocab_id')
-    user_answer = data.get('answer')
+    user_answer = data.get('answer', '')
     is_timeout = data.get('timeout', False)
     response_time_ms = data.get('response_time_ms', 5000.0)
-    mode = data.get('mode', 'infinity')
-    current_gacha_streak = data.get('current_streak', 0)  # Track độc lập, không đụng tới daily streak
+    mode = data.get('mode', 'stage')
+    current_gacha_streak = data.get('current_streak', 0)  # Chuỗi combo gacha độc lập, không đụng tới streak điểm danh
 
     user_id = session.get('user_id')
     if not user_id:
@@ -235,9 +257,12 @@ def gacha_verify():
 
     user = User.query.get(user_id)
     vocab = Vocabulary.query.get(vocab_id)
+    if not vocab:
+        return jsonify({"error": "Từ vựng không tồn tại!"}), 404
 
-    is_correct = False if is_timeout else (vocab.meaning.strip() == user_answer.strip())
+    is_correct = not is_timeout and (vocab.meaning.strip() == user_answer.strip())
 
+    # Xử lý Logic Học Tập (Lưu lịch sử từ vựng vào SRS)
     uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=vocab_id).first()
     if not uv:
         uv = UserVocabulary(user_id=user_id, vocab_id=vocab_id, is_unlocked=True)
@@ -255,31 +280,56 @@ def gacha_verify():
         uv.fail_count = current_fail
         current_gacha_streak += 1
 
-        # Xử lý Level / Điểm theo từng chế độ chơi
-        if mode == 'infinity':
-            if current_gacha_streak > (user.infinity_score or 0):
-                user.infinity_score = current_gacha_streak
-        elif mode == 'stage':
-            if (user.arena_stage or 1) < 10:
-                user.arena_stage = (user.arena_stage or 1) + 1
-
     time_sec = response_time_ms / 1000.0
     uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2
+
     next_review_dt, _ = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time, len(vocab.word))
     uv.next_review_time = next_review_dt
     uv.memorization_level = 'DA_THUOC' if is_correct else 'CHUA_THUOC'
 
+    # Xử lý Logic Game Mode (Stage / Infinity)
+    game_message = ""
+    is_game_over = False
+
+    if mode == 'stage':
+        if is_correct:
+            if (user.arena_stage or 1) < 10:
+                user.arena_stage = (user.arena_stage or 1) + 1
+                game_message = f"[ LEVEL UP ] Tiến vào Ải {user.arena_stage}!"
+            else:
+                game_message = "[ PHÁ ĐẢO ] Bạn đã vượt qua Ải 10! Huyền thoại!"
+                is_game_over = True
+        else:
+            game_message = "[ DEFEATED ] Bạn đã gục ngã! Trở lại Ải 1."
+            user.arena_stage = 1
+            is_game_over = True
+
+    elif mode == 'infinity':
+        if is_correct:
+            game_message = f"[ KABOOM ] Chuỗi Combo: {current_gacha_streak}"
+            if current_gacha_streak > (user.infinity_score or 0):
+                user.infinity_score = current_gacha_streak
+        else:
+            game_message = f"[ GAME OVER ] Dừng lại ở điểm: {current_gacha_streak}"
+            is_game_over = True
+
     db.session.commit()
 
-    msg = "[ KABOOM ] Bắn trúng đích!" if is_correct else (
-        "[ TIMEOUT ] HẾT GIỜ!" if is_timeout else "[ ERROR ] Sai rồi!")
     return jsonify({
         "correct": is_correct,
-        "message": msg,
+        "message": game_message,
         "new_streak": current_gacha_streak,
         "arena_stage": user.arena_stage,
-        "infinity_score": user.infinity_score
+        "infinity_score": user.infinity_score,
+        "is_game_over": is_game_over
     }), 200
+
+
+@game_bp.route('/gacha/leaderboard', methods=['GET'])
+def get_leaderboard():
+    top_users = User.query.order_by(User.infinity_score.desc()).limit(5).all()
+    result = [{"username": u.username, "score": u.infinity_score or 0} for u in top_users]
+    return jsonify({"leaderboard": result}), 200
 
 
 # ==========================================
@@ -288,22 +338,28 @@ def gacha_verify():
 @game_bp.route('/quests/today', methods=['GET'])
 def get_daily_quests():
     user_id = session.get('user_id')
-    if not user_id: return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     today = date.today()
     quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today).all()
 
+    # NẾU CHƯA CÓ QUEST, SINH RA 4 NHIỆM VỤ THAY VÌ 2
     if not quests:
-        new_vocab = Vocabulary.query.filter_by(is_unlocked=False).order_by(db.func.rand()).first()
-        review_vocab_link = UserVocabulary.query.filter_by(user_id=user_id, memorization_level='DA_THUOC').order_by(
-            db.func.rand()).first()
+        # Lấy 2 từ chưa mở khóa ngẫu nhiên
+        new_vocabs = Vocabulary.query.filter_by(is_unlocked=False).order_by(db.func.rand()).limit(2).all()
 
-        if new_vocab:
-            db.session.add(DailyQuest(user_id=user_id, vocab_id=new_vocab.id, quest_type='NEW', assigned_date=today))
+        # Lấy 2 từ đã thuộc (để ôn tập)
+        review_vocabs = UserVocabulary.query.filter_by(
+            user_id=user_id,
+            memorization_level='DA_THUOC'
+        ).order_by(db.func.rand()).limit(2).all()
 
-        if review_vocab_link:
-            db.session.add(DailyQuest(user_id=user_id, vocab_id=review_vocab_link.vocab_id, quest_type='REVIEW',
-                                      assigned_date=today))
+        for nv in new_vocabs:
+            db.session.add(DailyQuest(user_id=user_id, vocab_id=nv.id, quest_type='NEW', assigned_date=today))
+
+        for rv in review_vocabs:
+            db.session.add(DailyQuest(user_id=user_id, vocab_id=rv.vocab_id, quest_type='REVIEW', assigned_date=today))
 
         db.session.commit()
         quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today).all()
@@ -344,7 +400,8 @@ def check_and_complete_quest(user_id, text_input):
 @game_bp.route('/exam/generate', methods=['POST'])
 def generate_exam():
     user_id = session.get('user_id')
-    if not user_id: return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     now = datetime.now()
     needs_review = UserVocabulary.query.filter(
@@ -400,3 +457,21 @@ def update_exam_status():
         db.session.commit()
         return jsonify({"success": True}), 200
     return jsonify({"error": "Lỗi cập nhật"}), 400
+@game_bp.route('/story/archive', methods=['GET'])
+def get_story_archive():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    sessions = StorySession.query.filter_by(user_id=user_id).order_by(StorySession.created_at.desc()).all()
+    result = []
+    for s in sessions:
+        topic_title = s.topic.title if s.topic else "Không xác định"
+        result.append({
+            "id": s.id,
+            "topic": topic_title,
+            "status": s.status,
+            "summary_vn": s.summary_vn,
+            "date": s.created_at.strftime("%Y-%m-%d")
+        })
+    return jsonify({"archive": result}), 200
