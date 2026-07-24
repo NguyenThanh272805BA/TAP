@@ -1,6 +1,7 @@
 import os
 import json
 import random
+from datetime import date
 from google import genai
 from flask import Blueprint, request, jsonify, session
 from app.utils.gemini_helper import evaluate_english_skill
@@ -8,10 +9,28 @@ from app.models.test import TestLog
 from app.models.user import User
 from app.models.grammar import Grammar
 from app.models.vocabulary import Vocabulary
-from app.models.user_vocabulary import UserVocabulary  # <-- Bổ sung import Model
+from app.models.user_vocabulary import UserVocabulary
+from app.models.story_topic import StoryTopic
+from app.models.story_session import StorySession
+from app.models.daily_quest import DailyQuest
 from app import db
 
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
+
+
+def check_and_complete_quest(user_id, text_input):
+    """Hàm phụ trợ: Kiểm tra xem user có hoàn thành nhiệm vụ đặt câu hôm nay không"""
+    today = date.today()
+    quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today, is_completed=False).all()
+    for q in quests:
+        v = Vocabulary.query.get(q.vocab_id)
+        if v and v.word.lower() in text_input.lower():
+            q.is_completed = True
+            user = User.query.get(user_id)
+            user.coins += 20  # Thưởng 20 xu khi hoàn thành quest
+            db.session.commit()
+            return v.word
+    return None
 
 
 @ai_bp.route('/evaluate', methods=['POST'])
@@ -24,50 +43,97 @@ def evaluate():
     if not user_input or not user_id:
         return jsonify({"error": "Thiếu dữ liệu đầu vào hoặc phiên đăng nhập hết hạn!"}), 400
 
+    quest_completed_word = None
+
     try:
         # ==============================================================
-        # NHÁNH 1: XỬ LÝ TEXT-RPG STORY (GỌI TRỰC TIẾP API GEMINI)
+        # NHÁNH 1: XỬ LÝ TEXT-RPG STORY (GIAI ĐOẠN 2)
         # ==============================================================
         if mode == 'story':
             user = User.query.get(user_id)
             user_level = user.current_level if user else "Beginner"
-            story_turn = data.get('turn', 1)
+            story_turn = int(data.get('turn', 1))
             story_history = data.get('history', '')
-            is_final_turn = True if story_turn >= 10 else False
+            topic_id = data.get('topic_id', 1)  # Mặc định lấy topic 1
 
-            prompt_story = f"""
-            Ngữ cảnh: Bạn là Game Master xéo xắt, mỏ hỗn của game Text-RPG Sinh tồn hậu tận thế. 
-            Trình độ người chơi: {user_level}. Đang ở LƯỢT {story_turn}/10.
+            topic = StoryTopic.query.get(topic_id)
+            theme_context = topic.system_prompt if topic else "Bối cảnh sinh tồn hậu tận thế tàn khốc."
 
-            TÓM TẮT CỐT TRUYỆN TỪ TRƯỚC ĐẾN NAY: 
-            {story_history}
-
-            HÀNH ĐỘNG MỚI NHẤT CỦA NGƯỜI CHƠI: "{user_input}"
-
-            YÊU CẦU BẮT BUỘC (Trọng tâm cốt truyện):
-            1. Chấm điểm ngữ pháp (0-10) và đưa ra 'feedback' (Chửi thẳng mặt nếu sai ngữ pháp cơ bản, khen ngạo nghễ nếu đúng).
-            2. Dựa vào hành động, sáng tạo tiếp cốt truyện kịch tính (scene_en, scene_vn). Nếu điểm < 5, cho nhân vật chịu hậu quả thê thảm.
-            3. Tạo một gợi ý điền từ (hint_en, hint_vn) ẩn 1-2 từ khóa bằng dấu ___ cho lượt tới.
-            4. LƯỢT 10: Tạo kết cục game, set is_end = true.
-
-            TUYỆT ĐỐI CHỈ TRẢ VỀ ĐÚNG 1 JSON OBJECT:
-            {{
-                "score": <điểm_số>,
-                "feedback": "<nhận_xét_ngữ_pháp>",
-                "scene_en": "<Cốt_truyện_tiếp_diễn_tiếng_Anh>",
-                "scene_vn": "<Dịch_Việt>",
-                "hint_en": "<Gợi_ý_có_chỗ_trống>",
-                "hint_vn": "<Dịch_gợi_ý>",
-                "is_end": {"true" if is_final_turn else "false"}
-            }}
-            """
             client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-            response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_story)
-            clean_json_str = response.text.strip().replace('```json', '').replace('```', '')
-            result = json.loads(clean_json_str)
+
+            # KIỂM TRA NẾU ĐÂY LÀ LƯỢT CUỐI CÙNG (LƯỢT 10)
+            if story_turn >= 10:
+                prompt_summary = f"""
+                Ngữ cảnh Game: {theme_context}
+                Toàn bộ lịch sử hành trình của người chơi từ lượt 1 đến 9: 
+                {story_history}
+
+                Hành động cuối cùng (Lượt 10): "{user_input}"
+
+                Nhiệm vụ: 
+                1. Chấm điểm hành động cuối.
+                2. Tổng hợp toàn bộ hành trình thành MỘT CÂU CHUYỆN NGẮN (khoảng 4-5 câu) như một cuốn nhật ký sinh tồn góc nhìn thứ nhất.
+                3. Đưa ra kết cục (Survived hoặc Dead) dựa vào tổng thể điểm ngữ pháp và độ logic của các quyết định.
+
+                TUYỆT ĐỐI CHỈ TRẢ VỀ ĐÚNG 1 JSON OBJECT (Không markdown):
+                {{
+                    "score": <điểm_hành_động_cuối_0_đến_10>,
+                    "feedback": "<nhận_xét_ngữ_pháp_cuối>",
+                    "scene_en": "<nhật_ký_tổng_hợp_tiếng_Anh>",
+                    "scene_vn": "<dịch_tiếng_Việt_nhật_ký>",
+                    "status": "Survived" hoặc "Dead",
+                    "hint_en": "N/A",
+                    "hint_vn": "N/A",
+                    "is_end": true
+                }}
+                """
+                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_summary)
+                clean_json_str = response.text.strip().replace('```json', '').replace('```', '')
+                result = json.loads(clean_json_str)
+
+                # [ LƯU NHẬT KÝ VÀO DATABASE ]
+                new_session = StorySession(
+                    user_id=user_id,
+                    topic_id=topic_id if topic else 1,
+                    summary_en=result.get("scene_en", ""),
+                    summary_vn=result.get("scene_vn", ""),
+                    status=result.get("status", "Survived")
+                )
+                db.session.add(new_session)
+
+            else:
+                # Đang chơi giữa chừng (Turn 1 - 9)
+                prompt_story = f"""
+                Ngữ cảnh bối cảnh: {theme_context}
+                Bạn là Game Master xéo xắt, mỏ hỗn. Trình độ người chơi: {user_level}. Đang ở LƯỢT {story_turn}/10.
+
+                LỊCH SỬ TỪ TRƯỚC TỚI NAY: 
+                {story_history}
+
+                HÀNH ĐỘNG MỚI NHẤT CỦA NGƯỜI CHƠI: "{user_input}"
+
+                YÊU CẦU:
+                1. Chấm điểm ngữ pháp (0-10) và feedback thật xéo xắt (Chửi nếu sai, khen ngạo nghễ nếu đúng).
+                2. Dựa vào hành động, sáng tạo tiếp cốt truyện kịch tính (scene_en, scene_vn). Nếu điểm < 5, cho nhân vật chịu hậu quả thê thảm.
+                3. Tạo gợi ý điền từ (hint_en, hint_vn) ẩn 1-2 từ khóa bằng dấu ___ cho lượt tới.
+
+                TUYỆT ĐỐI CHỈ TRẢ VỀ JSON OBJECT (Không markdown):
+                {{
+                    "score": <điểm_số>, 
+                    "feedback": "<nhận_xét_ngữ_pháp>",
+                    "scene_en": "<truyện_tiếng_Anh>", 
+                    "scene_vn": "<truyện_tiếng_Việt>",
+                    "hint_en": "<gợi_ý>", 
+                    "hint_vn": "<dịch_gợi_ý>",
+                    "is_end": false
+                }}
+                """
+                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_story)
+                clean_json_str = response.text.strip().replace('```json', '').replace('```', '')
+                result = json.loads(clean_json_str)
 
         # ==============================================================
-        # NHÁNH 2: XỬ LÝ HỌC TẬP (GRAMMAR/VOCAB) DÙNG GEMINI HELPER
+        # NHÁNH 2: XỬ LÝ HỌC TẬP (GRAMMAR/VOCAB) & DAILY QUESTS
         # ==============================================================
         else:
             context_challenge = ""
@@ -90,6 +156,9 @@ def evaluate():
 
             score = result.get("score", 0)
             if score >= 8.0:
+                # Kiểm tra Quest hàng ngày
+                quest_completed_word = check_and_complete_quest(user_id, user_input)
+                # Đào thêm dữ liệu
                 mine_new_data_via_ai(mode)
 
     except Exception as e:
@@ -111,6 +180,10 @@ def evaluate():
     db.session.add(new_log)
     db.session.commit()
 
+    # Bơm thông báo hoàn thành nhiệm vụ vào JSON trả về nếu có
+    if quest_completed_word:
+        result['quest_notification'] = f"HOÀN THÀNH NHIỆM VỤ: Đặt câu với từ '{quest_completed_word}' (+20 Xu)"
+
     return jsonify({"message": "Master G đã xử lý xong!", "result": result}), 200
 
 
@@ -128,10 +201,7 @@ def mine_new_data_via_ai(current_mode):
                 "theme": "Gaming, Đời thực"
             }
             """
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt
-            )
+            response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
             clean_json = response.text.strip().replace('```json', '').replace('```', '')
             item_data = json.loads(clean_json)
 
@@ -146,7 +216,6 @@ def mine_new_data_via_ai(current_mode):
                 )
                 db.session.add(new_vocab)
                 db.session.commit()
-                print(f"-> [AI Data Miner]: Đã đào thành công từ vựng mới: {item_data['word']}")
 
         elif current_mode == 'grammar':
             prompt = """
@@ -158,10 +227,7 @@ def mine_new_data_via_ai(current_mode):
                 "example": "Câu ví dụ minh họa bằng tiếng Anh"
             }
             """
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt
-            )
+            response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
             clean_json = response.text.strip().replace('```json', '').replace('```', '')
             item_data = json.loads(clean_json)
 
@@ -175,10 +241,9 @@ def mine_new_data_via_ai(current_mode):
                 )
                 db.session.add(new_grammar)
                 db.session.commit()
-                print(f"-> [AI Data Miner]: Đã đào thành công cấu trúc ngữ pháp mới: {item_data['structure']}")
 
     except Exception as e:
-        print(f" lỗi tiến trình AI đào dữ liệu: {e}")
+        print(f"Lỗi tiến trình AI đào dữ liệu: {e}")
 
 
 @ai_bp.route('/guide', methods=['POST'])
@@ -200,16 +265,41 @@ def get_guide():
 
     try:
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
         formatted_guide = response.text.replace('\n', '<br>')
         return jsonify({"guide": formatted_guide}), 200
     except Exception as e:
         return jsonify({
             "guide": f"[OFFLINE MODE] Lõi AI đang bận tản nhiệt! Gợi ý tạm: Hãy thử đặt câu dạng 'S + V + {word}' xem sao đồ ngốc!"
         }), 200
+
+
+@ai_bp.route('/grammar_guide', methods=['POST'])
+def get_grammar_guide():
+    """AI Hướng dẫn đặt câu Ngữ pháp (Phase 2)"""
+    data = request.get_json(silent=True) or {}
+    structure = data.get('structure')
+
+    if not structure:
+        return jsonify({"error": "Thiếu cấu trúc ngữ pháp"}), 400
+
+    prompt = f"""
+    Bạn là Master G. Học trò đang học cấu trúc ngữ pháp: '{structure}'.
+    Hãy giải thích siêu ngắn gọn, xéo xắt nhưng dễ hiểu nhất.
+    Yêu cầu:
+    1. Nói sơ qua cách dùng (1 câu).
+    2. Cho 2 ví dụ (1 cái bình thường, 1 cái cực kỳ hài hước/genZ).
+    3. Dịch 2 ví dụ đó.
+    Tuyệt đối không dùng markdown phức tạp. Xuống dòng dùng kí tự <br>
+    """
+
+    try:
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+        formatted_guide = response.text.replace('\n', '<br>')
+        return jsonify({"guide": formatted_guide}), 200
+    except Exception as e:
+        return jsonify({"guide": "[OFFLINE MODE] API đang sập. Tự mở sách ra mà học!"}), 200
 
 
 @ai_bp.route('/generate_unit', methods=['POST'])
@@ -223,7 +313,6 @@ def generate_unit():
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
-    # [ VÁ LỖI ]: Kiểm tra xem Unit này đã từng được đúc trên hệ thống chưa
     existing_vocabs = Vocabulary.query.filter_by(theme=topic).all()
     if len(existing_vocabs) >= 10:
         added_to_user = 0
@@ -239,7 +328,6 @@ def generate_unit():
             "added": added_to_user
         }), 200
 
-    # Khởi tạo qua Gemini
     prompt = f"""
     Bạn là hệ thống thiết kế bài giảng. Người dùng muốn học tiếng Anh về chủ đề: '{topic}'.
     Hãy tạo ra 50 từ vựng tiếng Anh (hoặc cụm từ) liên quan mật thiết đến chủ đề này.
@@ -258,7 +346,6 @@ def generate_unit():
 
         added_count = 0
         for item in items:
-            # 1. Thêm vào kho tổng
             v = Vocabulary.query.filter_by(word=item['word']).first()
             if not v:
                 v = Vocabulary(
@@ -269,9 +356,8 @@ def generate_unit():
                     is_unlocked=True
                 )
                 db.session.add(v)
-                db.session.flush()  # Để lấy ID ngay lập tức
+                db.session.flush()
 
-            # 2. Gán quyền sở hữu vào thư viện User
             uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=v.id).first()
             if not uv:
                 new_uv = UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True)
@@ -290,21 +376,28 @@ def generate_unit():
 
 @ai_bp.route('/story/init', methods=['POST'])
 def init_story():
+    data = request.get_json(silent=True) or {}
     user_id = session.get('user_id')
+    topic_id = data.get('topic_id', 1)
+
     user = User.query.get(user_id) if user_id else None
     user_level = user.current_level if user else "Beginner"
 
+    topic = StoryTopic.query.get(topic_id)
+    theme_context = topic.system_prompt if topic else "Bối cảnh sinh tồn hậu tận thế tàn khốc."
+
     prompt = f"""
-    Bạn là Game Master của một game Text-RPG Sinh tồn hậu tận thế.
+    Bạn là Game Master của một game Text-RPG.
+    Ngữ cảnh thế giới: {theme_context}
     Trình độ người chơi: {user_level}. Đây là LƯỢT 1/10.
 
-    Nhiệm vụ: Tạo bối cảnh mở màn ngầu, gai góc, ngắn gọn (2 câu).
+    Nhiệm vụ: Dựa vào ngữ cảnh trên, tạo bối cảnh mở màn ngầu, gai góc, ngắn gọn (2 câu).
     Và tạo ra một GỢI Ý HÀNH ĐỘNG tiếp theo dạng ĐIỀN VÀO CHỖ TRỐNG (ẩn đi 1-2 từ khóa quan trọng bằng dấu ___ để người chơi tự ghép thành câu hoàn chỉnh).
 
     CHỈ TRẢ VỀ ĐÚNG 1 OBJECT JSON, không dùng markdown (```json). Cấu trúc:
     {{
-        "scene_en": "Cảnh báo hệ thống... Bạn tỉnh dậy giữa đống đổ nát.",
-        "scene_vn": "Dịch tiếng Việt câu trên. Ngắn gọn, tăm tối.",
+        "scene_en": "Cảnh báo hệ thống... Bạn tỉnh dậy...",
+        "scene_vn": "Dịch tiếng Việt câu trên. Ngắn gọn.",
         "hint_en": "I need to ___ my ___.",
         "hint_vn": "Tôi cần (tìm) (vũ khí) của mình.",
         "is_end": false

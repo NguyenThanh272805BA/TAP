@@ -1,12 +1,22 @@
-from flask import Blueprint, jsonify, session
+import os
+from werkzeug.utils import secure_filename
+from flask import Blueprint, jsonify, session, request, current_app
 from app.models.user import User
 from app.models.vocabulary import Vocabulary
+from app.models.story_topic import StoryTopic
 from app.models.grammar import Grammar
 from app.models.test import TestLog
 from app import db
 from functools import wraps
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
+
+# Cấu hình thư mục upload ảnh bìa (Sẽ tự động tạo nếu chưa tồn tại)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 # MIDDLEWARE: Bảo vệ API, chỉ cho phép Admin truy cập
@@ -69,3 +79,51 @@ def delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({"message": f"Đã xóa vĩnh viễn player {user.username} khỏi máy chủ!"}), 200
+
+
+# ==========================================
+# CÁC ROUTE QUẢN LÝ CHỦ ĐỀ TEXT-RPG (PHASE 2)
+# ==========================================
+@admin_bp.route('/topics', methods=['GET'])
+@admin_required
+def get_topics():
+    topics = StoryTopic.query.all()
+    return jsonify([{
+        "id": t.id,
+        "title": t.title,
+        "genre": t.genre,
+        "cover_image": t.cover_image,
+        "system_prompt": t.system_prompt
+    } for t in topics]), 200
+
+
+@admin_bp.route('/topics', methods=['POST'])
+@admin_required
+def create_topic():
+    title = request.form.get('title')
+    genre = request.form.get('genre')
+    system_prompt = request.form.get('system_prompt')
+
+    if not title or not system_prompt:
+        return jsonify({"error": "Thiếu thông tin bắt buộc!"}), 400
+
+    filename = 'default_cover.jpg'
+    if 'cover_image' in request.files:
+        file = request.files['cover_image']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+
+            # Khởi tạo đường dẫn tuyệt đối an toàn trỏ về thư mục views/static/uploads/covers
+            base_dir = os.path.abspath(os.path.dirname(__file__))
+            upload_path = os.path.join(base_dir, '..', 'views', 'static', 'uploads', 'covers')
+
+            # Tạo thư mục nếu chưa tồn tại
+            os.makedirs(upload_path, exist_ok=True)
+
+            # Lưu file
+            file.save(os.path.join(upload_path, filename))
+
+    new_topic = StoryTopic(title=title, genre=genre, cover_image=filename, system_prompt=system_prompt)
+    db.session.add(new_topic)
+    db.session.commit()
+    return jsonify({"message": "Đã ghi nhận Chủ đề Truyện mới vào Hệ thống Lõi!"}), 201

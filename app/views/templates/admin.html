@@ -27,7 +27,29 @@
         <div id="stat-tests" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
     </div>
 </div>
+<!-- QUẢN LÝ CHỦ ĐỀ RPG (STORY TOPICS) -->
+<div class="bento-card card-wide" style="margin-bottom: 25px; padding: 30px;">
+    <div class="pixel-title" style="color: var(--neon-purple); font-size: 16px; margin-bottom: 20px;">RPG_SYSTEM // THÊM BỐI CẢNH CỐT TRUYỆN MỚI</div>
 
+    <form id="form-topic" onsubmit="submitNewTopic(event)" enctype="multipart/form-data" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div>
+            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">TÊN CHỦ ĐỀ (VD: Bệnh viện ma ám):</label>
+            <input type="text" id="topic_title" name="title" class="auth-input" required>
+
+            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">THỂ LOẠI (VD: Horror, Sci-fi):</label>
+            <input type="text" id="topic_genre" name="genre" class="auth-input" required>
+
+            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">ẢNH BÌA (Tùy chọn):</label>
+            <input type="file" id="topic_cover" name="cover_image" class="auth-input" accept="image/*" style="padding: 10px;">
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">SYSTEM PROMPT (Định hình tính cách AI và bối cảnh chi tiết):</label>
+            <textarea id="topic_prompt" name="system_prompt" style="flex-grow: 1; margin-bottom: 15px;" required placeholder="VD: Bạn là Game Master dẫn dắt người chơi thoát khỏi một bệnh viện bỏ hoang..."></textarea>
+
+            <button type="submit" class="pixel-btn" style="background: var(--neon-purple); width: 100%;">TẠO THẾ GIỚI MỚI</button>
+        </div>
+    </form>
+</div>
 <!-- QUẢN LÝ NGƯỜI CHƠI -->
 <div class="bento-card card-wide" style="min-height: 400px; padding: 30px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -119,5 +141,24 @@
                 }
             });
     }
+    function submitNewTopic(event) {
+    event.preventDefault();
+    const form = document.getElementById('form-topic');
+    const formData = new FormData(form);
+
+    fetch('/api/admin/topics', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error) alert(data.error);
+        else {
+            alert(data.message);
+            form.reset();
+        }
+    })
+    .catch(err => alert("Lỗi khi kết nối với máy chủ!"));
+}
 </script>
 {% endblock %}

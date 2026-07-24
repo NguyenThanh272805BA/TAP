@@ -1,15 +1,15 @@
 const CURRENT_USERNAME_DEFAULT = "Explorer";
 let activeFeature = "grammar"; // Lưu trữ tính năng hiện tại người dùng chọn trong Battle Zone
+let currentTopicId = 1; // [ PHASE 2 ] Lưu Chủ đề Truyện đang chọn
 
 document.addEventListener("DOMContentLoaded", () => {
     const currentPath = window.location.pathname;
 
-    // Xác thực và đồng bộ dữ liệu thực tế từ DB lên UI (Sử dụng API Endpoint /me bảo mật)
+    // 1. Xác thực và đồng bộ dữ liệu thực tế từ DB lên UI (Sử dụng API Endpoint /me bảo mật)
     if (currentPath !== '/auth' && currentPath !== '/') {
         fetch('/api/auth/user/me')
             .then(res => {
                 if (res.status === 401) {
-                    // Nếu Backend báo chưa đăng nhập hoặc hết hạn session, đá văng ra Portal
                     if (currentPath !== '/auth' && currentPath !== '/') {
                         alert("CẢNH BÁO TRUY CẬP: Phiên làm việc hết hạn! Đang quay lại Portal...");
                         window.location.href = '/auth';
@@ -20,7 +20,6 @@ document.addEventListener("DOMContentLoaded", () => {
             })
             .then(data => {
                 if (data && !data.error) {
-                    // Đổ data lên Sidebar (UI Mới)
                     const sidebarUser = document.getElementById("sidebar-user");
                     const sidebarRank = document.getElementById("sidebar-rank");
                     const sidebarStreak = document.getElementById("sidebar-streak");
@@ -31,21 +30,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (sidebarStreak) sidebarStreak.innerText = data.streak;
                     if (sidebarCoins) sidebarCoins.innerText = data.coins;
 
-                    // Phân quyền Admin: Hiển thị nút God Mode nếu role là admin
                     if (data.role === 'admin') {
                         const adminNav = document.getElementById('nav-admin');
                         if (adminNav) adminNav.style.display = 'flex';
                     }
 
-                    // Xử lý UI Check-in 7 ngày ở Dashboard
                     if (currentPath === '/dashboard') {
                         renderStreakUI(data.streak);
                         if (data.is_checked_in) {
                             lockCheckinButton();
                         }
+                        // [ PHASE 2 ] Tải Quest hàng ngày
+                        loadDailyQuests();
                     }
 
-                    // Cập nhật riêng cho màn Gacha
                     const gachaStreak = document.getElementById("gacha-streak");
                     if (gachaStreak) gachaStreak.innerText = data.streak;
                 }
@@ -62,18 +60,57 @@ document.addEventListener("DOMContentLoaded", () => {
     // 4. Tải thư viện Lottie động để chuẩn bị hiệu ứng nổ pháo hoa pixel
     initLottieLibrary();
 
-    // 5. Nếu đang ở không gian Story Terminal, tự động kích hoạt cốt truyện sinh tồn
+    // 5. Nếu đang ở không gian Story Terminal, kích hoạt Lobby (Giai đoạn 2)
     if (currentPath === '/story') {
-        initRPGStory();
+        loadStoryLobby();
     }
 });
+
+/**
+ * =======================================================
+ * DAILY QUESTS (PHASE 2)
+ * =======================================================
+ */
+function loadDailyQuests() {
+    fetch('/api/game/quests/today')
+    .then(res => res.json())
+    .then(data => {
+        const container = document.getElementById("daily-quests-container");
+        if(!container) return;
+
+        let html = '';
+        if (!data.quests || data.quests.length === 0) {
+            container.innerHTML = '<div style="color: var(--pixel-green); font-size: 14px;">Bạn đã hoàn thành mọi nhiệm vụ hôm nay!</div>';
+            return;
+        }
+
+        data.quests.forEach((q, idx) => {
+            const statusColor = q.is_completed ? "var(--pixel-green)" : "var(--glass-border)";
+            const statusText = q.is_completed ? "[ ĐÃ XONG ]" : "[ ĐANG CHỜ ]";
+            const questDesc = q.type === 'NEW' ? `Học từ mới: <strong style="color: var(--neon-cyan);">${q.word}</strong>` : `Ôn tập từ: <strong style="color: var(--neon-amber);">${q.word}</strong>`;
+            const opacity = q.is_completed ? "0.6" : "1";
+
+            html += `
+            <div style="background: rgba(0,0,0,0.4); border-left: 3px solid ${statusColor}; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; opacity: ${opacity}; transition: 0.3s;">
+                <div>
+                    <div style="color: #fff; font-size: 15px; font-family: var(--text-main); margin-bottom: 5px;">Nhiệm vụ ${idx + 1}: ${questDesc}</div>
+                    <div style="color: #94a3b8; font-size: 13px;">Gợi ý nghĩa: ${q.meaning}</div>
+                </div>
+                <div style="color: ${statusColor}; font-family: var(--text-pixel); font-size: 12px; font-weight: bold;">
+                    ${statusText}
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    })
+    .catch(err => console.error("Lỗi tải Daily Quests:", err));
+}
 
 /**
  * =======================================================
  * CÁC HÀM XỬ LÝ GIAO DIỆN MỚI (STREAK, ĐIỂM DANH, SHOP)
  * =======================================================
  */
-
 function renderStreakUI(streakCount) {
     const activeDays = streakCount % 7 === 0 && streakCount > 0 ? 7 : streakCount % 7;
     for (let i = 1; i <= 7; i++) {
@@ -93,7 +130,6 @@ function lockCheckinButton() {
         btn.innerText = "ĐÃ ĐIỂM DANH HÔM NAY";
         timerText.style.display = "block";
 
-        // Tính toán đếm ngược đến 00:00 ngày mai
         setInterval(() => {
             const now = new Date();
             const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -154,11 +190,9 @@ function buyItem(itemId, price) {
  * CÁC HÀM XỬ LÝ LÕI GAME (BATTLE ZONE, AI, LOTTIE)
  * =======================================================
  */
-
 function switchFeature(featureName) {
     const currentPath = window.location.pathname;
 
-    // 1. KIỂM TRA VÀ ĐIỀU HƯỚNG TRANG CHUYÊN BIỆT
     if ((featureName === 'grammar' || featureName === 'vocab') && currentPath !== '/learn') {
         localStorage.setItem("selected_learning_mode", featureName);
         window.location.href = '/learn';
@@ -175,12 +209,10 @@ function switchFeature(featureName) {
         return;
     }
 
-    // 2. RENDER GIAO DIỆN KHÔNG GIAN BATTLE ZONE (Cho Dashboard / Learn nội bộ)
     activeFeature = featureName;
     const workspace = document.getElementById("dynamic-workspace");
     const aiResponseBox = document.getElementById("aiResponseBox");
 
-    // Xóa hiệu ứng chọn cũ trên Bento Grid
     document.querySelectorAll(".bento-card").forEach(card => card.style.borderColor = "var(--glass-border)");
     const activeCard = document.getElementById(`${featureName}-card`);
     if (activeCard) activeCard.style.borderColor = "var(--neon-cyan)";
@@ -223,7 +255,6 @@ function switchFeature(featureName) {
             `;
             break;
     }
-
     initKeyboardShortcuts();
 }
 
@@ -453,11 +484,54 @@ function triggerFireworksEffect() {
 
 /**
  * =======================================================
- * LOGIC RPG STORY (CÓ TRÍ NHỚ, BỘ ĐẾM LƯỢT + GỢI Ý ĐIỀN TỪ)
+ * LOGIC RPG STORY (PHASE 2 - LOBBY, ARCHIVES & GAMEPLAY)
  * =======================================================
  */
 let currentStoryTurn = 1;
 let storyHistory = "";
+
+function loadStoryLobby() {
+    fetch('/api/admin/topics')
+    .then(res => res.json())
+    .then(data => {
+        const container = document.getElementById("topics-container");
+        if(!container) return;
+        let html = '';
+        data.forEach(t => {
+            html += `
+            <div class="bento-card" style="padding: 15px; border: 1px solid var(--glass-border); cursor: pointer; transition: 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='var(--glass-border)'" onclick="startStoryWithTopic(${t.id}, '${t.title}')">
+                <img src="/static/uploads/covers/${t.cover_image}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;" onerror="this.src='/static/uploads/covers/default_cover.jpg'">
+                <div class="pixel-title" style="font-size: 14px; margin-bottom: 5px; color: var(--neon-amber);">${t.title}</div>
+                <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">Thể loại: ${t.genre}</div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    });
+
+    const archiveContainer = document.getElementById("archive-container");
+    if(archiveContainer) {
+        archiveContainer.innerHTML = `
+            <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid var(--pixel-green);">
+                <strong style="color: #fff; display: block; font-size: 14px;">[Survived] Rừng Nguyên Sinh</strong>
+                <span style="color: #94a3b8; font-size: 12px;">Ngày: 2026-07-24 | Điểm: 8.5</span>
+            </div>
+        `;
+    }
+}
+
+function startStoryWithTopic(topicId, topicName) {
+    currentTopicId = topicId;
+    document.getElementById("story-lobby").style.display = "none";
+    document.getElementById("story-battle-zone").style.display = "grid";
+    document.getElementById("current-topic-name").innerText = topicName.toUpperCase();
+
+    initRPGStory();
+}
+
+function exitToLobby() {
+    document.getElementById("story-battle-zone").style.display = "none";
+    document.getElementById("story-lobby").style.display = "flex";
+}
 
 function initRPGStory() {
     currentStoryTurn = 1;
@@ -469,11 +543,12 @@ function initRPGStory() {
     const terminal = document.getElementById("story-terminal");
     if (!terminal) return;
 
-    terminal.innerHTML = `<div class="typing-effect" style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 14px;">[SYSTEM] Đang thiết lập bối cảnh sinh tồn hậu tận thế...</div>`;
+    terminal.innerHTML = `<div class="typing-effect" style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 14px;">[SYSTEM] Đang nạp bối cảnh và kết nối Game Master...</div>`;
 
     fetch('/api/ai/story/init', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic_id: currentTopicId })
     })
     .then(res => res.json())
     .then(data => {
@@ -491,7 +566,6 @@ function appendStoryScene(data, isInit = false) {
 
     if (!terminal || !hintBox) return;
 
-    // Phun in nội dung bối cảnh ra màn hình Terminal song song EN - VN
     terminal.innerHTML += `
         <div style="background: rgba(30, 41, 75, 0.7); border-left: 3px solid var(--neon-purple); padding: 16px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
             <div style="color: #fff; font-family: var(--text-main); font-size: 16px; margin-bottom: 10px; line-height: 1.6; font-weight:600;">${data.scene_en}</div>
@@ -500,25 +574,22 @@ function appendStoryScene(data, isInit = false) {
     `;
     terminal.scrollTop = terminal.scrollHeight;
 
-    // Cập nhật chuỗi bộ nhớ đệm (Trí nhớ cốt truyện của AI)
     storyHistory += `\n[GM]: ${data.scene_en}`;
 
     const storyInput = document.getElementById("storyInput");
     const btnExecute = document.getElementById("btn-story-execute");
 
-    // Kiểm tra xem đã cán mốc lượt thứ 10 (Hạ màn game) hay chưa
     if (data.is_end === "true" || data.is_end === true) {
         hintBox.innerHTML = `
             <div style="color: var(--pixel-green); font-family: var(--text-pixel); font-size: 14px; text-align: center; margin-bottom: 15px; letter-spacing:1px;">MISSION ACCOMPLISHED!</div>
-            <div style="color: #cbd5e1; font-family: var(--text-main); font-size: 15px; text-align: center; line-height:1.6;">Hành trình sinh tồn hoàn tất. Bạn xuất sắc vượt qua 10 lượt cân não!</div>
-            <button class="pixel-btn" style="background: var(--neon-amber); width: 100%; margin-top: 15px; padding:15px; font-size:12px;" onclick="initRPGStory()">CHƠI LẠI MÀN MỚI</button>
+            <div style="color: #cbd5e1; font-family: var(--text-main); font-size: 15px; text-align: center; line-height:1.6;">Hành trình sinh tồn hoàn tất. Nhật ký đã được lưu lại!</div>
+            <button class="pixel-btn" style="background: var(--neon-amber); width: 100%; margin-top: 15px; padding:15px; font-size:12px;" onclick="exitToLobby()">TRỞ VỀ LOBBY</button>
         `;
         if (storyInput) storyInput.disabled = true;
         if (btnExecute) btnExecute.disabled = true;
 
         triggerFireworksEffect();
     } else {
-        // Render ma trận gợi ý điền từ vào chỗ trống (Fill-in-the-blanks)
         hintBox.innerHTML = `
             <div style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 16px; font-weight: 700; line-height: 1.5; margin-bottom: 10px; letter-spacing: 0.5px;">${data.hint_en || "I need to ___ carefully."}</div>
             <div style="color: #94a3b8; font-family: var(--text-main); font-size: 14px; font-style: italic; line-height: 1.5;">Ý nghĩa gợi mở: ${data.hint_vn || "Tôi cần hành động cẩn trọng"}</div>
@@ -541,21 +612,17 @@ function executeStoryAction() {
 
     const actionText = inputEle.value.trim();
     if (!actionText) {
-        triggerCardShake(); // Rung lắc bento card nếu gửi chuỗi rỗng
+        triggerCardShake();
         return;
     }
 
-    // Ghi nhận trực tiếp hành động của player vào lịch sử chuỗi
     storyHistory += `\n[Player]: ${actionText}`;
 
-    // Tăng tiến trình đếm lượt và cập nhật UI bộ đếm
     currentStoryTurn++;
     if (turnCounter) turnCounter.innerText = `${currentStoryTurn}/10`;
 
-    // Hiển thị trạng thái giải mã kịch bản trong Action Box
     hintBox.innerHTML = "<div class='pulse-neon' style='font-size:13px; font-family:var(--text-pixel); text-align: center; letter-spacing:0.5px;'>MASTER_G ĐANG SOẠN KỊCH BẢN...</div>";
 
-    // Đẩy hành động người dùng lên màn hình Terminal
     terminal.innerHTML += `
         <div style="text-align: right; margin: 15px 0;">
             <span style="background: var(--neon-cyan); color: #000; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-family: var(--text-mono); font-size:15px; display:inline-block; box-shadow:0 4px 15px rgba(103,232,249,0.3);">> ${actionText}</span>
@@ -564,12 +631,10 @@ function executeStoryAction() {
     inputEle.value = "";
     terminal.scrollTop = terminal.scrollHeight;
 
-    // Kích hoạt dòng trạng thái Loading thời gian thực của Game Master
     const loadId = "loading-" + Date.now();
     terminal.innerHTML += `<div id="${loadId}" class="pulse-neon" style="margin-bottom: 15px; font-family:var(--text-main); font-size:15px; color:var(--neon-purple);">[GM] Đang phân tích ngữ pháp và dắt cốt truyện...</div>`;
     terminal.scrollTop = terminal.scrollHeight;
 
-    // Thực hiện Fetch đẩy hành động + Trí nhớ ngữ cảnh câu chuyện lên cho AI
     fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -577,7 +642,8 @@ function executeStoryAction() {
             text: actionText,
             mode: 'story',
             turn: currentStoryTurn,
-            history: storyHistory
+            history: storyHistory,
+            topic_id: currentTopicId // Truyền Topic ID
         })
     })
     .then(res => {
@@ -591,7 +657,6 @@ function executeStoryAction() {
         const result = data.result || data;
         const score = result.score !== undefined ? result.score : 0;
 
-        // Render bảng điểm kiểm duyệt ngữ pháp của Master G xéo xắt lên góc phải Terminal
         const scoreColor = score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
         terminal.innerHTML += `
             <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 18px; text-align: right; letter-spacing:0.5px;">
@@ -607,7 +672,6 @@ function executeStoryAction() {
         if (loadEl) loadEl.remove();
         hintBox.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>[ERROR] Lỗi kết nối Game Master! Đứt cáp mạng không gian!</span>";
 
-        // Rollback hoàn tác bộ đếm lượt nếu tiến trình gọi API đổ bể
         currentStoryTurn--;
         if (turnCounter) turnCounter.innerText = `${currentStoryTurn}/10`;
     });
