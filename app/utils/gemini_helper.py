@@ -1,6 +1,8 @@
 import os
+import json
 from google import genai
 from dotenv import load_dotenv
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Load biến môi trường
 load_dotenv()
@@ -8,13 +10,25 @@ load_dotenv()
 # Khởi tạo Client theo SDK mới
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+# Bọc khiên Tenacity: Thử tối đa 3 lần, thời gian chờ đợi nhân đôi dần (2s -> 4s -> 8s)
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    reraise=True # Nếu thử 3 lần vẫn toang thì mới ném Exception ra ngoài
+)
+def call_gemini_with_retry(prompt, model='gemini-2.5-flash'):
+    """Hàm lõi bọc API Gemini để tái sử dụng toàn dự án, chống 503"""
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt
+    )
+    return response.text.strip().replace('```json', '').replace('```', '')
 
 def evaluate_english_skill(user_input, target_grammar="Không có"):
     """
     Gửi input của user lên AI kèm theo System Prompt định hình tính cách
     và ép trả về JSON chuẩn.
     """
-
     system_prompt = f"""
     Bạn là 'Master TA', một chuyên gia tiếng Anh cực kỳ cá tính, xéo xắt, hơi 'mỏ hỗn' nhưng thâm tâm rất muốn học trò giỏi. 
     Nhiệm vụ của bạn là chấm điểm câu tiếng Anh/Việt mà người dùng vừa nhập, chỉ ra lỗi sai ngữ pháp, và gợi ý từ lóng (slang) hoặc idiom xịn xò hơn.
@@ -37,13 +51,14 @@ def evaluate_english_skill(user_input, target_grammar="Không có"):
     prompt = system_prompt + f"\n\nBài làm của user: '{user_input}'"
 
     try:
-        # Gọi API chuẩn mới
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
-        # Làm sạch chuỗi trả về để đảm bảo không bị dính markdown
-        clean_text = response.text.strip().replace('```json', '').replace('```', '')
+        # Sử dụng hàm lõi đã có retry
+        clean_text = call_gemini_with_retry(prompt)
         return clean_text
     except Exception as e:
-        return f'{{"score": 0, "feedback": "Server toang rồi báo thủ ơi, lỗi kết nối: {str(e)}", "slang_suggestion": ""}}'
+        # Nếu đã thử 3 lần mà Google vẫn báo 503, ta mớm sẵn 1 JSON dự phòng để UI không bị vỡ!
+        fallback_json = {
+            "score": 5.0,
+            "feedback": f"[ SERVER QUÁ TẢI ] Master G đang đi uống trà đá, hệ thống Google đình công (Lỗi {str(e)[:20]}...). Tạm cho 5 điểm an ủi, lần sau thử lại nhé đồ ngốc!",
+            "slang_suggestion": "Take a breather (Nghỉ xả hơi xíu đi)"
+        }
+        return json.dumps(fallback_json)

@@ -17,7 +17,7 @@ srs_engine = SmartSRS()
 
 @game_bp.route('/story/topics', methods=['GET'])
 def get_story_topics():
-    topics = StoryTopic.query.all()
+    topics = StoryTopic.query.order_by(StoryTopic.id.desc()).all()
     return jsonify([{
         "id": t.id,
         "title": t.title,

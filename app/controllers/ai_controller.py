@@ -2,9 +2,9 @@ import os
 import json
 import random
 from datetime import date
-from google import genai
 from flask import Blueprint, request, jsonify, session
-from app.utils.gemini_helper import evaluate_english_skill
+# Bổ sung import hàm retry từ gemini_helper
+from app.utils.gemini_helper import evaluate_english_skill, call_gemini_with_retry
 from app.models.test import TestLog
 from app.models.user import User
 from app.models.grammar import Grammar
@@ -59,8 +59,6 @@ def evaluate():
             topic = StoryTopic.query.get(topic_id)
             theme_context = topic.system_prompt if topic else "Bối cảnh sinh tồn hậu tận thế tàn khốc."
 
-            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
             # KIỂM TRA NẾU ĐÂY LÀ LƯỢT CUỐI CÙNG (LƯỢT 10)
             if story_turn >= 10:
                 prompt_summary = f"""
@@ -87,8 +85,8 @@ def evaluate():
                     "is_end": true
                 }}
                 """
-                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_summary)
-                clean_json_str = response.text.strip().replace('```json', '').replace('```', '')
+                # Sử dụng hàm đã bọc Tenacity (Tự động clean json markdown)
+                clean_json_str = call_gemini_with_retry(prompt_summary)
                 result = json.loads(clean_json_str)
 
                 # [ LƯU NHẬT KÝ VÀO DATABASE ]
@@ -128,8 +126,8 @@ def evaluate():
                     "is_end": false
                 }}
                 """
-                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_story)
-                clean_json_str = response.text.strip().replace('```json', '').replace('```', '')
+                # Sử dụng hàm đã bọc Tenacity
+                clean_json_str = call_gemini_with_retry(prompt_story)
                 result = json.loads(clean_json_str)
 
         # ==============================================================
@@ -147,24 +145,22 @@ def evaluate():
                     context_challenge = "Kiểm tra ngữ pháp chung."
 
             elif mode == 'vocab':
-                # Đã bỏ random bắt buộc. Chỉ yêu cầu kiểm tra từ vựng người dùng gõ
                 context_challenge = "Hãy tập trung kiểm tra cách sử dụng từ vựng, collocation và chỉ ra lỗi dùng từ lóng/từ vựng (nếu có)."
 
             elif mode == 'free':
-                # Chế độ tự do cho Quick Quest: Chấm điểm bình thường, xéo xắt nếu sai, khen nếu đúng
                 context_challenge = "Đây là câu tự do. Hãy chấm điểm ngữ pháp tiếng Anh cơ bản. Khen ngạo nghễ nếu tốt, chê xéo xắt nếu sai."
 
+            # evaluate_english_skill cũng đã được cập nhật dùng call_gemini_with_retry bên trong gemini_helper.py
             ai_response_str = evaluate_english_skill(user_input, context_challenge)
             clean_json_str = ai_response_str.strip().replace('```json', '').replace('```', '')
             result = json.loads(clean_json_str)
 
             score = result.get("score", 0)
 
-            # [ QUAN TRỌNG ] LUÔN KIỂM TRA QUEST DÙ Ở MODE NÀO (Nếu người dùng viết đúng từ Quest -> Xong quest)
+            # LUÔN KIỂM TRA QUEST DÙ Ở MODE NÀO
             quest_completed_word = check_and_complete_quest(user_id, user_input)
 
             if score >= 8.0:
-                # Đào thêm dữ liệu nếu làm tốt
                 if mode in ['vocab', 'grammar']:
                     mine_new_data_via_ai(mode)
 
@@ -187,7 +183,6 @@ def evaluate():
     db.session.add(new_log)
     db.session.commit()
 
-    # Bơm thông báo hoàn thành nhiệm vụ vào JSON trả về nếu có
     if quest_completed_word:
         result['quest_notification'] = f"HOÀN THÀNH NHIỆM VỤ: Đặt câu với từ '{quest_completed_word}' (+20 Xu)"
 
@@ -196,8 +191,6 @@ def evaluate():
 
 def mine_new_data_via_ai(current_mode):
     try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
         if current_mode == 'vocab':
             prompt = """
             Bạn là máy đào dữ liệu. Hãy tìm và xuất bản đúng 1 từ vựng tiếng Anh độc đáo thuộc chủ đề Gaming RPG hoặc Internet Slang hoặc đời thực.
@@ -208,8 +201,7 @@ def mine_new_data_via_ai(current_mode):
                 "theme": "Gaming, Đời thực"
             }
             """
-            response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-            clean_json = response.text.strip().replace('```json', '').replace('```', '')
+            clean_json = call_gemini_with_retry(prompt)
             item_data = json.loads(clean_json)
 
             exists = Vocabulary.query.filter_by(word=item_data['word']).first()
@@ -234,8 +226,7 @@ def mine_new_data_via_ai(current_mode):
                 "example": "Câu ví dụ minh họa bằng tiếng Anh"
             }
             """
-            response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-            clean_json = response.text.strip().replace('```json', '').replace('```', '')
+            clean_json = call_gemini_with_retry(prompt)
             item_data = json.loads(clean_json)
 
             exists = Grammar.query.filter_by(structure=item_data['structure']).first()
@@ -271,19 +262,17 @@ def get_guide():
     """
 
     try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        formatted_guide = response.text.replace('\n', '<br>')
+        clean_text = call_gemini_with_retry(prompt)
+        formatted_guide = clean_text.replace('\n', '<br>')
         return jsonify({"guide": formatted_guide}), 200
     except Exception as e:
         return jsonify({
-            "guide": f"[OFFLINE MODE] Lõi AI đang bận tản nhiệt! Gợi ý tạm: Hãy thử đặt câu dạng 'S + V + {word}' xem sao đồ ngốc!"
+            "guide": f"[OFFLINE MODE] Lõi AI đang bận tản nhiệt do quá tải! Gợi ý tạm: Hãy thử đặt câu dạng 'S + V + {word}' xem sao đồ ngốc!"
         }), 200
 
 
 @ai_bp.route('/grammar_guide', methods=['POST'])
 def get_grammar_guide():
-    """AI Hướng dẫn đặt câu Ngữ pháp (Phase 2)"""
     data = request.get_json(silent=True) or {}
     structure = data.get('structure')
 
@@ -301,12 +290,11 @@ def get_grammar_guide():
     """
 
     try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        formatted_guide = response.text.replace('\n', '<br>')
+        clean_text = call_gemini_with_retry(prompt)
+        formatted_guide = clean_text.replace('\n', '<br>')
         return jsonify({"guide": formatted_guide}), 200
     except Exception as e:
-        return jsonify({"guide": "[OFFLINE MODE] API đang sập. Tự mở sách ra mà học!"}), 200
+        return jsonify({"guide": "[OFFLINE MODE] Lõi API đang sập. Tự mở sách ra mà học tạm đi!"}), 200
 
 
 @ai_bp.route('/generate_unit', methods=['POST'])
@@ -346,9 +334,7 @@ def generate_unit():
     """
 
     try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        clean_json = response.text.strip().replace('```json', '').replace('```', '')
+        clean_json = call_gemini_with_retry(prompt)
         items = json.loads(clean_json)
 
         added_count = 0
@@ -412,9 +398,7 @@ def init_story():
     """
 
     try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        clean_json = response.text.strip().replace('```json', '').replace('```', '')
+        clean_json = call_gemini_with_retry(prompt)
         return jsonify(json.loads(clean_json)), 200
     except Exception as e:
         return jsonify({

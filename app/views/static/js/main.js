@@ -40,8 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (data.is_checked_in) {
                             lockCheckinButton();
                         }
-                        // [ PHASE 2 ] Tải Quest hàng ngày
+                        // [ PHASE 2 ] Tải Quest hàng ngày & Leaderboard
                         loadDailyQuests();
+                        loadDashboardLeaderboard();
 
                         // Kích hoạt hướng dẫn Tân thủ
                         checkAndRunTutorial(data);
@@ -107,6 +108,31 @@ function loadDailyQuests() {
         container.innerHTML = html;
     })
     .catch(err => console.error("Lỗi tải Daily Quests:", err));
+}
+
+/**
+ * =======================================================
+ * LEADERBOARD DASHBOARD
+ * =======================================================
+ */
+function loadDashboardLeaderboard() {
+    const lbContainer = document.getElementById("dashboard-leaderboard");
+    if (!lbContainer) return;
+    fetch('/api/game/gacha/leaderboard')
+    .then(res => res.json())
+    .then(data => {
+        if (!data.leaderboard || data.leaderboard.length === 0) {
+            lbContainer.innerHTML = '<span style="color: #94a3b8;">Chưa có cao thủ nào.</span>';
+            return;
+        }
+        let html = '';
+        data.leaderboard.forEach((u, idx) => {
+            let color = idx === 0 ? "var(--neon-amber)" : (idx === 1 ? "#cbd5e1" : "#d97706");
+            if(idx > 2) color = "#94a3b8";
+            html += `<div style="color: ${color}; margin-bottom: 8px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">#${idx+1} ${u.username} - <span style="color:#fff;">${u.score} pts</span></div>`;
+        });
+        lbContainer.innerHTML = html;
+    });
 }
 
 /**
@@ -300,7 +326,7 @@ function submitChallenge() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             text: textValue,
-            mode: 'free'
+            mode: activeFeature
         })
     })
     .then(response => {
@@ -348,25 +374,7 @@ function submitChallenge() {
         aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>ERROR: KHÔNG THỂ KẾT NỐI VỚI NÃO BỘ AI!</span>";
     });
 }
-function loadDashboardLeaderboard() {
-    const lbContainer = document.getElementById("dashboard-leaderboard");
-    if (!lbContainer) return;
-    fetch('/api/game/gacha/leaderboard')
-    .then(res => res.json())
-    .then(data => {
-        if (!data.leaderboard || data.leaderboard.length === 0) {
-            lbContainer.innerHTML = '<span style="color: #94a3b8;">Chưa có cao thủ nào.</span>';
-            return;
-        }
-        let html = '';
-        data.leaderboard.forEach((u, idx) => {
-            let color = idx === 0 ? "var(--neon-amber)" : (idx === 1 ? "#cbd5e1" : "#d97706");
-            if(idx > 2) color = "#94a3b8";
-            html += `<div style="color: ${color}; margin-bottom: 8px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">#${idx+1} ${u.username} - <span style="color:#fff;">${u.score} pts</span></div>`;
-        });
-        lbContainer.innerHTML = html;
-    });
-}
+
 function loadVocabQuests() {
     const container = document.querySelector("#vocab-card .pixel-text");
     if (!container) return;
@@ -562,20 +570,43 @@ function loadStoryLobby() {
             return;
         }
 
+        const isAdmin = document.getElementById("nav-admin") && document.getElementById("nav-admin").style.display !== 'none';
         let html = '';
         topics.forEach(t => {
             const coverUrl = `/static/uploads/covers/${t.cover_image}`;
+            const deleteBtn = isAdmin ? `<button onclick="deleteStoryTopic(event, ${t.id})" class="pixel-btn" style="position: absolute; top: 10px; right: 10px; background: rgba(239, 68, 68, 0.9); padding: 5px 8px; font-size: 10px; z-index: 10; box-shadow: none;">XÓA</button>` : '';
+
             html += `
-            <div class="bento-card" style="padding: 15px; cursor: pointer; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); transition: 0.3s;" 
+            <div class="bento-card" style="padding: 15px; cursor: pointer; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); transition: 0.3s; position: relative; height: max-content;" 
                  onmouseover="this.style.borderColor='var(--neon-cyan)'; this.style.transform='scale(1.02)';" 
                  onmouseout="this.style.borderColor='var(--glass-border)'; this.style.transform='scale(1)';" 
                  onclick="startStoryWithTopic(${t.id}, '${t.title}')">
+                ${deleteBtn}
                 <img src="${coverUrl}" onerror="this.src='/static/uploads/covers/default_cover.jpg'" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
                 <div class="pixel-title" style="font-size: 14px; margin-bottom: 5px;">${t.title}</div>
                 <div style="font-size: 11px; color: var(--neon-purple); border: 1px solid var(--neon-purple); display: inline-block; padding: 3px 8px; border-radius: 4px;">${t.genre}</div>
             </div>`;
         });
         topicsContainer.innerHTML = html;
+    });
+}
+
+// Xóa Topic Cốt Truyện (Dành cho Admin)
+function deleteStoryTopic(event, topicId) {
+    event.stopPropagation();
+    if(!confirm("CẢNH BÁO TỐI CAO: Bạn có chắc muốn XÓA VĨNH VIỄN cốt truyện này? Mọi liên kết sẽ biến mất!")) return;
+
+    fetch(`/api/admin/topics/${topicId}`, {
+        method: 'DELETE'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error) {
+            alert(data.error);
+        } else {
+            alert(data.message);
+            loadStoryLobby();
+        }
     });
 }
 
@@ -703,7 +734,7 @@ function executeStoryAction() {
             mode: 'story',
             turn: currentStoryTurn,
             history: storyHistory,
-            topic_id: currentTopicId // Truyền Topic ID
+            topic_id: currentTopicId
         })
     })
     .then(res => {
@@ -747,13 +778,13 @@ function submitQuickQuest() {
     feedbackBox.style.display = "block";
     feedbackBox.innerHTML = "<span style='color: var(--neon-amber);' class='pulse-neon'>MASTER_G ĐANG KIỂM TRA CÂU...</span>";
 
-    // Mượn tạm API evaluate với mode 'vocab' để xử lý
+    // Đã chuyển thành 'free' mode để không ép từ vựng
     fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             text: textValue,
-            mode: 'vocab'
+            mode: 'free'
         })
     })
     .then(res => res.json())
@@ -834,7 +865,7 @@ function showMasterGTutorial() {
             </div>
 
             <button class="pixel-btn" onclick="closeTutorial()" style="background: var(--neon-purple); width: 100%; font-size: 14px; padding: 15px;">
-                ĐÃ HIỂU! (BẮT ĐẦU CHƠI)
+                ĐĐÃ HIỂU! (BẮT ĐẦU CHƠI)
             </button>
         </div>
     `;
@@ -854,4 +885,38 @@ function closeTutorial() {
             btnCheckin.style.boxShadow = "0 0 20px var(--neon-amber)";
         }
     }, 500);
+}
+
+/**
+ * ==========================================================
+ * HIỆU ỨNG GLOBAL: ẨN / HIỆN MASTER G
+ * ==========================================================
+ */
+function toggleMasterG(e) {
+    if(e) e.stopPropagation();
+    const container = document.getElementById('master-g-container');
+    const chibi = document.querySelector('.character');
+
+    // Tránh lỗi nếu page không có Master G
+    if(!container || !chibi) return;
+
+    const isHidden = container.style.opacity === '0';
+
+    if(isHidden) {
+        container.style.width = '80px';
+        container.style.transform = 'scale(1.3)';
+        container.style.opacity = '1';
+        chibi.classList.add('master-g-proud');
+        setTimeout(() => chibi.classList.remove('master-g-proud'), 2000);
+    } else {
+        chibi.classList.add('master-g-mad');
+        setTimeout(() => {
+            container.style.transform = 'scale(0)';
+            container.style.opacity = '0';
+            setTimeout(() => {
+                container.style.width = '0px';
+                chibi.classList.remove('master-g-mad');
+            }, 400);
+        }, 600);
+    }
 }

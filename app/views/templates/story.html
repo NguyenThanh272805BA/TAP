@@ -6,23 +6,25 @@
 <div class="bento-container" style="height: calc(100vh - 100px); display: flex; flex-direction: column; gap: 25px; max-width: 1300px; margin: 0 auto; align-items: stretch;">
 
     <!-- MÀN HÌNH LOBBY CHỌN CHỦ ĐỀ & NHẬT KÝ (Hiển thị ban đầu) -->
-    <div id="story-lobby" style="display: flex; gap: 25px; flex-grow: 1;">
+    <div id="story-lobby" style="display: flex; gap: 25px; flex-grow: 1; overflow: hidden;">
         <!-- CỘT CHỌN CHỦ ĐỀ -->
-        <div class="bento-card" style="flex: 2; display: flex; flex-direction: column; padding: 25px;">
-            <div class="pixel-title" style="color: var(--neon-cyan); font-size: 20px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
+        <div class="bento-card" style="flex: 2; display: flex; flex-direction: column; padding: 25px; height: 100%;">
+            <div class="pixel-title" style="color: var(--neon-cyan); font-size: 20px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px; flex-shrink: 0;">
                 CHỌN BỐI CẢNH SINH TỒN
             </div>
-            <div id="topics-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; overflow-y: auto;">
+            <!-- Đã fix CSS Grid: Ép nằm lên trên cùng, không bị stretch -->
+            <div id="topics-container" style="display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: max-content; align-content: start; gap: 15px; overflow-y: auto; padding-right: 10px; flex-grow: 1;">
                 <div class="typing-effect" style="color: var(--neon-amber);">Đang tải danh sách thế giới...</div>
             </div>
         </div>
 
         <!-- CỘT NHẬT KÝ SINH TỒN -->
-        <div class="bento-card" style="flex: 1; display: flex; flex-direction: column; padding: 25px;">
-            <div class="pixel-title" style="color: var(--neon-purple); font-size: 16px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
+        <div class="bento-card" style="flex: 1; display: flex; flex-direction: column; padding: 25px; height: 100%;">
+            <div class="pixel-title" style="color: var(--neon-purple); font-size: 16px; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px; flex-shrink: 0;">
                 📖 NHẬT KÝ SINH TỒN
             </div>
-            <div id="archive-container" style="overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+            <!-- Đã fix Flex: Ép nằm lên trên -->
+            <div id="archive-container" style="overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-start; gap: 10px; padding-right: 5px; flex-grow: 1;">
                 <div style="color: #94a3b8; font-size: 14px; font-style: italic;">Chưa có dữ liệu hành trình.</div>
             </div>
         </div>
@@ -39,7 +41,7 @@
                 </div>
                 <!-- Chibi Master G -->
                 <div style="width: 70px; height: 35px; transform: scale(1.1); transform-origin: top right;">
-                    <div class="character-container"><div class="character"><div class="head"><div class="hair-back"></div><div class="face"><div class="hair-front"></div><div class="eyes"><div class="eye left"><div class="pupil"></div></div><div class="eye right"><div class="pupil"></div></div></div><div class="blush left"></div><div class="blush right"></div><div class="mouth"></div></div></div><div class="body"><div class="shirt"><div class="collar"></div></div><div class="arms"><div class="arm left"></div><div class="arm right"></div></div></div><div class="legs"><div class="leg left"></div><div class="leg right"></div></div></div></div>
+                    {% include 'master_g.html' %}
                 </div>
             </div>
             <div id="story-terminal" style="flex-grow: 1; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); border-radius: 12px; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;"></div>

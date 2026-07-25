@@ -127,3 +127,22 @@ def create_topic():
     db.session.add(new_topic)
     db.session.commit()
     return jsonify({"message": "Đã ghi nhận Chủ đề Truyện mới vào Hệ thống Lõi!"}), 201
+
+@admin_bp.route('/topics/<int:topic_id>', methods=['DELETE'])
+@admin_required
+def delete_topic(topic_id):
+    topic = StoryTopic.query.get(topic_id)
+    if not topic:
+        return jsonify({"error": "Không tìm thấy chủ đề này!"}), 404
+    if topic.cover_image and topic.cover_image != 'default_cover.jpg':
+        base_dir = os.path.abspath(os.path.dirname(__file__))
+        cover_path = os.path.join(base_dir, '..', 'views', 'static', 'uploads', 'covers', topic.cover_image)
+        if os.path.exists(cover_path):
+            try:
+                os.remove(cover_path)
+            except:
+                pass
+
+    db.session.delete(topic)
+    db.session.commit()
+    return jsonify({"message": f"Đã xóa vĩnh viễn chủ đề '{topic.title}' khỏi hệ thống!"}), 200
