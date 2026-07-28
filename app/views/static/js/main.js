@@ -137,7 +137,7 @@ function loadDashboardLeaderboard() {
 
 /**
  * =======================================================
- * CÁC HÀM XỬ LÝ GIAO DIỆN MỚI (STREAK, ĐIỂM DANH, SHOP)
+ * CÁC HÀM XỬ LÝ GIAO DIỆN (STREAK, ĐIỂM DANH, SHOP)
  * =======================================================
  */
 function renderStreakUI(streakCount) {
