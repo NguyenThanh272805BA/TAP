@@ -4,16 +4,21 @@ from app.models.vocabulary import Vocabulary
 from app import db
 from app.models.user_vocabulary import UserVocabulary
 from app.models.grammar import Grammar
-from app.models.daily_quest import DailyQuest  # [ PHASE 2 ]
+from app.models.daily_quest import DailyQuest
 from datetime import datetime, date, timedelta
 import random
 from app.ml_models.recommender import VocabRecommender
 from app.ml_models.srs_predictor import SmartSRS
 from app.models.story_session import StorySession
 from app.models.story_topic import StoryTopic
+
+# [ PHASE 3 ] Import Hệ thống Quản lý Thành tựu
+from app.utils.achievement_manager import check_and_unlock_achievements
+
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
 recommender_engine = VocabRecommender()
 srs_engine = SmartSRS()
+
 
 @game_bp.route('/story/topics', methods=['GET'])
 def get_story_topics():
@@ -25,6 +30,8 @@ def get_story_topics():
         "cover_image": t.cover_image,
         "system_prompt": t.system_prompt
     } for t in topics]), 200
+
+
 @game_bp.route('/checkin', methods=['POST'])
 def checkin():
     user_id = session.get('user_id')
@@ -51,6 +58,12 @@ def checkin():
         bonus_msg = " + 50 Xu (Thưởng Chuỗi 7 Ngày)"
 
     user.coins += reward_coins
+
+    # [ PHASE 3 ] Kiểm tra thành tựu Chuỗi đăng nhập (STREAK)
+    new_achievements = check_and_unlock_achievements(user_id, 'STREAK', user.streak_count)
+    if new_achievements:
+        for ach in new_achievements:
+            bonus_msg += f" \n🏆 Mở khóa thành tựu: {ach['title']} (+{ach['reward']} Xu)"
 
     unlocked_subquery = db.session.query(UserVocabulary.vocab_id).filter(
         UserVocabulary.user_id == user_id, UserVocabulary.is_unlocked == True
@@ -191,7 +204,7 @@ def get_grammars():
 
 
 # ==========================================
-# GACHA ARENA (PHASE 2 - CẬP NHẬT STAGES / INFINITY)
+# GACHA ARENA (PHASE 2 & 3 - STAGES / INFINITY)
 # ==========================================
 @game_bp.route('/gacha/roll', methods=['POST'])
 def gacha_roll():
@@ -309,6 +322,11 @@ def gacha_verify():
             game_message = f"[ KABOOM ] Chuỗi Combo: {current_gacha_streak}"
             if current_gacha_streak > (user.infinity_score or 0):
                 user.infinity_score = current_gacha_streak
+
+            # [ PHASE 3 ] Kiểm tra thành tựu chuỗi Gacha vô cực
+            achieved = check_and_unlock_achievements(user_id, 'GACHA_COMBO', current_gacha_streak)
+            if achieved:
+                game_message += f" | 🏆 +{len(achieved)} THÀNH TỰU!"
         else:
             game_message = f"[ GAME OVER ] Dừng lại ở điểm: {current_gacha_streak}"
             is_game_over = True
@@ -457,6 +475,8 @@ def update_exam_status():
         db.session.commit()
         return jsonify({"success": True}), 200
     return jsonify({"error": "Lỗi cập nhật"}), 400
+
+
 @game_bp.route('/story/archive', methods=['GET'])
 def get_story_archive():
     user_id = session.get('user_id')
@@ -471,6 +491,7 @@ def get_story_archive():
             "id": s.id,
             "topic": topic_title,
             "status": s.status,
+            "summary_en": s.summary_en,
             "summary_vn": s.summary_vn,
             "date": s.created_at.strftime("%Y-%m-%d")
         })

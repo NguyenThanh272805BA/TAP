@@ -82,7 +82,7 @@ def delete_user(user_id):
 
 
 # ==========================================
-# CÁC ROUTE QUẢN LÝ CHỦ ĐỀ TEXT-RPG (PHASE 2)
+# CÁC ROUTE QUẢN LÝ CHỦ ĐỀ TEXT-RPG (PHASE 2 & 3)
 # ==========================================
 @admin_bp.route('/topics', methods=['GET'])
 @admin_required
@@ -93,7 +93,8 @@ def get_topics():
         "title": t.title,
         "genre": t.genre,
         "cover_image": t.cover_image,
-        "system_prompt": t.system_prompt
+        "system_prompt": t.system_prompt,
+        "play_mode": getattr(t, 'play_mode', 'both')  # Phase 3: Thêm play_mode, dự phòng nếu DB chưa migrate
     } for t in topics]), 200
 
 
@@ -103,6 +104,7 @@ def create_topic():
     title = request.form.get('title')
     genre = request.form.get('genre')
     system_prompt = request.form.get('system_prompt')
+    play_mode = request.form.get('play_mode', 'both') # Phase 3: Đọc play_mode
 
     if not title or not system_prompt:
         return jsonify({"error": "Thiếu thông tin bắt buộc!"}), 400
@@ -123,10 +125,12 @@ def create_topic():
             # Lưu file
             file.save(os.path.join(upload_path, filename))
 
-    new_topic = StoryTopic(title=title, genre=genre, cover_image=filename, system_prompt=system_prompt)
+    # Phase 3: Gắn thêm trường play_mode
+    new_topic = StoryTopic(title=title, genre=genre, cover_image=filename, system_prompt=system_prompt, play_mode=play_mode)
     db.session.add(new_topic)
     db.session.commit()
     return jsonify({"message": "Đã ghi nhận Chủ đề Truyện mới vào Hệ thống Lõi!"}), 201
+
 
 @admin_bp.route('/topics/<int:topic_id>', methods=['DELETE'])
 @admin_required

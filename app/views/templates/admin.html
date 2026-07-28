@@ -27,6 +27,7 @@
         <div id="stat-tests" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
     </div>
 </div>
+
 <!-- QUẢN LÝ CHỦ ĐỀ RPG (STORY TOPICS) -->
 <div class="bento-card card-wide" style="margin-bottom: 25px; padding: 30px;">
     <div class="pixel-title" style="color: var(--neon-purple); font-size: 16px; margin-bottom: 20px;">RPG_SYSTEM // THÊM BỐI CẢNH CỐT TRUYỆN MỚI</div>
@@ -39,6 +40,13 @@
             <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">THỂ LOẠI (VD: Horror, Sci-fi):</label>
             <input type="text" id="topic_genre" name="genre" class="auth-input" required>
 
+            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block; margin-top: 5px;">CHẾ ĐỘ CHƠI (PLAY MODE):</label>
+            <select name="play_mode" class="auth-input" style="padding: 12px; margin-bottom: 15px; width: 100%; box-sizing: border-box; cursor: pointer;">
+                <option value="both">Cho người chơi tự chọn (Both)</option>
+                <option value="write">Chỉ được tự gõ tiếng Anh (Writing Only)</option>
+                <option value="choose">Chỉ được chọn đáp án (Choosing Only)</option>
+            </select>
+
             <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">ẢNH BÌA (Tùy chọn):</label>
             <input type="file" id="topic_cover" name="cover_image" class="auth-input" accept="image/*" style="padding: 10px;">
         </div>
@@ -50,13 +58,14 @@
         </div>
     </form>
 </div>
+
 <!-- QUẢN LÝ NGƯỜI CHƠI -->
 <div class="bento-card card-wide" style="min-height: 400px; padding: 30px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div class="pixel-title" style="color: var(--neon-cyan); font-size: 16px;">DATA_TABLE // USERS</div>
         <button class="pixel-btn" onclick="fetchAdminData()" style="background: var(--neon-purple); font-size: 10px;">REFRESH DATA</button>
     </div>
-    
+
     <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
@@ -108,7 +117,7 @@
             .then(users => {
                 const tbody = document.getElementById('admin-user-list');
                 tbody.innerHTML = '';
-                
+
                 users.forEach(u => {
                     const roleColor = u.role === 'admin' ? 'color: var(--neon-pink); font-weight: bold;' : 'color: #94a3b8;';
                     tbody.innerHTML += `
@@ -130,7 +139,7 @@
 
     function deleteUser(userId) {
         if(!confirm("CẢNH BÁO TỐI CAO: Bạn có chắc chắn muốn xóa vĩnh viễn Player này khỏi cơ sở dữ liệu?")) return;
-        
+
         fetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
             .then(res => res.json())
             .then(data => {
@@ -141,24 +150,35 @@
                 }
             });
     }
-    function submitNewTopic(event) {
-    event.preventDefault();
-    const form = document.getElementById('form-topic');
-    const formData = new FormData(form);
 
-    fetch('/api/admin/topics', {
-        method: 'POST',
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.error) alert(data.error);
-        else {
-            alert(data.message);
-            form.reset();
-        }
-    })
-    .catch(err => alert("Lỗi khi kết nối với máy chủ!"));
-}
+    function submitNewTopic(event) {
+        event.preventDefault();
+        const form = document.getElementById('form-topic');
+        const formData = new FormData(form);
+
+        // Nút submit vô hiệu hóa tạm thời để tránh spam
+        const btnSubmit = form.querySelector('button[type="submit"]');
+        const oldText = btnSubmit.innerText;
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = "ĐANG TẠO...";
+
+        fetch('/api/admin/topics', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.error) alert(data.error);
+            else {
+                alert(data.message);
+                form.reset();
+            }
+        })
+        .catch(err => alert("Lỗi khi kết nối với máy chủ!"))
+        .finally(() => {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = oldText;
+        });
+    }
 </script>
 {% endblock %}

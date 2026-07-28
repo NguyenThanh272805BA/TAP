@@ -3,8 +3,11 @@ import json
 import random
 from datetime import date
 from flask import Blueprint, request, jsonify, session
-# Bổ sung import hàm retry từ gemini_helper
+
+# Import helper cũ
 from app.utils.gemini_helper import evaluate_english_skill, call_gemini_with_retry
+
+# Import Models
 from app.models.test import TestLog
 from app.models.user import User
 from app.models.grammar import Grammar
@@ -15,7 +18,14 @@ from app.models.story_session import StorySession
 from app.models.daily_quest import DailyQuest
 from app import db
 
+# Import Module AI & Leveling mới (Phase 3)
+from app.utils.level_manager import check_and_update_level
+from app.ml_models.intent_classifier import LocalIntentClassifier
+from app.ml_models.vocab_classifier import VocabCEFRClassifier  # [ ĐÃ BỔ SUNG CEFR ENGINE ]
+
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
+intent_engine = LocalIntentClassifier()
+cefr_engine = VocabCEFRClassifier()  # [ KHỞI TẠO CEFR ENGINE TRỰC TIẾP TẠI ĐÂY ]
 
 
 def check_and_complete_quest(user_id, text_input):
@@ -45,11 +55,14 @@ def evaluate():
 
     quest_completed_word = None
 
+    # 1. AI ORCHESTRATOR: Phân tích Intent trước khi xử lý
+    detected_intent = intent_engine.predict(user_input)
+
     try:
         # ==============================================================
-        # NHÁNH 1: XỬ LÝ TEXT-RPG STORY (GIAI ĐOẠN 2)
+        # NHÁNH 1: XỬ LÝ TEXT-RPG STORY (HỖ TRỢ STORY CHOOSE)
         # ==============================================================
-        if mode == 'story':
+        if mode in ['story', 'story_choose']:
             user = User.query.get(user_id)
             user_level = user.current_level if user else "Beginner"
             story_turn = int(data.get('turn', 1))
@@ -62,71 +75,91 @@ def evaluate():
             # KIỂM TRA NẾU ĐÂY LÀ LƯỢT CUỐI CÙNG (LƯỢT 10)
             if story_turn >= 10:
                 prompt_summary = f"""
-                Ngữ cảnh Game: {theme_context}
-                Toàn bộ lịch sử hành trình của người chơi từ lượt 1 đến 9: 
-                {story_history}
+                            Ngữ cảnh thế giới: {theme_context}
+                            Toàn bộ lịch sử các quyết định của người chơi từ Lượt 1 đến 9: 
+                            {story_history}
 
-                Hành động cuối cùng (Lượt 10): "{user_input}"
+                            Hành động quyết định cuối cùng (Lượt 10): "{user_input}"
 
-                Nhiệm vụ: 
-                1. Chấm điểm hành động cuối.
-                2. Tổng hợp toàn bộ hành trình thành MỘT CÂU CHUYỆN NGẮN (khoảng 4-5 câu) như một cuốn nhật ký sinh tồn góc nhìn thứ nhất.
-                3. Đưa ra kết cục (Survived hoặc Dead) dựa vào tổng thể điểm ngữ pháp và độ logic của các quyết định.
+                            Nhiệm vụ của Game Master (AI):
+                            1. Chấm điểm hành động cuối (0-10).
+                            2. Dựa vào bối cảnh và TẤT CẢ các quyết định của người chơi trong lịch sử, hãy SÁNG TÁC MỘT CÂU CHUYỆN HOÀN CHỈNH VÀ ĐẬM CHẤT ĐIỆN ẢNH (Cinematic Ending).
+                               - Yêu cầu phải có: Miêu tả bối cảnh chi tiết, Lời thoại nhân vật sinh động (nếu có tương tác), Sự giằng xé/Hành động dồn dập, và Kết cục rõ ràng.
+                               - TUYỆT ĐỐI KHÔNG tóm tắt ngắn gọn. Hãy viết thành 3 đến 5 đoạn văn dài, có chiều sâu cảm xúc (khoảng 200 - 400 từ).
+                               - Dùng ký tự \\n\\n để tách các đoạn văn cho đẹp mắt.
+                            3. Đưa ra kết cục (Survived hoặc Dead) dựa vào điểm số và độ hợp lý của các quyết định.
 
-                TUYỆT ĐỐI CHỈ TRẢ VỀ ĐÚNG 1 JSON OBJECT (Không markdown):
-                {{
-                    "score": <điểm_hành_động_cuối_0_đến_10>,
-                    "feedback": "<nhận_xét_ngữ_pháp_cuối>",
-                    "scene_en": "<nhật_ký_tổng_hợp_tiếng_Anh>",
-                    "scene_vn": "<dịch_tiếng_Việt_nhật_ký>",
-                    "status": "Survived" hoặc "Dead",
-                    "hint_en": "N/A",
-                    "hint_vn": "N/A",
-                    "is_end": true
-                }}
-                """
-                # Sử dụng hàm đã bọc Tenacity (Tự động clean json markdown)
+                            TUYỆT ĐỐI CHỈ TRẢ VỀ JSON HỢP LỆ (Không dùng markdown):
+                            {{
+                                "score": <điểm_số>, 
+                                "feedback": "<nhận_xét_cuối>", 
+                                "scene_en": "<CÂU_TRUYỆN_ĐẦY_ĐỦ_TIẾNG_ANH>", 
+                                "scene_vn": "<BẢN_DỊCH_TIẾNG_VIỆT_CÂU_TRUYỆN>", 
+                                "status": "Survived" hoặc "Dead", 
+                                "is_end": true
+                            }}
+                            """
                 clean_json_str = call_gemini_with_retry(prompt_summary)
                 result = json.loads(clean_json_str)
 
-                # [ LƯU NHẬT KÝ VÀO DATABASE ]
                 new_session = StorySession(
-                    user_id=user_id,
-                    topic_id=topic_id if topic else 1,
-                    summary_en=result.get("scene_en", ""),
-                    summary_vn=result.get("scene_vn", ""),
+                    user_id=user_id, topic_id=topic_id if topic else 1,
+                    summary_en=result.get("scene_en", ""), summary_vn=result.get("scene_vn", ""),
                     status=result.get("status", "Survived")
                 )
                 db.session.add(new_session)
 
             else:
                 # Đang chơi giữa chừng (Turn 1 - 9)
-                prompt_story = f"""
-                Ngữ cảnh bối cảnh: {theme_context}
-                Bạn là Game Master xéo xắt, mỏ hỗn. Trình độ người chơi: {user_level}. Đang ở LƯỢT {story_turn}/10.
+                if mode == 'story_choose':
+                    prompt_story = f"""
+                    Ngữ cảnh: {theme_context}
+                    Bạn là Game Master. Trình độ: {user_level}. Đang ở LƯỢT {story_turn}/10.
+                    LỊCH SỬ: {story_history}
+                    LỰA CHỌN CỦA NGƯỜI CHƠI: "{user_input}"
 
-                LỊCH SỬ TỪ TRƯỚC TỚI NAY: 
-                {story_history}
+                    YÊU CẦU:
+                    1. Đánh giá lựa chọn của người chơi (score 0-10) và feedback xéo xắt.
+                    2. Kể tiếp cốt truyện dựa trên lựa chọn đó.
+                    3. Đưa ra 4 LỰA CHỌN HÀNH ĐỘNG MỚI (bằng tiếng Anh).
 
-                HÀNH ĐỘNG MỚI NHẤT CỦA NGƯỜI CHƠI: "{user_input}"
+                    TUYỆT ĐỐI CHỈ TRẢ VỀ JSON OBJECT (Không markdown):
+                    {{
+                        "score": <điểm_số>,
+                        "feedback": "<nhận_xét>",
+                        "scene_en": "<truyện_tiếng_Anh>",
+                        "scene_vn": "<truyện_tiếng_Việt>",
+                        "choices": ["Lựa chọn 1", "Lựa chọn 2", "Lựa chọn 3", "Lựa chọn 4"],
+                        "is_end": false
+                    }}
+                    """
+                else:
+                    prompt_story = f"""
+                    Ngữ cảnh bối cảnh: {theme_context}
+                    Bạn là Game Master xéo xắt, mỏ hỗn. Trình độ người chơi: {user_level}. Đang ở LƯỢT {story_turn}/10.
 
-                YÊU CẦU:
-                1. Chấm điểm ngữ pháp (0-10) và feedback thật xéo xắt (Chửi nếu sai, khen ngạo nghễ nếu đúng).
-                2. Dựa vào hành động, sáng tạo tiếp cốt truyện kịch tính (scene_en, scene_vn). Nếu điểm < 5, cho nhân vật chịu hậu quả thê thảm.
-                3. Tạo gợi ý điền từ (hint_en, hint_vn) ẩn 1-2 từ khóa bằng dấu ___ cho lượt tới.
+                    LỊCH SỬ TỪ TRƯỚC TỚI NAY: 
+                    {story_history}
 
-                TUYỆT ĐỐI CHỈ TRẢ VỀ JSON OBJECT (Không markdown):
-                {{
-                    "score": <điểm_số>, 
-                    "feedback": "<nhận_xét_ngữ_pháp>",
-                    "scene_en": "<truyện_tiếng_Anh>", 
-                    "scene_vn": "<truyện_tiếng_Việt>",
-                    "hint_en": "<gợi_ý>", 
-                    "hint_vn": "<dịch_gợi_ý>",
-                    "is_end": false
-                }}
-                """
-                # Sử dụng hàm đã bọc Tenacity
+                    HÀNH ĐỘNG MỚI NHẤT CỦA NGƯỜI CHƠI: "{user_input}"
+
+                    YÊU CẦU:
+                    1. Chấm điểm ngữ pháp (0-10) và feedback thật xéo xắt (Chửi nếu sai, khen ngạo nghễ nếu đúng).
+                    2. Dựa vào hành động, sáng tạo tiếp cốt truyện kịch tính (scene_en, scene_vn). Nếu điểm < 5, cho nhân vật chịu hậu quả thê thảm.
+                    3. Tạo gợi ý điền từ (hint_en, hint_vn) ẩn 1-2 từ khóa bằng dấu ___ cho lượt tới.
+
+                    TUYỆT ĐỐI CHỈ TRẢ VỀ JSON OBJECT (Không markdown):
+                    {{
+                        "score": <điểm_số>, 
+                        "feedback": "<nhận_xét_ngữ_pháp>",
+                        "scene_en": "<truyện_tiếng_Anh>", 
+                        "scene_vn": "<truyện_tiếng_Việt>",
+                        "hint_en": "<gợi_ý>", 
+                        "hint_vn": "<dịch_gợi_ý>",
+                        "is_end": false
+                    }}
+                    """
+
                 clean_json_str = call_gemini_with_retry(prompt_story)
                 result = json.loads(clean_json_str)
 
@@ -150,7 +183,6 @@ def evaluate():
             elif mode == 'free':
                 context_challenge = "Đây là câu tự do. Hãy chấm điểm ngữ pháp tiếng Anh cơ bản. Khen ngạo nghễ nếu tốt, chê xéo xắt nếu sai."
 
-            # evaluate_english_skill cũng đã được cập nhật dùng call_gemini_with_retry bên trong gemini_helper.py
             ai_response_str = evaluate_english_skill(user_input, context_challenge)
             clean_json_str = ai_response_str.strip().replace('```json', '').replace('```', '')
             result = json.loads(clean_json_str)
@@ -170,11 +202,13 @@ def evaluate():
             "feedback": f"Hệ thống lõi gặp xung đột dữ liệu rồi! Lỗi: {str(e)}",
             "scene_en": "The system crashed. Reality is torn apart.",
             "scene_vn": "Hệ thống sụp đổ. Thực tại bị xé toạc.",
+            "choices": ["Reboot System", "Wait for death", "Cry", "Run"],
             "hint_en": "I must ___ the truth.",
             "hint_vn": "Tôi phải (tìm_ra) sự thật.",
             "is_end": False
         }
 
+    # Lưu log kiểm tra
     new_log = TestLog(
         user_id=user_id,
         score=result.get("score", 0),
@@ -183,10 +217,15 @@ def evaluate():
     db.session.add(new_log)
     db.session.commit()
 
+    # [ PHASE 3 ] KÍCH HOẠT DYNAMIC LEVELING SAU KHI LƯU DB
+    level_up, new_rank = check_and_update_level(user_id)
+    if level_up:
+        result['level_up_notification'] = f"ĐẲNG CẤP MỚI: BẠN VỪA THĂNG CẤP LÊN '{new_rank.upper()}'!"
+
     if quest_completed_word:
         result['quest_notification'] = f"HOÀN THÀNH NHIỆM VỤ: Đặt câu với từ '{quest_completed_word}' (+20 Xu)"
 
-    return jsonify({"message": "Master G đã xử lý xong!", "result": result}), 200
+    return jsonify({"message": "Master G đã xử lý xong!", "result": result, "intent_detected": detected_intent}), 200
 
 
 def mine_new_data_via_ai(current_mode):
@@ -206,10 +245,13 @@ def mine_new_data_via_ai(current_mode):
 
             exists = Vocabulary.query.filter_by(word=item_data['word']).first()
             if not exists:
+                # [ ĐÃ VÁ CEFR ] Phân loại tự động cấp độ trước khi insert DB
+                predicted_level = cefr_engine.predict_cefr(item_data['word'])
                 new_vocab = Vocabulary(
                     word=item_data['word'],
                     meaning=item_data['meaning'],
                     theme=item_data['theme'],
+                    cefr_level=predicted_level,
                     image_url="default_lowpoly.png",
                     is_unlocked=False
                 )
@@ -341,10 +383,13 @@ def generate_unit():
         for item in items:
             v = Vocabulary.query.filter_by(word=item['word']).first()
             if not v:
+                # [ ĐÃ VÁ CEFR ] Tính toán CEFR và nhét vào DB
+                predicted_level = cefr_engine.predict_cefr(item['word'])
                 v = Vocabulary(
                     word=item['word'],
                     meaning=item['meaning'],
                     theme=topic,
+                    cefr_level=predicted_level,
                     image_url="default.png",
                     is_unlocked=True
                 )
@@ -372,6 +417,7 @@ def init_story():
     data = request.get_json(silent=True) or {}
     user_id = session.get('user_id')
     topic_id = data.get('topic_id', 1)
+    story_mode = data.get('mode', 'write')  # 'write' hoặc 'choose'
 
     user = User.query.get(user_id) if user_id else None
     user_level = user.current_level if user else "Beginner"
@@ -379,23 +425,40 @@ def init_story():
     topic = StoryTopic.query.get(topic_id)
     theme_context = topic.system_prompt if topic else "Bối cảnh sinh tồn hậu tận thế tàn khốc."
 
-    prompt = f"""
-    Bạn là Game Master của một game Text-RPG.
-    Ngữ cảnh thế giới: {theme_context}
-    Trình độ người chơi: {user_level}. Đây là LƯỢT 1/10.
+    if story_mode == 'choose':
+        prompt = f"""
+        Bạn là Game Master của một game Text-RPG.
+        Ngữ cảnh thế giới: {theme_context}
+        Trình độ người chơi: {user_level}. Đây là LƯỢT 1/10.
 
-    Nhiệm vụ: Dựa vào ngữ cảnh trên, tạo bối cảnh mở màn ngầu, gai góc, ngắn gọn (2 câu).
-    Và tạo ra một GỢI Ý HÀNH ĐỘNG tiếp theo dạng ĐIỀN VÀO CHỖ TRỐNG (ẩn đi 1-2 từ khóa quan trọng bằng dấu ___ để người chơi tự ghép thành câu hoàn chỉnh).
+        Nhiệm vụ: Dựa vào ngữ cảnh trên, tạo bối cảnh mở màn ngầu, gai góc, ngắn gọn (2 câu) và 4 LỰA CHỌN tiếng Anh.
 
-    CHỈ TRẢ VỀ ĐÚNG 1 OBJECT JSON, không dùng markdown (```json). Cấu trúc:
-    {{
-        "scene_en": "Cảnh báo hệ thống... Bạn tỉnh dậy...",
-        "scene_vn": "Dịch tiếng Việt câu trên. Ngắn gọn.",
-        "hint_en": "I need to ___ my ___.",
-        "hint_vn": "Tôi cần (tìm) (vũ khí) của mình.",
-        "is_end": false
-    }}
-    """
+        CHỈ TRẢ VỀ ĐÚNG 1 OBJECT JSON, không dùng markdown (```json). Cấu trúc:
+        {{
+            "scene_en": "Cảnh báo hệ thống... Bạn tỉnh dậy...",
+            "scene_vn": "Dịch tiếng Việt câu trên. Ngắn gọn.",
+            "choices": ["Option 1", "Option 2", "Option 3", "Option 4"],
+            "is_end": false
+        }}
+        """
+    else:
+        prompt = f"""
+        Bạn là Game Master của một game Text-RPG.
+        Ngữ cảnh thế giới: {theme_context}
+        Trình độ người chơi: {user_level}. Đây là LƯỢT 1/10.
+
+        Nhiệm vụ: Dựa vào ngữ cảnh trên, tạo bối cảnh mở màn ngầu, gai góc, ngắn gọn (2 câu).
+        Và tạo ra một GỢI Ý HÀNH ĐỘNG tiếp theo dạng ĐIỀN VÀO CHỖ TRỐNG (ẩn đi 1-2 từ khóa quan trọng bằng dấu ___ để người chơi tự ghép thành câu hoàn chỉnh).
+
+        CHỈ TRẢ VỀ ĐÚNG 1 OBJECT JSON, không dùng markdown (```json). Cấu trúc:
+        {{
+            "scene_en": "Cảnh báo hệ thống... Bạn tỉnh dậy...",
+            "scene_vn": "Dịch tiếng Việt câu trên. Ngắn gọn.",
+            "hint_en": "I need to ___ my ___.",
+            "hint_vn": "Tôi cần (tìm) (vũ khí) của mình.",
+            "is_end": false
+        }}
+        """
 
     try:
         clean_json = call_gemini_with_retry(prompt)
@@ -404,7 +467,6 @@ def init_story():
         return jsonify({
             "scene_en": "System error. The world is collapsing.",
             "scene_vn": "Lỗi hệ thống. Thế giới đang sụp đổ.",
-            "hint_en": "I ___ to ___ the system.",
-            "hint_vn": "Tôi (cần) (khởi động lại) hệ thống.",
+            "choices": ["Fix error", "Reboot", "Wait", "Quit"],
             "is_end": False
         }), 200

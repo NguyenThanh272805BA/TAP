@@ -1,6 +1,12 @@
 const CURRENT_USERNAME_DEFAULT = "Explorer";
-let activeFeature = "grammar"; 
+let activeFeature = "grammar";
 let currentTopicId = 1;
+
+// Biến toàn cục cho Story Mode
+let currentStoryTurn = 1;
+let storyHistory = "";
+let currentStoryMode = 'write'; // 'write' hoặc 'choose'
+let globalStoryArchive = [];    // Lưu trữ tạm nhật ký sinh tồn để hiển thị lên Pop-up Modal
 
 document.addEventListener("DOMContentLoaded", () => {
     const currentPath = window.location.pathname;
@@ -40,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (data.is_checked_in) {
                             lockCheckinButton();
                         }
-                        // [ PHASE 2 ] Tải Quest hàng ngày & Leaderboard
+                        // Tải Quest hàng ngày & Leaderboard
                         loadDailyQuests();
                         loadDashboardLeaderboard();
 
@@ -64,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 4. Tải thư viện Lottie động để chuẩn bị hiệu ứng nổ pháo hoa pixel
     initLottieLibrary();
 
-    // 5. Nếu đang ở không gian Story Terminal, kích hoạt Lobby (Giai đoạn 2)
+    // 5. Nếu đang ở không gian Story Terminal, kích hoạt Lobby
     if (currentPath === '/story') {
         loadStoryLobby();
     }
@@ -526,42 +532,39 @@ function triggerFireworksEffect() {
 
 /**
  * =======================================================
- * LOGIC RPG STORY (PHASE 2 - LOBBY, ARCHIVES & GAMEPLAY)
+ * LOGIC RPG STORY (PHASE 3 - MULTI-MODE & CHOOSE OPTIONS)
  * =======================================================
  */
-let currentStoryTurn = 1;
-let storyHistory = "";
-
 function loadStoryLobby() {
-    // 1. Fetch Archive (Lịch sử sinh tồn)
-    fetch('/api/game/story/archive')
-    .then(res => res.json())
-    .then(data => {
+    // 1. Fetch Archive (Lịch sử sinh tồn) & Tích hợp nút Đọc Lại Nhật Ký
+    fetch('/api/game/story/archive').then(res => res.json()).then(data => {
         const archiveContainer = document.getElementById("archive-container");
         if(!archiveContainer) return;
-        if(!data.archive || data.archive.length === 0) {
+
+        globalStoryArchive = data.archive || []; // Gán vào biến toàn cục
+
+        if (globalStoryArchive.length === 0) {
             archiveContainer.innerHTML = '<div style="color: #94a3b8; font-size: 14px; font-style: italic;">Chưa có dữ liệu hành trình.</div>';
             return;
         }
+
         let html = '';
-        data.archive.forEach(s => {
+        globalStoryArchive.forEach(s => {
             const statusColor = s.status === 'Survived' ? 'var(--pixel-green)' : 'var(--neon-pink)';
             html += `
-            <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid ${statusColor}; margin-bottom: 10px;">
-                <strong style="color: #fff; display: block; font-size: 14px;">[${s.status}] ${s.topic}</strong>
-                <span style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 8px;">Ngày: ${s.date}</span>
-                <div style="color: #cbd5e1; font-size: 13px; font-style: italic; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;">
-                    "${s.summary_vn}"
-                </div>
+            <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid ${statusColor}; margin-bottom: 10px; position: relative;">
+                <strong style="color: #fff; font-size: 14px; display: block; margin-bottom: 5px;">[${s.status.toUpperCase()}] ${s.topic}</strong>
+                <span style="color: #94a3b8; font-size: 11px; display: block; margin-bottom: 12px;">TIME_LOG: ${s.date}</span>
+                <button class="pixel-btn" onclick="openStoryModal(${s.id})" style="background: rgba(34, 211, 238, 0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 8px 12px; font-size: 10px; width: 100%; box-shadow: none; transition: 0.3s;" onmouseover="this.style.background='var(--neon-cyan)'; this.style.color='#000';" onmouseout="this.style.background='rgba(34, 211, 238, 0.1)'; this.style.color='var(--neon-cyan)';">
+                    📖 ĐỌC LẠI NHẬT KÝ
+                </button>
             </div>`;
         });
         archiveContainer.innerHTML = html;
     });
 
-    // 2. Fetch Topics (Các bối cảnh để chọn)
-    fetch('/api/game/story/topics')
-    .then(res => res.json())
-    .then(topics => {
+    // 2. Fetch Topics (Các bối cảnh để chọn) & Render 2 chế độ
+    fetch('/api/game/story/topics').then(res => res.json()).then(topics => {
         const topicsContainer = document.getElementById("topics-container");
         if (!topicsContainer) return;
 
@@ -572,23 +575,64 @@ function loadStoryLobby() {
 
         const isAdmin = document.getElementById("nav-admin") && document.getElementById("nav-admin").style.display !== 'none';
         let html = '';
+
         topics.forEach(t => {
             const coverUrl = `/static/uploads/covers/${t.cover_image}`;
             const deleteBtn = isAdmin ? `<button onclick="deleteStoryTopic(event, ${t.id})" class="pixel-btn" style="position: absolute; top: 10px; right: 10px; background: rgba(239, 68, 68, 0.9); padding: 5px 8px; font-size: 10px; z-index: 10; box-shadow: none;">XÓA</button>` : '';
 
+            // Kiểm tra cấu hình Play Mode từ Database
+            const mode = t.play_mode || 'both';
+            let buttonsHtml = '';
+
+            if (mode === 'write' || mode === 'both') {
+                buttonsHtml += `<button class="pixel-btn" style="flex: 1; font-size: 10px; padding: 10px;" onclick="startStoryWithTopic(${t.id}, '${t.title}', 'write')">📝 TỰ GÕ</button>`;
+            }
+            if (mode === 'choose' || mode === 'both') {
+                buttonsHtml += `<button class="pixel-btn" style="flex: 1; font-size: 10px; padding: 10px; background: var(--pixel-green); color: #000;" onclick="startStoryWithTopic(${t.id}, '${t.title}', 'choose')">🎯 CHỌN ĐÁP ÁN</button>`;
+            }
+
             html += `
-            <div class="bento-card" style="padding: 15px; cursor: pointer; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); transition: 0.3s; position: relative; height: max-content;" 
-                 onmouseover="this.style.borderColor='var(--neon-cyan)'; this.style.transform='scale(1.02)';" 
-                 onmouseout="this.style.borderColor='var(--glass-border)'; this.style.transform='scale(1)';" 
-                 onclick="startStoryWithTopic(${t.id}, '${t.title}')">
+            <div class="bento-card" style="padding: 15px; background: rgba(0,0,0,0.5); border: 2px solid var(--glass-border); position: relative; height: max-content;">
                 ${deleteBtn}
                 <img src="${coverUrl}" onerror="this.src='/static/uploads/covers/default_cover.jpg'" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
                 <div class="pixel-title" style="font-size: 14px; margin-bottom: 5px;">${t.title}</div>
-                <div style="font-size: 11px; color: var(--neon-purple); border: 1px solid var(--neon-purple); display: inline-block; padding: 3px 8px; border-radius: 4px;">${t.genre}</div>
+                <div style="font-size: 11px; color: var(--neon-purple); border: 1px solid var(--neon-purple); display: inline-block; padding: 3px 8px; border-radius: 4px; margin-bottom: 15px;">${t.genre}</div>
+                
+                <div style="display: flex; gap: 8px;">
+                    ${buttonsHtml}
+                </div>
             </div>`;
         });
         topicsContainer.innerHTML = html;
     });
+}
+
+// ============================================
+// HÀM MỞ VÀ ĐÓNG MODAL ĐỌC TRUYỆN LẠI
+// ============================================
+function openStoryModal(storyId) {
+    const story = globalStoryArchive.find(s => s.id === storyId);
+    if (!story) return;
+
+    const modal = document.getElementById('story-modal');
+    const title = document.getElementById('modal-story-title');
+    const enBox = document.getElementById('modal-story-en');
+    const vnBox = document.getElementById('modal-story-vn');
+
+    const statusColor = story.status === 'Survived' ? 'var(--pixel-green)' : 'var(--neon-pink)';
+
+    title.innerHTML = `[ <span style="color:${statusColor}">${story.status.toUpperCase()}</span> ] ${story.topic.toUpperCase()}`;
+
+    // Replace \n bằng thẻ <br> để giữ đúng format xuống dòng của AI
+    enBox.innerHTML = story.summary_en ? story.summary_en.replace(/\n/g, '<br>') : "<span style='color: #94a3b8;'>Không có dữ liệu văn bản.</span>";
+    vnBox.innerHTML = story.summary_vn ? story.summary_vn.replace(/\n/g, '<br>') : "<span style='color: #94a3b8;'>Không có dữ liệu văn bản.</span>";
+
+    modal.style.display = 'flex';
+}
+
+function closeStoryModal() {
+    const modal = document.getElementById('story-modal');
+    if (modal) modal.style.display = 'none';
 }
 
 // Xóa Topic Cốt Truyện (Dành cho Admin)
@@ -610,11 +654,29 @@ function deleteStoryTopic(event, topicId) {
     });
 }
 
-function startStoryWithTopic(topicId, topicName) {
+function startStoryWithTopic(topicId, topicName, mode) {
     currentTopicId = topicId;
+    currentStoryMode = mode;
+
     document.getElementById("story-lobby").style.display = "none";
     document.getElementById("story-battle-zone").style.display = "grid";
-    document.getElementById("current-topic-name").innerText = topicName.toUpperCase();
+
+    const modeTag = mode === 'choose' ? '[ CHOOSE_MODE ]' : '[ HARD_MODE ]';
+    document.getElementById("current-topic-name").innerText = `${topicName.toUpperCase()} ${modeTag}`;
+
+    // Ẩn/Hiện khu vực Input dựa theo Mode
+    const writeContainer = document.getElementById('write-mode-container');
+    const chooseContainer = document.getElementById('choose-mode-container');
+
+    if (writeContainer && chooseContainer) {
+        if (mode === 'choose') {
+            writeContainer.style.display = 'none';
+            chooseContainer.style.display = 'flex';
+        } else {
+            writeContainer.style.display = 'block';
+            chooseContainer.style.display = 'none';
+        }
+    }
 
     initRPGStory();
 }
@@ -629,17 +691,17 @@ function initRPGStory() {
     storyHistory = "";
 
     const turnCounter = document.getElementById("story-turn-counter");
-    if (turnCounter) turnCounter.innerText = "1/10";
+    if(turnCounter) turnCounter.innerText = "1/10";
 
     const terminal = document.getElementById("story-terminal");
-    if (!terminal) return;
+    if(!terminal) return;
 
     terminal.innerHTML = `<div class="typing-effect" style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 14px;">[SYSTEM] Đang nạp bối cảnh và kết nối Game Master...</div>`;
 
     fetch('/api/ai/story/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic_id: currentTopicId })
+        body: JSON.stringify({ topic_id: currentTopicId, mode: currentStoryMode })
     })
     .then(res => res.json())
     .then(data => {
@@ -654,8 +716,7 @@ function initRPGStory() {
 function appendStoryScene(data, isInit = false) {
     const terminal = document.getElementById("story-terminal");
     const hintBox = document.getElementById("story-hint-box");
-
-    if (!terminal || !hintBox) return;
+    if(!terminal || !hintBox) return;
 
     terminal.innerHTML += `
         <div style="background: rgba(30, 41, 75, 0.7); border-left: 3px solid var(--neon-purple); padding: 16px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
@@ -670,57 +731,84 @@ function appendStoryScene(data, isInit = false) {
     const storyInput = document.getElementById("storyInput");
     const btnExecute = document.getElementById("btn-story-execute");
 
+    // Nếu là lượt cuối (Game Over)
     if (data.is_end === "true" || data.is_end === true) {
         hintBox.innerHTML = `
             <div style="color: var(--pixel-green); font-family: var(--text-pixel); font-size: 14px; text-align: center; margin-bottom: 15px; letter-spacing:1px;">MISSION ACCOMPLISHED!</div>
             <div style="color: #cbd5e1; font-family: var(--text-main); font-size: 15px; text-align: center; line-height:1.6;">Hành trình sinh tồn hoàn tất. Nhật ký đã được lưu lại!</div>
             <button class="pixel-btn" style="background: var(--neon-amber); width: 100%; margin-top: 15px; padding:15px; font-size:12px;" onclick="exitToLobby()">TRỞ VỀ LOBBY</button>
         `;
-        if (storyInput) storyInput.disabled = true;
-        if (btnExecute) btnExecute.disabled = true;
 
-        triggerFireworksEffect();
-    } else {
-        hintBox.innerHTML = `
-            <div style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 16px; font-weight: 700; line-height: 1.5; margin-bottom: 10px; letter-spacing: 0.5px;">${data.hint_en || "I need to ___ carefully."}</div>
-            <div style="color: #94a3b8; font-family: var(--text-main); font-size: 14px; font-style: italic; line-height: 1.5;">Ý nghĩa gợi mở: ${data.hint_vn || "Tôi cần hành động cẩn trọng"}</div>
-        `;
-        if (storyInput) {
-            storyInput.disabled = false;
-            storyInput.focus();
+        const writeMode = document.getElementById("write-mode-container");
+        const chooseMode = document.getElementById("choose-mode-container");
+        if(writeMode) writeMode.style.display = 'none';
+        if(chooseMode) chooseMode.style.display = 'none';
+
+        if (typeof triggerFireworksEffect === 'function') triggerFireworksEffect();
+    }
+    // Nếu game đang tiếp diễn
+    else {
+        // Chế độ Chọn Đáp án
+        if (currentStoryMode === 'choose' && data.choices) {
+            hintBox.innerHTML = `<div style="color: #94a3b8; font-family: var(--text-main); font-style: italic; font-size: 14px;">Lựa chọn quyết định sinh tử. Hãy cẩn thận.</div>`;
+
+            let choicesHtml = '';
+            data.choices.forEach(choice => {
+                const safeChoice = choice.replace(/'/g, "\\'");
+                choicesHtml += `<button class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pixel-green); padding: 12px; text-transform: none; text-align: left; font-family: var(--text-mono); font-size: 14px;" onclick="executeStoryChoice('${safeChoice}')">${choice}</button>`;
+            });
+
+            const storyChoicesBox = document.getElementById('story-choices-box');
+            if (storyChoicesBox) storyChoicesBox.innerHTML = choicesHtml;
         }
-        if (btnExecute) btnExecute.disabled = false;
+        // Chế độ Tự Gõ
+        else {
+            hintBox.innerHTML = `
+                <div style="color: var(--neon-cyan); font-family: var(--text-mono); font-size: 16px; font-weight: 700; line-height: 1.5; margin-bottom: 10px; letter-spacing: 0.5px;">${data.hint_en || "I need to ___ carefully."}</div>
+                <div style="color: #94a3b8; font-family: var(--text-main); font-size: 14px; font-style: italic; line-height: 1.5;">Ý nghĩa gợi mở: ${data.hint_vn || "Tôi cần hành động cẩn trọng"}</div>
+            `;
+            if(storyInput) {
+                storyInput.value = "";
+                storyInput.disabled = false;
+                storyInput.focus();
+            }
+            if(btnExecute) btnExecute.disabled = false;
+        }
     }
 }
 
-function executeStoryAction() {
+function executeStoryChoice(choiceText) {
+    executeStoryAction(choiceText);
+}
+
+function executeStoryAction(overrideText = null) {
     const inputEle = document.getElementById("storyInput");
-    const terminal = document.getElementById("story-terminal");
-    const hintBox = document.getElementById("story-hint-box");
-    const turnCounter = document.getElementById("story-turn-counter");
-
-    if (!inputEle || !terminal || !hintBox) return;
-
-    const actionText = inputEle.value.trim();
-    if (!actionText) {
-        triggerCardShake();
-        return;
-    }
+    const actionText = overrideText || (inputEle ? inputEle.value.trim() : "");
+    if (!actionText) return;
 
     storyHistory += `\n[Player]: ${actionText}`;
 
     currentStoryTurn++;
-    if (turnCounter) turnCounter.innerText = `${currentStoryTurn}/10`;
+    const turnCounter = document.getElementById("story-turn-counter");
+    if(turnCounter) turnCounter.innerText = `${currentStoryTurn}/10`;
 
-    hintBox.innerHTML = "<div class='pulse-neon' style='font-size:13px; font-family:var(--text-pixel); text-align: center; letter-spacing:0.5px;'>MASTER_G ĐANG SOẠN KỊCH BẢN...</div>";
+    const terminal = document.getElementById("story-terminal");
+    if(!terminal) return;
 
     terminal.innerHTML += `
         <div style="text-align: right; margin: 15px 0;">
             <span style="background: var(--neon-cyan); color: #000; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-family: var(--text-mono); font-size:15px; display:inline-block; box-shadow:0 4px 15px rgba(103,232,249,0.3);">> ${actionText}</span>
         </div>
     `;
-    inputEle.value = "";
     terminal.scrollTop = terminal.scrollHeight;
+
+    // Block UI tạm thời trong lúc chờ AI phản hồi
+    if (currentStoryMode === 'choose') {
+        const choicesBox = document.getElementById('story-choices-box');
+        if(choicesBox) choicesBox.innerHTML = "<div class='pulse-neon' style='font-size:13px; font-family:var(--text-pixel); text-align: center; letter-spacing:0.5px;'>MASTER_G ĐANG SOẠN KỊCH BẢN...</div>";
+    } else {
+        if(inputEle) inputEle.disabled = true;
+    }
 
     const loadId = "loading-" + Date.now();
     terminal.innerHTML += `<div id="${loadId}" class="pulse-neon" style="margin-bottom: 15px; font-family:var(--text-main); font-size:15px; color:var(--neon-purple);">[GM] Đang phân tích ngữ pháp và dắt cốt truyện...</div>`;
@@ -731,24 +819,28 @@ function executeStoryAction() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             text: actionText,
-            mode: 'story',
+            mode: currentStoryMode === 'choose' ? 'story_choose' : 'story',
             turn: currentStoryTurn,
             history: storyHistory,
             topic_id: currentTopicId
         })
     })
-    .then(res => {
-        if (!res.ok) throw new Error();
-        return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
         const loadEl = document.getElementById(loadId);
-        if (loadEl) loadEl.remove();
+        if(loadEl) loadEl.remove();
 
         const result = data.result || data;
-        const score = result.score !== undefined ? result.score : 0;
 
+        // Thông báo Thăng Cấp (Task 3 Dynamic Leveling)
+        if (result.level_up_notification) {
+            alert(result.level_up_notification);
+            if (typeof triggerFireworksEffect === 'function') triggerFireworksEffect();
+        }
+
+        const score = result.score !== undefined ? result.score : 0;
         const scoreColor = score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
+
         terminal.innerHTML += `
             <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 18px; text-align: right; letter-spacing:0.5px;">
                 [GM RATING: ${score}/10] - <span style="font-family:var(--text-main); font-size:14px; font-weight:normal; color:#fff;">${result.feedback || "Cú pháp chấp nhận được."}</span>
@@ -760,14 +852,21 @@ function executeStoryAction() {
     })
     .catch(err => {
         const loadEl = document.getElementById(loadId);
-        if (loadEl) loadEl.remove();
-        hintBox.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>[ERROR] Lỗi kết nối Game Master! Đứt cáp mạng không gian!</span>";
+        if(loadEl) loadEl.remove();
+
+        const hintBox = document.getElementById("story-hint-box");
+        if(hintBox) hintBox.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>[ERROR] Lỗi kết nối Game Master! Đứt cáp mạng không gian!</span>";
 
         currentStoryTurn--;
         if (turnCounter) turnCounter.innerText = `${currentStoryTurn}/10`;
     });
 }
 
+/**
+ * =======================================================
+ * CÁC HÀM TIỆN ÍCH CUỐI CÙNG (QUICK QUEST & TUTORIAL)
+ * =======================================================
+ */
 function submitQuickQuest() {
     const inputEl = document.getElementById('quickQuestInput');
     const feedbackBox = document.getElementById('quickQuestFeedback');
@@ -865,7 +964,7 @@ function showMasterGTutorial() {
             </div>
 
             <button class="pixel-btn" onclick="closeTutorial()" style="background: var(--neon-purple); width: 100%; font-size: 14px; padding: 15px;">
-                ĐĐÃ HIỂU! (BẮT ĐẦU CHƠI)
+                ĐÃ HIỂU! (BẮT ĐẦU CHƠI)
             </button>
         </div>
     `;
