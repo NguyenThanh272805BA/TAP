@@ -1,6 +1,6 @@
 const CURRENT_USERNAME_DEFAULT = "Explorer";
-let activeFeature = "grammar"; // Lưu trữ tính năng hiện tại người dùng chọn trong Battle Zone
-let currentTopicId = 1; // [ PHASE 2 ] Lưu Chủ đề Truyện đang chọn
+let activeFeature = "grammar"; 
+let currentTopicId = 1;
 
 document.addEventListener("DOMContentLoaded", () => {
     const currentPath = window.location.pathname;
