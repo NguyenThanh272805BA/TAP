@@ -139,7 +139,7 @@ function loadDashboardLeaderboard() {
         data.leaderboard.forEach((u, idx) => {
             let color = idx === 0 ? "var(--neon-amber)" : (idx === 1 ? "#cbd5e1" : "#d97706");
             if(idx > 2) color = "#94a3b8";
-            html += `<div style="color: ${color}; margin-bottom: 8px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">#${idx+1} ${u.username} - <span style="color:#fff;">${u.score} pts</span></div>`;
+            html += `<div style="color: ${color}; margin-bottom: 8px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">#${idx+1} ${u.username} - <span style="color:#fff;">${u.score} Combo</span></div>`;
         });
         lbContainer.innerHTML = html;
     });
@@ -500,7 +500,6 @@ function toggleVocabMark(vocabId, btnElement) {
             return;
         }
 
-        // Fix nhảy DOM: Thay vì load lại nguyên HTML thì ta cập nhật class trực tiếp
         const isMemorized = data.is_memorized;
         const checkSign = isMemorized ? "[ X ]" : "[ _ ]";
         const checkColor = isMemorized ? "var(--pixel-green)" : "#64748b";
@@ -1132,6 +1131,13 @@ function loadNotifications() {
 }
 
 function toggleNotifications() {
+    const bell = document.getElementById('notification-bell');
+
+    // Nếu hệ thống phát hiện bạn chỉ đang kéo chuông chứ không cố ý bấm -> Hủy thao tác mở menu
+    if (bell && bell.getAttribute('data-is-dragging') === 'true') {
+        return;
+    }
+
     const dropdown = document.getElementById('notification-dropdown');
     if(dropdown) {
         if (dropdown.style.display === 'none') {
@@ -1153,12 +1159,92 @@ function markAllNotificationsRead() {
         });
 }
 
-// Bấm ra ngoài khoảng trống sẽ tự động đóng Dropdown
+/**
+ * =======================================================
+ * LOGIC KÉO THẢ (DRAG & DROP) CHO BẢNG THÔNG BÁO VÀ CHUÔNG
+ * =======================================================
+ */
+function makeDraggable(elmnt, header) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    if (header) {
+        // Nắm vào header để kéo
+        header.onmousedown = dragMouseDown;
+    } else {
+        // Nếu không có header, nắm vào bất cứ đâu của element (Áp dụng cho cái chuông)
+        elmnt.onmousedown = dragMouseDown;
+    }
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        // Tránh lỗi click đè lên các thẻ button bên trong
+        if (e.target.tagName === 'BUTTON') return;
+
+        e.preventDefault();
+        // Lấy tọa độ chuột ban đầu
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+
+        // Đánh dấu là đang kéo để không bị nhầm với thao tác Click mở menu (Dành cho Icon Chuông)
+        elmnt.setAttribute('data-is-dragging', 'true');
+
+        // Tính toán khoảng cách di chuyển
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+
+        // Vô hiệu hóa thuộc tính 'right' hoặc 'bottom' vì nó sẽ xung đột với 'left' và 'top'
+        elmnt.style.right = 'auto';
+        elmnt.style.bottom = 'auto';
+
+        // Gán tọa độ mới cho element
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        // Dừng việc kéo khi nhả chuột
+        document.onmouseup = null;
+        document.onmousemove = null;
+
+        // Xóa cờ dragging sau 50ms để thao tác Click không bị khóa vĩnh viễn
+        setTimeout(() => {
+            elmnt.removeAttribute('data-is-dragging');
+        }, 50);
+    }
+}
+
+// Khởi tạo tính năng kéo thả ngay khi DOM tải xong
+document.addEventListener("DOMContentLoaded", () => {
+    const notifDropdown = document.getElementById("notification-dropdown");
+    const notifHeader = document.getElementById("notif-header");
+    const notifBell = document.getElementById("notification-bell"); // Cục chuông thông báo
+
+    if (notifDropdown && notifHeader) {
+        makeDraggable(notifDropdown, notifHeader); // Áp dụng kéo thả cho Khung Thông Báo
+    }
+
+    if (notifBell) {
+        makeDraggable(notifBell, null); // Áp dụng kéo thả tự do cho Icon Chuông
+    }
+});
+
+// Bấm ra ngoài khoảng trống sẽ tự động đóng Dropdown (Có logic tương thích kéo thả)
 document.addEventListener('click', function(event) {
     const bell = document.getElementById('notification-bell');
     const dropdown = document.getElementById('notification-dropdown');
+
     if (bell && dropdown) {
-        if (!bell.contains(event.target) && !dropdown.contains(event.target)) {
+        // Nếu UI đang hiển thị và người dùng bấm ra ngoài (không bấm vào chuông và không bấm vào bảng)
+        if (dropdown.style.display === 'block' && !bell.contains(event.target) && !dropdown.contains(event.target)) {
             dropdown.style.display = 'none';
         }
     }

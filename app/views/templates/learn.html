@@ -4,102 +4,140 @@
 
 {% block content %}
 <style>
-    /* =========================================================
-       HIỆU ỨNG CHIỀU SÂU & ANIMATION CHO BATTLE ZONE
-       ========================================================= */
-    .depth-workspace {
-        background:
-            linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.9) 100%),
-            linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
-        background-size: 100% 100%, 25px 25px, 25px 25px;
-        background-position: center bottom;
-        border-radius: 16px;
-        padding: 25px;
-        box-shadow: inset 0 5px 30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
-        position: relative;
-        overflow: hidden;
-        z-index: 1;
-        transition: all 0.4s ease;
+    /* CSS Menu Tabs & Responsive */
+    .tab-nav {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
     }
-    .depth-workspace::before {
-        content: ''; position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
-        background: conic-gradient(from 0deg, transparent 70%, rgba(34, 211, 238, 0.1) 100%);
-        animation: radarSpin 10s linear infinite; pointer-events: none; z-index: -1;
+    .tab-btn {
+        flex: 1;
+        min-width: 150px;
+        padding: 16px;
+        font-size: 14px;
+        background: rgba(0,0,0,0.5);
+        border: 2px solid var(--glass-border);
+        color: #94a3b8;
+        border-radius: 12px;
+        font-family: var(--text-pixel);
+        cursor: pointer;
+        transition: 0.3s;
+        text-align: center;
     }
-    @keyframes radarSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .tab-btn.active-vocab { background: rgba(103, 232, 249, 0.15); border-color: var(--neon-cyan); color: var(--neon-cyan); box-shadow: 0 0 15px rgba(103, 232, 249, 0.3); }
+    .tab-btn.active-grammar { background: rgba(245, 158, 11, 0.15); border-color: var(--neon-amber); color: var(--neon-amber); box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+    .tab-btn.active-battle { background: rgba(244, 114, 182, 0.15); border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 15px rgba(244, 114, 182, 0.3); }
 
-    .accordion-header { cursor: pointer; transition: all 0.3s ease; user-select: none; }
-    .accordion-header:hover { background: rgba(255,255,255,0.05); padding-left: 10px; border-radius: 8px; }
-    .toggle-icon { display: inline-block; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .smooth-collapse {
-        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
-        max-height: 2000px; opacity: 1; overflow: hidden;
+    .cefr-badge {
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 10px;
+        font-family: var(--text-mono);
+        font-weight: bold;
+        background: var(--neon-purple);
+        color: #fff;
+        margin-left: 10px;
+        box-shadow: 0 0 8px rgba(216, 180, 254, 0.5);
     }
-    .smooth-collapse.collapsed { max-height: 0; opacity: 0; margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; border: none !important; }
 
-    /* CSS làm đẹp cho thanh kéo co dãn */
-    .resizable-panel::-webkit-resizer {
-        background-color: var(--neon-cyan);
-        border-radius: 50%;
+    .content-section { display: none; animation: fadeIn 0.4s ease; }
+    .content-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 768px) {
+        .tab-nav { flex-direction: column; gap: 10px; }
+        .bento-card { padding: 15px; }
     }
 </style>
 
-<!-- CHUYỂN TỪ GRID SANG FLEX ĐỂ HỖ TRỢ KÉO CO GIÃN TỐT NHẤT -->
-<div class="bento-container" style="display: flex; flex-direction: row; max-width: 1500px; margin: 0 auto; gap: 25px; align-items: stretch;">
+<div class="bento-container" style="display: flex; flex-direction: column; max-width: 1200px; margin: 0 auto; align-items: stretch;">
 
-    <!-- CỘT TRÁI: DATA LIBRARY (Đã gắn resize: horizontal) -->
-    <div class="bento-card resizable-panel" style="resize: horizontal; overflow: hidden; width: 380px; min-width: 300px; max-width: 600px; display: flex; flex-direction: column; padding: 24px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+        <div class="pixel-title" style="font-size: 22px; color: var(--neon-cyan);">LÒ ĐÚC & HỌC TẬP</div>
+        <button class="pixel-btn" onclick="document.getElementById('level-guide-modal').style.display='flex'" style="background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-size: 11px; padding: 8px 15px;">[?] ĐIỀU KIỆN THĂNG CẤP</button>
+    </div>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="pixel-btn" id="btn-mode-vocab" onclick="changeLearningMode('vocab')" style="flex: 1; font-size: 11px; padding: 10px; background: var(--neon-cyan); color: #000;">TỪ VỰNG</button>
-            <button class="pixel-btn" id="btn-mode-grammar" onclick="changeLearningMode('grammar')" style="flex: 1; font-size: 11px; padding: 10px; background: rgba(0,0,0,0.5); color: var(--neon-amber); border: 1px solid var(--neon-amber);">NGỮ PHÁP</button>
+    <!-- MENU NGANG -->
+    <div class="tab-nav">
+        <div class="tab-btn active-vocab" id="tab-vocab" onclick="switchTabUI('vocab')">📚 KHO TỪ VỰNG</div>
+        <div class="tab-btn" id="tab-grammar" onclick="switchTabUI('grammar')">⚙️ NGỮ PHÁP LÕI</div>
+        <div class="tab-btn" id="tab-battle" onclick="switchTabUI('battle')">⚔️ BATTLE ZONE (CHAT)</div>
+    </div>
+
+    <!-- TAB 1: TỪ VỰNG -->
+    <div id="section-vocab" class="content-section active bento-card card-wide" style="padding: 25px;">
+
+        <!-- Bảng AI Gợi ý -->
+        <div style="background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px solid var(--neon-cyan); margin-bottom: 25px; padding: 16px;">
+            <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 14px; margin-bottom: 15px; border-bottom: 1px dashed rgba(6, 182, 212, 0.3); padding-bottom: 10px;">🤖 AI GỢI Ý HỌC TẬP (LỘ TRÌNH THÔNG MINH)</div>
+            <div id="ml-recommendations" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
+                <div class="typing-effect" style="font-size: 14px; color: #cbd5e1;">Đang phân tích dữ liệu học tập của bạn...</div>
+            </div>
         </div>
 
-        <div class="accordion-header" onclick="toggleSection('library-content-wrapper', 'icon-library')" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 15px;">
-            <div class="pixel-title" id="library-title" style="color: var(--neon-amber); font-size: 14px; margin: 0; letter-spacing: 1px;">
-                DATA_LIBRARY
-            </div>
-            <span id="icon-library" class="toggle-icon" style="color: var(--neon-amber); font-size: 14px; text-shadow: 0 0 8px var(--neon-amber);">▼</span>
+        <!-- Khung Đúc Từ Vựng Mới -->
+        <div style="display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap;">
+            <input type="text" id="newTopicInput" placeholder="Nhập chủ đề muốn học (VD: Động vật, Công nghệ...)" class="auth-input" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+            <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); white-space: nowrap;">TẠO UNIT MỚI</button>
+            <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); color: var(--neon-amber); white-space: nowrap;">KIỂM TRA ĐỊNH KỲ</button>
         </div>
 
-        <div id="library-content-wrapper" class="smooth-collapse" style="flex-grow: 1; display: flex; flex-direction: column;">
-            <div id="library-content" style="overflow-y: auto; flex-grow: 1; padding-right: 8px;">
-                <div class="typing-effect" style="color: var(--neon-cyan); font-size: 14px;">Đang trích xuất dữ liệu lõi...</div>
-            </div>
+        <div id="vocab-library-content"></div>
+    </div>
+
+    <!-- TAB 2: NGỮ PHÁP -->
+    <div id="section-grammar" class="content-section bento-card card-wide" style="padding: 25px;">
+        <div id="grammar-library-content">
+            <div class="typing-effect" style="color: var(--neon-amber); font-size: 14px;">Đang tải ngữ pháp...</div>
         </div>
     </div>
 
-    <!-- CỘT PHẢI: BATTLE ZONE (Gắn flex: 1 để tự động chiếm phần còn lại) -->
-    <div class="bento-card" id="battle-card" style="flex: 1; display: flex; flex-direction: column; min-height: 650px; padding: 30px; overflow: hidden;">
-
+    <!-- TAB 3: BATTLE ZONE (CHAT VỚI AI) -->
+    <div id="section-battle" class="content-section bento-card card-wide" style="padding: 25px; min-height: 500px; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
-            <div class="accordion-header" onclick="toggleSection('battle-workspace-container', 'icon-battle-zone')" style="display: flex; align-items: center; gap: 15px; flex-grow: 1;">
-                <span id="icon-battle-zone" class="toggle-icon" style="color: var(--neon-cyan); font-size: 16px; text-shadow: 0 0 10px var(--neon-cyan);">▼</span>
-                <div class="pixel-title" id="training-title" style="font-size: 18px; color: var(--neon-cyan); letter-spacing: 2px; margin: 0;">
-                    TRAINING_CHAMBER // LOADING...
-                </div>
-            </div>
-
-            <!-- GỌI MASTER G COMPONENT TẠI ĐÂY -->
-            <div style="display: flex; align-items: center;">
-                <button class="pixel-btn" onclick="toggleMasterG(event)" style="padding: 8px 12px; font-size: 10px; background: var(--neon-purple); margin-right: 25px; box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);">
-                    👁 FOCUS
-                </button>
-                {% include 'master_g.html' %}
-            </div>
+            <div class="pixel-title" id="training-title" style="font-size: 18px; color: var(--neon-pink); margin: 0;">BATTLE_ZONE // THỰC CHIẾN</div>
+            {% include 'master_g.html' %}
         </div>
 
-        <div id="battle-workspace-container" class="smooth-collapse" style="flex-grow: 1; display: flex; flex-direction: column;">
-            <div id="dynamic-workspace" class="depth-workspace" style="flex-grow: 1; min-height: 380px; display: flex; flex-direction: column; justify-content: flex-start; gap: 15px;">
-            </div>
-
-            <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 25px; padding: 25px; background: rgba(15, 23, 42, 0.95); box-shadow: 0 10px 40px rgba(244, 114, 182, 0.15), inset 0 0 20px rgba(244, 114, 182, 0.1); border-radius: 16px;">
-                <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 13px; letter-spacing: 0.5px; animation: pulseGlow 2s infinite;">MASTER_G FEEDBACK:</div>
-                <div id="aiFeedback" class="pixel-text" style="font-size: 16px; color: #fff; line-height: 1.6;"></div>
-            </div>
+        <div id="dynamic-workspace" style="flex-grow: 1; display: flex; flex-direction: column; gap: 15px;">
+            <!-- Render từ JS -->
         </div>
 
+        <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 25px; padding: 25px;">
+            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 13px;">MASTER_G FEEDBACK:</div>
+            <div id="aiFeedback" class="pixel-text" style="font-size: 16px; color: #fff; line-height: 1.6;"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL HƯỚNG DẪN THĂNG CẤP -->
+<div id="level-guide-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 999999; justify-content: center; align-items: center;">
+    <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid var(--neon-cyan); border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto; position: relative;">
+        <button class="pixel-btn" onclick="document.getElementById('level-guide-modal').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: #ef4444; padding: 8px 12px; font-size: 10px;">[ ĐÓNG ]</button>
+        <div class="pixel-title" style="color: var(--neon-cyan); margin-bottom: 20px; font-size: 18px;">QUY TẮC THĂNG CẤP (RANKING SYSTEM)</div>
+        <div style="color: #cbd5e1; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+            Cấp độ của bạn không thể mua bằng Xu. Bạn phải chứng minh năng lực qua 2 yếu tố:<br>
+            <strong style="color: var(--pixel-green);">1. Kho từ vựng:</strong> Số lượng từ vựng đánh dấu "ĐÃ THUỘC".<br>
+            <strong style="color: var(--neon-amber);">2. Kỹ năng thực chiến:</strong> Số lần đặt câu trong Battle Zone được AI đánh giá từ <strong style="color:#fff;">5.0 điểm trở lên</strong>.
+        </div>
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: var(--text-mono); font-size: 13px; color: #e2e8f0;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--glass-border); color: var(--neon-pink);">
+                    <th style="padding: 10px;">ĐẲNG CẤP</th>
+                    <th style="padding: 10px;">CẦN TỪ VỰNG</th>
+                    <th style="padding: 10px;">CÂU ĐÚNG (>=5Đ)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 10px; color: #94a3b8;">Tân Binh Ngơ Ngác</td><td style="padding: 10px;">Mặc định</td><td style="padding: 10px;">Mặc định</td></tr>
+                <tr><td style="padding: 10px; color: var(--pixel-green);">Thợ Săn Ngôn Từ</td><td style="padding: 10px;">80 từ</td><td style="padding: 10px;">50 câu</td></tr>
+                <tr><td style="padding: 10px; color: var(--neon-cyan);">Pháp Sư Ngôn Ngữ</td><td style="padding: 10px;">500 từ</td><td style="padding: 10px;">350 câu</td></tr>
+                <tr><td style="padding: 10px; color: var(--neon-amber);">Lãnh Chúa Từ Điển</td><td style="padding: 10px;">1450 từ</td><td style="padding: 10px;">1000 câu</td></tr>
+                <tr><td style="padding: 10px; color: var(--neon-pink); font-weight: bold;">ĐỘC CÔ CẦU BẠI</td><td style="padding: 10px;">5000 từ</td><td style="padding: 10px;">3500 câu</td></tr>
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}
@@ -108,81 +146,32 @@
 <script>
     let globalVocabData = {};
     let currentExamData = [];
-    let openThemes = new Set();
-    let openSections = new Set(['ai-rec-section', 'create-unit-section']);
 
     document.addEventListener("DOMContentLoaded", () => {
-        const mode = localStorage.getItem("selected_learning_mode") || "grammar";
-        changeLearningMode(mode);
+        switchTabUI('vocab');
     });
 
-    function changeLearningMode(mode) {
-        localStorage.setItem("selected_learning_mode", mode);
+    function switchTabUI(tab) {
+        // Xóa Active cũ
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.className = 'tab-btn');
+        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
 
-        if(typeof switchFeature === 'function') {
-            switchFeature(mode);
-        }
+        // Cấp Active mới
+        document.getElementById(`tab-${tab}`).classList.add(`active-${tab}`);
+        document.getElementById(`section-${tab}`).classList.add('active');
 
-        const btnVocab = document.getElementById('btn-mode-vocab');
-        const btnGrammar = document.getElementById('btn-mode-grammar');
-        const title = document.getElementById("training-title");
-        const libTitle = document.getElementById("library-title");
-
-        if (btnVocab && btnGrammar) {
-            if (mode === 'vocab') {
-                btnVocab.style.background = "var(--neon-cyan)";
-                btnVocab.style.color = "#000";
-                btnVocab.style.border = "none";
-                btnGrammar.style.background = "rgba(0,0,0,0.5)";
-                btnGrammar.style.color = "var(--neon-amber)";
-                btnGrammar.style.border = "1px solid var(--neon-amber)";
-                title.textContent = "TRAINING_CHAMBER // VOCABULARY";
-                title.style.color = "var(--neon-cyan)";
-                libTitle.textContent = "VOCAB_UNITS";
-                libTitle.style.color = "var(--neon-cyan)";
-                fetchLibraryData('/api/game/vocabularies', mode);
-            } else {
-                btnGrammar.style.background = "var(--neon-amber)";
-                btnGrammar.style.color = "#000";
-                btnGrammar.style.border = "none";
-                btnVocab.style.background = "rgba(0,0,0,0.5)";
-                btnVocab.style.color = "var(--neon-cyan)";
-                btnVocab.style.border = "1px solid var(--neon-cyan)";
-                title.textContent = "TRAINING_CHAMBER // GRAMMAR";
-                title.style.color = "var(--neon-amber)";
-                libTitle.textContent = "GRAMMAR_RULES";
-                libTitle.style.color = "var(--neon-amber)";
-                fetchLibraryData('/api/game/grammars', mode);
-            }
-        }
-    }
-
-    function toggleSection(sectionId, iconId, isTheme = false) {
-        const el = document.getElementById(sectionId);
-        const icon = document.getElementById(iconId);
-        if (!el) return;
-        el.classList.toggle('collapsed');
-        const isCollapsed = el.classList.contains('collapsed');
-        if (icon) icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
-        if (isTheme) {
-            if (isCollapsed) openThemes.delete(sectionId); else openThemes.add(sectionId);
-        } else {
-            if (isCollapsed) openSections.delete(sectionId); else openSections.add(sectionId);
-        }
-    }
-
-    function forceOpenSection(sectionId, iconId) {
-        const el = document.getElementById(sectionId);
-        const icon = document.getElementById(iconId);
-        if (el && el.classList.contains('collapsed')) {
-            el.classList.remove('collapsed');
-            if(icon) icon.style.transform = 'rotate(0deg)';
+        // Load dữ liệu tương ứng
+        if (tab === 'vocab') {
+            fetchLibraryData('/api/game/vocabularies', 'vocab');
+        } else if (tab === 'grammar') {
+            fetchLibraryData('/api/game/grammars', 'grammar');
+        } else if (tab === 'battle') {
+            renderBattleZone('free'); // Mặc định mở Battle Zone là chat tự do
         }
     }
 
     function fetchLibraryData(apiUrl, mode) {
-        const container = document.getElementById("library-content");
-        container.innerHTML = '<div class="typing-effect" style="color: var(--neon-cyan); font-size: 14px;">Đang trích xuất dữ liệu lõi...</div>';
+        const container = document.getElementById(mode === 'vocab' ? "vocab-library-content" : "grammar-library-content");
 
         fetch(apiUrl).then(res => res.json()).then(data => {
             if (mode === 'vocab') {
@@ -193,294 +182,216 @@
                     if(!globalVocabData[themeName]) globalVocabData[themeName] = [];
                     globalVocabData[themeName].push(item);
                 });
-                renderThemesList();
+                renderThemesList(container);
+                loadMLRecommendations();
             } else {
-                let html = "";
-                data.grammars.forEach((g, index) => {
-                    const detailId = `grammar-detail-${index}`;
-                    const iconId = `icon-grammar-${index}`;
+                let html = "<div style='display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;'>";
+                data.grammars.forEach((g) => {
                     html += `
-                    <div style="margin-bottom: 12px; background: rgba(0,0,0,0.4); border-radius: 8px; border-left: 3px solid var(--neon-amber);">
-                        <div class="accordion-header" onclick="toggleSection('${detailId}', '${iconId}')" style="padding: 14px; display: flex; justify-content: space-between; align-items: center;">
-                            <strong style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 15px;">${g.structure}</strong>
-                            <span id="${iconId}" class="toggle-icon" style="color: var(--neon-amber); font-size: 12px; transform: rotate(-90deg);">▼</span>
+                    <div style="background: rgba(0,0,0,0.4); border-radius: 8px; border-left: 3px solid var(--neon-amber); padding: 15px; display: flex; flex-direction: column;">
+                        <strong style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 16px; margin-bottom: 8px;">${g.structure}</strong>
+                        <span style="font-size: 14px; color: #cbd5e1; margin-bottom: 12px; flex-grow: 1;">${g.explanation}</span>
+                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; font-family: var(--text-mono); font-size: 12px; color: #94a3b8;">
+                            Ví dụ: ${g.example}
                         </div>
-                        <div id="${detailId}" class="smooth-collapse collapsed" style="padding: 0 14px 14px 14px;">
-                            <span style="font-size: 14px; color: #cbd5e1; display: block; margin-bottom: 10px; line-height: 1.6;">${g.explanation}</span>
-                            <!-- TÁCH VÍ DỤ RA HÀNG NGANG -->
-                            <div style="display: flex; align-items: flex-start; gap: 12px; font-family: var(--text-mono); font-size: 14px; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);">
-                                <span style="font-size: 18px; line-height: 1;">💡</span>
-                                <span style="flex: 1;">${g.example}</span>
-                            </div>
-                        </div>
+                        <button class="pixel-btn" onclick="openBattleZone('grammar', '${g.structure.replace(/'/g, "\\'")}')" style="margin-top: 15px; font-size: 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--neon-amber); color: var(--neon-amber);">THỰC HÀNH CẤU TRÚC NÀY</button>
                     </div>`;
                 });
+                html += "</div>";
                 container.innerHTML = html;
             }
-        }).catch(err => {
-            document.getElementById("library-content").innerHTML = "<span style='color:var(--neon-pink)'>[ ERROR ] Mất kết nối tới Database lõi!</span>";
         });
     }
 
-    function renderThemesList() {
-        const container = document.getElementById("library-content");
-        const aiClass = openSections.has('ai-rec-section') ? '' : 'collapsed';
-        const aiRotate = openSections.has('ai-rec-section') ? 'rotate(0deg)' : 'rotate(-90deg)';
-
-        let html = `
-        <div style="background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px solid var(--neon-cyan); margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(6, 182, 212, 0.1);">
-            <div class="accordion-header" onclick="toggleSection('ai-rec-section', 'icon-ai-rec')" style="padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; background: rgba(6, 182, 212, 0.1); border-bottom: 1px solid rgba(6, 182, 212, 0.2);">
-                <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 12px;">[ AI_RECOMMENDATION ]</div>
-                <span id="icon-ai-rec" class="toggle-icon" style="color: var(--neon-cyan); font-size: 12px; transform: ${aiRotate};">▼</span>
-            </div>
-            <div id="ai-rec-section" class="smooth-collapse ${aiClass}">
-                <div style="padding: 16px;" id="ml-recommendations">
-                    <div class="typing-effect" style="font-size: 14px; color: #cbd5e1; line-height: 1.6;">Đang phân tích độ tương đồng Cosine...</div>
-                </div>
-            </div>
-        </div>
-
-        <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); width: 100%; margin-bottom: 25px; font-size: 12px; padding: 16px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);">
-            [!] KIỂM TRA ĐỊNH KỲ (SMART SRS) [!]
-        </button>
-        `;
-
-        const createClass = openSections.has('create-unit-section') ? '' : 'collapsed';
-        const createRotate = openSections.has('create-unit-section') ? 'rotate(0deg)' : 'rotate(-90deg)';
-
-        html += `
-        <div style="background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px dashed var(--neon-purple); margin-bottom: 25px; overflow: hidden;">
-            <div class="accordion-header" onclick="toggleSection('create-unit-section', 'icon-create-unit')" style="padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(216, 180, 254, 0.2);">
-                <div style="color: var(--neon-purple); font-family: var(--text-pixel); font-size: 12px;">[ CREATE_NEW_UNIT ]</div>
-                <span id="icon-create-unit" class="toggle-icon" style="color: var(--neon-purple); font-size: 12px; transform: ${createRotate};">▼</span>
-            </div>
-            <div id="create-unit-section" class="smooth-collapse ${createClass}">
-                <div style="padding: 16px;">
-                    <input type="text" id="newTopicInput" placeholder="VD: Thể thao eSports..."
-                           style="width: 100%; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 14px; border-radius: 8px; box-sizing: border-box; margin-bottom: 12px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
-                    <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); width: 100%; font-size: 11px; padding: 12px; box-shadow: none;">
-                        YÊU CẦU AI ĐÚC UNIT
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div style="color: #94a3b8; font-size: 14px; margin-bottom: 15px; font-family: var(--text-pixel);">THƯ VIỆN ĐÃ ĐÚC:</div>
-        `;
-
+    function renderThemesList(container) {
+        let html = '';
         for (const theme of Object.keys(globalVocabData)) {
-            const themeId = `theme-content-${theme.replace(/\s+/g, '-')}`;
-            const tClass = openThemes.has(themeId) ? '' : 'collapsed';
-            const tRotate = openThemes.has(themeId) ? 'rotate(0deg)' : 'rotate(-90deg)';
-
             html += `
-            <div style="margin-bottom: 15px;">
-                <div class="accordion-header" onclick="toggleSection('${themeId}', 'icon-${themeId}', true)"
-                     style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 10px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-                    <div>
-                        <strong style="color: var(--neon-cyan); font-size: 16px; display: block; margin-bottom: 4px;">[ ${theme.toUpperCase()} ]</strong>
-                        <span style="color: #cbd5e1; font-size: 13px;">${globalVocabData[theme].length} từ vựng</span>
-                    </div>
-                    <span id="icon-${themeId}" class="toggle-icon" style="color: var(--neon-cyan); font-size: 14px; transform: ${tRotate};">▼</span>
-                </div>
-                <div id="${themeId}" class="smooth-collapse ${tClass}">
-                    <!-- ĐỔI THÀNH GRID 2 CỘT TẠI ĐÂY -->
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px 0 10px 15px; border-left: 2px solid rgba(103, 232, 249, 0.3); margin-left: 10px; margin-top: 5px;">
-                        ${generateWordsHtml(theme, themeId)}
-                    </div>
+            <div style="margin-bottom: 25px;">
+                <div style="color: var(--neon-cyan); font-size: 16px; margin-bottom: 15px; border-bottom: 2px solid rgba(103, 232, 249, 0.3); padding-bottom: 5px;">[ CHỦ ĐỀ: ${theme.toUpperCase()} ]</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+                    ${generateWordsHtml(theme)}
                 </div>
             </div>`;
         }
         container.innerHTML = html;
-
-        fetch('/api/game/recommend').then(r => r.json()).then(data => {
-            const rDiv = document.getElementById('ml-recommendations');
-            if(data.recommendations && data.recommendations.length > 0) {
-                let rHtml = '<div style="margin-bottom:12px; font-weight: 600; color: #fff;">Gợi ý lộ trình tiếp theo:</div>';
-                data.recommendations.forEach(r => {
-                    const scoreText = (r.score > 0) ? `Tương đồng: ${(r.score * 100).toFixed(1)}%` : `Gợi ý khởi động`;
-                    rHtml += `
-                        <div style="margin-bottom: 8px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
-                            <strong style="color:var(--pixel-green); cursor:pointer; font-size: 15px; transition: 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--pixel-green)'" onclick="requestWordGuide('${r.word.replace(/'/g, "\\'")}')">${r.word}</strong>
-                            <span style="font-size:12px; color:#94a3b8; font-family: var(--text-mono);">${scoreText}</span>
-                        </div>`;
-                });
-                rDiv.innerHTML = rHtml;
-            } else {
-                rDiv.innerHTML = "Chưa đủ dữ liệu để phân tích gợi ý.";
-            }
-        });
     }
 
-    function generateWordsHtml(theme, parentId) {
+    function generateWordsHtml(theme) {
         const words = globalVocabData[theme];
         let wHtml = '';
-        words.forEach((w, index) => {
+        words.forEach(w => {
             const opacity = w.is_unlocked ? "1" : "0.5";
-            const icon = w.is_unlocked ? "[ UNLOCKED ]" : "[ LOCKED ]";
-            const safeWord = w.word.replace(/'/g, "\\'");
             const memoText = w.is_memorized ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
-            // Xử lý màu sắc chuẩn theo Grid
-            const memoColor = w.is_memorized ? "#000" : "var(--glass-border)";
             const memoBg = w.is_memorized ? "var(--pixel-green)" : "transparent";
             const memoBorder = w.is_memorized ? "var(--pixel-green)" : "var(--glass-border)";
+            const memoColor = w.is_memorized ? "#000" : "var(--glass-border)";
+            const safeWord = w.word.replace(/'/g, "\\'");
 
-            const detailId = `word-detail-${parentId}-${index}`;
-            const wClass = openSections.has(detailId) ? '' : 'collapsed';
+            // Hiển thị Nhãn CEFR
+            const cefrBadge = w.cefr_level ? `<span class="cefr-badge">${w.cefr_level}</span>` : "";
 
             wHtml += `
-            <div style="background: rgba(0,0,0,0.4); border-radius: 8px; opacity: ${opacity}; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;">
-                <div class="accordion-header" onclick="toggleSection('${detailId}', null, false)" style="padding: 14px; display: flex; justify-content: space-between; align-items: center;">
-                    <strong style="color: var(--neon-cyan); font-size: 16px; font-family: var(--text-main); font-weight: 600;">${w.word}</strong>
-                    <span style="font-size: 10px; color: #cbd5e1; font-family: var(--text-pixel);">${icon}</span>
-                </div>
-                <div id="${detailId}" class="smooth-collapse ${wClass}" style="flex-grow: 1; display: flex; flex-direction: column;">
-                    <div style="padding: 0 14px 14px 14px; border-top: 1px dashed rgba(255,255,255,0.15); margin-top: 5px; padding-top: 12px; display: flex; flex-direction: column; flex-grow: 1;">
-                        <span style="font-size: 13px; color: #cbd5e1; display: block; line-height: 1.6; margin-bottom: 15px; flex-grow: 1;">Nghĩa: ${w.meaning}</span>
-                        <div style="display: flex; gap: 8px; margin-top: auto;">
-                            <button class="pixel-btn" onclick="requestWordGuide('${safeWord}')" style="background: var(--neon-purple); font-size: 9px; padding: 8px; flex: 1; box-shadow: none;">MASTER G</button>
-                            <!-- Truyền 'this' vào hàm để đổi trạng thái UI cục bộ -->
-                            <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id}, this)" style="background: ${memoBg}; border: 1px solid ${memoBorder}; color: ${memoColor}; font-size: 9px; padding: 8px; flex: 1.2; box-shadow: none; transition: all 0.2s;">${memoText}</button>
-                        </div>
+            <div style="background: rgba(0,0,0,0.4); border-radius: 8px; opacity: ${opacity}; border: 1px solid rgba(255,255,255,0.05); padding: 15px; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center;">
+                        <strong style="color: var(--neon-cyan); font-size: 18px;">${w.word}</strong>
+                        ${cefrBadge}
                     </div>
+                </div>
+                <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 15px; flex-grow: 1;">${w.meaning}</div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button class="pixel-btn" onclick="openBattleZone('vocab', '${safeWord}')" style="background: var(--neon-purple); font-size: 9px; padding: 8px; flex: 1;">ĐẶT CÂU</button>
+                    <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id}, this)" style="background: ${memoBg}; border: 1px solid ${memoBorder}; color: ${memoColor}; font-size: 9px; padding: 8px; flex: 1.5;">${memoText}</button>
                 </div>
             </div>`;
         });
         return wHtml;
     }
 
-    // ĐÃ FIX LỖI NHẢY TRANG KHI BẤM NÚT ĐÃ THUỘC
+    function loadMLRecommendations() {
+        fetch('/api/game/recommend').then(r => r.json()).then(data => {
+            const rDiv = document.getElementById('ml-recommendations');
+            if(data.recommendations && data.recommendations.length > 0) {
+                let rHtml = '';
+                data.recommendations.forEach(r => {
+                    // Việt hóa Text rõ ràng hơn
+                    const scoreText = (r.score > 0) ? `Độ phù hợp: ${(r.score * 100).toFixed(0)}%` : `Nên học từ này`;
+                    rHtml += `
+                        <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; border-left: 3px solid var(--neon-amber); display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color:#fff; font-size: 15px;">${r.word}</strong>
+                            <span style="font-size:11px; color:var(--neon-amber); background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 4px;">${scoreText}</span>
+                        </div>`;
+                });
+                rDiv.innerHTML = rHtml;
+            }
+        });
+    }
+
     function toggleMemorizeStatus(vocabId, btnElement) {
         const userId = localStorage.getItem("user_id");
-
-        // Thêm hiệu ứng loading cho nút bấm
         const originalText = btnElement.innerText;
         btnElement.innerText = "...";
-        btnElement.style.opacity = "0.7";
 
         fetch('/api/game/vocab/toggle_memorize', {
             method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ vocab_id: vocabId, user_id: userId })
         }).then(res => res.json()).then(data => {
-            btnElement.style.opacity = "1";
-            if(data.error) {
-                btnElement.innerText = originalText;
-                return alert(data.error);
-            }
-
+            if(data.error) { btnElement.innerText = originalText; return; }
             if (data.level_upgraded) alert(`🎉 CHÚC MỪNG!\nDanh hiệu mới: ${data.current_level}`);
 
-            // CẬP NHẬT DOM CỤC BỘ TẠI CHÍNH NÚT ĐÓ MÀ KHÔNG RENDER LẠI TOÀN BỘ DANH SÁCH
             const isMemorized = data.is_memorized;
             btnElement.innerText = isMemorized ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
             btnElement.style.color = isMemorized ? "#000" : "var(--glass-border)";
             btnElement.style.background = isMemorized ? "var(--pixel-green)" : "transparent";
             btnElement.style.borderColor = isMemorized ? "var(--pixel-green)" : "var(--glass-border)";
-
-            // Cập nhật State trong RAM để nếu user cuộn mở tab khác thì dữ liệu không bị mất
-            for (let theme in globalVocabData) {
-                let wordObj = globalVocabData[theme].find(w => w.id === vocabId);
-                if (wordObj) wordObj.is_memorized = isMemorized;
-            }
-        }).catch(() => {
-            btnElement.style.opacity = "1";
-            btnElement.innerText = originalText;
         });
-    }
-
-    function requestWordGuide(word) {
-        const aiResponseBox = document.getElementById("aiResponseBox");
-        const aiFeedback = document.getElementById("aiFeedback");
-        const userInput = document.getElementById("userInput");
-
-        forceOpenSection('battle-workspace-container', 'icon-battle-zone');
-        const masterG = document.getElementById('master-g-container');
-        if (masterG.style.opacity === '0' || masterG.style.width === '0px') toggleMasterG(null);
-        if(userInput) { userInput.value = word + " "; userInput.focus(); }
-        aiResponseBox.style.display = "block";
-        aiFeedback.innerHTML = `<span style="color: var(--neon-amber);" class="pulse-neon">Master G đang soạn giáo án chỉ trích từ '${word}'...</span>`;
-
-        fetch('/api/ai/guide', {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ word: word })
-        }).then(res => res.json()).then(data => { aiFeedback.innerHTML = data.guide; });
     }
 
     function generateCustomUnit() {
         const topicInput = document.getElementById("newTopicInput");
         const btnGenerate = document.getElementById("btn-generate-unit");
         const topic = topicInput.value.trim();
-        if (!topic) return alert("Bạn chưa nhập tên chủ đề!");
+        if (!topic) return alert("Bạn chưa nhập chủ đề!");
 
-        topicInput.disabled = true; btnGenerate.disabled = true;
-        btnGenerate.style.background = "var(--neon-amber)"; btnGenerate.innerHTML = "ĐANG RÈN TỪ VỰNG... ĐỢI XÍU!";
-
+        btnGenerate.disabled = true; btnGenerate.innerText = "ĐANG ĐÚC...";
         fetch('/api/ai/generate_unit', {
             method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ topic: topic })
         }).then(res => res.json()).then(data => {
             if (data.error) alert(data.error);
-            else {
-                alert(data.message);
-                const themeId = `theme-content-${topic.toUpperCase().replace(/\s+/g, '-')}`;
-                openThemes.add(themeId);
-                fetchLibraryData('/api/game/vocabularies', 'vocab');
-            }
-        }).finally(() => {
-            topicInput.disabled = false; topicInput.value = ""; btnGenerate.disabled = false;
-            btnGenerate.style.background = "var(--neon-purple)"; btnGenerate.innerHTML = "YÊU CẦU AI ĐÚC UNIT";
+            else { alert(data.message); fetchLibraryData('/api/game/vocabularies', 'vocab'); }
+        }).finally(() => { btnGenerate.disabled = false; btnGenerate.innerText = "TẠO UNIT MỚI"; topicInput.value = ""; });
+    }
+
+    function openBattleZone(mode, targetText) {
+        switchTabUI('battle');
+        document.getElementById("training-title").innerText = `BATTLE_ZONE // MỤC TIÊU: ${targetText.toUpperCase()}`;
+
+        let placeholder = mode === 'vocab' ? `Đặt một câu tiếng Anh có chứa từ '${targetText}'...` : `Viết câu sử dụng cấu trúc '${targetText}'...`;
+
+        document.getElementById("dynamic-workspace").innerHTML = `
+            <div class="pixel-text" style="font-size: 15px; margin-bottom: 5px;">HÃY CHỨNG MINH KỸ NĂNG CỦA BẠN:</div>
+            <textarea id="userInput" style="flex-grow: 1; min-height: 120px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 15px; font-family: var(--text-mono); font-size: 16px; border-radius: 12px; resize: none;" placeholder="${placeholder}"></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button class="pixel-btn" onclick="submitChallenge('${mode}')" style="flex: 1; background: var(--neon-pink); padding: 15px;">GỬI CHO AI CHẤM (ENTER)</button>
+                <button class="pixel-btn" onclick="requestAIHint('${mode}')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-amber); color: var(--neon-amber); padding: 15px;">💡 GỢI Ý</button>
+            </div>
+            <div id="ai-hint-box" style="display: none; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--neon-amber); color: #fff; font-size: 14px; margin-top: 10px;"></div>
+        `;
+        document.getElementById("aiResponseBox").style.display = "none";
+
+        const userInput = document.getElementById("userInput");
+        userInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitChallenge(mode); }
+        });
+        userInput.focus();
+    }
+
+    function renderBattleZone(mode) {
+        document.getElementById("training-title").innerText = "BATTLE_ZONE // TỰ DO CHAT";
+        document.getElementById("dynamic-workspace").innerHTML = `
+            <div class="pixel-text" style="font-size: 15px; margin-bottom: 5px;">Hỏi AI bất kỳ điều gì về tiếng Anh, hoặc nhập câu để AI chấm lỗi sai:</div>
+            <textarea id="userInput" style="flex-grow: 1; min-height: 120px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 15px; font-family: var(--text-mono); font-size: 16px; border-radius: 12px; resize: none;" placeholder="VD: Giải thích cho tôi cấu trúc Past Simple..."></textarea>
+            <button class="pixel-btn" onclick="submitChallenge('free')" style="background: var(--neon-pink); padding: 15px; width: 100%;">GỬI CHO MASTER G (ENTER)</button>
+        `;
+        document.getElementById("aiResponseBox").style.display = "none";
+
+        const userInput = document.getElementById("userInput");
+        userInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitChallenge('free'); }
         });
     }
 
-    function startExamMode() {
-        const userId = localStorage.getItem("user_id");
-        forceOpenSection('battle-workspace-container', 'icon-battle-zone');
-        document.getElementById("training-title").textContent = "BATTLE_ZONE // EXAM_50_WORDS";
-        document.getElementById("training-title").style.color = "var(--neon-pink)";
-        document.getElementById("dynamic-workspace").innerHTML = `<div class="typing-effect" style="color: var(--neon-amber); font-family: var(--text-mono); padding: 20px;">Đang tải dữ liệu từ thuật toán Smart SRS...</div>`;
+    function requestAIHint(mode) {
+        const hintBox = document.getElementById("ai-hint-box");
+        hintBox.style.display = "block";
+        hintBox.innerHTML = "<span class='typing-effect'>Master G đang suy nghĩ gợi ý...</span>";
+        fetch('/api/ai/hint', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ mode: mode }) })
+            .then(res => res.json()).then(data => { hintBox.innerHTML = data.hint; });
+    }
 
-        fetch('/api/game/exam/generate', {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: userId })
-        }).then(res => res.json()).then(data => { currentExamData = data.exam; renderExamPaper(); });
+    function startExamMode() {
+        document.getElementById("dynamic-workspace").innerHTML = `<div style="color: var(--neon-amber); padding: 20px;">Đang tải dữ liệu từ thuật toán Smart SRS...</div>`;
+        switchTabUI('battle');
+        document.getElementById("training-title").innerText = "BATTLE_ZONE // KIỂM TRA ĐỊNH KỲ";
+        fetch('/api/game/exam/generate', { method: 'POST', headers: {'Content-Type': 'application/json'} })
+            .then(res => res.json()).then(data => { currentExamData = data.exam; renderExamPaper(); });
     }
 
     function renderExamPaper() {
-        const workspace = document.getElementById("dynamic-workspace");
-        let html = `<div style="margin-bottom: 20px; color: #cbd5e1; font-size: 15px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border-left: 3px solid var(--neon-cyan);"><strong>Nhiệm vụ:</strong> Nhập nghĩa tiếng Việt. AI sẽ phân tích mốc quên lãng!</div><div id="exam-list" style="max-height: 480px; overflow-y: auto; padding-right: 15px;">`;
+        let html = `<div style="margin-bottom: 20px; color: #cbd5e1; font-size: 14px;">Nhập nghĩa tiếng Việt. AI sẽ tự động phân tích mốc quên lãng của bạn!</div><div style="max-height: 50vh; overflow-y: auto; padding-right: 10px;">`;
         currentExamData.forEach((item, index) => {
             html += `
-            <div style="margin-bottom: 18px; padding: 20px; background: rgba(0,0,0,0.7); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                <div style="font-size: 18px; color: var(--neon-cyan); margin-bottom: 12px; font-weight: 700;">[${index + 1}] ${item.word}</div>
-                <input type="text" id="exam-input-${item.id}" placeholder="Nhập nghĩa tiếng Việt..." style="width: 100%; background: rgba(0,0,0,0.8); border: 2px solid var(--glass-border); color: #fff; padding: 14px; font-family: var(--text-mono); border-radius: 8px; box-sizing: border-box;">
-                <div id="exam-result-${item.id}" class="smooth-collapse collapsed">
-                    <div style="padding-top: 18px; margin-top: 18px; border-top: 1px dashed rgba(255,255,255,0.2);">
-                        <div style="color: var(--neon-amber); font-size: 15px; margin-bottom: 15px;">Nghĩa đúng: ${item.meaning}</div>
-                        <div style="display: flex; gap: 12px;">
-                            <button class="pixel-btn" id="btn-thuoc-${item.id}" onclick="setExamStatus(${item.id}, 'DA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--pixel-green); flex: 1; padding: 10px;">ĐÃ THUỘC</button>
-                            <button class="pixel-btn" id="btn-hoi-${item.id}" onclick="setExamStatus(${item.id}, 'HOI_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-amber); flex: 1; padding: 10px;">HƠI THUỘC</button>
-                            <button class="pixel-btn" id="btn-chua-${item.id}" onclick="setExamStatus(${item.id}, 'CHUA_THUOC')" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-pink); flex: 1; padding: 10px;">CHƯA THUỘC</button>
-                        </div>
+            <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="color: var(--neon-cyan); font-size: 16px; font-weight: bold; margin-bottom: 10px;">${index + 1}. ${item.word}</div>
+                <input type="text" id="exam-input-${item.id}" placeholder="Nghĩa là gì..." class="auth-input" style="margin-bottom: 10px;">
+                <div id="exam-result-${item.id}" style="display: none; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
+                    <div style="color: var(--neon-amber); margin-bottom: 10px;">Nghĩa đúng: ${item.meaning}</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="pixel-btn" id="btn-thuoc-${item.id}" onclick="setExamStatus(${item.id}, 'DA_THUOC')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pixel-green); flex: 1; padding: 8px; font-size: 10px;">ĐÃ THUỘC</button>
+                        <button class="pixel-btn" id="btn-chua-${item.id}" onclick="setExamStatus(${item.id}, 'CHUA_THUOC')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-pink); flex: 1; padding: 8px; font-size: 10px;">CHƯA THUỘC</button>
                     </div>
                 </div>
             </div>`;
         });
-        html += `</div><button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 25px; padding: 18px;">NỘP BÀI & ĐỐI CHIẾU</button>`;
-        workspace.innerHTML = html;
+        html += `</div><button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 15px; padding: 15px;">NỘP BÀI</button>`;
+        document.getElementById("dynamic-workspace").innerHTML = html;
     }
 
     function submitExam() {
         currentExamData.forEach(item => {
-            const inputField = document.getElementById(`exam-input-${item.id}`);
-            if (inputField) inputField.disabled = true;
-            forceOpenSection(`exam-result-${item.id}`, null);
+            document.getElementById(`exam-input-${item.id}`).disabled = true;
+            document.getElementById(`exam-result-${item.id}`).style.display = "block";
         });
-        alert("*** Đã nộp bài! Hãy tự đối chiếu và chọn mức độ ghi nhớ! ***");
+        alert("Đã nộp bài! Hãy tự chấm điểm trung thực nhé!");
     }
 
     function setExamStatus(vocabId, level) {
-        const userId = localStorage.getItem("user_id");
         document.getElementById(`btn-thuoc-${vocabId}`).style.background = level === 'DA_THUOC' ? "var(--pixel-green)" : "rgba(0,0,0,0.5)";
-        document.getElementById(`btn-hoi-${vocabId}`).style.background = level === 'HOI_THUOC' ? "var(--neon-amber)" : "rgba(0,0,0,0.5)";
         document.getElementById(`btn-chua-${vocabId}`).style.background = level === 'CHUA_THUOC' ? "var(--neon-pink)" : "rgba(0,0,0,0.5)";
         fetch('/api/game/exam/update_status', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: userId, vocab_id: vocabId, level: level, response_time_ms: Math.floor(Math.random() * 5000) + 1000 })
+            body: JSON.stringify({ vocab_id: vocabId, level: level })
         });
     }
 </script>

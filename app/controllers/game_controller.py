@@ -116,7 +116,7 @@ def get_vocabularies():
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     results = db.session.query(
-        Vocabulary.id, Vocabulary.word, Vocabulary.meaning, Vocabulary.image_url, Vocabulary.theme,
+        Vocabulary.id, Vocabulary.word, Vocabulary.meaning, Vocabulary.image_url, Vocabulary.theme, Vocabulary.cefr_level, # Thêm cefr_level ở đây
         UserVocabulary.is_unlocked, UserVocabulary.memorization_level, UserVocabulary.next_review_time
     ).join(
         UserVocabulary, (Vocabulary.id == UserVocabulary.vocab_id)
@@ -132,6 +132,7 @@ def get_vocabularies():
             "meaning": r.meaning,
             "image_url": r.image_url,
             "theme": r.theme,
+            "cefr_level": r.cefr_level, # Trả về CEFR
             "is_unlocked": r.is_unlocked if r.is_unlocked is not None else False,
             "is_memorized": True if r.memorization_level == 'DA_THUOC' else False,
             "next_review_time": r.next_review_time.strftime("%Y-%m-%d %H:%M:%S") if r.next_review_time else None
@@ -241,9 +242,9 @@ def gacha_roll():
     # Tính toán thời gian cho phép (Timer)
     base_time = 5.0
     if mode == 'stage':
-        timer = max(2.0, base_time - ((user.arena_stage or 1) * 0.3))
+        timer = max(3.0, base_time - ((user.arena_stage or 1) * 0.2))
     else:
-        timer = random.uniform(2.0, 4.0)
+        timer = random.uniform(5.0, 10.0)
 
     return jsonify({
         "status": "success",

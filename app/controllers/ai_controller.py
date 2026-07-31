@@ -19,14 +19,18 @@ from app.models.daily_quest import DailyQuest
 from app.models.notification import Notification  # [ BỔ SUNG NOTIFICATION ]
 from app import db
 
-# Import Module AI & Leveling mới (Phase 3)
+# Import Module AI & Leveling mới (Phase 3 & 4)
 from app.utils.level_manager import check_and_update_level
 from app.ml_models.intent_classifier import LocalIntentClassifier
-from app.ml_models.vocab_classifier import VocabCEFRClassifier  # [ ĐÃ BỔ SUNG CEFR ENGINE ]
+from app.ml_models.vocab_classifier import VocabCEFRClassifier
+from app.ml_models.ner_engine import SpacyNER  # [ BỔ SUNG NER ENGINE ]
 
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
+
+# Khởi tạo các Lõi AI
 intent_engine = LocalIntentClassifier()
-cefr_engine = VocabCEFRClassifier()  # [ KHỞI TẠO CEFR ENGINE TRỰC TIẾP TẠI ĐÂY ]
+cefr_engine = VocabCEFRClassifier()
+ner_engine = SpacyNER()  # [ KHỞI TẠO MẮT THẦN NER ]
 
 
 def check_and_complete_quest(user_id, text_input):
@@ -166,25 +170,54 @@ def evaluate():
                 result = json.loads(clean_json_str)
 
         # ==============================================================
-        # NHÁNH 2: XỬ LÝ HỌC TẬP (GRAMMAR/VOCAB) & DAILY QUESTS
+        # NHÁNH 2: XỬ LÝ HỌC TẬP (GRAMMAR/VOCAB) & DAILY QUESTS BẰNG RAG
         # ==============================================================
         else:
             context_challenge = ""
+            db_knowledge = "" # RAG Knowledge Base
 
-            if mode == 'grammar':
-                grammar_list = Grammar.query.all()
-                if grammar_list:
-                    chosen = random.choice(grammar_list)
-                    context_challenge = f"Hãy ép người dùng phải dùng hoặc kiểm tra xem họ có dùng đúng cấu trúc này không: {chosen.structure} ({chosen.explanation})."
+            # 1. NẾU Ý ĐỊNH LÀ HỎI NGỮ PHÁP
+            if detected_intent == 'ask_grammar':
+                entity = ner_engine.extract_entity(user_input, 'ask_grammar')
+                if entity:
+                    print(f"[NER EXTRACTED] Target Grammar: {entity}")
+                    # RAG: Query thẳng vào DB xem có cấu trúc này không
+                    found_grammar = Grammar.query.filter(Grammar.structure.ilike(f'%{entity}%')).first()
+                    if found_grammar:
+                        db_knowledge = f"Cấu trúc: {found_grammar.structure}. Giải thích từ giáo trình: {found_grammar.explanation}. Ví dụ chuẩn: {found_grammar.example}."
+                        context_challenge = f"Học trò đang hỏi về '{entity}'. KẾT NỐI DỮ LIỆU RAG: Dựa VÀO ĐÚNG kiến thức sau đây để trả lời, tuyệt đối không bịa thêm: [{db_knowledge}]. Kèm theo chấm điểm câu của họ."
+                    else:
+                        context_challenge = f"Học trò đang hỏi về cấu trúc '{entity}'. Hãy giải thích cấu trúc này, sửa lỗi câu của họ và cho điểm."
                 else:
-                    context_challenge = "Kiểm tra ngữ pháp chung."
+                    context_challenge = "Kiểm tra ngữ pháp chung của câu này và chỉ ra lỗi sai."
+                    mode = 'grammar'
 
-            elif mode == 'vocab':
-                context_challenge = "Hãy tập trung kiểm tra cách sử dụng từ vựng, collocation và chỉ ra lỗi dùng từ lóng/từ vựng (nếu có)."
+            # 2. NẾU Ý ĐỊNH LÀ HỎI TỪ VỰNG
+            elif detected_intent == 'ask_vocab':
+                entity = ner_engine.extract_entity(user_input, 'ask_vocab')
+                if entity:
+                    print(f"[NER EXTRACTED] Target Vocab: {entity}")
+                    # RAG: Tìm nghĩa chuẩn trong DB
+                    found_vocab = Vocabulary.query.filter(Vocabulary.word.ilike(f'%{entity}%')).first()
+                    if found_vocab:
+                        db_knowledge = f"Từ vựng: {found_vocab.word}. Nghĩa tiếng Việt: {found_vocab.meaning}. Thuộc chủ đề: {found_vocab.theme}. CEFR: {found_vocab.cefr_level}."
+                        context_challenge = f"Học trò đang hỏi từ '{entity}'. KẾT NỐI DỮ LIỆU RAG: Bắt buộc dùng dữ liệu sau để trả lời: [{db_knowledge}]. Nhận xét cách dùng từ của họ."
+                    else:
+                        context_challenge = f"Học trò đang hỏi từ vựng '{entity}'. Hãy giải thích nghĩa, cách dùng và đánh giá câu của họ."
+                else:
+                    context_challenge = "Hãy tập trung kiểm tra cách sử dụng từ vựng trong câu này."
+                    mode = 'vocab'
 
-            elif mode == 'free':
+            # 3. CHAT PHIẾM BÌNH THƯỜNG
+            elif detected_intent == 'general_chat':
+                context_challenge = "Người chơi đang chat phiếm hoặc trêu ghẹo bạn. Hãy đáp trả thật mỏ hỗn, hài hước, mang đậm phong cách Master G. KHÔNG CẦN CHẤM ĐIỂM QUÁ KHẮT KHE, nhưng nhớ nhắc họ bớt lười biếng và lo học đi."
+                mode = 'free'
+
+            # 4. CHẾ ĐỘ MẶC ĐỊNH (Không xác định rõ)
+            else:
                 context_challenge = "Đây là câu tự do. Hãy chấm điểm ngữ pháp tiếng Anh cơ bản. Khen ngạo nghễ nếu tốt, chê xéo xắt nếu sai."
 
+            # Truyền context RAG vào Gemini
             ai_response_str = evaluate_english_skill(user_input, context_challenge)
             clean_json_str = ai_response_str.strip().replace('```json', '').replace('```', '')
             result = json.loads(clean_json_str)
