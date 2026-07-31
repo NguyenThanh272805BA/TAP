@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}PLAYER PROFILE{% endblock %}
+
+{% block content %}
+<div class="bento-container" style="max-width: 1200px; margin: 0 auto; align-items: start;">
+    
+    <!-- CARD 1: THÔNG TIN CÁ NHÂN (AVATAR & BIO) -->
+    <div class="bento-card" style="grid-column: span 1; display: flex; flex-direction: column; align-items: center; padding: 30px;">
+        <div class="pixel-title" style="color: var(--neon-cyan); margin-bottom: 20px; font-size: 14px;">[ IDENTIFICATION ]</div>
+        
+        <!-- Khung Upload Avatar Ẩn -->
+        <form id="avatar-form" style="display: none;">
+            <input type="file" id="avatar-input" name="avatar" accept="image/*" onchange="submitProfileUpdate()">
+        </form>
+
+        <div style="position: relative; cursor: pointer; margin-bottom: 20px;" onclick="document.getElementById('avatar-input').click()" title="Bấm để đổi Avatar">
+            <img id="profile-avatar" src="/static/uploads/avatars/default_avatar.png" onerror="this.src='/static/uploads/covers/default_cover.jpg'" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--neon-purple); box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); transition: 0.3s;" onmouseover="this.style.filter='brightness(0.7)'" onmouseout="this.style.filter='brightness(1)'">
+            <div style="position: absolute; bottom: 0; right: 0; background: var(--neon-purple); border-radius: 50%; padding: 8px; font-size: 12px;">📷</div>
+        </div>
+
+        <div id="profile-username" style="font-size: 24px; color: #fff; font-family: var(--text-pixel); font-weight: bold; margin-bottom: 5px;">PLAYER_NAME</div>
+        <div id="profile-level" style="font-size: 13px; color: var(--neon-cyan); margin-bottom: 20px; text-transform: uppercase; border: 1px solid var(--neon-cyan); padding: 4px 10px; border-radius: 6px;">RANK</div>
+
+        <div style="width: 100%;">
+            <label style="color: #94a3b8; font-size: 11px; font-family: var(--text-pixel);">> CHÂM NGÔN (BIO):</label>
+            <textarea id="profile-bio" class="auth-input" style="height: 80px; font-size: 13px; margin-top: 5px; resize: none;"></textarea>
+            <button class="pixel-btn" onclick="submitProfileUpdate()" style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--pixel-green); color: var(--pixel-green); font-size: 11px;">CẬP NHẬT BIO</button>
+        </div>
+    </div>
+
+    <!-- KHU VỰC BÊN PHẢI: THỐNG KÊ & THÀNH TỰU -->
+    <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 25px;">
+        
+        <!-- THỐNG KÊ TỔNG QUAN -->
+        <div class="bento-card" style="padding: 25px;">
+            <div class="pixel-title" style="color: var(--neon-amber); margin-bottom: 20px;">SYSTEM_STATS // CHỈ SỐ LÕI</div>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="color: #94a3b8; font-size: 13px;">TỪ VỰNG ĐÃ ÉP XUNG</div>
+                    <div id="stat-learned" style="font-size: 20px; font-family: var(--text-mono); color: #fff; font-weight: bold;">0</div>
+                </div>
+                <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="color: #94a3b8; font-size: 13px;">CEFR CAO NHẤT ĐẠT ĐƯỢC</div>
+                    <div id="stat-cefr" style="font-size: 20px; font-family: var(--text-mono); color: var(--neon-pink); font-weight: bold; text-shadow: 0 0 10px var(--neon-pink);">A1</div>
+                </div>
+                <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="color: #94a3b8; font-size: 13px;">CHUỖI SINH TỒN (STREAK)</div>
+                    <div id="stat-streak" style="font-size: 20px; font-family: var(--text-mono); color: var(--neon-amber); font-weight: bold;">0 🔥</div>
+                </div>
+                <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="color: #94a3b8; font-size: 13px;">TÀI SẢN (COINS)</div>
+                    <div id="stat-coins" style="font-size: 20px; font-family: var(--text-mono); color: var(--pixel-green); font-weight: bold;">0 💰</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DANH SÁCH THÀNH TỰU (ACHIEVEMENTS) -->
+        <div class="bento-card" style="padding: 25px; flex-grow: 1;">
+            <div class="pixel-title" style="color: var(--pixel-green); margin-bottom: 20px;">ACHIEVEMENTS // HUÂN CHƯƠNG KẺ SỐNG SÓT</div>
+            
+            <div id="achievements-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-height: 300px; overflow-y: auto; padding-right: 10px;">
+                <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang quét kho lưu trữ thành tựu...</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadProfileData();
+    });
+
+    function loadProfileData() {
+        fetch('/api/auth/profile/stats')
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) return;
+
+                // Bind User Info
+                document.getElementById('profile-username').innerText = data.username;
+                document.getElementById('profile-level').innerText = data.level;
+                document.getElementById('profile-bio').value = data.bio;
+                document.getElementById('profile-avatar').src = `/static/uploads/avatars/${data.avatar}`;
+
+                // Bind Stats
+                document.getElementById('stat-learned').innerText = data.learned_count;
+                document.getElementById('stat-cefr').innerText = data.highest_cefr;
+                document.getElementById('stat-streak').innerHTML = `${data.streak} 🔥`;
+                document.getElementById('stat-coins').innerHTML = `${data.coins} 💰`;
+
+                // Bind Achievements
+                const achContainer = document.getElementById('achievements-container');
+                if (data.achievements.length === 0) {
+                    achContainer.innerHTML = '<div style="color: #64748b; font-size: 14px; grid-column: span 2; text-align: center; margin-top: 20px;">Chưa mở khóa thành tựu nào. Hãy tiếp tục chiến đấu!</div>';
+                } else {
+                    let achHtml = '';
+                    data.achievements.forEach(ach => {
+                        achHtml += `
+                        <div style="background: rgba(0,0,0,0.6); border-radius: 8px; padding: 15px; display: flex; align-items: center; gap: 15px; border-left: 3px solid var(--pixel-green); transition: transform 0.3s;" onmouseover="this.style.transform='translateX(5px)'" onmouseout="this.style.transform='none'">
+                            <div style="font-size: 30px; filter: drop-shadow(0 0 10px var(--pixel-green));">🏆</div>
+                            <div>
+                                <div style="color: #fff; font-family: var(--text-pixel); font-size: 12px; margin-bottom: 5px;">${ach.title}</div>
+                                <div style="color: #94a3b8; font-size: 11px; line-height: 1.4;">${ach.description}</div>
+                            </div>
+                        </div>`;
+                    });
+                    achContainer.innerHTML = achHtml;
+                }
+            });
+    }
+
+    function submitProfileUpdate() {
+        const formData = new FormData();
+        const fileInput = document.getElementById('avatar-input');
+        const bioInput = document.getElementById('profile-bio').value.trim();
+
+        if (fileInput.files.length > 0) {
+            formData.append('avatar', fileInput.files[0]);
+        }
+        formData.append('bio', bioInput);
+
+        fetch('/api/auth/profile/update', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.error) {
+                alert(data.error);
+            } else {
+                if (data.new_avatar) {
+                    document.getElementById('profile-avatar').src = `/static/uploads/avatars/${data.new_avatar}`;
+                }
+                alert(data.message);
+            }
+        });
+    }
+</script>
+{% endblock %}

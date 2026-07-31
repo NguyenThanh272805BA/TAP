@@ -10,6 +10,7 @@ class Vocabulary(db.Model):
     meaning = db.Column(db.Text, nullable=False)
     image_url = db.Column(db.String(255))  # Đường dẫn file .png/.jpg
     theme = db.Column(db.String(50), default='General')
+    cefr_level = db.Column(db.String(10), default='A1')
     is_unlocked = db.Column(db.Boolean, default=False)
     is_memorized = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=func.now())

@@ -17,6 +17,8 @@ class User(db.Model):
     arena_stage = db.Column(db.Integer, default=1)  # Ải hiện tại trong Gacha Arena (1-10)
     infinity_score = db.Column(db.Integer, default=0)  # Điểm cao nhất chế độ vô cực
     last_quest_date = db.Column(db.Date, nullable=True)  # Ngày giao quest gần nhất
+    avatar = db.Column(db.String(255), default='default_avatar.png')
+    bio = db.Column(db.Text, default='Kẻ lang thang trong thế giới ngôn ngữ...')
 
     created_at = db.Column(db.DateTime, default=func.now())
     tests = db.relationship('TestLog', backref='user', lazy=True, cascade="all, delete-orphan")

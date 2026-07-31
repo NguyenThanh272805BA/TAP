@@ -59,6 +59,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             })
             .catch(err => console.log("Đang tải hoặc trục trặc đồng bộ Session:", err));
+
+        // Khởi động Hệ thống Thông báo (Polling)
+        loadNotifications();
+        setInterval(loadNotifications, 45000); // Polling 45 giây 1 lần
     }
 
     // 2. Tải trước danh sách nhiệm vụ từ vựng ở cột trái (nếu tồn tại component)
@@ -266,10 +270,14 @@ function switchFeature(featureName) {
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px; line-height: 1.6;">
                     NHIỆM VỤ TỪ VỰNG: Đặt một câu có nghĩa chứa từ lóng / từ vựng hệ thống yêu cầu dưới đây.
                 </div>
-                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: none; box-sizing: border-box;" placeholder="Master G đang đợi câu từ vựng của bạn..."></textarea>
-                <div style="margin-top: 10px; display: flex; gap: 12px;">
-                    <button class="pixel-btn" onclick="submitChallenge()">SEND_VOCAB</button>
+                <div style="flex-grow: 1; display: flex; flex-direction: column;">
+                    <textarea id="userInput" style="flex-grow: 1; min-height: 80px; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: none; box-sizing: border-box;" placeholder="Master G đang đợi câu từ vựng của bạn..."></textarea>
                 </div>
+                <div style="margin-top: 10px; display: flex; gap: 12px; align-items: center;">
+                    <button class="pixel-btn" onclick="submitChallenge()" style="flex: 1;">SEND_VOCAB</button>
+                    <button class="pixel-btn" onclick="requestAIHint('${featureName}')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-amber); color: var(--neon-amber); padding: 12px; font-size: 11px;">💡 GỢI Ý</button>
+                </div>
+                <div id="ai-hint-box" style="display: none; margin-top: 12px; font-size: 13px; color: var(--neon-cyan); font-style: italic; background: rgba(34, 211, 238, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid var(--neon-cyan); line-height: 1.5;"></div>
             `;
             break;
 
@@ -283,14 +291,43 @@ function switchFeature(featureName) {
                 <div class="pixel-text" style="font-size: 15px; margin-bottom: 12px; line-height: 1.6;">
                     NHIỆM VỤ NGỮ PHÁP: Sử dụng đúng cấu trúc ngữ pháp quy định để vượt ải thành công.
                 </div>
-                <textarea id="userInput" style="width: 100%; height: 75px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: none; box-sizing: border-box;" placeholder="Nhập câu ngữ pháp tại đây..."></textarea>
-                <div style="margin-top: 10px; display: flex; gap: 12px;">
-                    <button class="pixel-btn" onclick="submitChallenge()">SEND_COMMAND</button>
+                <div style="flex-grow: 1; display: flex; flex-direction: column;">
+                    <textarea id="userInput" style="flex-grow: 1; min-height: 80px; max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 12px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: none; box-sizing: border-box;" placeholder="Nhập câu ngữ pháp tại đây..."></textarea>
                 </div>
+                <div style="margin-top: 10px; display: flex; gap: 12px; align-items: center;">
+                    <button class="pixel-btn" onclick="submitChallenge()" style="flex: 1;">SEND_COMMAND</button>
+                    <button class="pixel-btn" onclick="requestAIHint('${featureName}')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-amber); color: var(--neon-amber); padding: 12px; font-size: 11px;">💡 GỢI Ý</button>
+                </div>
+                <div id="ai-hint-box" style="display: none; margin-top: 12px; font-size: 13px; color: var(--neon-cyan); font-style: italic; background: rgba(34, 211, 238, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid var(--neon-cyan); line-height: 1.5;"></div>
             `;
             break;
     }
     initKeyboardShortcuts();
+}
+
+function requestAIHint(mode) {
+    const hintBox = document.getElementById("ai-hint-box");
+    if (!hintBox) return;
+
+    hintBox.style.display = "block";
+    hintBox.innerHTML = "<span class='pulse-neon'>Đang kết nối Neural Network lấy gợi ý...</span>";
+
+    fetch('/api/ai/hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: mode })
+    })
+    .then(res => res.json())
+    .then(data => {
+        hintBox.innerHTML = data.hint;
+        // Tự động ẩn gợi ý sau 12 giây để bắt user tự thân vận động
+        setTimeout(() => {
+            hintBox.style.display = "none";
+        }, 12000);
+    })
+    .catch(() => {
+        hintBox.innerHTML = "<span style='color: var(--neon-pink);'>Lỗi truy xuất hệ thống Gợi ý!</span>";
+    });
 }
 
 function updateChibeEmotion(score) {
@@ -427,7 +464,7 @@ function loadVocabQuests() {
                             <strong style="color: var(--neon-cyan); font-family: var(--text-main); font-size: 16px; font-weight:600;">${item.word}</strong>
                             <span style="font-size: 13px; color: #94a3b8; display: block; margin-top: 3px; font-family: var(--text-main); line-height: 1.4;">${item.meaning}</span>
                         </div>
-                        <button onclick="toggleVocabMark(${item.id})" class="pixel-btn" style="background: rgba(0,0,0,0.4); border: 1px solid ${checkColor}; color: ${checkColor}; font-size: 10px; cursor: pointer; padding: 6px 10px; box-shadow: none;">
+                        <button onclick="toggleVocabMark(${item.id}, this)" class="pixel-btn" style="background: rgba(0,0,0,0.4); border: 1px solid ${checkColor}; color: ${checkColor}; font-size: 10px; cursor: pointer; padding: 6px 10px; box-shadow: none; transition: 0.3s;">
                             ${checkSign}
                         </button>
                     </li>
@@ -445,7 +482,11 @@ function loadVocabQuests() {
     });
 }
 
-function toggleVocabMark(vocabId) {
+function toggleVocabMark(vocabId, btnElement) {
+    const originalHtml = btnElement.innerHTML;
+    btnElement.innerHTML = "...";
+    btnElement.style.opacity = "0.7";
+
     fetch('/api/game/vocab/toggle_memorize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -453,8 +494,21 @@ function toggleVocabMark(vocabId) {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.error) return;
-        loadVocabQuests();
+        if (data.error) {
+            btnElement.innerHTML = originalHtml;
+            btnElement.style.opacity = "1";
+            return;
+        }
+
+        // Fix nhảy DOM: Thay vì load lại nguyên HTML thì ta cập nhật class trực tiếp
+        const isMemorized = data.is_memorized;
+        const checkSign = isMemorized ? "[ X ]" : "[ _ ]";
+        const checkColor = isMemorized ? "var(--pixel-green)" : "#64748b";
+
+        btnElement.innerHTML = checkSign;
+        btnElement.style.color = checkColor;
+        btnElement.style.borderColor = checkColor;
+        btnElement.style.opacity = "1";
 
         if (data.level_upgraded) {
             triggerFireworksEffect();
@@ -463,6 +517,9 @@ function toggleVocabMark(vocabId) {
             if (sidebarRank) sidebarRank.innerText = data.current_level;
             updateChibeEmotion(10.0);
         }
+    }).catch(() => {
+        btnElement.innerHTML = originalHtml;
+        btnElement.style.opacity = "1";
     });
 }
 
@@ -1019,3 +1076,90 @@ function toggleMasterG(e) {
         }, 600);
     }
 }
+
+/**
+ * =======================================================
+ * HỆ THỐNG THÔNG BÁO (NOTIFICATION SYSTEM)
+ * =======================================================
+ */
+function loadNotifications() {
+    fetch('/api/game/notifications')
+        .then(res => res.json())
+        .then(data => {
+            const badge = document.getElementById('notif-badge');
+            if(badge) {
+                if(data.unread_count > 0) {
+                    badge.innerText = data.unread_count > 9 ? '9+' : data.unread_count;
+                    badge.style.display = 'block';
+                    badge.classList.add('pulse-neon');
+                } else {
+                    badge.style.display = 'none';
+                    badge.classList.remove('pulse-neon');
+                }
+            }
+
+            const list = document.getElementById('notification-list');
+            if(list && data.notifications) {
+                if(data.notifications.length === 0) {
+                    list.innerHTML = '<div style="color: #64748b; font-size: 13px; text-align: center; font-style: italic;">Hộp thư trống trơn. Đi chiến đấu đi!</div>';
+                    return;
+                }
+
+                let html = '';
+                data.notifications.forEach(n => {
+                    const unreadStyle = n.is_read
+                        ? 'opacity: 0.6; border: 1px solid rgba(255,255,255,0.05);'
+                        : 'border-left: 3px solid var(--neon-pink); background: rgba(244, 114, 182, 0.05); border-top: 1px solid rgba(255,255,255,0.05); border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);';
+
+                    let icon = "💬";
+                    if (n.type === 'LEVEL_UP') icon = "⭐";
+                    if (n.type === 'ACHIEVEMENT') icon = "🏆";
+
+                    html += `
+                    <div style="background: rgba(0,0,0,0.4); padding: 14px; border-radius: 8px; transition: 0.3s; ${unreadStyle}">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center;">
+                            <strong style="color: var(--neon-cyan); font-size: 13px; font-family: var(--text-mono);">${icon} ${n.title}</strong>
+                            <span style="color: #64748b; font-size: 10px; font-family: var(--text-pixel);">${n.created_at}</span>
+                        </div>
+                        <div style="color: #cbd5e1; font-size: 13px; line-height: 1.5; font-family: var(--text-main);">${n.message}</div>
+                    </div>
+                    `;
+                });
+                list.innerHTML = html;
+            }
+        })
+        .catch(err => console.error("Lỗi đồng bộ Notification", err));
+}
+
+function toggleNotifications() {
+    const dropdown = document.getElementById('notification-dropdown');
+    if(dropdown) {
+        if (dropdown.style.display === 'none') {
+            dropdown.style.display = 'block';
+            loadNotifications(); // Reload dữ liệu mới nhất khi mở ra
+        } else {
+            dropdown.style.display = 'none';
+        }
+    }
+}
+
+function markAllNotificationsRead() {
+    fetch('/api/game/notifications/read', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                loadNotifications();
+            }
+        });
+}
+
+// Bấm ra ngoài khoảng trống sẽ tự động đóng Dropdown
+document.addEventListener('click', function(event) {
+    const bell = document.getElementById('notification-bell');
+    const dropdown = document.getElementById('notification-dropdown');
+    if (bell && dropdown) {
+        if (!bell.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
+    }
+});

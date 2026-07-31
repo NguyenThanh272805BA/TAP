@@ -1,6 +1,7 @@
 from app.models.achievement import Achievement
 from app.models.user_achievement import UserAchievement
 from app.models.user import User
+from app.models.notification import Notification  # Bổ sung import Model Notification
 from app import db
 
 
@@ -31,6 +32,16 @@ def check_and_unlock_achievements(user_id, event_type, current_value):
 
         # Thưởng xu
         user.coins += ach.reward_coins
+
+        # -----> HỆ THỐNG BẮN THÔNG BÁO TỰ ĐỘNG <-----
+        notif = Notification(
+            user_id=user_id,
+            title="THÀNH TỰU MỚI",
+            message=f"Mở khóa: {ach.title} (+{ach.reward_coins} Xu)",
+            type="ACHIEVEMENT"
+        )
+        db.session.add(notif)
+
         unlocked_new.append({
             "title": ach.title,
             "reward": ach.reward_coins,

@@ -16,6 +16,7 @@ from app.models.user_vocabulary import UserVocabulary
 from app.models.story_topic import StoryTopic
 from app.models.story_session import StorySession
 from app.models.daily_quest import DailyQuest
+from app.models.notification import Notification  # [ BỔ SUNG NOTIFICATION ]
 from app import db
 
 # Import Module AI & Leveling mới (Phase 3)
@@ -57,6 +58,7 @@ def evaluate():
 
     # 1. AI ORCHESTRATOR: Phân tích Intent trước khi xử lý
     detected_intent = intent_engine.predict(user_input)
+    print(f"\n[LOCAL AI ENGINE] Text: '{user_input}' ---> Intent: {detected_intent.upper()}")
 
     try:
         # ==============================================================
@@ -221,6 +223,16 @@ def evaluate():
     level_up, new_rank = check_and_update_level(user_id)
     if level_up:
         result['level_up_notification'] = f"ĐẲNG CẤP MỚI: BẠN VỪA THĂNG CẤP LÊN '{new_rank.upper()}'!"
+
+        # Bắn Notification vào CSDL
+        notif = Notification(
+            user_id=user_id,
+            title="THĂNG CẤP",
+            message=f"Bản thân bạn đã đột phá giới hạn! Đẳng cấp mới: {new_rank.upper()}",
+            type="LEVEL_UP"
+        )
+        db.session.add(notif)
+        db.session.commit()
 
     if quest_completed_word:
         result['quest_notification'] = f"HOÀN THÀNH NHIỆM VỤ: Đặt câu với từ '{quest_completed_word}' (+20 Xu)"
@@ -470,3 +482,21 @@ def init_story():
             "choices": ["Fix error", "Reboot", "Wait", "Quit"],
             "is_end": False
         }), 200
+
+
+@ai_bp.route('/hint', methods=['POST'])
+def get_hint():
+    data = request.get_json(silent=True) or {}
+    mode = data.get('mode', 'grammar')
+
+    prompt = f"""
+    Người dùng đang bí ý tưởng đặt câu trong chế độ '{mode}'.
+    Hãy cung cấp MỘT câu gợi ý dang dở (fill-in-the-blank) bằng tiếng Anh kèm dịch nghĩa tiếng Việt. 
+    Chỉ trả về Text ngắn gọn dạng: "Gợi ý: I usually ___ (đi dạo) in the morning."
+    KHÔNG DÙNG MARKDOWN.
+    """
+    try:
+        clean_text = call_gemini_with_retry(prompt)
+        return jsonify({"hint": clean_text}), 200
+    except Exception as e:
+        return jsonify({"hint": "Master G đang bận, tự nghĩ đi đồ lười!"}), 200

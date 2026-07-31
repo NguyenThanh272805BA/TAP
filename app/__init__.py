@@ -71,6 +71,10 @@ def create_app():
     def admin_page():
         return render_template('admin.html')
 
+    @app.route('/profile')
+    def profile_page():
+        return render_template('profile.html')
+
     @app.route('/shop')
     def shop_page():
         return render_template('shop.html')

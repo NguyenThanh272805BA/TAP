@@ -8,29 +8,60 @@
 </head>
 <body>
     <div class="app-layout">
+        <!-- SIDEBAR -->
         <aside class="sidebar">
             <div class="pixel-title" style="font-size: 14px; text-align: center; margin-bottom: 30px; color: var(--neon-pink);">
                 GLOBAL FLUENT
             </div>
 
+            <!-- USER INFO -->
             <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--glass-border); margin-bottom: 25px;">
                 <div style="color: var(--neon-cyan); font-weight: bold; font-size: 16px;" id="sidebar-user">Khách</div>
-                <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;" id="sidebar-rank">Level 1</div>
+                <div style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;" id="sidebar-rank">Level 1</div>
 
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                    <span style="color: var(--neon-amber);">🔥 <span id="sidebar-streak">0</span></span>
-                    <span style="color: var(--pixel-green);">💰 <span id="sidebar-coins">0</span> Xu</span>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; align-items: center;">
+                    <!-- Streak Icon (Fire) -->
+                    <span style="color: var(--neon-amber); display: flex; align-items: center; gap: 5px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                        <span id="sidebar-streak">0</span>
+                    </span>
+                    <!-- Coins Icon (Coin) -->
+                    <span style="color: var(--pixel-green); display: flex; align-items: center; gap: 5px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+                        <span id="sidebar-coins">0</span> Xu
+                    </span>
                 </div>
             </div>
 
+            <!-- NAVIGATION -->
             <nav style="display: flex; flex-direction: column;">
-                <a href="/dashboard" class="nav-item">🏠 Bảng Điều Khiển</a>
-                <a href="/learn" class="nav-item">📚 Lò Đúc & Học Tập</a>
-                <a href="/test" class="nav-item">⚔️ Đấu Trường Gacha</a>
-                <a href="/story" class="nav-item">📖 Text-RPG Sinh Tồn</a>
-                <a href="/shop" class="nav-item">🛒 Cửa Hàng (Shop)</a>
+                <a href="/dashboard" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Bảng Điều Khiển
+                </a>
+                <a href="/learn" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                    Lò Đúc & Học Tập
+                </a>
+                <a href="/test" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" y1="14" x2="9" y2="18"/><line x1="7" y1="17" x2="4" y2="20"/><line x1="3" y1="19" x2="5" y2="21"/></svg>
+                    Đấu Trường Gacha
+                </a>
+                <a href="/story" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    Text-RPG Sinh Tồn
+                </a>
+                <a href="/shop" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                    Cửa Hàng (Shop)
+                </a>
+                <a href="/profile" class="nav-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Hồ Sơ Cá Nhân
+                </a>
                 <a href="/admin" class="nav-item" id="nav-admin" style="display: none; color: var(--neon-pink); border-top: 1px dashed var(--neon-pink); margin-top: 10px; border-radius: 0;">
-                    ⚙️ QUẢN TRỊ HỆ THỐNG
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    QUẢN TRỊ HỆ THỐNG
                 </a>
             </nav>
 
@@ -39,11 +70,33 @@
             </div>
         </aside>
 
+        <!-- MAIN CONTENT AREA -->
         <main class="main-content">
+
+            <!-- NÚT CHUÔNG BÁO GÓC TRÊN BÊN PHẢI -->
+            <div id="notification-bell" onclick="toggleNotifications()" style="display: flex; align-items: center; justify-content: center; position: absolute; top: 25px; right: 30px; z-index: 1000; cursor: pointer; background: rgba(15, 23, 42, 0.8); width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--glass-border); box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.3s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #fff;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span id="notif-badge" style="position: absolute; top: -5px; right: -5px; background: var(--neon-pink); color: #fff; font-size: 11px; font-weight: bold; font-family: var(--text-mono); padding: 3px 7px; border-radius: 50%; display: none; box-shadow: 0 0 10px var(--neon-pink);">0</span>
+            </div>
+
+            <!-- DROPDOWN MENU THÔNG BÁO -->
+            <div id="notification-dropdown" style="display: none; position: absolute; top: 80px; right: 30px; width: 340px; max-height: 450px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); border: 2px solid var(--neon-cyan); border-radius: 12px; z-index: 1001; overflow-y: auto; box-shadow: 0 10px 40px rgba(6, 182, 212, 0.25); padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 12px; margin-bottom: 15px;">
+                    <div class="pixel-title" style="color: var(--neon-cyan); font-size: 13px; margin: 0; letter-spacing: 1px;">SYSTEM_LOGS</div>
+                    <button class="pixel-btn" onclick="markAllNotificationsRead()" style="background: transparent; border: 1px solid var(--glass-border); color: #94a3b8; padding: 6px 10px; font-size: 9px; box-shadow: none;">ĐÁNH DẤU ĐÃ ĐỌC</button>
+                </div>
+                <div id="notification-list" style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- JS sẽ render HTML vào đây -->
+                    <div style="color: #94a3b8; font-size: 13px; text-align: center; font-style: italic;">Đang tải nhật ký...</div>
+                </div>
+            </div>
+
+            <!-- DYNAMIC CONTENT BLOCK -->
             {% block content %}{% endblock %}
         </main>
     </div>
 
+    <!-- SCRIPTS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>

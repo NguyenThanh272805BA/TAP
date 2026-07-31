@@ -11,6 +11,7 @@ from app.ml_models.recommender import VocabRecommender
 from app.ml_models.srs_predictor import SmartSRS
 from app.models.story_session import StorySession
 from app.models.story_topic import StoryTopic
+from app.models.notification import Notification
 
 # [ PHASE 3 ] Import Hệ thống Quản lý Thành tựu
 from app.utils.achievement_manager import check_and_unlock_achievements
@@ -496,3 +497,37 @@ def get_story_archive():
             "date": s.created_at.strftime("%Y-%m-%d")
         })
     return jsonify({"archive": result}), 200
+
+
+@game_bp.route('/notifications', methods=['GET'])
+def get_notifications():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    # Lấy 10 thông báo gần nhất
+    notifs = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).limit(10).all()
+    unread_count = sum(1 for n in notifs if not n.is_read)
+
+    data = [{
+        "id": n.id,
+        "title": n.title,
+        "message": n.message,
+        "type": n.type,
+        "is_read": n.is_read,
+        "created_at": n.created_at.strftime("%d/%m %H:%M")
+    } for n in notifs]
+
+    return jsonify({"notifications": data, "unread_count": unread_count}), 200
+
+
+@game_bp.route('/notifications/read', methods=['POST'])
+def mark_notifications_read():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    # Cập nhật toàn bộ thông báo của user thành đã đọc
+    Notification.query.filter_by(user_id=user_id, is_read=False).update({"is_read": True})
+    db.session.commit()
+    return jsonify({"success": True}), 200

@@ -8,3 +8,4 @@ from .story_session import StorySession   # [ PHASE 2 ]
 from .daily_quest import DailyQuest       # [ PHASE 2 ]
 from .achievement import Achievement             # [ PHASE 3 ]
 from .user_achievement import UserAchievement    # [ PHASE 3 ]
+from .notification import Notification

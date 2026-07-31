@@ -1,21 +1,33 @@
+import os
+import joblib
 import re
+import pandas as pd
 
 
 class VocabCEFRClassifier:
-    def predict_cefr(self, word: str) -> str:
-        word = word.lower().strip()
-        length = len(word)
-        syllables = len(re.findall(r'[aeiouy]+', word))
-
-        if length <= 4 and syllables <= 1:
-            return "A1"
-        elif length <= 6 and syllables <= 2:
-            return "A2"
-        elif length <= 8 and syllables <= 3:
-            return "B1"
-        elif length <= 10 and syllables <= 4:
-            return "B2"
-        elif length <= 12:
-            return "C1"
+    def __init__(self):
+        model_path = os.path.join(os.path.dirname(__file__), 'cefr_model.pkl')
+        if os.path.exists(model_path):
+            self.model = joblib.load(model_path)
         else:
-            return "C2"
+            self.model = None
+
+    def _extract_features(self, word):
+        word = str(word).lower().strip()
+        return {
+            'length': len(word),
+            'vowel_count': len(re.findall(r'[aeiouy]', word)),
+            'consonant_count': len(re.findall(r'[^aeiouy]', word)),
+            'has_suffix_tion': 1 if word.endswith('tion') else 0,
+            'has_suffix_ment': 1 if word.endswith('ment') else 0,
+            'has_suffix_ly': 1 if word.endswith('ly') else 0,
+        }
+
+    def predict_cefr(self, word: str) -> str:
+        if not self.model:
+            return "A1"  # Fallback nếu chưa train
+
+        features = self._extract_features(word)
+        df = pd.DataFrame([features])
+        prediction = self.model.predict(df)[0]
+        return prediction

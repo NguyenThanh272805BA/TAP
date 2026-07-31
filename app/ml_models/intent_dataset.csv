@@ -1,0 +1,311 @@
+text,intent
+What is the meaning of word,ask_vocab
+I don't understand this word,ask_vocab
+Explain the word,ask_vocab
+I don't understand this word,ask_vocab
+Define word,ask_vocab
+I don't understand this word,ask_vocab
+Translate word,ask_vocab
+I don't understand this word,ask_vocab
+Nghĩa của từ word,ask_vocab
+I don't understand this word,ask_vocab
+What is the meaning of vocabulary,ask_vocab
+I don't understand this vocabulary,ask_vocab
+Explain the vocabulary,ask_vocab
+I don't understand this vocabulary,ask_vocab
+Define vocabulary,ask_vocab
+I don't understand this vocabulary,ask_vocab
+Translate vocabulary,ask_vocab
+I don't understand this vocabulary,ask_vocab
+Nghĩa của từ vocabulary,ask_vocab
+I don't understand this vocabulary,ask_vocab
+What is the meaning of phrase,ask_vocab
+I don't understand this phrase,ask_vocab
+Explain the phrase,ask_vocab
+I don't understand this phrase,ask_vocab
+Define phrase,ask_vocab
+I don't understand this phrase,ask_vocab
+Translate phrase,ask_vocab
+I don't understand this phrase,ask_vocab
+Nghĩa của từ phrase,ask_vocab
+I don't understand this phrase,ask_vocab
+What is the meaning of idiom,ask_vocab
+I don't understand this idiom,ask_vocab
+Explain the idiom,ask_vocab
+I don't understand this idiom,ask_vocab
+Define idiom,ask_vocab
+I don't understand this idiom,ask_vocab
+Translate idiom,ask_vocab
+I don't understand this idiom,ask_vocab
+Nghĩa của từ idiom,ask_vocab
+I don't understand this idiom,ask_vocab
+What is the meaning of slang,ask_vocab
+I don't understand this slang,ask_vocab
+Explain the slang,ask_vocab
+I don't understand this slang,ask_vocab
+Define slang,ask_vocab
+I don't understand this slang,ask_vocab
+Translate slang,ask_vocab
+I don't understand this slang,ask_vocab
+Nghĩa của từ slang,ask_vocab
+I don't understand this slang,ask_vocab
+How to use grammar,ask_grammar
+Is this grammar correct?,ask_grammar
+Explain grammar,ask_grammar
+Is this grammar correct?,ask_grammar
+Check my grammar,ask_grammar
+Is this grammar correct?,ask_grammar
+Tại sao dùng grammar,ask_grammar
+Is this grammar correct?,ask_grammar
+Cấu trúc grammar,ask_grammar
+Is this grammar correct?,ask_grammar
+How to use structure,ask_grammar
+Is this structure correct?,ask_grammar
+Explain structure,ask_grammar
+Is this structure correct?,ask_grammar
+Check my structure,ask_grammar
+Is this structure correct?,ask_grammar
+Tại sao dùng structure,ask_grammar
+Is this structure correct?,ask_grammar
+Cấu trúc structure,ask_grammar
+Is this structure correct?,ask_grammar
+How to use tense,ask_grammar
+Is this tense correct?,ask_grammar
+Explain tense,ask_grammar
+Is this tense correct?,ask_grammar
+Check my tense,ask_grammar
+Is this tense correct?,ask_grammar
+Tại sao dùng tense,ask_grammar
+Is this tense correct?,ask_grammar
+Cấu trúc tense,ask_grammar
+Is this tense correct?,ask_grammar
+How to use past simple,ask_grammar
+Is this past simple correct?,ask_grammar
+Explain past simple,ask_grammar
+Is this past simple correct?,ask_grammar
+Check my past simple,ask_grammar
+Is this past simple correct?,ask_grammar
+Tại sao dùng past simple,ask_grammar
+Is this past simple correct?,ask_grammar
+Cấu trúc past simple,ask_grammar
+Is this past simple correct?,ask_grammar
+How to use relative clause,ask_grammar
+Is this relative clause correct?,ask_grammar
+Explain relative clause,ask_grammar
+Is this relative clause correct?,ask_grammar
+Check my relative clause,ask_grammar
+Is this relative clause correct?,ask_grammar
+Tại sao dùng relative clause,ask_grammar
+Is this relative clause correct?,ask_grammar
+Cấu trúc relative clause,ask_grammar
+Is this relative clause correct?,ask_grammar
+I want to attack the monster,story_action
+I will carefully attack the monster,story_action
+attack the monster now!,story_action
+I want to attack the door,story_action
+I will carefully attack the door,story_action
+attack the door now!,story_action
+I want to attack the zombie,story_action
+I will carefully attack the zombie,story_action
+attack the zombie now!,story_action
+I want to attack the chest,story_action
+I will carefully attack the chest,story_action
+attack the chest now!,story_action
+I want to attack the wall,story_action
+I will carefully attack the wall,story_action
+attack the wall now!,story_action
+I want to attack him,story_action
+I will carefully attack him,story_action
+attack him now!,story_action
+I want to run away from the monster,story_action
+I will carefully run away from the monster,story_action
+run away from the monster now!,story_action
+I want to run away from the door,story_action
+I will carefully run away from the door,story_action
+run away from the door now!,story_action
+I want to run away from the zombie,story_action
+I will carefully run away from the zombie,story_action
+run away from the zombie now!,story_action
+I want to run away from the chest,story_action
+I will carefully run away from the chest,story_action
+run away from the chest now!,story_action
+I want to run away from the wall,story_action
+I will carefully run away from the wall,story_action
+run away from the wall now!,story_action
+I want to run away from him,story_action
+I will carefully run away from him,story_action
+run away from him now!,story_action
+I want to shoot the monster,story_action
+I will carefully shoot the monster,story_action
+shoot the monster now!,story_action
+I want to shoot the door,story_action
+I will carefully shoot the door,story_action
+shoot the door now!,story_action
+I want to shoot the zombie,story_action
+I will carefully shoot the zombie,story_action
+shoot the zombie now!,story_action
+I want to shoot the chest,story_action
+I will carefully shoot the chest,story_action
+shoot the chest now!,story_action
+I want to shoot the wall,story_action
+I will carefully shoot the wall,story_action
+shoot the wall now!,story_action
+I want to shoot him,story_action
+I will carefully shoot him,story_action
+shoot him now!,story_action
+I want to open the monster,story_action
+I will carefully open the monster,story_action
+open the monster now!,story_action
+I want to open the door,story_action
+I will carefully open the door,story_action
+open the door now!,story_action
+I want to open the zombie,story_action
+I will carefully open the zombie,story_action
+open the zombie now!,story_action
+I want to open the chest,story_action
+I will carefully open the chest,story_action
+open the chest now!,story_action
+I want to open the wall,story_action
+I will carefully open the wall,story_action
+open the wall now!,story_action
+I want to open him,story_action
+I will carefully open him,story_action
+open him now!,story_action
+I want to hide behind the monster,story_action
+I will carefully hide behind the monster,story_action
+hide behind the monster now!,story_action
+I want to hide behind the door,story_action
+I will carefully hide behind the door,story_action
+hide behind the door now!,story_action
+I want to hide behind the zombie,story_action
+I will carefully hide behind the zombie,story_action
+hide behind the zombie now!,story_action
+I want to hide behind the chest,story_action
+I will carefully hide behind the chest,story_action
+hide behind the chest now!,story_action
+I want to hide behind the wall,story_action
+I will carefully hide behind the wall,story_action
+hide behind the wall now!,story_action
+I want to hide behind him,story_action
+I will carefully hide behind him,story_action
+hide behind him now!,story_action
+I want to talk to the monster,story_action
+I will carefully talk to the monster,story_action
+talk to the monster now!,story_action
+I want to talk to the door,story_action
+I will carefully talk to the door,story_action
+talk to the door now!,story_action
+I want to talk to the zombie,story_action
+I will carefully talk to the zombie,story_action
+talk to the zombie now!,story_action
+I want to talk to the chest,story_action
+I will carefully talk to the chest,story_action
+talk to the chest now!,story_action
+I want to talk to the wall,story_action
+I will carefully talk to the wall,story_action
+talk to the wall now!,story_action
+I want to talk to him,story_action
+I will carefully talk to him,story_action
+talk to him now!,story_action
+I want to kill the monster,story_action
+I will carefully kill the monster,story_action
+kill the monster now!,story_action
+I want to kill the door,story_action
+I will carefully kill the door,story_action
+kill the door now!,story_action
+I want to kill the zombie,story_action
+I will carefully kill the zombie,story_action
+kill the zombie now!,story_action
+I want to kill the chest,story_action
+I will carefully kill the chest,story_action
+kill the chest now!,story_action
+I want to kill the wall,story_action
+I will carefully kill the wall,story_action
+kill the wall now!,story_action
+I want to kill him,story_action
+I will carefully kill him,story_action
+kill him now!,story_action
+Hello,general_chat
+Hi there,general_chat
+How are you,general_chat
+Xin chào,general_chat
+Chào Master G,general_chat
+Bạn tên là gì,general_chat
+Goodbye,general_chat
+I'm bored,general_chat
+Haha,general_chat
+Lol,general_chat
+Lmao,general_chat
+Good morning,general_chat
+Good night,general_chat
+Chúc ngủ ngon,general_chat
+Tạm biệt,general_chat
+Bye,general_chat
+Master G mỏ hỗn,general_chat
+AI ngu ngốc,general_chat
+Bạn có biết hát không,general_chat
+Thời tiết hôm nay thế nào,general_chat
+Cảm ơn,general_chat
+Thank you,general_chat
+Thanks,general_chat
+Ok,general_chat
+Được rồi,general_chat
+Dạ,general_chat
+Đỉnh quá,general_chat
+Tuyệt vời,general_chat
+Hello,general_chat
+Hi there,general_chat
+How are you,general_chat
+Xin chào,general_chat
+Chào Master G,general_chat
+Bạn tên là gì,general_chat
+Goodbye,general_chat
+I'm bored,general_chat
+Haha,general_chat
+Lol,general_chat
+Lmao,general_chat
+Good morning,general_chat
+Good night,general_chat
+Chúc ngủ ngon,general_chat
+Tạm biệt,general_chat
+Bye,general_chat
+Master G mỏ hỗn,general_chat
+AI ngu ngốc,general_chat
+Bạn có biết hát không,general_chat
+Thời tiết hôm nay thế nào,general_chat
+Cảm ơn,general_chat
+Thank you,general_chat
+Thanks,general_chat
+Ok,general_chat
+Được rồi,general_chat
+Dạ,general_chat
+Đỉnh quá,general_chat
+Tuyệt vời,general_chat
+Hello,general_chat
+Hi there,general_chat
+How are you,general_chat
+Xin chào,general_chat
+Chào Master G,general_chat
+Bạn tên là gì,general_chat
+Goodbye,general_chat
+I'm bored,general_chat
+Haha,general_chat
+Lol,general_chat
+Lmao,general_chat
+Good morning,general_chat
+Good night,general_chat
+Chúc ngủ ngon,general_chat
+Tạm biệt,general_chat
+Bye,general_chat
+Master G mỏ hỗn,general_chat
+AI ngu ngốc,general_chat
+Bạn có biết hát không,general_chat
+Thời tiết hôm nay thế nào,general_chat
+Cảm ơn,general_chat
+Thank you,general_chat
+Thanks,general_chat
+Ok,general_chat
+Được rồi,general_chat
+Dạ,general_chat
+Đỉnh quá,general_chat
+Tuyệt vời,general_chat
