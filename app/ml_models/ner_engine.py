@@ -1,53 +1,51 @@
-import spacy
+import re
 
 
-class SpacyNER:
+class RuleBasedNER:
     def __init__(self):
-        try:
-            # Load model tiếng Anh cỡ nhỏ để trích xuất các keyword tiếng Anh từ câu chat
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            print("[HỆ THỐNG] Không tìm thấy model spaCy. Đang tự động tải 'en_core_web_sm'...")
-            import os
-            os.system("python -m spacy download en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
+        # Không cần load model AI nặng nề của spaCy nữa, khởi tạo tức thì (O(1))
+        pass
 
     def extract_entity(self, text, intent):
         """
-        Trích xuất Entity (Target) từ câu chat của User dựa vào Intent
+        Trích xuất Entity (Target) từ câu chat của User bằng Regex & Rule-based
         """
         if not text:
             return None
 
-        doc = self.nlp(text)
+        # CHIẾN THUẬT 1: Tìm cụm từ nằm trong ngoặc kép hoặc ngoặc đơn (Ưu tiên cao nhất)
+        # VD: Giải thích cho tôi cấu trúc "Past Simple"
+        quotes_pattern = r'["\']([^"\']+)["\']'
+        matches = re.findall(quotes_pattern, text)
+        if matches:
+            return max(matches, key=len).strip()
 
-        # Chiến thuật 1: Lấy các cụm danh từ (Noun Chunks) hoặc Danh từ riêng (PROPN)
-        # Vì user Việt Nam thường gõ tên ngữ pháp/từ vựng bằng tiếng Anh, model EN sẽ nhận diện chúng thành Noun/PROPN.
-        entities = []
-
-        # Nếu là ngữ pháp (Thường gồm 2-3 chữ như "Past Simple", "Relative Clause")
+        # CHIẾN THUẬT 2: Dựa vào từ khóa tiếng Việt
+        text_lower = text.lower()
         if intent == 'ask_grammar':
-            # Quét các từ viết hoa chữ cái đầu hoặc ghép cụm danh từ
-            for chunk in doc.noun_chunks:
-                # Loại bỏ các đại từ xưng hô linh tinh
-                if chunk.text.lower() not in ['i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'my', 'your']:
-                    entities.append(chunk.text)
+            # Tìm chữ nằm sau "cấu trúc", "ngữ pháp", "mẫu câu"
+            match = re.search(r'(cấu trúc|ngữ pháp|mẫu câu)\s+([a-zA-Z\s]+)', text_lower)
+            if match:
+                entity = match.group(2).strip()
+                if entity:
+                    return entity
 
-            # Fallback: Lấy các từ tiếng Anh (is_ascii) nếu câu quá ngắn
-            if not entities:
-                english_words = [token.text for token in doc if token.is_alpha and token.is_ascii]
-                if english_words:
-                    entities.append(" ".join(english_words))
-
-        # Nếu là từ vựng (Thường là 1 từ hoặc cụm từ ngắn)
         elif intent == 'ask_vocab':
-            for token in doc:
-                # Lọc ra các từ đóng vai trò cốt lõi và không phải stop words
-                if token.is_alpha and token.is_ascii and not token.is_stop:
-                    entities.append(token.text)
+            # Tìm chữ nằm sau "từ", "chữ", "từ vựng", "nghĩa của"
+            match = re.search(r'(từ|chữ|từ vựng|nghĩa của)\s+([a-zA-Z\s]+)', text_lower)
+            if match:
+                entity = match.group(2).strip()
+                words = entity.split()
+                if words:
+                    # Giới hạn chỉ lấy 1-2 từ tiếng Anh đầu tiên sau từ khóa
+                    return " ".join(words[:2])
 
-        # Trả về chuỗi dài nhất tìm được (có khả năng là tên Cấu trúc/Từ vựng nhất)
-        if entities:
-            return max(entities, key=len).strip()
+                    # CHIẾN THUẬT 3: Fallback - Lấy từ tiếng Anh dài nhất trong câu (Loại trừ Stopwords)
+        english_words = re.findall(r'\b[a-zA-Z]+\b', text)
+        stopwords = {'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'how', 'is', 'am', 'are', 'a', 'an', 'the'}
+        filtered_words = [w for w in english_words if w.lower() not in stopwords]
+
+        if filtered_words:
+            return max(filtered_words, key=len)
 
         return None

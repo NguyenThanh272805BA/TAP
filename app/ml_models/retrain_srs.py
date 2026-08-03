@@ -6,20 +6,18 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from app import create_app, db
 from app.models.user_vocabulary import UserVocabulary
-from app.models.vocabulary import Vocabulary
 
 def retrain_srs_model():
-    """Job lấy data thực tế từ DB để train lại thuật toán Gợi ý chu kỳ học"""
+    """Job lấy data thực tế từ DB để train lại thuật toán Gợi ý chu kỳ học chuẩn Ebbinghaus"""
     app = create_app()
     with app.app_context():
-        # Query join 2 bảng để lấy đặc trưng
         records = db.session.query(
             UserVocabulary.fail_count,
             UserVocabulary.avg_response_time,
-            Vocabulary.word,
+            UserVocabulary.previous_interval,
             UserVocabulary.next_review_time,
             UserVocabulary.last_tested_at
-        ).join(Vocabulary, UserVocabulary.vocab_id == Vocabulary.id).all()
+        ).all()
 
         if len(records) < 10:
             print("[!] Số lượng bản ghi quá ít (Cold-start). Cần tối thiểu 10 lượt chơi để trigger retrain!")
@@ -34,7 +32,7 @@ def retrain_srs_model():
                     data.append({
                         'fail_count': r.fail_count,
                         'avg_response_time': float(r.avg_response_time),
-                        'word_length': len(r.word),
+                        'previous_interval': float(r.previous_interval or 0.0),
                         'target_hours': delta_hours
                     })
 
@@ -43,10 +41,11 @@ def retrain_srs_model():
             print("Không có dữ liệu hợp lệ để train.")
             return
 
-        X = df[['fail_count', 'avg_response_time', 'word_length']]
+        # Nâng cấp Feature Machine Learning chuẩn khoa học
+        X = df[['fail_count', 'avg_response_time', 'previous_interval']]
         y = df['target_hours']
 
-        print(f"[*] Đang Retrain thuật toán SRS trên {len(df)} bản ghi thực tế từ Database...")
+        print(f"[*] Đang Retrain thuật toán SRS chuẩn SM-2 trên {len(df)} bản ghi thực tế...")
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X, y)
 

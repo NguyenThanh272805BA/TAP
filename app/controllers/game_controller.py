@@ -13,7 +13,6 @@ from app.models.story_session import StorySession
 from app.models.story_topic import StoryTopic
 from app.models.notification import Notification
 
-# [ PHASE 3 ] Import Hệ thống Quản lý Thành tựu
 from app.utils.achievement_manager import check_and_unlock_achievements
 
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
@@ -60,7 +59,6 @@ def checkin():
 
     user.coins += reward_coins
 
-    # [ PHASE 3 ] Kiểm tra thành tựu Chuỗi đăng nhập (STREAK)
     new_achievements = check_and_unlock_achievements(user_id, 'STREAK', user.streak_count)
     if new_achievements:
         for ach in new_achievements:
@@ -116,7 +114,8 @@ def get_vocabularies():
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     results = db.session.query(
-        Vocabulary.id, Vocabulary.word, Vocabulary.meaning, Vocabulary.image_url, Vocabulary.theme, Vocabulary.cefr_level, # Thêm cefr_level ở đây
+        Vocabulary.id, Vocabulary.word, Vocabulary.meaning, Vocabulary.image_url, Vocabulary.theme,
+        Vocabulary.cefr_level,
         UserVocabulary.is_unlocked, UserVocabulary.memorization_level, UserVocabulary.next_review_time
     ).join(
         UserVocabulary, (Vocabulary.id == UserVocabulary.vocab_id)
@@ -132,7 +131,7 @@ def get_vocabularies():
             "meaning": r.meaning,
             "image_url": r.image_url,
             "theme": r.theme,
-            "cefr_level": r.cefr_level, # Trả về CEFR
+            "cefr_level": r.cefr_level,
             "is_unlocked": r.is_unlocked if r.is_unlocked is not None else False,
             "is_memorized": True if r.memorization_level == 'DA_THUOC' else False,
             "next_review_time": r.next_review_time.strftime("%Y-%m-%d %H:%M:%S") if r.next_review_time else None
@@ -205,13 +204,10 @@ def get_grammars():
          "is_slang": g.is_slang} for g in Grammar.query.all()]}), 200
 
 
-# ==========================================
-# GACHA ARENA (PHASE 2 & 3 - STAGES / INFINITY)
-# ==========================================
 @game_bp.route('/gacha/roll', methods=['POST'])
 def gacha_roll():
     data = request.get_json() or {}
-    mode = data.get('mode', 'stage')  # 'stage' hoặc 'infinity'
+    mode = data.get('mode', 'stage')
 
     user_id = session.get('user_id')
     if not user_id:
@@ -219,9 +215,7 @@ def gacha_roll():
 
     user = User.query.get(user_id)
 
-    # Lọc từ vựng để test
     if mode == 'stage':
-        # Chế độ vượt ải: Lấy từ vựng chưa thuộc
         unlocked_subquery = db.session.query(UserVocabulary.vocab_id).filter(
             UserVocabulary.user_id == user_id,
             UserVocabulary.is_unlocked == True
@@ -232,14 +226,12 @@ def gacha_roll():
                 {"status": "empty", "message": "[ SYSTEM ] Tuyệt đỉnh! Bạn đã giải cứu toàn bộ kho từ vựng!"}), 200
         target = random.choice(locked_vocab)
     else:
-        # Chế độ vô cực: Lấy random toàn bộ từ vựng trong hệ thống
         target = Vocabulary.query.order_by(db.func.rand()).first()
 
     distractors = Vocabulary.query.filter(Vocabulary.id != target.id).order_by(db.func.rand()).limit(3).all()
     options = [target.meaning] + [d.meaning for d in distractors]
     random.shuffle(options)
 
-    # Tính toán thời gian cho phép (Timer)
     base_time = 5.0
     if mode == 'stage':
         timer = max(3.0, base_time - ((user.arena_stage or 1) * 0.2))
@@ -264,7 +256,7 @@ def gacha_verify():
     is_timeout = data.get('timeout', False)
     response_time_ms = data.get('response_time_ms', 5000.0)
     mode = data.get('mode', 'stage')
-    current_gacha_streak = data.get('current_streak', 0)  # Chuỗi combo gacha độc lập, không đụng tới streak điểm danh
+    current_gacha_streak = data.get('current_streak', 0)
 
     user_id = session.get('user_id')
     if not user_id:
@@ -277,7 +269,6 @@ def gacha_verify():
 
     is_correct = not is_timeout and (vocab.meaning.strip() == user_answer.strip())
 
-    # Xử lý Logic Học Tập (Lưu lịch sử từ vựng vào SRS)
     uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=vocab_id).first()
     if not uv:
         uv = UserVocabulary(user_id=user_id, vocab_id=vocab_id, is_unlocked=True)
@@ -287,6 +278,7 @@ def gacha_verify():
 
     current_fail = uv.fail_count if uv.fail_count is not None else 0
     current_avg = uv.avg_response_time if uv.avg_response_time is not None else 0.0
+    current_prev_interval = uv.previous_interval if uv.previous_interval is not None else 0.0
 
     if not is_correct:
         uv.fail_count = current_fail + 1
@@ -298,11 +290,13 @@ def gacha_verify():
     time_sec = response_time_ms / 1000.0
     uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2
 
-    next_review_dt, _ = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time, len(vocab.word))
+    # [ PHASE 5 ] Truyền previous_interval vào SM-2 Predictor
+    next_review_dt, new_interval = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time,
+                                                                  current_prev_interval)
     uv.next_review_time = next_review_dt
+    uv.previous_interval = new_interval
     uv.memorization_level = 'DA_THUOC' if is_correct else 'CHUA_THUOC'
 
-    # Xử lý Logic Game Mode (Stage / Infinity)
     game_message = ""
     is_game_over = False
 
@@ -325,7 +319,6 @@ def gacha_verify():
             if current_gacha_streak > (user.infinity_score or 0):
                 user.infinity_score = current_gacha_streak
 
-            # [ PHASE 3 ] Kiểm tra thành tựu chuỗi Gacha vô cực
             achieved = check_and_unlock_achievements(user_id, 'GACHA_COMBO', current_gacha_streak)
             if achieved:
                 game_message += f" | 🏆 +{len(achieved)} THÀNH TỰU!"
@@ -352,9 +345,6 @@ def get_leaderboard():
     return jsonify({"leaderboard": result}), 200
 
 
-# ==========================================
-# NHIỆM VỤ HÀNG NGÀY (PHASE 2 - DAILY QUESTS)
-# ==========================================
 @game_bp.route('/quests/today', methods=['GET'])
 def get_daily_quests():
     user_id = session.get('user_id')
@@ -364,12 +354,8 @@ def get_daily_quests():
     today = date.today()
     quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today).all()
 
-    # NẾU CHƯA CÓ QUEST, SINH RA 4 NHIỆM VỤ THAY VÌ 2
     if not quests:
-        # Lấy 2 từ chưa mở khóa ngẫu nhiên
         new_vocabs = Vocabulary.query.filter_by(is_unlocked=False).order_by(db.func.rand()).limit(2).all()
-
-        # Lấy 2 từ đã thuộc (để ôn tập)
         review_vocabs = UserVocabulary.query.filter_by(
             user_id=user_id,
             memorization_level='DA_THUOC'
@@ -414,9 +400,6 @@ def check_and_complete_quest(user_id, text_input):
     return False, None
 
 
-# ==========================================
-# ML EXAM CHUNKS (SRS_PREDICTOR)
-# ==========================================
 @game_bp.route('/exam/generate', methods=['POST'])
 def generate_exam():
     user_id = session.get('user_id')
@@ -462,6 +445,7 @@ def update_exam_status():
 
         current_fail = uv.fail_count if uv.fail_count is not None else 0
         current_avg = uv.avg_response_time if uv.avg_response_time is not None else 0.0
+        current_prev_interval = uv.previous_interval if uv.previous_interval is not None else 0.0
 
         if not is_correct:
             uv.fail_count = current_fail + 1
@@ -471,9 +455,13 @@ def update_exam_status():
         time_sec = response_time_ms / 1000.0
         uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2
 
-        next_dt, _ = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time, len(vocab.word))
+        # [ PHASE 5 ] Truyền previous_interval vào SM-2 Predictor
+        next_dt, new_interval = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time,
+                                                               current_prev_interval)
         uv.next_review_time = next_dt
+        uv.previous_interval = new_interval
         uv.memorization_level = level
+
         db.session.commit()
         return jsonify({"success": True}), 200
     return jsonify({"error": "Lỗi cập nhật"}), 400
@@ -506,7 +494,6 @@ def get_notifications():
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
-    # Lấy 10 thông báo gần nhất
     notifs = Notification.query.filter_by(user_id=user_id).order_by(Notification.created_at.desc()).limit(10).all()
     unread_count = sum(1 for n in notifs if not n.is_read)
 
@@ -528,7 +515,6 @@ def mark_notifications_read():
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
-    # Cập nhật toàn bộ thông báo của user thành đã đọc
     Notification.query.filter_by(user_id=user_id, is_read=False).update({"is_read": True})
     db.session.commit()
     return jsonify({"success": True}), 200
