@@ -83,6 +83,7 @@
             <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); color: var(--neon-amber); white-space: nowrap;">KIỂM TRA ĐỊNH KỲ</button>
         </div>
 
+        <!-- Vùng Hiển thị Danh sách Unit (Đã nâng cấp UI Accordion) -->
         <div id="vocab-library-content"></div>
     </div>
 
@@ -152,21 +153,18 @@
     });
 
     function switchTabUI(tab) {
-        // Xóa Active cũ
         document.querySelectorAll('.tab-btn').forEach(btn => btn.className = 'tab-btn');
         document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
 
-        // Cấp Active mới
         document.getElementById(`tab-${tab}`).classList.add(`active-${tab}`);
         document.getElementById(`section-${tab}`).classList.add('active');
 
-        // Load dữ liệu tương ứng
         if (tab === 'vocab') {
             fetchLibraryData('/api/game/vocabularies', 'vocab');
         } else if (tab === 'grammar') {
             fetchLibraryData('/api/game/grammars', 'grammar');
         } else if (tab === 'battle') {
-            renderBattleZone('free'); // Mặc định mở Battle Zone là chat tự do
+            renderBattleZone('free');
         }
     }
 
@@ -203,18 +201,54 @@
         });
     }
 
+    /* ĐẠI TU: GIAO DIỆN ACCORDION CHO UNIT TỪ VỰNG */
     function renderThemesList(container) {
         let html = '';
+        let index = 0;
+
         for (const theme of Object.keys(globalVocabData)) {
+            const safeThemeId = 'theme_unit_' + index++;
+            const wordCount = globalVocabData[theme].length;
+
             html += `
-            <div style="margin-bottom: 25px;">
-                <div style="color: var(--neon-cyan); font-size: 16px; margin-bottom: 15px; border-bottom: 2px solid rgba(103, 232, 249, 0.3); padding-bottom: 5px;">[ CHỦ ĐỀ: ${theme.toUpperCase()} ]</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
-                    ${generateWordsHtml(theme)}
+            <div class="unit-accordion" style="margin-bottom: 15px; border: 2px solid var(--glass-border); border-radius: 12px; background: rgba(0,0,0,0.4); overflow: hidden; transition: all 0.3s;">
+                <!-- Header (Bấm để Mở/Đóng) -->
+                <div onclick="toggleThemeAccordion('${safeThemeId}')" style="padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(103, 232, 249, 0.05); transition: 0.3s;" onmouseover="this.style.background='rgba(103, 232, 249, 0.15)'" onmouseout="this.style.background='rgba(103, 232, 249, 0.05)'">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 16px; margin: 0; letter-spacing: 1px;">[ UNIT: ${theme.toUpperCase()} ]</div>
+                        <span style="background: rgba(0,0,0,0.5); color: #94a3b8; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-family: var(--text-mono); border: 1px solid var(--glass-border);">${wordCount} Từ vựng</span>
+                    </div>
+                    <div id="icon_${safeThemeId}" style="color: var(--neon-cyan); font-size: 14px; transition: transform 0.3s;">▼</div>
+                </div>
+
+                <!-- Content (Lưới Từ vựng bên trong) -->
+                <div id="content_${safeThemeId}" style="display: none; padding: 20px; border-top: 1px dashed rgba(103, 232, 249, 0.2); background: rgba(0,0,0,0.2);">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+                        ${generateWordsHtml(theme)}
+                    </div>
                 </div>
             </div>`;
         }
         container.innerHTML = html;
+    }
+
+    // Logic Đóng/Mở Accordion
+    function toggleThemeAccordion(themeId) {
+        const content = document.getElementById(`content_${themeId}`);
+        const icon = document.getElementById(`icon_${themeId}`);
+        const parentCard = content.parentElement;
+
+        if (content.style.display === 'none' || !content.style.display) {
+            content.style.display = 'block';
+            icon.style.transform = 'rotate(180deg)';
+            parentCard.style.borderColor = 'var(--neon-cyan)';
+            parentCard.style.boxShadow = '0 0 15px rgba(103, 232, 249, 0.1)';
+        } else {
+            content.style.display = 'none';
+            icon.style.transform = 'rotate(0deg)';
+            parentCard.style.borderColor = 'var(--glass-border)';
+            parentCard.style.boxShadow = 'none';
+        }
     }
 
     function generateWordsHtml(theme) {
@@ -228,11 +262,10 @@
             const memoColor = w.is_memorized ? "#000" : "var(--glass-border)";
             const safeWord = w.word.replace(/'/g, "\\'");
 
-            // Hiển thị Nhãn CEFR
             const cefrBadge = w.cefr_level ? `<span class="cefr-badge">${w.cefr_level}</span>` : "";
 
             wHtml += `
-            <div style="background: rgba(0,0,0,0.4); border-radius: 8px; opacity: ${opacity}; border: 1px solid rgba(255,255,255,0.05); padding: 15px; display: flex; flex-direction: column;">
+            <div style="background: rgba(0,0,0,0.5); border-radius: 8px; opacity: ${opacity}; border: 1px solid rgba(255,255,255,0.05); padding: 15px; display: flex; flex-direction: column; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <div style="display: flex; align-items: center;">
                         <strong style="color: var(--neon-cyan); font-size: 18px;">${w.word}</strong>
@@ -256,7 +289,6 @@
             if(data.recommendations && data.recommendations.length > 0) {
                 let rHtml = '';
                 data.recommendations.forEach(r => {
-                    // Việt hóa Text rõ ràng hơn
                     const scoreText = (r.score > 0) ? `Độ phù hợp: ${(r.score * 100).toFixed(0)}%` : `Nên học từ này`;
                     rHtml += `
                         <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; border-left: 3px solid var(--neon-amber); display: flex; justify-content: space-between; align-items: center;">
