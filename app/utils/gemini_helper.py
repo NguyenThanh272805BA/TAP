@@ -1,28 +1,102 @@
 import os
 import json
+import time
 from google import genai
+from google.genai import errors
 from dotenv import load_dotenv
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Load biến môi trường
 load_dotenv()
 
-# Khởi tạo Client theo SDK mới
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Bọc khiên Tenacity: Thử tối đa 3 lần, thời gian chờ đợi nhân đôi dần (2s -> 4s -> 8s)
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    reraise=True # Nếu thử 3 lần vẫn toang thì mới ném Exception ra ngoài
-)
+# ==============================================================
+# HỆ THỐNG QUẢN LÝ KHÓA ĐA LUỒNG (API KEY ROTATION MANAGER)
+# ==============================================================
+class GeminiKeyManager:
+    def __init__(self):
+        self.clients = []
+        self.current_index = 0
+
+        # Tự động quét file .env để thu thập toàn bộ các key có tiền tố GEMINI_API_KEY_
+        for key_name, key_value in os.environ.items():
+            if key_name.startswith("GEMINI_API_KEY") and key_value:
+                try:
+                    client = genai.Client(api_key=key_value)
+                    self.clients.append(client)
+                except Exception as e:
+                    print(f"[WARNING] Bỏ qua key lỗi {key_name}: {e}")
+
+        # Fallback nếu cấu hình sai, lấy key mặc định cũ
+        if not self.clients:
+            fallback_key = os.getenv("GEMINI_API_KEY")
+            if fallback_key:
+                self.clients.append(genai.Client(api_key=fallback_key))
+            else:
+                print("[FATAL ERROR] KHÔNG TÌM THẤY BẤT KỲ API KEY NÀO TRONG .ENV!")
+
+        self.total_keys = len(self.clients)
+        print(f"[SYSTEM] Khởi tạo thành công Mạng lưới AI với {self.total_keys} lõi dự phòng.")
+
+    def get_current_client(self):
+        if self.total_keys == 0:
+            raise Exception("Hệ thống thiếu nhiên liệu (API Key)!")
+        return self.clients[self.current_index]
+
+    def switch_key(self):
+        """Kích hoạt cơ chế trượt key khi cạn Quota"""
+        if self.total_keys > 1:
+            old_index = self.current_index
+            self.current_index = (self.current_index + 1) % self.total_keys
+            print(
+                f"[KEY MANAGER] Lõi {old_index + 1} quá tải/hết Quota. Chuyển mạch sang Lõi {self.current_index + 1}...")
+        else:
+            print("[KEY MANAGER] Cảnh báo: Hệ thống chỉ có 1 lõi duy nhất. Không thể chuyển mạch!")
+
+
+# Khởi tạo Singleton Manager
+key_manager = GeminiKeyManager()
+
+
 def call_gemini_with_retry(prompt, model='gemini-2.5-flash'):
-    """Hàm lõi bọc API Gemini để tái sử dụng toàn dự án, chống 503"""
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt
-    )
-    return response.text.strip().replace('```json', '').replace('```', '')
+    """
+    Hàm gọi AI tích hợp thuật toán luân chuyển Key.
+    Nếu bị dính lỗi 429 (Hết Quota/Too Many Requests), tự động đổi sang Key khác và thử lại.
+    """
+    # Số lần thử tối đa bằng tổng số key cộng thêm 1 lần bù trừ
+    max_retries = key_manager.total_keys + 1
+    attempt = 0
+
+    while attempt < max_retries:
+        client = key_manager.get_current_client()
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt
+            )
+            return response.text.strip().replace('```json', '').replace('```', '')
+
+        except errors.APIError as e:
+            # Bắt chính xác lỗi Cạn kiệt tài nguyên của Google
+            if e.code == 429:
+                key_manager.switch_key()
+                attempt += 1
+                time.sleep(0.5)  # Độ trễ chuyển mạch siêu ngắn để UX không bị giật lag
+                continue
+            else:
+                # Lỗi cấu trúc Prompt hoặc Server Google chết hẳn (500, 503)
+                print(f"[API ERROR] Lỗi hệ thống Google: {e}")
+                attempt += 1
+                time.sleep(2)
+
+        except Exception as e:
+            # Các lỗi mạng cục bộ khác
+            print(f"[NETWORK ERROR] Lỗi kết nối: {e}")
+            attempt += 1
+            time.sleep(2)
+
+    # NẾU TOÀN BỘ 5 KEY ĐỀU CẠN KIỆT (Rất hiếm khi xảy ra) -> Kích hoạt Graceful Degradation
+    raise Exception("Mạng lưới AI sụp đổ hoàn toàn do cạn kiệt tài nguyên!")
+
 
 def evaluate_english_skill(user_input, target_grammar="Không có"):
     """
@@ -55,14 +129,13 @@ def evaluate_english_skill(user_input, target_grammar="Không có"):
     prompt = system_prompt + f"\n\nBài làm của user: '{user_input}'"
 
     try:
-        # Sử dụng hàm lõi đã có retry
         clean_text = call_gemini_with_retry(prompt)
         return clean_text
     except Exception as e:
-        # Nếu đã thử 3 lần mà Google vẫn báo 503, ta mớm sẵn 1 JSON dự phòng để UI không bị vỡ!
+        # Dự phòng khẩn cấp cuối cùng: Toàn bộ 5 key đều cháy
         fallback_json = {
             "score": 5.0,
-            "feedback": f"[ SERVER QUÁ TẢI ] Master G đang đi uống trà đá, hệ thống Google đình công (Lỗi {str(e)[:20]}...). Tạm cho 5 điểm an ủi, lần sau thử lại nhé đồ ngốc!",
-            "slang_suggestion": "Take a breather (Nghỉ xả hơi xíu đi)"
+            "feedback": f"[ SERVER QUÁ TẢI ] Lò phản ứng AI đã cạn sạch năng lượng. Master G buộc phải đi tản nhiệt. Bạn tạm được 5 điểm an ủi. Hãy quay lại sau!",
+            "slang_suggestion": "Out of juice (Cạn kiệt sinh lực)"
         }
         return json.dumps(fallback_json)
