@@ -231,3 +231,63 @@ def get_hint():
             "Cho 1 câu tiếng Anh điền vào chỗ trống dạng 'I usually ___.' KHÔNG dùng markdown.")}), 200
     except:
         return jsonify({"hint": "Hệ thống bận, tự nghĩ đi!"}), 200
+@ai_bp.route('/guide', methods=['POST'])
+def get_guide():
+    data = request.get_json(silent=True) or {}
+    word = data.get('word')
+    if not word: return jsonify({"error": "Thiếu từ vựng"}), 400
+
+    prompt = f"Giải thích cách dùng từ '{word}' trong 3 câu, có ví dụ xéo xắt, dịch tiếng Việt. KHÔNG dùng markdown."
+    try:
+        return jsonify({"guide": call_gemini_with_retry(prompt).replace('\n', '<br>')}), 200
+    except Exception as e:
+        return jsonify({"guide": "Lõi AI bận, tự mở sách ra học đi!"}), 200
+
+@ai_bp.route('/grammar_guide', methods=['POST'])
+def get_grammar_guide():
+    data = request.get_json(silent=True) or {}
+    structure = data.get('structure')
+    if not structure: return jsonify({"error": "Thiếu cấu trúc"}), 400
+
+    prompt = f"Giải thích cấu trúc '{structure}' xéo xắt, cho 2 ví dụ genZ, dịch ra. Không markdown."
+    try:
+        return jsonify({"guide": call_gemini_with_retry(prompt).replace('\n', '<br>')}), 200
+    except:
+        return jsonify({"guide": "Server sập rồi, Google đi!"}), 200
+
+@ai_bp.route('/generate_unit', methods=['POST'])
+def generate_unit():
+    data = request.get_json(silent=True) or {}
+    topic = data.get('topic', '').strip().upper()
+    user_id = session.get('user_id')
+
+    if not topic or not user_id: return jsonify({"error": "Thiếu dữ liệu hoặc chưa đăng nhập!"}), 400
+
+    existing_vocabs = Vocabulary.query.filter_by(theme=topic).all()
+    if len(existing_vocabs) >= 10:
+        added = 0
+        for v in existing_vocabs:
+            if not UserVocabulary.query.filter_by(user_id=user_id, vocab_id=v.id).first():
+                db.session.add(UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True))
+                added += 1
+        db.session.commit()
+        return jsonify({"message": f"Nạp {added} từ vựng Cache!", "added": added}), 200
+
+    prompt = f"Tạo 10 từ tiếng Anh chủ đề '{topic}'. Trả về mảng JSON: [{{\"word\": \"...\", \"meaning\": \"...\", \"theme\": \"{topic}\"}}]"
+    try:
+        items = json.loads(call_gemini_with_retry(prompt, enforce_json=True))
+        added = 0
+        for item in items:
+            v = Vocabulary.query.filter_by(word=item['word']).first()
+            if not v:
+                v = Vocabulary(word=item['word'], meaning=item['meaning'], theme=topic, cefr_level=cefr_engine.predict_cefr(item['word']), is_unlocked=True)
+                db.session.add(v)
+                db.session.flush()
+            if not UserVocabulary.query.filter_by(user_id=user_id, vocab_id=v.id).first():
+                db.session.add(UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True))
+                added += 1
+        db.session.commit()
+        return jsonify({"message": f"AI đã đúc {added} từ!", "added": added}), 200
+    except Exception as e:
+        return jsonify({"error": f"Sự cố lò đúc: {e}"}), 500
+
