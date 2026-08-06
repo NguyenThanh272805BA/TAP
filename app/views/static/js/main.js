@@ -21,7 +21,7 @@ function toggleCleanMode() {
     }
 }
 
-// [ PHASE 6 ] HÀM HỖ TRỢ: GIẢ LẬP STREAMING TYPING (GÕ CHỮ)
+// [ PHASE 6 ] HÀM HỖ TRỢ: GIẢ LẬP STREAMING TYPING CHO DỮ LIỆU TĨNH (Dự phòng)
 function typeEffectSSE(elementId, text, speed = 15, callback = null) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -32,7 +32,6 @@ function typeEffectSSE(elementId, text, speed = 15, callback = null) {
             let char = text.charAt(i);
             el.innerHTML += char === '\n' ? '<br>' : char;
             i++;
-            // Cuộn xuống dòng mới nhất nếu có thanh cuộn
             el.scrollTop = el.scrollHeight;
             setTimeout(type, speed);
         } else if (callback) {
@@ -357,6 +356,12 @@ function updateChibeEmotion(score) {
     }, 5000);
 }
 
+// ==============================================================
+// [ PHASE 6 ] KIẾN TRÚC STREAMING THỜI GIAN THỰC (SSE)
+// Thay vì JSON.parse() nguyên cục làm người dùng chờ lâu, chúng ta
+// dùng ReadableStream để parse từng Token chữ ngay khi AI nhả ra
+// ==============================================================
+
 function submitChallenge() {
     const userInputField = document.getElementById("userInput");
     const aiResponseBox = document.getElementById("aiResponseBox");
@@ -381,55 +386,74 @@ function submitChallenge() {
             mode: activeFeature
         })
     })
-    .then(response => {
+    .then(async response => {
         if (!response.ok) throw new Error("API sập.");
-        return response.json();
-    })
-    .then(data => {
-        const result = data.result || data;
-        const feedback = result.feedback || "Không có nhận xét.";
-        const score = result.score !== undefined ? result.score : 0;
 
-        let scoreColor = "var(--pixel-green)";
-        if (score < 5.0) {
-            scoreColor = "var(--neon-pink)";
-            triggerCardShake();
-        } else if (score < 8.0) {
-            scoreColor = "var(--neon-amber)";
-        }
-
-        updateChibeEmotion(score);
-
-        if (result.quest_notification) {
-            triggerFireworksEffect();
-            if (typeof loadDailyQuests === 'function') loadDailyQuests();
-            fetch('/api/auth/user/me')
-                .then(r => r.json())
-                .then(ud => {
-                    const sidebarCoins = document.getElementById("sidebar-coins");
-                    if (sidebarCoins) sidebarCoins.innerText = ud.coins;
-                });
-        }
-
-        // [ PHASE 6 ] Sử dụng Streaming Typing Effect cho Feedback
         aiFeedbackDiv.innerHTML = `
             <div id="aiFeedbackText" style="margin-bottom: 10px; line-height: 1.6; color: inherit; font-family: var(--text-main); font-size:16px;"></div>
-            <div id="aiFeedbackScore" style="display:none; font-family: var(--text-pixel); font-size: 12px; color: ${scoreColor}; margin-top: 10px; letter-spacing: 0.5px;">
-                RATING_SCORE: ${score}/10
-                ${result.quest_notification ? `<br><span style="color: var(--pixel-green);">[+] ${result.quest_notification}</span>` : ''}
-            </div>
+            <div id="aiFeedbackScore" style="display:none; font-family: var(--text-pixel); font-size: 12px; margin-top: 10px; letter-spacing: 0.5px;"></div>
         `;
+        const scoreBox = document.getElementById('aiFeedbackScore');
+        const textBox = document.getElementById('aiFeedbackText');
 
-        typeEffectSSE('aiFeedbackText', feedback, 15, () => {
-            const scoreDiv = document.getElementById('aiFeedbackScore');
-            if (scoreDiv) scoreDiv.style.display = 'block';
-        });
+        // Bắt đầu đọc dữ liệu Stream (Server-Sent Events)
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let isDone = false;
 
+        while (!isDone) {
+            const {done, value} = await reader.read();
+            if (done) break;
+
+            const chunks = decoder.decode(value, {stream: true}).split('\n\n');
+            for (let chunk of chunks) {
+                if (chunk.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(chunk.substring(6));
+
+                        if (data.type === 'meta') {
+                            // Backend trả Điểm Local GEC về ngay lập tức
+                            scoreBox.style.display = 'block';
+                            const color = data.score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
+                            scoreBox.style.color = color;
+                            scoreBox.innerHTML = `RATING_SCORE: ${data.score}/10`;
+
+                            if (data.quest) {
+                                scoreBox.innerHTML += `<br><span style="color: var(--pixel-green);">[+] ${data.quest}</span>`;
+                                triggerFireworksEffect();
+                                if (typeof loadDailyQuests === 'function') loadDailyQuests();
+                            }
+                            updateChibeEmotion(data.score);
+
+                        } else if (data.type === 'chunk') {
+                            // Chữ từ LLM chạy mượt mà theo thời gian thực
+                            textBox.innerHTML += data.text.replace(/\n/g, '<br>');
+                            aiResponseBox.scrollTop = aiResponseBox.scrollHeight;
+
+                        } else if (data.type === 'levelup') {
+                            triggerFireworksEffect();
+                            alert(`🎉 ĐẲNG CẤP MỚI: BẠN VỪA THĂNG CẤP LÊN '${data.rank}'!`);
+                            const sidebarRank = document.getElementById("sidebar-rank");
+                            if (sidebarRank) sidebarRank.innerText = data.rank;
+
+                        } else if (data.type === 'done') {
+                            isDone = true;
+
+                        } else if (data.type === 'error') {
+                            textBox.innerHTML += `<br><span style='color: var(--neon-pink);'>[ERROR] ${data.message}</span>`;
+                        }
+                    } catch (e) {
+                        // Bỏ qua lỗi parse nếu chunk JSON bị vỡ dở dang
+                        console.error("SSE Parse Error:", e, chunk);
+                    }
+                }
+            }
+        }
         userInputField.value = "";
     })
     .catch(error => {
         triggerCardShake();
-        aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>ERROR: KHÔNG THỂ KẾT NỐI VỚI NÃO BỘ AI!</span>";
+        aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>ERROR: Mất kết nối tới Server.</span>";
     });
 }
 
@@ -835,6 +859,7 @@ function executeStoryAction(overrideText = null) {
     const terminal = document.getElementById("story-terminal");
     if(!terminal) return;
 
+    // Hiển thị lệnh của người chơi
     terminal.innerHTML += `
         <div style="text-align: right; margin: 15px 0;">
             <span style="background: var(--neon-cyan); color: #000; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-family: var(--text-mono); font-size:15px; display:inline-block; box-shadow:0 4px 15px rgba(103,232,249,0.3);">> ${actionText}</span>
@@ -844,63 +869,92 @@ function executeStoryAction(overrideText = null) {
 
     if (currentStoryMode === 'choose') {
         const choicesBox = document.getElementById('story-choices-box');
-        if(choicesBox) choicesBox.innerHTML = "<div class='pulse-neon' style='font-size:13px; font-family:var(--text-pixel); text-align: center; letter-spacing:0.5px;'>MASTER_G ĐANG SOẠN KỊCH BẢN...</div>";
+        if(choicesBox) choicesBox.innerHTML = "<div class='pulse-neon' style='font-size:13px; font-family:var(--text-pixel); text-align: center;'>MASTER_G ĐANG SOẠN KỊCH BẢN...</div>";
     } else {
         if(inputEle) inputEle.disabled = true;
     }
 
+    // Khởi tạo Box chờ luồng Stream
     const loadId = "loading-" + Date.now();
-    terminal.innerHTML += `<div id="${loadId}" class="pulse-neon" style="margin-bottom: 15px; font-family:var(--text-main); font-size:15px; color:var(--neon-purple);">[GM] Đang phân tích ngữ pháp và dắt cốt truyện...</div>`;
+    const gmResponseId = "gm-" + Date.now();
+    terminal.innerHTML += `
+        <div id="${loadId}" class="pulse-neon" style="margin-bottom: 15px; font-family:var(--text-main); font-size:15px; color:var(--neon-purple);">[GM] Đang tải thực tại ảo...</div>
+        <div id="${gmResponseId}" style="color: inherit; font-family: var(--text-main); font-size: 15px; line-height: 1.6; margin-bottom: 15px; padding: 16px; background: rgba(30, 41, 75, 0.7); border-left: 3px solid var(--neon-purple); border-radius: 8px;"></div>
+    `;
     terminal.scrollTop = terminal.scrollHeight;
+
+    const gmDiv = document.getElementById(gmResponseId);
+    let fullResponse = "";
 
     fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            text: actionText,
-            mode: currentStoryMode === 'choose' ? 'story_choose' : 'story'
-        })
+        body: JSON.stringify({ text: actionText, mode: currentStoryMode === 'choose' ? 'story_choose' : 'story' })
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(async response => {
         const loadEl = document.getElementById(loadId);
         if(loadEl) loadEl.remove();
 
-        const result = data.result || data;
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
 
-        // Cập nhật giao diện Turn đếm dựa vào phản hồi từ Backend
-        const currentTurn = result.turn || 1;
-        const turnCounter = document.getElementById("story-turn-counter");
-        if(turnCounter) turnCounter.innerText = `${currentTurn}/10`;
+        while(true) {
+            const {done, value} = await reader.read();
+            if (done) break;
 
-        if (result.level_up_notification) {
-            alert(result.level_up_notification);
-            if (typeof triggerFireworksEffect === 'function') triggerFireworksEffect();
+            const chunks = decoder.decode(value).split('\n\n');
+            for(let chunk of chunks) {
+                if (chunk.startsWith('data: ')) {
+                    const data = JSON.parse(chunk.substring(6));
+
+                    if (data.type === 'meta') {
+                        // Hiển thị điểm số ngay lập tức từ Local Brain
+                        const scoreColor = data.score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
+                        terminal.innerHTML += `
+                            <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 10px; text-align: right; letter-spacing:0.5px;">
+                                [LOCAL GEC RATING: ${data.score}/10]
+                            </div>
+                        `;
+                    }
+                    else if (data.type === 'chunk') {
+                        // Dịch Text thô thành giao diện Terminal
+                        fullResponse += data.text;
+                        let formatted = fullResponse
+                            .replace(/\[EN\]:/g, '<strong style="color: var(--neon-cyan); font-size: 16px;">[EN]:</strong>')
+                            .replace(/\[VN\]:/g, '<br><br><strong style="color: #94a3b8;">[VN]:</strong> <span style="color: #94a3b8; font-style: italic;">')
+                            .replace(/\[CHOICES\]:/g, '</span><br><br><strong style="color: var(--neon-amber);">[CHOICES]:</strong>')
+                            .replace(/\[HINT\]:/g, '</span><br><br><strong style="color: var(--neon-amber);">[HINT]:</strong>');
+                        gmDiv.innerHTML = formatted;
+                        terminal.scrollTop = terminal.scrollHeight;
+                    }
+                    else if (data.type === 'done') {
+                        // KẾT THÚC LUỒNG - Render Nút bấm hoặc Gợi ý
+                        if (currentStoryMode === 'choose') {
+                            let choicesMatch = fullResponse.match(/\[CHOICES\]:\s*(.*)/);
+                            if (choicesMatch && choicesMatch[1]) {
+                                let choices = choicesMatch[1].split('|').map(s => s.trim());
+                                let choicesHtml = '';
+                                choices.forEach(c => {
+                                    if(c) choicesHtml += `<button class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pixel-green); padding: 12px; text-transform: none; text-align: left; font-family: var(--text-mono); font-size: 14px; margin-bottom: 5px; display: block; width: 100%;" onclick="executeStoryChoice('${c.replace(/'/g, "\\'")}')">${c}</button>`;
+                                });
+                                const choicesBox = document.getElementById('story-choices-box');
+                                if(choicesBox) choicesBox.innerHTML = choicesHtml;
+                            }
+                        } else {
+                            if(inputEle) { inputEle.disabled = false; inputEle.value = ""; inputEle.focus(); }
+                        }
+
+                        if (data.turn) {
+                            const turnCounter = document.getElementById("story-turn-counter");
+                            if(turnCounter) turnCounter.innerText = `${data.turn}/10`;
+                        }
+                    }
+                }
+            }
         }
-
-        const score = result.score !== undefined ? result.score : 0;
-        const scoreColor = score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
-
-        // Sử dụng Typing Effect cho Feedback thay vì innerHTML ngay lập tức
-        const feedbackId = 'fb-' + Date.now();
-        terminal.innerHTML += `
-            <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 18px; text-align: right; letter-spacing:0.5px;">
-                [GM RATING: ${score}/10] - <span id="${feedbackId}" style="font-family:var(--text-main); font-size:14px; font-weight:normal; color:inherit;"></span>
-            </div>
-        `;
-
-        typeEffectSSE(feedbackId, result.feedback || "Cú pháp chấp nhận được.", 10, () => {
-            updateChibeEmotion(score);
-            appendStoryScene(result);
-        });
-
     })
     .catch(err => {
-        const loadEl = document.getElementById(loadId);
-        if(loadEl) loadEl.remove();
-
-        const hintBox = document.getElementById("story-hint-box");
-        if(hintBox) hintBox.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>[ERROR] Lỗi kết nối Game Master! Đứt cáp mạng không gian!</span>";
+        gmDiv.innerHTML = "<span style='color: var(--neon-pink);'>[ERROR] Đứt cáp mạng không gian!</span>";
     });
 }
 
@@ -908,64 +962,50 @@ function submitQuickQuest() {
     const inputEl = document.getElementById('quickQuestInput');
     const feedbackBox = document.getElementById('quickQuestFeedback');
     const textValue = inputEl.value.trim();
-
     if (!textValue) return;
 
     feedbackBox.style.display = "block";
-    feedbackBox.innerHTML = "<span style='color: var(--neon-amber);' class='pulse-neon'>MASTER_G ĐANG KIỂM TRA CÂU...</span>";
+    feedbackBox.innerHTML = `
+        <div id="quickQuestScore" style="display:none; font-family: var(--text-pixel); margin-bottom: 5px;"></div>
+        <div id="quickQuestText" style="color: inherit; line-height:1.5;"></div>
+    `;
+    const scoreDiv = document.getElementById('quickQuestScore');
+    const textDiv = document.getElementById('quickQuestText');
 
     fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            text: textValue,
-            mode: 'free'
-        })
+        body: JSON.stringify({ text: textValue, mode: 'free' })
     })
-    .then(res => res.json())
-    .then(data => {
-        const result = data.result || data;
-        const score = result.score || 0;
-        const color = score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
+    .then(async res => {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
 
-        // [ PHASE 6 ] Sử dụng Streaming Typing Effect cho Feedback
-        feedbackBox.innerHTML = `
-            <div id="quickQuestScore" style="display:none; color: ${color}; font-family: var(--text-pixel); margin-bottom: 5px;">[ ĐIỂM: ${score}/10 ]</div>
-            <div id="quickQuestText" style="color: inherit;"></div>
-        `;
+        while(true) {
+            const {done, value} = await reader.read();
+            if (done) break;
 
-        typeEffectSSE('quickQuestText', result.feedback || "Tốt.", 15, () => {
-            const scoreDiv = document.getElementById('quickQuestScore');
-            if (scoreDiv) scoreDiv.style.display = 'block';
-        });
+            const chunks = decoder.decode(value).split('\n\n');
+            for(let chunk of chunks) {
+                if (chunk.startsWith('data: ')) {
+                    const data = JSON.parse(chunk.substring(6));
 
+                    if (data.type === 'meta') {
+                        scoreDiv.style.display = 'block';
+                        scoreDiv.style.color = data.score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
+                        scoreDiv.innerHTML = `[ ĐIỂM: ${data.score}/10 ]`;
+                        if(data.quest_notification) alert(data.quest_notification);
+                    }
+                    else if (data.type === 'chunk') {
+                        textDiv.innerHTML += data.text.replace(/\n/g, '<br>');
+                    }
+                }
+            }
+        }
         inputEl.value = "";
-
         loadDailyQuests();
-
-        fetch('/api/auth/user/me')
-            .then(r => r.json())
-            .then(ud => {
-                const sidebarCoins = document.getElementById("sidebar-coins");
-                if (sidebarCoins) sidebarCoins.innerText = ud.coins;
-            });
-    })
-    .catch(err => {
-        feedbackBox.innerHTML = "<span style='color: var(--neon-pink);'>Lỗi AI. Hãy thử lại.</span>";
     });
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-    const quickInput = document.getElementById('quickQuestInput');
-    if (quickInput) {
-        quickInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                submitQuickQuest();
-            }
-        });
-    }
-});
 
 function checkAndRunTutorial(userData) {
     if (userData.level === 'Beginner' && userData.streak === 0 && userData.coins === 0) {

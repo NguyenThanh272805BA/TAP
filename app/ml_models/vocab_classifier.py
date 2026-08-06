@@ -1,15 +1,15 @@
+# app/ml_models/vocab_classifier.py
 import os
 import json
-
+from wordfreq import zipf_frequency
 
 class VocabCEFRClassifier:
     """
-    Đã được đại tu ở Phase 6: Chuyển từ Random Forest Model sang Oxford Dictionary Lookup.
-    Tra cứu trực tiếp (O(1)) siêu tốc và chính xác 100%.
+    Bộ não 4: Hybrid CEFR Predictor
+    Kết hợp tra cứu O(1) Oxford Dictionary và thuật toán Zipf Frequency.
     """
-
     def __init__(self):
-        # Đường dẫn tới file chứa 5000 từ Oxford
+        # Đường dẫn tới file chứa 5000 từ Oxford (nếu có)
         self.dict_path = os.path.join(os.path.dirname(__file__), 'oxford_5000.json')
         self.oxford_dict = {}
 
@@ -21,29 +21,42 @@ class VocabCEFRClassifier:
             except Exception as e:
                 print(f"[ERROR] Lỗi đọc file từ điển Oxford: {e}")
         else:
-            print("[WARNING] Không tìm thấy oxford_5000.json! Sẽ sử dụng Fallback Dictionary.")
-            # Fallback thu gọn nếu bạn chưa kịp chuẩn bị file JSON
-            self.oxford_dict = {
-                "hello": "A1", "apple": "A1", "cat": "A1", "run": "A1",
-                "beautiful": "A2", "machine": "A2", "careful": "A2",
-                "environment": "B1", "knowledge": "B1", "community": "B1",
-                "infrastructure": "B2", "consequence": "B2", "implementation": "B2",
-                "phenomenon": "C1", "ubiquitous": "C1", "lucrative": "C1",
-                "quintessential": "C2", "obfuscate": "C2", "ineffable": "C2"
-            }
+            print("[WARNING] Không tìm thấy oxford_5000.json! Hệ thống sẽ chuyển sang dùng 100% Thuật toán Zipf.")
 
     def predict_cefr(self, word: str) -> str:
         """
-        Tra cứu cấp độ CEFR của một từ mới.
-        Nếu từ không nằm trong bộ Oxford 5000, mặc định xếp vào hàng từ nâng cao (B2).
+        Dự đoán cấp độ CEFR cho một từ vựng bất kỳ.
         """
         if not word:
             return "A1"
 
         word_lower = str(word).lower().strip()
 
-        # Tra cứu O(1)
-        cefr_level = self.oxford_dict.get(word_lower)
+        # Bước 1: Tra cứu O(1) siêu tốc
+        if word_lower in self.oxford_dict:
+            return self.oxford_dict[word_lower]
 
-        # Nếu tìm thấy, trả về. Nếu không (có thể là từ lóng, thuật ngữ chuyên ngành), mặc định cho là B2
-        return cefr_level if cefr_level else "B2"
+        # Bước 2: Hybrid Fallback - Nếu là từ lóng, cụm từ hoặc từ ngoài từ điển
+        # zipf_frequency trả về dải điểm logarit cơ số 10 (thường từ 1.0 đến 8.0)
+        # Điểm càng cao -> Từ càng phổ biến (VD: 'the' ~ 8.0, 'apple' ~ 5.0)
+        zipf_score = zipf_frequency(word_lower, 'en')
+
+        if zipf_score == 0.0:
+            # Từ không tồn tại trong corpus (từ lóng mới, sai chính tả nặng)
+            return "C2" 
+        elif zipf_score >= 5.5:
+            # Rất phổ biến
+            return "A2" 
+        elif zipf_score >= 4.0:
+            # Phổ biến trung bình
+            return "B2" 
+        else:
+            # Từ hiếm gặp
+            return "C1" 
+
+# --- TEST NHANH ---
+if __name__ == "__main__":
+    classifier = VocabCEFRClassifier()
+    test_words = ["apple", "ubiquitous", "skibidi", "infrastructure"]
+    for w in test_words:
+        print(f"Từ: {w:15} -> Mức độ CEFR: {classifier.predict_cefr(w)}")
