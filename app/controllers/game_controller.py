@@ -7,6 +7,7 @@ from app.models.grammar import Grammar
 from app.models.daily_quest import DailyQuest
 from datetime import datetime, date, timedelta
 import random
+import time
 from app.ml_models.recommender import VocabRecommender
 from app.ml_models.srs_predictor import SmartSRS
 from app.models.story_session import StorySession
@@ -144,6 +145,8 @@ def get_ml_recommendations():
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    # ML Inference được giữ nguyên
     suggestions = recommender_engine.recommend_next_words(user_id, top_n=5)
     return jsonify({"recommendations": suggestions}), 200
 
@@ -214,21 +217,41 @@ def gacha_roll():
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     user = User.query.get(user_id)
+    total_vocab = Vocabulary.query.count()
 
+    if total_vocab == 0:
+        return jsonify({"error": "Kho từ vựng hệ thống đang trống!"}), 400
+
+    # Lấy Target Word (Loại bỏ ORDER BY RAND)
     if mode == 'stage':
         unlocked_subquery = db.session.query(UserVocabulary.vocab_id).filter(
             UserVocabulary.user_id == user_id,
             UserVocabulary.is_unlocked == True
         )
-        locked_vocab = Vocabulary.query.filter(~Vocabulary.id.in_(unlocked_subquery)).all()
-        if not locked_vocab:
+        locked_vocab_ids = [v[0] for v in
+                            db.session.query(Vocabulary.id).filter(~Vocabulary.id.in_(unlocked_subquery)).all()]
+
+        if not locked_vocab_ids:
             return jsonify(
                 {"status": "empty", "message": "[ SYSTEM ] Tuyệt đỉnh! Bạn đã giải cứu toàn bộ kho từ vựng!"}), 200
-        target = random.choice(locked_vocab)
-    else:
-        target = Vocabulary.query.order_by(db.func.rand()).first()
 
-    distractors = Vocabulary.query.filter(Vocabulary.id != target.id).order_by(db.func.rand()).limit(3).all()
+        target_id = random.choice(locked_vocab_ids)
+        target = Vocabulary.query.get(target_id)
+    else:
+        # Tối ưu Full Table Scan bằng Random Offset
+        offset = random.randint(0, total_vocab - 1)
+        target = Vocabulary.query.offset(offset).first()
+
+    # Tạo 3 đáp án sai (Distractors) không trùng lặp
+    distractors = []
+    attempts = 0
+    while len(distractors) < 3 and attempts < 15:
+        d_off = random.randint(0, total_vocab - 1)
+        d = Vocabulary.query.offset(d_off).first()
+        if d and d.id != target.id and d.meaning not in [x.meaning for x in distractors]:
+            distractors.append(d)
+        attempts += 1
+
     options = [target.meaning] + [d.meaning for d in distractors]
     random.shuffle(options)
 
@@ -237,6 +260,9 @@ def gacha_roll():
         timer = max(3.0, base_time - ((user.arena_stage or 1) * 0.2))
     else:
         timer = random.uniform(5.0, 10.0)
+
+    # BẢO MẬT: Đặt đồng hồ đếm giờ ngay tại Server để chặn Hacker sửa response_time_ms
+    session['gacha_start_time'] = time.time()
 
     return jsonify({
         "status": "success",
@@ -254,13 +280,25 @@ def gacha_verify():
     vocab_id = data.get('vocab_id')
     user_answer = data.get('answer', '')
     is_timeout = data.get('timeout', False)
-    response_time_ms = data.get('response_time_ms', 5000.0)
     mode = data.get('mode', 'stage')
     current_gacha_streak = data.get('current_streak', 0)
 
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({"error": "Phiên làm việc hết hạn!"}), 401
+
+    # BẢO MẬT KÉP: Lấy timestamp thật của server và vô hiệu hóa time ảo từ Client
+    start_time = session.pop('gacha_start_time', None)
+
+    if start_time and not is_timeout:
+        actual_time_ms = (time.time() - start_time) * 1000
+    else:
+        actual_time_ms = 5000.0  # Bị timeout hoặc không có timestamp
+
+    # Chống tool auto click (Phản xạ người thường không thể dưới 150ms)
+    if actual_time_ms < 150:
+        actual_time_ms = 5000.0
+        is_timeout = True
 
     user = User.query.get(user_id)
     vocab = Vocabulary.query.get(vocab_id)
@@ -287,10 +325,10 @@ def gacha_verify():
         uv.fail_count = current_fail
         current_gacha_streak += 1
 
-    time_sec = response_time_ms / 1000.0
+    time_sec = actual_time_ms / 1000.0
     uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2
 
-    # [ PHASE 5 ] Truyền previous_interval vào SM-2 Predictor
+    # ML Inference SRS
     next_review_dt, new_interval = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time,
                                                                   current_prev_interval)
     uv.next_review_time = next_review_dt
@@ -355,11 +393,17 @@ def get_daily_quests():
     quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today).all()
 
     if not quests:
-        new_vocabs = Vocabulary.query.filter_by(is_unlocked=False).order_by(db.func.rand()).limit(2).all()
-        review_vocabs = UserVocabulary.query.filter_by(
-            user_id=user_id,
-            memorization_level='DA_THUOC'
-        ).order_by(db.func.rand()).limit(2).all()
+        # Tối ưu hóa: Thay thế ORDER BY RAND() bằng Random ID ở Python
+        locked_ids = [v[0] for v in db.session.query(Vocabulary.id).filter_by(is_unlocked=False).all()]
+        new_vocab_ids = random.sample(locked_ids, min(2, len(locked_ids)))
+        new_vocabs = Vocabulary.query.filter(Vocabulary.id.in_(new_vocab_ids)).all() if new_vocab_ids else []
+
+        review_ids = [v[0] for v in db.session.query(UserVocabulary.vocab_id).filter_by(
+            user_id=user_id, memorization_level='DA_THUOC'
+        ).all()]
+        review_vocab_ids = random.sample(review_ids, min(2, len(review_ids)))
+        review_vocabs = UserVocabulary.query.filter(UserVocabulary.vocab_id.in_(review_vocab_ids),
+                                                    UserVocabulary.user_id == user_id).all() if review_vocab_ids else []
 
         for nv in new_vocabs:
             db.session.add(DailyQuest(user_id=user_id, vocab_id=nv.id, quest_type='NEW', assigned_date=today))
@@ -455,7 +499,7 @@ def update_exam_status():
         time_sec = response_time_ms / 1000.0
         uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2
 
-        # [ PHASE 5 ] Truyền previous_interval vào SM-2 Predictor
+        # ML Inference SRS
         next_dt, new_interval = srs_engine.predict_next_review(uv.fail_count, uv.avg_response_time,
                                                                current_prev_interval)
         uv.next_review_time = next_dt

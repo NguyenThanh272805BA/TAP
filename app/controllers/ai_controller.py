@@ -34,6 +34,16 @@ cefr_engine = VocabCEFRClassifier()
 ner_engine = RuleBasedNER()  # [ ĐÃ ĐẠI TU NER ]
 
 
+# [ BẢO MẬT HIỆU NĂNG ] KHỞI TẠO BẢNG LƯU TRỮ ACTIVE STORY ĐỘNG
+# Chuyển việc lưu story_history từ Client-side Session (giới hạn 4KB) xuống Database
+class ActiveStory(db.Model):
+    __tablename__ = 'active_stories'
+    user_id = db.Column(db.Integer, primary_key=True)
+    topic_id = db.Column(db.Integer)
+    turn = db.Column(db.Integer, default=1)
+    history = db.Column(db.Text, default="")
+
+
 def sanitize_input(text):
     """
     HÀM KHIÊN CHẮN PROMPT INJECTION (Từ Giai đoạn 5 - Task 2)
@@ -97,7 +107,7 @@ def evaluate():
             "hint_en": "I should not ___ the system.",
             "hint_vn": "Tôi không nên (hack) hệ thống.",
             "is_end": False,
-            "turn": session.get('story_turn', 1)
+            "turn": 1
         }
         new_log = TestLog(user_id=user_id, score=0.0, ai_feedback=hack_result["feedback"])
         db.session.add(new_log)
@@ -108,20 +118,27 @@ def evaluate():
 
     user_input = safe_input
     quest_completed_word = None
+
+    # AI MACHINE LEARNING INFERENCE
     detected_intent = intent_engine.predict(user_input)
     print(f"\n[LOCAL AI ENGINE] Text: '{user_input}' ---> Intent: {detected_intent.upper()}")
 
     try:
         if mode in ['story', 'story_choose']:
+            # [ ĐẠI TU BỘ NHỚ LÕI ] Lấy lịch sử từ Database thay vì Session Cookie
+            active_run = ActiveStory.query.filter_by(user_id=user_id).first()
+            if not active_run:
+                return jsonify({
+                                   "error": "Lỗi Session RPG! Không tìm thấy dữ liệu Active Run. Hãy về Sảnh và tạo màn chơi mới."}), 400
+
             user = User.query.get(user_id)
             user_level = user.current_level if user else "Beginner"
 
-            story_turn = session.get('story_turn', 1) + 1
-            story_history = session.get('story_history', '')
-            topic_id = session.get('story_topic_id', 1)
+            story_turn = active_run.turn + 1
+            topic_id = active_run.topic_id
 
-            session['story_turn'] = story_turn
-            story_history += f"\n[Player]: {user_input}"
+            # Cập nhật lịch sử người chơi lên DB
+            active_run.history += f"\n[Player]: {user_input}"
 
             topic = StoryTopic.query.get(topic_id)
             theme_context = topic.system_prompt if topic else "Bối cảnh sinh tồn hậu tận thế tàn khốc."
@@ -137,7 +154,7 @@ def evaluate():
                             {shield_prompt}
 
                             Toàn bộ lịch sử các quyết định của người chơi từ Lượt 1 đến 9: 
-                            {story_history}
+                            {active_run.history}
 
                             Hành động quyết định cuối cùng (Lượt 10): "{user_input}"
 
@@ -169,9 +186,9 @@ def evaluate():
                 )
                 db.session.add(new_session)
 
-                session.pop('story_turn', None)
-                session.pop('story_history', None)
-                session.pop('story_topic_id', None)
+                # Dọn dẹp phiên Active Story trên DB sau khi phá đảo
+                db.session.delete(active_run)
+                db.session.commit()
 
             else:
                 if mode == 'story_choose':
@@ -180,7 +197,7 @@ def evaluate():
                     {shield_prompt}
 
                     Bạn là Game Master. Trình độ: {user_level}. Đang ở LƯỢT {story_turn}/10.
-                    LỊCH SỬ: {story_history}
+                    LỊCH SỬ: {active_run.history}
                     LỰA CHỌN CỦA NGƯỜI CHƠI: "{user_input}"
 
                     YÊU CẦU:
@@ -206,7 +223,7 @@ def evaluate():
                     Bạn là Game Master xéo xắt, mỏ hỗn. Trình độ người chơi: {user_level}. Đang ở LƯỢT {story_turn}/10.
 
                     LỊCH SỬ TỪ TRƯỚC TỚI NAY: 
-                    {story_history}
+                    {active_run.history}
 
                     HÀNH ĐỘNG MỚI NHẤT CỦA NGƯỜI CHƠI: "{user_input}"
 
@@ -230,8 +247,10 @@ def evaluate():
                 clean_json_str = call_gemini_with_retry(prompt_story)
                 result = json.loads(clean_json_str)
 
-                story_history += f"\n[GM]: {result.get('scene_en', '')}"
-                session['story_history'] = story_history
+                # Nối tiếp phản hồi của AI vào Data lõi
+                active_run.history += f"\n[GM]: {result.get('scene_en', '')}"
+                active_run.turn = story_turn
+                db.session.commit()
 
             result['turn'] = story_turn
 
@@ -314,7 +333,7 @@ def evaluate():
             "hint_en": "I must ___ the truth.",
             "hint_vn": "Tôi phải (tìm_ra) sự thật.",
             "is_end": False,
-            "turn": session.get('story_turn', 1)
+            "turn": 1
         }
 
     new_log = TestLog(
@@ -360,6 +379,7 @@ def mine_new_data_via_ai(current_mode):
 
             exists = Vocabulary.query.filter_by(word=item_data['word']).first()
             if not exists:
+                # ML CEFR INFERENCE
                 predicted_level = cefr_engine.predict_cefr(item_data['word'])
                 new_vocab = Vocabulary(
                     word=item_data['word'],
@@ -532,9 +552,16 @@ def init_story():
     topic_id = data.get('topic_id', 1)
     story_mode = data.get('mode', 'write')
 
-    session['story_turn'] = 1
-    session['story_history'] = ""
-    session['story_topic_id'] = topic_id
+    # Đảm bảo bảng tồn tại an toàn (Dự phòng nếu DB chưa Migrate)
+    ActiveStory.__table__.create(db.engine, checkfirst=True)
+
+    # Xóa lịch sử phiên chơi cũ bị bỏ dở của User (nếu có)
+    ActiveStory.query.filter_by(user_id=user_id).delete()
+
+    # Tạo phiên chơi mới trên Database
+    new_run = ActiveStory(user_id=user_id, topic_id=topic_id, turn=1, history="")
+    db.session.add(new_run)
+    db.session.commit()
 
     user = User.query.get(user_id) if user_id else None
     user_level = user.current_level if user else "Beginner"
@@ -580,7 +607,11 @@ def init_story():
     try:
         clean_json = call_gemini_with_retry(prompt)
         result = json.loads(clean_json)
-        session['story_history'] = f"[GM]: {result.get('scene_en', '')}"
+
+        # Cập nhật lịch sử lượt đầu vào Database
+        new_run.history = f"[GM]: {result.get('scene_en', '')}"
+        db.session.commit()
+
         return jsonify(result), 200
     except Exception as e:
         return jsonify({

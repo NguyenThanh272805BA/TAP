@@ -4,7 +4,52 @@ let currentTopicId = 1;
 let currentStoryMode = 'write'; // 'write' hoặc 'choose'
 let globalStoryArchive = [];    // Lưu trữ tạm nhật ký sinh tồn để hiển thị lên Pop-up Modal
 
+// [ PHASE 6 ] HÀM HỖ TRỢ: NHẬN DIỆN THIẾT BỊ DI ĐỘNG
+function isMobileDevice() {
+    return (window.innerWidth <= 768) || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// [ PHASE 6 ] HÀM HỖ TRỢ: CHẾ ĐỘ CLEAN MODE DỊU MẮT
+function toggleCleanMode() {
+    const isClean = document.body.classList.toggle('clean-mode');
+    localStorage.setItem('clean_mode', isClean);
+    const modeBtn = document.getElementById('btn-clean-mode');
+    if (modeBtn) {
+        modeBtn.innerHTML = isClean
+        ? '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg> <span style="font-family: var(--text-pixel); font-size: 11px;">CHẾ ĐỘ TĨNH LẶNG</span>'
+        : '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg> <span style="font-family: var(--text-pixel); font-size: 11px;">CHẾ ĐỘ TĨNH LẶNG</span>';
+    }
+}
+
+// [ PHASE 6 ] HÀM HỖ TRỢ: GIẢ LẬP STREAMING TYPING (GÕ CHỮ)
+function typeEffectSSE(elementId, text, speed = 15, callback = null) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.innerHTML = '';
+    let i = 0;
+    function type() {
+        if (i < text.length) {
+            let char = text.charAt(i);
+            el.innerHTML += char === '\n' ? '<br>' : char;
+            i++;
+            // Cuộn xuống dòng mới nhất nếu có thanh cuộn
+            el.scrollTop = el.scrollHeight;
+            setTimeout(type, speed);
+        } else if (callback) {
+            callback();
+        }
+    }
+    type();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    // Khôi phục trạng thái Clean Mode
+    if (localStorage.getItem('clean_mode') === 'true') {
+        document.body.classList.add('clean-mode');
+        const modeBtn = document.getElementById('btn-clean-mode');
+        if(modeBtn) modeBtn.innerHTML = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg> <span style="font-family: var(--text-pixel); font-size: 11px;">CHẾ ĐỘ TĨNH LẶNG</span>';
+    }
+
     const currentPath = window.location.pathname;
 
     if (currentPath !== '/auth' && currentPath !== '/') {
@@ -366,13 +411,20 @@ function submitChallenge() {
                 });
         }
 
+        // [ PHASE 6 ] Sử dụng Streaming Typing Effect cho Feedback
         aiFeedbackDiv.innerHTML = `
-            <div style="margin-bottom: 10px; line-height: 1.6; color: #fff; font-family: var(--text-main); font-size:16px;">${feedback}</div>
-            <div style="font-family: var(--text-pixel); font-size: 12px; color: ${scoreColor}; margin-top: 10px; letter-spacing: 0.5px;">
+            <div id="aiFeedbackText" style="margin-bottom: 10px; line-height: 1.6; color: inherit; font-family: var(--text-main); font-size:16px;"></div>
+            <div id="aiFeedbackScore" style="display:none; font-family: var(--text-pixel); font-size: 12px; color: ${scoreColor}; margin-top: 10px; letter-spacing: 0.5px;">
                 RATING_SCORE: ${score}/10
                 ${result.quest_notification ? `<br><span style="color: var(--pixel-green);">[+] ${result.quest_notification}</span>` : ''}
             </div>
         `;
+
+        typeEffectSSE('aiFeedbackText', feedback, 15, () => {
+            const scoreDiv = document.getElementById('aiFeedbackScore');
+            if (scoreDiv) scoreDiv.style.display = 'block';
+        });
+
         userInputField.value = "";
     })
     .catch(error => {
@@ -517,7 +569,7 @@ function initKeyboardShortcuts() {
 function initLottieLibrary() {
     if (!window.lottie) {
         const script = document.createElement("script");
-        script.src = "[https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js](https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js)";
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js";
         script.id = "lottie-cdn";
         document.head.appendChild(script);
     }
@@ -541,7 +593,7 @@ function triggerFireworksEffect() {
         renderer: 'svg',
         loop: false,
         autoplay: true,
-        path: '[https://assets5.lottiefiles.com/packages/lf20_obh5c7sh.json](https://assets5.lottiefiles.com/packages/lf20_obh5c7sh.json)'
+        path: 'https://assets5.lottiefiles.com/packages/lf20_obh5c7sh.json'
     });
 
     animation.addEventListener('complete', () => {
@@ -566,7 +618,7 @@ function loadStoryLobby() {
             const statusColor = s.status === 'Survived' ? 'var(--pixel-green)' : 'var(--neon-pink)';
             html += `
             <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid ${statusColor}; margin-bottom: 10px; position: relative;">
-                <strong style="color: #fff; font-size: 14px; display: block; margin-bottom: 5px;">[${s.status.toUpperCase()}] ${s.topic}</strong>
+                <strong style="color: inherit; font-size: 14px; display: block; margin-bottom: 5px;">[${s.status.toUpperCase()}] ${s.topic}</strong>
                 <span style="color: #94a3b8; font-size: 11px; display: block; margin-bottom: 12px;">TIME_LOG: ${s.date}</span>
                 <button class="pixel-btn" onclick="openStoryModal(${s.id})" style="background: rgba(34, 211, 238, 0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 8px 12px; font-size: 10px; width: 100%; box-shadow: none; transition: 0.3s;" onmouseover="this.style.background='var(--neon-cyan)'; this.style.color='#000';" onmouseout="this.style.background='rgba(34, 211, 238, 0.1)'; this.style.color='var(--neon-cyan)';">
                     📖 ĐỌC LẠI NHẬT KÝ
@@ -720,7 +772,7 @@ function appendStoryScene(data, isInit = false) {
 
     terminal.innerHTML += `
         <div style="background: rgba(30, 41, 75, 0.7); border-left: 3px solid var(--neon-purple); padding: 16px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-            <div style="color: #fff; font-family: var(--text-main); font-size: 16px; margin-bottom: 10px; line-height: 1.6; font-weight:600;">${data.scene_en}</div>
+            <div style="color: inherit; font-family: var(--text-main); font-size: 16px; margin-bottom: 10px; line-height: 1.6; font-weight:600;">${data.scene_en}</div>
             <div style="color: #94a3b8; font-family: var(--text-main); font-size: 14px; font-style: italic; line-height: 1.5;">${data.scene_vn}</div>
         </div>
     `;
@@ -732,7 +784,7 @@ function appendStoryScene(data, isInit = false) {
     if (data.is_end === "true" || data.is_end === true) {
         hintBox.innerHTML = `
             <div style="color: var(--pixel-green); font-family: var(--text-pixel); font-size: 14px; text-align: center; margin-bottom: 15px; letter-spacing:1px;">MISSION ACCOMPLISHED!</div>
-            <div style="color: #cbd5e1; font-family: var(--text-main); font-size: 15px; text-align: center; line-height:1.6;">Hành trình sinh tồn hoàn tất. Nhật ký đã được lưu lại!</div>
+            <div style="color: inherit; font-family: var(--text-main); font-size: 15px; text-align: center; line-height:1.6;">Hành trình sinh tồn hoàn tất. Nhật ký đã được lưu lại!</div>
             <button class="pixel-btn" style="background: var(--neon-amber); width: 100%; margin-top: 15px; padding:15px; font-size:12px;" onclick="exitToLobby()">TRỞ VỀ LOBBY</button>
         `;
 
@@ -829,14 +881,19 @@ function executeStoryAction(overrideText = null) {
         const score = result.score !== undefined ? result.score : 0;
         const scoreColor = score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
 
+        // Sử dụng Typing Effect cho Feedback thay vì innerHTML ngay lập tức
+        const feedbackId = 'fb-' + Date.now();
         terminal.innerHTML += `
             <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 18px; text-align: right; letter-spacing:0.5px;">
-                [GM RATING: ${score}/10] - <span style="font-family:var(--text-main); font-size:14px; font-weight:normal; color:#fff;">${result.feedback || "Cú pháp chấp nhận được."}</span>
+                [GM RATING: ${score}/10] - <span id="${feedbackId}" style="font-family:var(--text-main); font-size:14px; font-weight:normal; color:inherit;"></span>
             </div>
         `;
 
-        updateChibeEmotion(score);
-        appendStoryScene(result);
+        typeEffectSSE(feedbackId, result.feedback || "Cú pháp chấp nhận được.", 10, () => {
+            updateChibeEmotion(score);
+            appendStoryScene(result);
+        });
+
     })
     .catch(err => {
         const loadEl = document.getElementById(loadId);
@@ -871,10 +928,16 @@ function submitQuickQuest() {
         const score = result.score || 0;
         const color = score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
 
+        // [ PHASE 6 ] Sử dụng Streaming Typing Effect cho Feedback
         feedbackBox.innerHTML = `
-            <div style="color: ${color}; font-family: var(--text-pixel); margin-bottom: 5px;">[ ĐIỂM: ${score}/10 ]</div>
-            <div style="color: #fff;">${result.feedback}</div>
+            <div id="quickQuestScore" style="display:none; color: ${color}; font-family: var(--text-pixel); margin-bottom: 5px;">[ ĐIỂM: ${score}/10 ]</div>
+            <div id="quickQuestText" style="color: inherit;"></div>
         `;
+
+        typeEffectSSE('quickQuestText', result.feedback || "Tốt.", 15, () => {
+            const scoreDiv = document.getElementById('quickQuestScore');
+            if (scoreDiv) scoreDiv.style.display = 'block';
+        });
 
         inputEl.value = "";
 
@@ -925,7 +988,7 @@ function showMasterGTutorial() {
         <div style="max-width: 500px; background: rgba(15, 23, 42, 0.95); border: 3px solid var(--neon-cyan); border-radius: 16px; padding: 30px; box-shadow: 0 0 30px rgba(103, 232, 249, 0.2); position: relative; text-align: center;">
             <div class="pixel-title" style="color: var(--neon-cyan); margin-bottom: 20px; font-size: 20px;">[ SYSTEM_ALERT ] MASTER G XUẤT HIỆN!</div>
             
-            <div class="pixel-text" style="font-size: 16px; margin-bottom: 20px; color: #fff; line-height: 1.6;">
+            <div class="pixel-text" style="font-size: 16px; margin-bottom: 20px; color: inherit; line-height: 1.6;">
                 "Chà chà, một kẻ sinh tồn mới bước chân vào Global Fluent? Nghe đây tân binh:
                 <br><br>
                 1. <b>Góc trái</b> là bảng Nhiệm Vụ Hàng Ngày. Làm để lấy xu, không làm thì đói.
@@ -1022,7 +1085,7 @@ function loadNotifications() {
                             <strong style="color: var(--neon-cyan); font-size: 13px; font-family: var(--text-mono);">${icon} ${n.title}</strong>
                             <span style="color: #64748b; font-size: 10px; font-family: var(--text-pixel);">${n.created_at}</span>
                         </div>
-                        <div style="color: #cbd5e1; font-size: 13px; line-height: 1.5; font-family: var(--text-main);">${n.message}</div>
+                        <div style="color: inherit; font-size: 13px; line-height: 1.5; font-family: var(--text-main);">${n.message}</div>
                     </div>
                     `;
                 });
@@ -1044,11 +1107,17 @@ function toggleNotifications() {
         if (dropdown.style.display === 'none') {
             if (bell) {
                 dropdown.style.right = 'auto';
-                dropdown.style.top = (bell.offsetTop + 60) + "px";
-
-                let dropLeft = bell.offsetLeft - 280;
-                if (dropLeft < 10) dropLeft = 10;
-                dropdown.style.left = dropLeft + "px";
+                // Kiểm tra Mobile để thả notification ra giữa thay vì bị lệch
+                if (isMobileDevice()) {
+                    dropdown.style.top = "10vh";
+                    dropdown.style.left = "5vw";
+                    dropdown.style.width = "90vw";
+                } else {
+                    dropdown.style.top = (bell.offsetTop + 60) + "px";
+                    let dropLeft = bell.offsetLeft - 280;
+                    if (dropLeft < 10) dropLeft = 10;
+                    dropdown.style.left = dropLeft + "px";
+                }
             }
             dropdown.style.display = 'block';
             loadNotifications();
@@ -1068,7 +1137,19 @@ function markAllNotificationsRead() {
         });
 }
 
+// [ PHASE 6 ] VÔ HIỆU HÓA DRAG DROP TRÊN MOBILE TRÁNH LỖI SCROLL
 function makeDraggable(elmnt, header) {
+    if (isMobileDevice()) {
+        if (elmnt.id === 'notification-bell') {
+            elmnt.style.position = 'fixed';
+            elmnt.style.bottom = '20px';
+            elmnt.style.right = '20px';
+            elmnt.style.top = 'auto';
+            elmnt.style.left = 'auto';
+        }
+        return; // Hủy hoàn toàn script drag/drop trên Mobile
+    }
+
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
 
     if (header) {

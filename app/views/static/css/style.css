@@ -583,3 +583,110 @@ body::before {
     .bento-container { grid-template-columns: 1fr; }
     .card-large, .card-wide, .card-medium, .card-tall { grid-column: span 1; grid-row: auto; }
 }
+/* =========================================================
+   [ PHASE 6 ] CLEAN MODE / LIGHT MODE - ĐẢO NGƯỢC TOÀN DIỆN
+   ========================================================= */
+body.clean-mode {
+    /* 1. Ghi đè biến hệ thống: Đổi gradient và kính mờ sang sáng */
+    --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+    --glass-bg: rgba(255, 255, 255, 0.9) !important;
+    --glass-border: rgba(0, 0, 0, 0.15) !important;
+
+    /* 2. Đảo màu Neon chói thành màu Deep Tone (Đậm) để nổi bật trên nền trắng */
+    --neon-purple: #6b21a8 !important; /* Tím đậm */
+    --neon-cyan: #0369a1 !important;   /* Xanh biển đậm */
+    --neon-pink: #be185d !important;   /* Hồng đậm */
+    --neon-amber: #b45309 !important;  /* Cam/Nâu đậm */
+    --pixel-green: #047857 !important; /* Xanh ngọc đậm */
+
+    color: #0f172a !important; /* Đổi màu chữ mặc định thành Đen nhạt */
+}
+
+/* Xóa sương mù và sọc màn hình CRT */
+body.clean-mode::before, body.clean-mode::after {
+    display: none !important;
+}
+
+/* Xóa mọi hiệu ứng Glow (phát sáng) gây nhòe chữ */
+body.clean-mode * {
+    text-shadow: none !important;
+}
+
+/* 3. PHÉP THUẬT: Ép các nền đen trong inline style thành xám sáng */
+body.clean-mode [style*="background: rgba(0,0,0"],
+body.clean-mode [style*="background:rgba(0,0,0"],
+body.clean-mode [style*="background: rgba(0, 0, 0"] {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 4. PHÉP THUẬT: Ép các chữ trắng/xám sáng trong inline style thành đen/xám đậm */
+body.clean-mode [style*="color: #fff"],
+body.clean-mode [style*="color:#fff"],
+body.clean-mode [style*="color: #ffffff"],
+body.clean-mode .pixel-text {
+    color: #0f172a !important;
+}
+
+body.clean-mode [style*="color: #94a3b8"],
+body.clean-mode [style*="color:#94a3b8"],
+body.clean-mode [style*="color: #cbd5e1"] {
+    color: #475569 !important;
+}
+
+/* Tối ưu lại Menu Sidebar */
+body.clean-mode .sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid #cbd5e1 !important;
+    box-shadow: 2px 0 15px rgba(0,0,0,0.05) !important;
+}
+body.clean-mode .nav-item {
+    color: #475569 !important;
+    background: transparent !important;
+}
+body.clean-mode .nav-item:hover, body.clean-mode .nav-item.active {
+    background: #e0f2fe !important;
+    color: #0284c7 !important;
+    border-left: 4px solid #0284c7 !important;
+    transform: translateX(5px) !important;
+    box-shadow: none !important;
+}
+
+/* Tối ưu lại Bento Cards */
+body.clean-mode .bento-card {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
+}
+body.clean-mode .bento-card:hover {
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    border-color: #0284c7 !important;
+}
+
+/* Tối ưu Input & Textarea */
+body.clean-mode textarea, body.clean-mode input, body.clean-mode .auth-input {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: none !important;
+}
+body.clean-mode textarea:focus, body.clean-mode input:focus {
+    border-color: #0284c7 !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
+}
+
+/* Tối ưu Khung Master G Feedback */
+body.clean-mode .ai-dialog-box {
+    background: #f1f5f9 !important;
+    border: 2px solid #0284c7 !important;
+    box-shadow: none !important;
+}
+
+/* Tối ưu Nút bấm */
+body.clean-mode .pixel-btn {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+}
+body.clean-mode .pixel-btn:hover {
+    filter: brightness(0.9) !important;
+}
