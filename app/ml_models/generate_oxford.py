@@ -1,4 +1,3 @@
-# app/ml_models/generate_oxford.py
 import os
 import json
 from wordfreq import top_n_list, zipf_frequency
@@ -16,7 +15,6 @@ def generate_oxford_5000():
         if len(word) <= 1 or word.isnumeric():
             continue
 
-        # Tính điểm Zipf Frequency
         zipf_score = zipf_frequency(word, 'en')
 
         # Phân loại CEFR nội suy từ độ phổ biến (Zipf)
@@ -33,10 +31,8 @@ def generate_oxford_5000():
 
         vocab_dict[word] = level
 
-    # Đường dẫn lưu file
     output_path = os.path.join(os.path.dirname(__file__), 'oxford_5000.json')
 
-    # Ghi dữ liệu ra file JSON
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(vocab_dict, f, indent=4, ensure_ascii=False)
 

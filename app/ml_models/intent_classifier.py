@@ -1,4 +1,3 @@
-# app/ml_models/intent_classifier.py
 import os
 import joblib
 

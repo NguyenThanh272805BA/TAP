@@ -82,7 +82,7 @@ def delete_user(user_id):
 
 
 # ==========================================
-# CÁC ROUTE QUẢN LÝ CHỦ ĐỀ TEXT-RPG (PHASE 2 & 3)
+# CÁC ROUTE QUẢN LÝ CHỦ ĐỀ TEXT-RPG
 # ==========================================
 @admin_bp.route('/topics', methods=['GET'])
 @admin_required
@@ -94,7 +94,7 @@ def get_topics():
         "genre": t.genre,
         "cover_image": t.cover_image,
         "system_prompt": t.system_prompt,
-        "play_mode": getattr(t, 'play_mode', 'both')  # Phase 3: Thêm play_mode, dự phòng nếu DB chưa migrate
+        "play_mode": getattr(t, 'play_mode', 'both')
     } for t in topics]), 200
 
 
@@ -115,11 +115,9 @@ def create_topic():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
 
-            # Khởi tạo đường dẫn tuyệt đối an toàn trỏ về thư mục views/static/uploads/covers
             base_dir = os.path.abspath(os.path.dirname(__file__))
             upload_path = os.path.join(base_dir, '..', 'views', 'static', 'uploads', 'covers')
 
-            # Tạo thư mục nếu chưa tồn tại
             os.makedirs(upload_path, exist_ok=True)
 
             # Lưu file

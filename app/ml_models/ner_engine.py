@@ -3,7 +3,6 @@ import re
 
 class RuleBasedNER:
     def __init__(self):
-        # Không cần load model AI nặng nề của spaCy nữa, khởi tạo tức thì (O(1))
         pass
 
     def extract_entity(self, text, intent):

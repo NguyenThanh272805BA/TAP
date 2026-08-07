@@ -1,4 +1,3 @@
-# app/ml_models/gec_engine.py
 import language_tool_python
 import re
 
@@ -46,11 +45,11 @@ class LocalGECEngine:
         for match in matches:
             issue_type = match.rule_issue_type
 
-            # Trọng số trừ điểm để siết chặt tính học thuật
+            # Trọng số trừ điểm
             if issue_type == 'misspelling':
                 score -= 1.5  # Sai chính tả phạt nặng hơn
             elif issue_type == 'grammar':
-                score -= 3.0  # Sai cấu trúc ngữ pháp phạt sâu (3 lỗi là về 1 điểm)
+                score -= 3.0  # Sai cấu trúc ngữ pháp phạt sâu
             elif issue_type == 'style':
                 score -= 0.5  # Lỗi văn phong
             else:

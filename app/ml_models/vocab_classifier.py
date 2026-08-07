@@ -1,4 +1,3 @@
-# app/ml_models/vocab_classifier.py
 import os
 import json
 from wordfreq import zipf_frequency

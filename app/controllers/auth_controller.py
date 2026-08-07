@@ -104,10 +104,10 @@ def get_profile_stats():
 
     user = User.query.get(user_id)
 
-    # 1. Tính tổng từ vựng ĐÃ THUỘC
+    # Tính tổng từ vựng ĐÃ THUỘC
     learned_count = UserVocabulary.query.filter_by(user_id=user_id, memorization_level='DA_THUOC').count()
 
-    # 2. Thuật toán tìm Cấp CEFR cao nhất đã chạm tới
+    # Thuật toán tìm Cấp CEFR cao nhất đã chạm tới
     highest_cefr = 'A1'
     cefr_levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
@@ -122,7 +122,7 @@ def get_profile_stats():
         if levels_achieved:
             highest_cefr = sorted(levels_achieved, key=lambda x: cefr_levels.index(x))[-1]
 
-    # 3. Quét danh sách Thành tựu
+    #Quét danh sách Thành tựu
     user_achs = UserAchievement.query.filter_by(user_id=user_id).order_by(UserAchievement.unlocked_at.desc()).all()
     achievements = []
     for ua in user_achs:
@@ -165,7 +165,6 @@ def update_profile():
         file = request.files['avatar']
         if file and allowed_file(file.filename):
             filename = secure_filename(f"user_{user_id}_{file.filename}")
-            # Khởi tạo đường dẫn tuyệt đối trỏ về app/views/static/uploads/avatars
             base_dir = os.path.abspath(os.path.dirname(__file__))
             upload_path = os.path.join(base_dir, '..', 'views', 'static', 'uploads', 'avatars')
             os.makedirs(upload_path, exist_ok=True)

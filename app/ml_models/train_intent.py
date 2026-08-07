@@ -1,4 +1,3 @@
-# app/ml_models/train_intent.py
 import pandas as pd
 import joblib
 import os
@@ -15,7 +14,7 @@ def generate_synthetic_intent_data():
     """Tự động sinh dataset để vượt qua sự kiểm tra của hội đồng"""
     data = []
 
-    # 1. ask_vocab
+    # ask_vocab
     vocabs = ["word", "vocabulary", "phrase", "idiom", "slang"]
     actions_v = ["What is the meaning of", "Explain the", "Define", "Translate", "Nghĩa của từ"]
     for v in vocabs:
@@ -23,7 +22,7 @@ def generate_synthetic_intent_data():
             data.append({"text": f"{a} {v}", "intent": "ask_vocab"})
             data.append({"text": f"I don't understand this {v}", "intent": "ask_vocab"})
 
-    # 2. ask_grammar
+    # ask_grammar
     grammars = ["grammar", "structure", "tense", "past simple", "relative clause"]
     actions_g = ["How to use", "Explain", "Check my", "Tại sao dùng", "Cấu trúc"]
     for g in grammars:
@@ -31,7 +30,7 @@ def generate_synthetic_intent_data():
             data.append({"text": f"{a} {g}", "intent": "ask_grammar"})
             data.append({"text": f"Is this {g} correct?", "intent": "ask_grammar"})
 
-    # 3. story_action (RPG Actions)
+    #story_action (RPG Actions)
     verbs = ["attack", "run away from", "shoot", "open", "hide behind", "talk to", "kill"]
     objects = ["the monster", "the door", "the zombie", "the chest", "the wall", "him"]
     for v in verbs:
@@ -40,7 +39,7 @@ def generate_synthetic_intent_data():
             data.append({"text": f"I will carefully {v} {o}", "intent": "story_action"})
             data.append({"text": f"{v} {o} now!", "intent": "story_action"})
 
-    # 4. general_chat (Cân bằng phân bổ Dataset)
+    #general_chat (Cân bằng phân bổ Dataset)
     chats = [
         "Hello", "Hi there", "How are you", "Xin chào", "Chào Master G",
         "Bạn tên là gì", "Goodbye", "I'm bored", "Haha", "Lol", "Lmao",

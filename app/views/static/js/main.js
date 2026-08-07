@@ -9,7 +9,7 @@ function isMobileDevice() {
     return (window.innerWidth <= 768) || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-// [ PHASE 6 ] HÀM HỖ TRỢ: CHẾ ĐỘ CLEAN MODE DỊU MẮT
+// [ PHASE 6 ] HÀM HỖ TRỢ: CHẾ ĐỘ CLEAN MODE
 function toggleCleanMode() {
     const isClean = document.body.classList.toggle('clean-mode');
     localStorage.setItem('clean_mode', isClean);
@@ -358,8 +358,6 @@ function updateChibeEmotion(score) {
 
 // ==============================================================
 // [ PHASE 6 ] KIẾN TRÚC STREAMING THỜI GIAN THỰC (SSE)
-// Thay vì JSON.parse() nguyên cục làm người dùng chờ lâu, chúng ta
-// dùng ReadableStream để parse từng Token chữ ngay khi AI nhả ra
 // ==============================================================
 
 function submitChallenge() {
@@ -375,85 +373,69 @@ function submitChallenge() {
         return;
     }
 
+    userInputField.disabled = true; // Khóa an toàn
     aiResponseBox.style.display = "block";
-    aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-amber); font-family: var(--text-main); font-size:15px;' class='pulse-neon'>MASTER_G ĐANG SOI MÓI BÀI LÀM...</span>";
+    aiFeedbackDiv.innerHTML = `
+        <div id="aiFeedbackScore" style="display:none; font-family: var(--text-pixel); margin-bottom: 10px;"></div>
+        <div id="aiFeedbackText" style="line-height: 1.6; color: inherit; font-family: var(--text-main); font-size:16px;"></div>
+    `;
+    const scoreBox = document.getElementById('aiFeedbackScore');
+    const textBox = document.getElementById('aiFeedbackText');
 
     fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            text: textValue,
-            mode: activeFeature
-        })
+        body: JSON.stringify({ text: textValue, mode: activeFeature })
     })
     .then(async response => {
-        if (!response.ok) throw new Error("API sập.");
-
-        aiFeedbackDiv.innerHTML = `
-            <div id="aiFeedbackText" style="margin-bottom: 10px; line-height: 1.6; color: inherit; font-family: var(--text-main); font-size:16px;"></div>
-            <div id="aiFeedbackScore" style="display:none; font-family: var(--text-pixel); font-size: 12px; margin-top: 10px; letter-spacing: 0.5px;"></div>
-        `;
-        const scoreBox = document.getElementById('aiFeedbackScore');
-        const textBox = document.getElementById('aiFeedbackText');
-
-        // Bắt đầu đọc dữ liệu Stream (Server-Sent Events)
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let isDone = false;
+        let buffer = ""; // BỘ ĐỆM
 
-        while (!isDone) {
+        while(true) {
             const {done, value} = await reader.read();
             if (done) break;
 
-            const chunks = decoder.decode(value, {stream: true}).split('\n\n');
-            for (let chunk of chunks) {
-                if (chunk.startsWith('data: ')) {
+            buffer += decoder.decode(value, {stream: true});
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop();
+
+            for(let part of parts) {
+                if (part.startsWith('data: ')) {
                     try {
-                        const data = JSON.parse(chunk.substring(6));
+                        const data = JSON.parse(part.substring(6));
 
                         if (data.type === 'meta') {
-                            // Backend trả Điểm Local GEC về ngay lập tức
-                            scoreBox.style.display = 'block';
-                            const color = data.score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
-                            scoreBox.style.color = color;
                             scoreBox.innerHTML = `RATING_SCORE: ${data.score}/10`;
-
-                            if (data.quest) {
-                                scoreBox.innerHTML += `<br><span style="color: var(--pixel-green);">[+] ${data.quest}</span>`;
-                                triggerFireworksEffect();
-                                if (typeof loadDailyQuests === 'function') loadDailyQuests();
-                            }
+                            scoreBox.style.display = 'block';
+                            scoreBox.style.color = data.score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
                             updateChibeEmotion(data.score);
-
-                        } else if (data.type === 'chunk') {
-                            // Chữ từ LLM chạy mượt mà theo thời gian thực
+                            if (data.quest_notification) {
+                                scoreBox.innerHTML += `<br><span style="color: var(--pixel-green);">[+] ${data.quest_notification}</span>`;
+                            }
+                        }
+                        else if (data.type === 'chunk') {
                             textBox.innerHTML += data.text.replace(/\n/g, '<br>');
-                            aiResponseBox.scrollTop = aiResponseBox.scrollHeight;
-
-                        } else if (data.type === 'levelup') {
+                            textBox.parentNode.scrollTop = textBox.parentNode.scrollHeight;
+                        }
+                        else if (data.type === 'levelup') {
                             triggerFireworksEffect();
-                            alert(`🎉 ĐẲNG CẤP MỚI: BẠN VỪA THĂNG CẤP LÊN '${data.rank}'!`);
-                            const sidebarRank = document.getElementById("sidebar-rank");
-                            if (sidebarRank) sidebarRank.innerText = data.rank;
-
-                        } else if (data.type === 'done') {
-                            isDone = true;
-
-                        } else if (data.type === 'error') {
-                            textBox.innerHTML += `<br><span style='color: var(--neon-pink);'>[ERROR] ${data.message}</span>`;
+                            alert(`ĐẲNG CẤP MỚI: BẠN VỪA THĂNG CẤP LÊN '${data.rank}'!`);
                         }
                     } catch (e) {
-                        // Bỏ qua lỗi parse nếu chunk JSON bị vỡ dở dang
-                        console.error("SSE Parse Error:", e, chunk);
+                        console.error("Parse Error:", e);
                     }
                 }
             }
         }
+        userInputField.disabled = false;
         userInputField.value = "";
+        userInputField.focus();
     })
     .catch(error => {
         triggerCardShake();
-        aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink); font-family: var(--text-main); font-size:15px;'>ERROR: Mất kết nối tới Server.</span>";
+        aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink);'>ERROR: Mất kết nối tới Server.</span>";
+        userInputField.disabled = false;
     });
 }
 
@@ -859,30 +841,34 @@ function executeStoryAction(overrideText = null) {
     const terminal = document.getElementById("story-terminal");
     if(!terminal) return;
 
-    // Hiển thị lệnh của người chơi
-    terminal.innerHTML += `
+    // 1. In hành động của người chơi
+    terminal.insertAdjacentHTML('beforeend', `
         <div style="text-align: right; margin: 15px 0;">
             <span style="background: var(--neon-cyan); color: #000; padding: 10px 18px; border-radius: 12px; font-weight: 700; font-family: var(--text-mono); font-size:15px; display:inline-block; box-shadow:0 4px 15px rgba(103,232,249,0.3);">> ${actionText}</span>
         </div>
-    `;
+    `);
     terminal.scrollTop = terminal.scrollHeight;
 
     if (currentStoryMode === 'choose') {
         const choicesBox = document.getElementById('story-choices-box');
-        if(choicesBox) choicesBox.innerHTML = "<div class='pulse-neon' style='font-size:13px; font-family:var(--text-pixel); text-align: center;'>MASTER_G ĐANG SOẠN KỊCH BẢN...</div>";
+        if(choicesBox) choicesBox.innerHTML = "<div class='pulse-neon' style='font-size:13px; font-family:var(--text-pixel); text-align: center;'>[SYSTEM] ĐANG CHUẨN BỊ KỊCH BẢN...</div>";
     } else {
         if(inputEle) inputEle.disabled = true;
     }
 
-    // Khởi tạo Box chờ luồng Stream
+    // 2. Tạo hiệu ứng AI Đang phân tích và Box chứa truyện
     const loadId = "loading-" + Date.now();
     const gmResponseId = "gm-" + Date.now();
-    terminal.innerHTML += `
-        <div id="${loadId}" class="pulse-neon" style="margin-bottom: 15px; font-family:var(--text-main); font-size:15px; color:var(--neon-purple);">[GM] Đang tải thực tại ảo...</div>
-        <div id="${gmResponseId}" style="color: inherit; font-family: var(--text-main); font-size: 15px; line-height: 1.6; margin-bottom: 15px; padding: 16px; background: rgba(30, 41, 75, 0.7); border-left: 3px solid var(--neon-purple); border-radius: 8px;"></div>
-    `;
+
+    terminal.insertAdjacentHTML('beforeend', `
+        <div id="${loadId}" class="pulse-neon" style="margin-bottom: 15px; font-family:var(--text-main); font-size:14px; color:var(--neon-purple);">
+            <span class="typing-effect">[LOCAL AI] Đang chấm điểm ngữ pháp & trích xuất ý định...</span>
+        </div>
+        <div id="${gmResponseId}" style="color: inherit; font-family: var(--text-main); font-size: 15px; line-height: 1.6; margin-bottom: 15px; padding: 16px; background: rgba(30, 41, 75, 0.7); border-left: 3px solid var(--neon-purple); border-radius: 8px; display: none;"></div>
+    `);
     terminal.scrollTop = terminal.scrollHeight;
 
+    const loadEl = document.getElementById(loadId);
     const gmDiv = document.getElementById(gmResponseId);
     let fullResponse = "";
 
@@ -892,69 +878,91 @@ function executeStoryAction(overrideText = null) {
         body: JSON.stringify({ text: actionText, mode: currentStoryMode === 'choose' ? 'story_choose' : 'story' })
     })
     .then(async response => {
-        const loadEl = document.getElementById(loadId);
-        if(loadEl) loadEl.remove();
-
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = "";
 
         while(true) {
             const {done, value} = await reader.read();
             if (done) break;
 
-            const chunks = decoder.decode(value).split('\n\n');
-            for(let chunk of chunks) {
-                if (chunk.startsWith('data: ')) {
-                    const data = JSON.parse(chunk.substring(6));
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop();
 
-                    if (data.type === 'meta') {
-                        // Hiển thị điểm số ngay lập tức từ Local Brain
-                        const scoreColor = data.score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
-                        terminal.innerHTML += `
-                            <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 10px; text-align: right; letter-spacing:0.5px;">
-                                [LOCAL GEC RATING: ${data.score}/10]
-                            </div>
-                        `;
-                    }
-                    else if (data.type === 'chunk') {
-                        // Dịch Text thô thành giao diện Terminal
-                        fullResponse += data.text;
-                        let formatted = fullResponse
-                            .replace(/\[EN\]:/g, '<strong style="color: var(--neon-cyan); font-size: 16px;">[EN]:</strong>')
-                            .replace(/\[VN\]:/g, '<br><br><strong style="color: #94a3b8;">[VN]:</strong> <span style="color: #94a3b8; font-style: italic;">')
-                            .replace(/\[CHOICES\]:/g, '</span><br><br><strong style="color: var(--neon-amber);">[CHOICES]:</strong>')
-                            .replace(/\[HINT\]:/g, '</span><br><br><strong style="color: var(--neon-amber);">[HINT]:</strong>');
-                        gmDiv.innerHTML = formatted;
-                        terminal.scrollTop = terminal.scrollHeight;
-                    }
-                    else if (data.type === 'done') {
-                        // KẾT THÚC LUỒNG - Render Nút bấm hoặc Gợi ý
-                        if (currentStoryMode === 'choose') {
-                            let choicesMatch = fullResponse.match(/\[CHOICES\]:\s*(.*)/);
-                            if (choicesMatch && choicesMatch[1]) {
-                                let choices = choicesMatch[1].split('|').map(s => s.trim());
-                                let choicesHtml = '';
-                                choices.forEach(c => {
-                                    if(c) choicesHtml += `<button class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pixel-green); padding: 12px; text-transform: none; text-align: left; font-family: var(--text-mono); font-size: 14px; margin-bottom: 5px; display: block; width: 100%;" onclick="executeStoryChoice('${c.replace(/'/g, "\\'")}')">${c}</button>`;
-                                });
-                                const choicesBox = document.getElementById('story-choices-box');
-                                if(choicesBox) choicesBox.innerHTML = choicesHtml;
+            for(let part of parts) {
+                if (part.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(part.substring(6));
+
+                        if (data.type === 'meta') {
+                            // Cập nhật trạng thái loading thành "Hoàn tất"
+                            if (loadEl) {
+                                loadEl.innerHTML = `<span style="color: var(--pixel-green);">[LOCAL AI] Đã phân tích xong! Chuyển giao Game Master...</span>`;
+                                setTimeout(() => loadEl.remove(), 1200);
                             }
-                        } else {
-                            if(inputEle) { inputEle.disabled = false; inputEle.value = ""; inputEle.focus(); }
-                        }
 
-                        if (data.turn) {
-                            const turnCounter = document.getElementById("story-turn-counter");
-                            if(turnCounter) turnCounter.innerText = `${data.turn}/10`;
+                            const scoreColor = data.score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
+                            // Chèn điểm số an toàn không làm vỡ DOM
+                            gmDiv.insertAdjacentHTML('beforebegin', `
+                                <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 10px; text-align: right; letter-spacing:0.5px;">
+                                    [LOCAL GEC RATING: ${data.score}/10]
+                                </div>
+                            `);
+                            gmDiv.style.display = "block";
                         }
+                        else if (data.type === 'chunk') {
+                            // Stream dữ liệu text
+                            fullResponse += data.text;
+                            // Regex mở rộng để bắt các tag có hoặc không có dấu hai chấm ":"
+                            let formatted = fullResponse
+                                .replace(/\[EN\]:?/g, '<strong style="color: var(--neon-cyan); font-size: 16px;">[EN]</strong>')
+                                .replace(/\[VN\]:?/g, '<br><br><strong style="color: #94a3b8;">[VN]</strong>')
+                                .replace(/\[CHOICES\]:?/g, '<br><br><strong style="color: var(--neon-amber);">[CHOICES]</strong>')
+                                .replace(/\[HINT\]:?/g, '<br><br><strong style="color: var(--neon-amber);">[HINT]</strong>');
+                            gmDiv.innerHTML = formatted;
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }
+                        else if (data.type === 'done') {
+                            // Render nút bấm khi Stream xong
+                            if (currentStoryMode === 'choose') {
+                                let choicesMatch = fullResponse.match(/\[CHOICES\]:?\s*(.*)/);
+                                if (choicesMatch && choicesMatch[1]) {
+                                    let choices = choicesMatch[1].split('|').map(s => s.trim());
+                                    let choicesHtml = '';
+                                    choices.forEach(c => {
+                                        if(c) choicesHtml += `<button class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pixel-green); padding: 12px; text-transform: none; text-align: left; font-family: var(--text-mono); font-size: 14px; margin-bottom: 5px; display: block; width: 100%; transition: 0.3s;" onmouseover="this.style.background='rgba(110, 231, 183, 0.2)'" onmouseout="this.style.background='rgba(0,0,0,0.5)'" onclick="executeStoryAction('${c.replace(/'/g, "\\'")}')">${c}</button>`;
+                                    });
+                                    const choicesBox = document.getElementById('story-choices-box');
+                                    if(choicesBox) choicesBox.innerHTML = choicesHtml;
+                                }
+                            } else {
+                                if(inputEle) { inputEle.disabled = false; inputEle.value = ""; inputEle.focus(); }
+                            }
+
+                            if (data.turn) {
+                                const turnCounter = document.getElementById("story-turn-counter");
+                                if(turnCounter) turnCounter.innerText = `${data.turn}/10`;
+                            }
+                        }
+                        else if (data.type === 'error') {
+                            gmDiv.style.display = "block";
+                            gmDiv.innerHTML += `<br><span style='color: var(--neon-pink);'>[SYSTEM ERROR] ${data.message}</span>`;
+                            if(inputEle) { inputEle.disabled = false; inputEle.focus(); }
+                        }
+                    } catch (e) {
+                        console.error("Lỗi parse SSE:", e, part);
                     }
                 }
             }
         }
     })
     .catch(err => {
-        gmDiv.innerHTML = "<span style='color: var(--neon-pink);'>[ERROR] Đứt cáp mạng không gian!</span>";
+        const loadEl = document.getElementById(loadId);
+        if(loadEl) loadEl.remove();
+        gmDiv.style.display = "block";
+        gmDiv.innerHTML += "<br><span style='color: var(--neon-pink);'>[ERROR] Mất kết nối tới Hệ thống Lõi!</span>";
+        if(inputEle) { inputEle.disabled = false; inputEle.focus(); }
     });
 }
 
@@ -964,6 +972,7 @@ function submitQuickQuest() {
     const textValue = inputEl.value.trim();
     if (!textValue) return;
 
+    inputEl.disabled = true;
     feedbackBox.style.display = "block";
     feedbackBox.innerHTML = `
         <div id="quickQuestScore" style="display:none; font-family: var(--text-pixel); margin-bottom: 5px;"></div>
@@ -980,39 +989,44 @@ function submitQuickQuest() {
     .then(async res => {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = ""; // BỘ ĐỆM
 
         while(true) {
             const {done, value} = await reader.read();
             if (done) break;
 
-            const chunks = decoder.decode(value).split('\n\n');
-            for(let chunk of chunks) {
-                if (chunk.startsWith('data: ')) {
-                    const data = JSON.parse(chunk.substring(6));
+            buffer += decoder.decode(value, {stream: true});
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop();
 
-                    if (data.type === 'meta') {
-                        scoreDiv.style.display = 'block';
-                        scoreDiv.style.color = data.score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
-                        scoreDiv.innerHTML = `[ ĐIỂM: ${data.score}/10 ]`;
-                        if(data.quest_notification) alert(data.quest_notification);
-                    }
-                    else if (data.type === 'chunk') {
-                        textDiv.innerHTML += data.text.replace(/\n/g, '<br>');
+            for(let part of parts) {
+                if (part.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(part.substring(6));
+
+                        if (data.type === 'meta') {
+                            scoreDiv.style.display = 'block';
+                            scoreDiv.style.color = data.score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
+                            scoreDiv.innerHTML = `[ ĐIỂM: ${data.score}/10 ]`;
+                            if(data.quest_notification) alert(data.quest_notification);
+                        }
+                        else if (data.type === 'chunk') {
+                            textDiv.innerHTML += data.text.replace(/\n/g, '<br>');
+                        }
+                    } catch (e) {
+                        console.error("Parse Error:", e);
                     }
                 }
             }
         }
+        inputEl.disabled = false;
         inputEl.value = "";
         loadDailyQuests();
+    })
+    .catch(err => {
+        feedbackBox.innerHTML = "<span style='color: var(--neon-pink);'>[ERROR] Sự cố mạng!</span>";
+        inputEl.disabled = false;
     });
-}
-
-function checkAndRunTutorial(userData) {
-    if (userData.level === 'Beginner' && userData.streak === 0 && userData.coins === 0) {
-        if (!localStorage.getItem('tutorial_completed')) {
-            showMasterGTutorial();
-        }
-    }
 }
 
 function showMasterGTutorial() {
