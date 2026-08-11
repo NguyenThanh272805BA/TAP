@@ -122,9 +122,13 @@ def evaluate():
     quest_completed_word = check_and_complete_quest(user_id, user_input)
     detected_intent = intent_engine.predict(user_input)
 
+    # -------------------------------------------------------------
+    # XỬ LÝ KẾT QUẢ TỪ HYBRID GEC ENGINE
+    # -------------------------------------------------------------
     gec_res = gec_engine.evaluate(user_input)
-    local_score = gec_res['score']
-    local_feedback = gec_res['feedback']
+    # Ép kiểu float an toàn và lấy default để phòng trường hợp Fallback LLM trả về rỗng
+    local_score = float(gec_res.get('score', 0.0))
+    local_feedback = gec_res.get('feedback', 'Không có nhận xét từ hệ thống.')
 
     def generate_stream():
         meta_data = {
@@ -288,7 +292,7 @@ def generate_unit():
                 added += 1
         db.session.commit()
 
-        #Báo lỗi rõ ràng nếu user tạo trùng chủ đề đã mở khóa
+        # Báo lỗi rõ ràng nếu user tạo trùng chủ đề đã mở khóa
         if added == 0:
             return jsonify({
                                "error": f"Đừng ăn tham! Ngươi đã mở khóa sạch bóng từ vựng của chủ đề '{topic}' rồi, hãy đổi chủ đề khác!"}), 400

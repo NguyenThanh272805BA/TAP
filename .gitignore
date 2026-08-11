@@ -1,4 +1,7 @@
 .env
 __pycache__/
 venv/
+.venv/
 *.pyc
+app/ml_models/saved_models/
+.cache/
