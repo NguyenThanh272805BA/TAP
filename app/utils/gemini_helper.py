@@ -1,11 +1,18 @@
 # app/utils/gemini_helper.py
 import os
+import sys
 import json
 import time
 import re
 from google import genai
 from google.genai import errors, types
 from dotenv import load_dotenv
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 # Load biến môi trường
 load_dotenv()

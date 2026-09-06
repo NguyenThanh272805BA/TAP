@@ -15,7 +15,6 @@ class SmartSRS:
             self.params = joblib.load(model_path)
             self.is_mock = False
         else:
-            # Hệ số chuẩn khoa học SM-2 nếu chưa chạy script retrain_srs.py
             self.params = [12.0, 1.5, 0.8]
             self.is_mock = True
 
