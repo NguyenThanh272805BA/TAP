@@ -41,7 +41,12 @@ class TestAutonomousAISystem(unittest.TestCase):
         self.assertEqual(res_good['score'], 10.0)
         self.assertEqual(res_bad['error_count'] > 0, True)
         self.assertEqual(res_good['error_count'], 0)
-        print("\n[OK] Test 1: Symbolic Grammar Engine hoạt động chính xác và tự sửa câu thành công.")
+        
+        # Test Bộ sinh nhận xét Master G Local & Cổng phân luồng
+        self.assertIn("Master G", res_bad['master_g_critique'])
+        self.assertFalse(res_bad['needs_llm_escalation'])
+        self.assertFalse(res_good['needs_llm_escalation'])
+        print("\n[OK] Test 1: Symbolic Grammar Engine & Local Critique Synthesizer hoạt động chính xác.")
 
     def test_02_zero_shot_intent_parser(self):
         """Kiểm thử Bộ não 2: Zero-shot Semantic Intent Parser không phụ thuộc file CSV"""

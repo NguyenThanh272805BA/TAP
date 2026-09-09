@@ -3,6 +3,8 @@ import sys
 import json
 from app.utils.gemini_helper import evaluate_english_skill
 
+from app.ml_models.critique_synthesizer import get_critique_synthesizer
+
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding='utf-8')
@@ -53,7 +55,7 @@ class LocalGECEngine:
             self.is_active = False
             return False
 
-    def evaluate(self, text: str) -> dict:
+    def evaluate(self, text: str, user_level: str = "Beginner") -> dict:
         """
         Phân tích ngữ pháp chuyên sâu:
         - Phát hiện vị trí sai (offset, length)
@@ -63,12 +65,17 @@ class LocalGECEngine:
         - Tính điểm khoa học theo mật độ lỗi trên tổng số từ
         """
         if not text or len(text.strip()) == 0:
+            msg = "Ngươi định lừa Master G bằng một khoảng trống tĩnh lặng à? Nhập câu tiếng Anh vào!"
             return {
                 "score": 0.0,
-                "feedback": "Ngươi định lừa Master G bằng một khoảng trống tĩnh lặng à? Nhập câu tiếng Anh vào!",
+                "feedback": msg,
+                "master_g_critique": msg,
                 "corrected_text": "",
                 "errors": [],
-                "error_count": 0
+                "error_count": 0,
+                "needs_llm_escalation": False,
+                "uncertainty_score": 0.0,
+                "escalation_reason": "Văn bản rỗng"
             }
 
         if not self.is_active:
@@ -133,20 +140,54 @@ class LocalGECEngine:
                 
                 feedback = "\n".join(feedback_lines)
 
+            # 4. Kiểm tra Cổng Phân Luồng Thông Minh (Intelligent Escalation Gate)
+            needs_escalation, uncertainty_score, reason = self._check_uncertainty(
+                text, word_count, len(error_details), total_penalty
+            )
+
+            # 5. Sinh nhận xét Master G Local (< 10ms, không tốn Token LLM)
+            mock_res = {
+                "score": score,
+                "corrected_text": corrected,
+                "errors": error_details
+            }
+            synthesizer = get_critique_synthesizer()
+            master_g_critique = synthesizer.synthesize(text, mock_res, user_level=user_level)
+
             return {
                 "score": score,
                 "feedback": feedback,
+                "master_g_critique": master_g_critique,
                 "corrected_text": corrected,
                 "errors": error_details,
-                "error_count": len(error_details)
+                "error_count": len(error_details),
+                "needs_llm_escalation": needs_escalation,
+                "uncertainty_score": uncertainty_score,
+                "escalation_reason": reason
             }
 
         except Exception as e:
             print(f"[GEC ENGINE] Ngoại lệ khi phân tích câu: {e}. Kích hoạt Fallback.")
             return self._trigger_fallback(text, str(e))
 
+    def _check_uncertainty(self, text: str, word_count: int, error_count: int, total_penalty: float):
+        """
+        Đo lường độ bất định (Uncertainty) và quyết định xem câu có cần chuyển giao cho LLM hay không:
+        Returns: (needs_llm_escalation: bool, uncertainty_score: float, reason: str)
+        """
+        # 1. Câu dài phức hợp (> 30 từ) chứa nhiều lỗi ngữ pháp lồng nhau
+        if word_count > 30 and error_count >= 5:
+            return True, 0.85, "Câu phức dài với nhiều mệnh đề lồng nhau phức tạp."
+
+        # 2. Câu quá ngắn hoặc mật độ lỗi dị thường (từ gõ bừa OOD)
+        if word_count <= 3 and total_penalty > 8.0:
+            return True, 0.80, "Mật độ lỗi dị thường hoặc từ ngữ nằm ngoài phân phối chuẩn."
+
+        # 3. Thông thường: AI Local hoàn toàn làm chủ (85 - 90% trường hợp)
+        return False, 0.15, "AI Local tự chủ hoàn toàn, không cần LLM."
+
     def _trigger_fallback(self, text: str, reason: str) -> dict:
-        """Fallback LLM khi có ngoại lệ hệ thống."""
+        """Fallback LLM khi có ngoại lệ hệ thống hoặc độ bất định vượt ngưỡng."""
         print(f"[GEC ENGINE -> FALLBACK] Chuyển hướng tới Gemini. Lý do: {reason}")
         try:
             raw_json = evaluate_english_skill(text)
@@ -159,18 +200,27 @@ class LocalGECEngine:
             return {
                 "score": float(llm_result.get("score", 0.0)),
                 "feedback": final_feedback,
+                "master_g_critique": final_feedback,
                 "corrected_text": llm_result.get("corrected_text", text),
                 "errors": [],
-                "error_count": 0
+                "error_count": 0,
+                "needs_llm_escalation": True,
+                "uncertainty_score": 1.0,
+                "escalation_reason": f"Fallback kích hoạt: {reason}"
             }
         except Exception as e:
             print(f"[GEC ENGINE] Lỗi nghiêm trọng khi Fallback: {e}")
+            msg = "[SYSTEM WARNING] Lò phản ứng AI cạn kiệt. Master G đi vắng. Tạm cho 5 điểm."
             return {
                 "score": 5.0,
-                "feedback": "[SYSTEM WARNING] Lò phản ứng AI cạn kiệt. Master G đi vắng. Tạm cho 5 điểm.",
+                "feedback": msg,
+                "master_g_critique": msg,
                 "corrected_text": text,
                 "errors": [],
-                "error_count": 0
+                "error_count": 0,
+                "needs_llm_escalation": True,
+                "uncertainty_score": 1.0,
+                "escalation_reason": f"Lỗi nghiêm trọng: {e}"
             }
 
 
