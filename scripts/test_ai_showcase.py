@@ -62,13 +62,15 @@ try:
 
     for q in intent_queries:
         pred = intent_engine.predict(q)
-        # Lấy xác suất phân phối Softmax nếu pipeline hỗ trợ
         prob_str = ""
-        if hasattr(intent_engine.pipeline, "predict_proba"):
-            probs = intent_engine.pipeline.predict_proba([q])[0]
-            classes = intent_engine.pipeline.classes_
+        pipe = getattr(intent_engine, "legacy_pipeline", None)
+        if pipe is not None and hasattr(pipe, "predict_proba"):
+            probs = pipe.predict_proba([q])[0]
+            classes = pipe.classes_
             top_prob = max(probs)
             prob_str = f" | Độ tự tin Softmax: {top_prob*100:.1f}%"
+        else:
+            prob_str = " | Động cơ: Zero-Shot Rule Parser"
 
         print(f">> Câu chat: \"{q}\"")
         print(f"   -> Dự đoán Intent: [{pred.upper()}]{prob_str}")

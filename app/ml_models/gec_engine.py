@@ -1,8 +1,6 @@
 import os
 import sys
 import json
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from app.utils.gemini_helper import evaluate_english_skill
 
 if sys.platform == "win32":
@@ -14,116 +12,141 @@ if sys.platform == "win32":
 
 class LocalGECEngine:
     """
-    Bộ não 1: Grammar Error Correction (GEC) - Hybrid Transformer
-    Phiên bản Transformer kết hợp Fallback LLM.
+    Bộ não 1: Symbolic Grammar Error Correction & Diagnostics Engine
+    Sử dụng LanguageTool phân tích cú pháp quy tắc hình thức (Symbolic Grammar Rules)
+    kết hợp công thức tính điểm toán học và sửa câu tự động, không phụ thuộc vào dữ liệu train tĩnh.
     """
 
-    # Fallback 0.55 (Mức giới hạn toán học của phân loại nhị phân là 0.5)
-    def __init__(self, model_path="app/ml_models/saved_models/gec_transformer", fallback_threshold=0.55, lazy=False):
+    _instance = None
+    _lt_tool = None
+
+    def __new__(cls, *args, **kwargs):
+        """Mẫu Singleton đảm bảo chỉ tạo 1 tiến trình LanguageTool trong toàn bộ server."""
+        if cls._instance is None:
+            cls._instance = super(LocalGECEngine, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, fallback_threshold=0.55, lazy=False):
+        if hasattr(self, '_initialized') and self._initialized:
+            return
         self.fallback_threshold = fallback_threshold
-        self.model_path = model_path
-        self.model = None
-        self.tokenizer = None
+        self._initialized = True
         self.is_active = False
-        self.is_quantized = False
-        self.device = torch.device("cpu") # Quantized INT8 chạy tối ưu trên CPU
 
         if not lazy:
             self._ensure_loaded()
 
     def _ensure_loaded(self):
-        """Lazy loading: Chỉ tải mô hình vào RAM khi có lượt gọi đầu tiên để tiết kiệm tài nguyên."""
-        if self.is_active:
+        """Khởi tạo LanguageTool Engine (Lazy Loading Singleton)."""
+        if self.is_active and self._lt_tool is not None:
             return True
 
         try:
-            if not os.path.exists(self.model_path):
-                raise FileNotFoundError(f"Không tìm thấy thư mục mô hình tại {self.model_path}")
-
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
-
-            # Ưu tiên nạp bản lượng tử hóa siêu nhẹ (INT8) nếu có
-            quantized_file = os.path.join(self.model_path, "quantized_model.pt")
-            if os.path.exists(quantized_file):
-                print(f"[GEC ENGINE] Phát hiện bản nén INT8. Đang nạp {quantized_file} ...")
-                self.model = torch.load(quantized_file, map_location=self.device, weights_only=False)
-                self.is_quantized = True
-                print("[GEC ENGINE] Đã nạp thành công Local Transformer GEC (Quantized INT8 - Tối ưu 2x CPU Latency).")
-            else:
-                self.model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
-                # Đẩy model lên GPU nếu có và là model thường
-                if torch.cuda.is_available():
-                    self.device = torch.device("cuda")
-                self.model.to(self.device)
-                print("[GEC ENGINE] Đã nạp thành công Local Transformer GEC (FP32).")
-
-            self.model.eval()
+            import language_tool_python
+            print("[GEC ENGINE] Đang khởi tạo Symbolic Grammar Engine (LanguageTool en-US)...")
+            self._lt_tool = language_tool_python.LanguageTool('en-US')
             self.is_active = True
+            print("[GEC ENGINE] Đã nạp thành công Symbolic Grammar Engine. Độc lập 100% dữ liệu train.")
             return True
-
         except Exception as e:
-            print(f"[GEC ENGINE] Cảnh báo lỗi khởi tạo Transformer: {e}. Hệ thống sẽ phụ thuộc 100% vào LLM.")
+            print(f"[GEC ENGINE] Lỗi khởi tạo LanguageTool: {e}. Sẽ dùng fallback LLM.")
             self.is_active = False
             return False
 
     def evaluate(self, text: str) -> dict:
         """
-        Dự đoán ngữ pháp. Trả về Score (Thang 10) và Feedback.
-        Kích hoạt Fallback LLM nếu Confidence Score quá thấp (Dưới 0.55).
+        Phân tích ngữ pháp chuyên sâu:
+        - Phát hiện vị trí sai (offset, length)
+        - Phân loại luật ngữ pháp vi phạm (rule_id, category)
+        - Gợi ý từ thay thế (replacements)
+        - Tự động sửa thành câu hoàn chỉnh (corrected_text)
+        - Tính điểm khoa học theo mật độ lỗi trên tổng số từ
         """
         if not text or len(text.strip()) == 0:
             return {
                 "score": 0.0,
-                "feedback": "Ngươi định lừa Master G bằng một khoảng trống tĩnh lặng à? Nhập chữ vào!"
+                "feedback": "Ngươi định lừa Master G bằng một khoảng trống tĩnh lặng à? Nhập câu tiếng Anh vào!",
+                "corrected_text": "",
+                "errors": [],
+                "error_count": 0
             }
 
         if not self.is_active:
             if not self._ensure_loaded():
                 return self._trigger_fallback(text, "Local Brain Offline")
 
-        # Tiền xử lý văn bản
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=128)
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        try:
+            # 1. Phân tích ngữ pháp hình thức bằng LanguageTool
+            matches = self._lt_tool.check(text)
+            corrected = self._lt_tool.correct(text)
 
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-            logits = outputs.logits
-            # Chuyển đổi Logits thành phân phối xác suất
-            probs = torch.softmax(logits, dim=1).squeeze().tolist()
+            words = text.strip().split()
+            word_count = max(1, len(words))
 
-        # probs[0]: Unacceptable (Sai ngữ pháp), probs[1]: Acceptable (Đúng ngữ pháp)
-        prob_unacceptable, prob_acceptable = probs[0], probs[1]
-        confidence = max(prob_unacceptable, prob_acceptable)
+            # 2. Tính toán điểm số định lượng dựa trên mật độ lỗi
+            # Trọng số theo loại lỗi: Ngữ pháp nặng = 1.2, Chính tả/Viết hoa = 0.5, Phong cách = 0.4
+            total_penalty = 0.0
+            error_details = []
 
-        # ---------------------------------------------------------
-        # HYBRID FALLBACK: Gọi LLM nếu Local Model cực kỳ thiếu tự tin ( < 0.55)
-        # ---------------------------------------------------------
-        if confidence < self.fallback_threshold:
-            print(
-                f"[GEC ENGINE] Confidence ({confidence:.2f}) < Threshold ({self.fallback_threshold}). Kích hoạt Fallback...")
-            return self._trigger_fallback(text, "Out of Distribution (OOD)")
+            for m in matches:
+                category = getattr(m, 'category', 'GRAMMAR')
+                rule_id = getattr(m, 'rule_id', '')
+                
+                # Xác định trọng số phạt
+                if 'SPELLING' in category or 'TYPOS' in category:
+                    weight = 0.6
+                elif 'CASING' in category:
+                    weight = 0.4
+                elif 'STYLE' in category:
+                    weight = 0.5
+                else:
+                    weight = 1.2
 
-        # ---------------------------------------------------------
-        # XỬ LÝ NỘI BỘ (LOCAL BRAIN 100%)
-        # ---------------------------------------------------------
-        score = max(0.0, round(prob_acceptable * 10, 1))
+                # Phạt tỉ lệ theo độ dài câu: Mật độ lỗi càng cao thì trừ càng nặng
+                penalty = weight * (10.0 / word_count)
+                total_penalty += penalty
 
-        if score >= 8.0:
-            feedback = f"[Điểm Tự Tin: {confidence:.2f}] Tuyệt vời! Ngữ pháp rất mượt mà. Phong độ ngạo nghễ!"
-        elif 5.0 <= score < 8.0:
-            feedback = f"[Điểm Tự Tin: {confidence:.2f}] Tạm ổn, nhưng Master G thấy câu này vẫn hơi lấn cấn. Cố làm cho nó tự nhiên hơn nhé!"
-        else:
-            feedback = f"[Điểm Tự Tin: {confidence:.2f}] Cấu trúc tan nát! Câu này sai ngữ pháp hoặc tối nghĩa rồi. Master G từ chối hiểu!"
+                error_details.append({
+                    "rule_id": rule_id,
+                    "message": getattr(m, 'message', ''),
+                    "offset": getattr(m, 'offset', 0),
+                    "error_length": getattr(m, 'error_length', 0),
+                    "context": getattr(m, 'context', ''),
+                    "replacements": getattr(m, 'replacements', [])[:3],
+                    "category": category
+                })
 
-        return {
-            "score": score,
-            "feedback": feedback
-        }
+            # Điểm từ 0.0 đến 10.0
+            score = max(0.0, min(10.0, round(10.0 - total_penalty, 1)))
+
+            # 3. Tạo phản hồi nhận xét sư phạm chi tiết (Pedagogical Feedback)
+            if len(matches) == 0:
+                feedback = "[Hoàn hảo] Câu của bạn chuẩn xác 100% về ngữ pháp và từ vựng! Phong độ ngạo nghễ!"
+            else:
+                feedback_lines = [f"[Tìm thấy {len(matches)} điểm cần lưu ý (Điểm: {score}/10)]:"]
+                for i, err in enumerate(error_details[:3], 1):
+                    rep_text = f" -> Gợi ý sửa: '{', '.join(err['replacements'])}'" if err['replacements'] else ""
+                    feedback_lines.append(f"{i}. {err['message']}{rep_text}")
+                
+                if corrected != text:
+                    feedback_lines.append(f"\n=> Câu chuẩn đề xuất: \"{corrected}\"")
+                
+                feedback = "\n".join(feedback_lines)
+
+            return {
+                "score": score,
+                "feedback": feedback,
+                "corrected_text": corrected,
+                "errors": error_details,
+                "error_count": len(error_details)
+            }
+
+        except Exception as e:
+            print(f"[GEC ENGINE] Ngoại lệ khi phân tích câu: {e}. Kích hoạt Fallback.")
+            return self._trigger_fallback(text, str(e))
 
     def _trigger_fallback(self, text: str, reason: str) -> dict:
-        """
-        Giao tiếp với utils/gemini_helper.py để lấy kết quả chấm điểm mỏ hỗn từ LLM.
-        """
+        """Fallback LLM khi có ngoại lệ hệ thống."""
         print(f"[GEC ENGINE -> FALLBACK] Chuyển hướng tới Gemini. Lý do: {reason}")
         try:
             raw_json = evaluate_english_skill(text)
@@ -135,33 +158,33 @@ class LocalGECEngine:
 
             return {
                 "score": float(llm_result.get("score", 0.0)),
-                "feedback": final_feedback
+                "feedback": final_feedback,
+                "corrected_text": llm_result.get("corrected_text", text),
+                "errors": [],
+                "error_count": 0
             }
         except Exception as e:
             print(f"[GEC ENGINE] Lỗi nghiêm trọng khi Fallback: {e}")
             return {
                 "score": 5.0,
-                "feedback": f"[SYSTEM WARNING] Lò phản ứng AI cạn kiệt. Master G đi vắng. Tạm cho 5 điểm."
+                "feedback": "[SYSTEM WARNING] Lò phản ứng AI cạn kiệt. Master G đi vắng. Tạm cho 5 điểm.",
+                "corrected_text": text,
+                "errors": [],
+                "error_count": 0
             }
 
 
 if __name__ == "__main__":
     engine = LocalGECEngine()
 
-    print("\n" + "="*50)
-    print("TEST 1: Câu sai ngữ pháp hiển nhiên (Kỳ vọng: Local chấm điểm thấp)")
-    print("="*50)
+    print("\n" + "="*60)
+    print("TEST 1: Câu sai ngữ pháp hiển nhiên (Chủ ngữ số ít đi với động từ số nhiều)")
+    print("="*60)
     res_1 = engine.evaluate("She do not likes play with dog.")
-    print(res_1)
+    print(json.dumps(res_1, indent=2, ensure_ascii=False))
 
-    print("\n" + "="*50)
-    print("TEST 2: Câu đúng ngữ pháp hoàn toàn (Kỳ vọng: Local chấm điểm cao)")
-    print("="*50)
+    print("\n" + "="*60)
+    print("TEST 2: Câu đúng ngữ pháp hoàn toàn")
+    print("="*60)
     res_2 = engine.evaluate("She does not like playing with dogs.")
-    print(res_2)
-
-    print("\n" + "="*50)
-    print("TEST 3: Câu lủng củng/OOD (Kỳ vọng: Kích hoạt Fallback gọi LLM)")
-    print("="*50)
-    res_3 = engine.evaluate("Dog she likes play not do.")
-    print(res_3)
+    print(json.dumps(res_2, indent=2, ensure_ascii=False))
