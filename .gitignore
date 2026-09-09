@@ -1,7 +1,29 @@
+# Python & Virtual Environments
 .env
 __pycache__/
 venv/
 .venv/
 *.pyc
-app/ml_models/saved_models/
 .cache/
+
+# IDE & Editor Settings
+.idea/
+.vscode/
+
+# Large Model Weights, Checkpoints & Training Artifacts (Avoid Git LFS issues)
+app/ml_models/saved_models/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.h5
+checkpoints/
+runs/
+wandb/
+model_cache/
+*.log
+
+# System & OS
+Thumbs.db
+.DS_Store
