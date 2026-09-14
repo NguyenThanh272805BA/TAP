@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block title %}ACADEMIC ROADMAP{% endblock %}
+
+{% block content %}
+<div class="bento-container" style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 25px;">
+
+    <!-- 1. BẢNG ĐIỀU KHIỂN TIẾN ĐỘ TARGET BAND -->
+    <div class="bento-card card-wide" style="padding: 30px; position: relative; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <div class="pixel-title" style="color: var(--neon-cyan); font-size: 20px; margin-bottom: 8px;">
+                    ACADEMIC_ROADMAP // LỘ TRÌNH CHINH PHỤC TARGET BAND
+                </div>
+                <div style="font-size: 14px; color: #cbd5e1;">
+                    Lộ trình học tập thích ứng cá nhân hóa: Đi từ trình độ hiện tại <strong style="color: var(--pixel-green);" id="ui-current-band">A1</strong> tới mục tiêu mong muốn!
+                </div>
+            </div>
+
+            <!-- CHỌN TARGET BAND -->
+            <div style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 10px; border: 1px solid var(--neon-cyan);">
+                <span style="font-size: 12px; color: #94a3b8; font-family: var(--text-pixel);">MỤC TIÊU BAND:</span>
+                <select id="targetBandSelect" onchange="changeTargetBand()" style="background: #0f172a; color: var(--neon-cyan); border: 1px solid var(--neon-cyan); padding: 6px 12px; border-radius: 6px; font-family: var(--text-mono); font-weight: bold; cursor: pointer;">
+                    <option value="A1">A1 (IELTS 3.0)</option>
+                    <option value="A2">A2 (IELTS 4.0)</option>
+                    <option value="B1">B1 (IELTS 5.0)</option>
+                    <option value="B2" selected>B2 (IELTS 6.5)</option>
+                    <option value="C1">C1 (IELTS 7.5)</option>
+                    <option value="C2">C2 (IELTS 8.5+)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- PROGRESS BAR -->
+        <div style="margin-top: 25px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-family: var(--text-mono); margin-bottom: 8px;">
+                <span style="color: #cbd5e1;">Tiến trình hoàn thành: <strong style="color: var(--neon-amber);" id="ui-milestone-count">0/8 Chặng</strong></span>
+                <span style="color: var(--pixel-green); font-weight: bold;" id="ui-progress-pct">0%</span>
+            </div>
+            <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                <div id="roadmapProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--pixel-green)); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 15px rgba(103, 232, 249, 0.8);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. CÂY CHẶNG LỘ TRÌNH (MILESTONE NODES) -->
+    <div id="milestones-container" style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="typing-effect" style="color: var(--neon-cyan); font-size: 14px;">Đang lập bản đồ lộ trình học tập tối ưu cho bạn...</div>
+    </div>
+
+</div>
+
+<!-- MODAL PHÒNG HỌC & VƯỢT ẢI CHẶNG -->
+<div id="milestone-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 999999; justify-content: center; align-items: center;">
+    <div style="background: rgba(15, 23, 42, 0.98); border: 2px solid var(--neon-cyan); border-radius: 14px; padding: 30px; max-width: 800px; width: 92%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 0 40px rgba(6, 182, 212, 0.3);">
+        <button class="pixel-btn" onclick="closeMilestoneModal()" style="position: absolute; top: 15px; right: 15px; background: #ef4444; padding: 6px 12px; font-size: 10px;">[ ĐÓNG ]</button>
+        
+        <div class="pixel-title" id="modal-milestone-title" style="color: var(--neon-cyan); font-size: 18px; margin-bottom: 5px;">TIÊU ĐỀ CHẶNG</div>
+        <div id="modal-milestone-desc" style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Mô tả chặng</div>
+
+        <!-- TAB NAVIGATION TRONG MODAL -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px dashed var(--glass-border); padding-bottom: 12px;">
+            <button class="pixel-btn" id="m-tab-btn-learn" onclick="switchModalTab('learn')" style="background: rgba(103, 232, 249, 0.15); border-color: var(--neon-cyan); color: var(--neon-cyan); font-size: 11px;">📖 LÝ THUYẾT & TỪ VỰNG</button>
+            <button class="pixel-btn" id="m-tab-btn-scramble" onclick="switchModalTab('scramble')" style="background: transparent; border-color: var(--glass-border); color: #94a3b8; font-size: 11px;">🧩 ẢI 1: GHÉP CHỮ</button>
+            <button class="pixel-btn" id="m-tab-btn-syntax" onclick="switchModalTab('syntax')" style="background: transparent; border-color: var(--glass-border); color: #94a3b8; font-size: 11px;">⚙️ ẢI 2: GHÉP CÚ PHÁP</button>
+        </div>
+
+        <!-- NỘI DUNG 1: HỌC KIẾN THỨC -->
+        <div id="m-tab-learn" style="display: block;">
+            <!-- Ngữ pháp -->
+            <div id="modal-grammar-box" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid var(--neon-amber); margin-bottom: 15px;">
+                <div style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold; font-size: 15px;" id="modal-grammar-structure">Cấu trúc</div>
+                <div style="color: #cbd5e1; font-size: 13px; margin-top: 5px;" id="modal-grammar-exp">Giải thích</div>
+                <div style="color: #94a3b8; font-size: 12px; margin-top: 8px; font-style: italic;" id="modal-grammar-ex">Ví dụ: ...</div>
+            </div>
+
+            <!-- Từ vựng -->
+            <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 13px; margin-bottom: 10px;">> TỪ VỰNG MỤC TIÊU CỦA CHẶNG:</div>
+            <div id="modal-vocab-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px;">
+                <!-- Render từ vựng -->
+            </div>
+            <button class="pixel-btn" onclick="switchModalTab('scramble')" style="background: var(--neon-purple); width: 100%; padding: 12px;">TIẾN VÀO THỬ THÁCH VƯỢT ẢI ▶</button>
+        </div>
+
+        <!-- NỘI DUNG 2: MINIGAME GHÉP CHỮ -->
+        <div id="m-tab-scramble" style="display: none;">
+            <div style="color: var(--neon-pink); font-family: var(--text-pixel); font-size: 14px; text-align: center; margin-bottom: 10px;">
+                ẢI 1: GỠ BOM TỪ VỰNG // GHÉP CÁC Ô KÝ TỰ THEO THỨ TỰ ĐÚNG
+            </div>
+            <div id="scramble-meaning" style="color: #cbd5e1; font-size: 15px; text-align: center; margin-bottom: 15px; font-weight: bold;">Nghĩa của từ</div>
+
+            <div class="scramble-slots-row" id="scramble-slots"></div>
+            <div class="scramble-pool-row" id="scramble-pool"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="pixel-btn" onclick="resetScrambleWord()" style="background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #94a3b8; padding: 10px 15px;">XÓA CHỌN LẠI</button>
+                <button class="pixel-btn" onclick="submitWordScramble()" style="background: var(--pixel-green); flex: 1; padding: 10px 15px;">KIỂM TRA TỪ NÀY</button>
+            </div>
+            <div id="scramble-feedback" style="display: none; margin-top: 15px; font-size: 14px; padding: 10px; border-radius: 6px;"></div>
+        </div>
+
+        <!-- NỘI DUNG 3: MINIGAME GHÉP CÚ PHÁP -->
+        <div id="m-tab-syntax" style="display: none;">
+            <div style="color: var(--neon-amber); font-family: var(--text-pixel); font-size: 14px; text-align: center; margin-bottom: 10px;">
+                ẢI 2: LẮP RÁP CÚ PHÁP // SẮP XẾP CÁC KHỐI TỪ THÀNH CÂU CHUẨN
+            </div>
+            <div id="syntax-explanation" style="color: #cbd5e1; font-size: 14px; text-align: center; margin-bottom: 15px;">Điểm ngữ pháp</div>
+
+            <div class="scramble-slots-row" id="syntax-slots" style="min-height: 50px;"></div>
+            <div class="scramble-pool-row" id="syntax-pool"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="pixel-btn" onclick="resetSyntaxSentence()" style="background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #94a3b8; padding: 10px 15px;">XÓA CHỌN LẠI</button>
+                <button class="pixel-btn" onclick="submitSyntaxSentence()" style="background: var(--neon-cyan); flex: 1; padding: 10px 15px;">KIỂM TRA CÂU NÀY</button>
+            </div>
+            <div id="syntax-feedback" style="display: none; margin-top: 15px; font-size: 14px; padding: 10px; border-radius: 6px;"></div>
+
+            <!-- NÚT HOÀN TẤT QUA ẢI CHẶNG -->
+            <div style="margin-top: 25px; border-top: 1px dashed var(--glass-border); padding-top: 15px;">
+                <button class="pixel-btn pulse-neon" onclick="finalizeMilestoneGateway()" style="background: var(--neon-pink); width: 100%; padding: 15px; font-size: 12px;">🏆 NỘP BÀI VƯỢT ẢI CHẶNG</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentMilestoneId = null;
+    let currentMilestoneData = null;
+    let scrambleSelectedLetters = [];
+    let syntaxSelectedChunks = [];
+    let wordPassed = false;
+    let syntaxPassed = false;
+    let scrambleStartTime = 0;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadRoadmap();
+    });
+
+    function loadRoadmap() {
+        fetch('/api/roadmap/current')
+            .then(res => res.json())
+            .then(data => {
+                if(data.error) return;
+
+                document.getElementById('ui-current-band').innerText = data.current_band;
+                document.getElementById('targetBandSelect').value = data.target_band;
+                document.getElementById('ui-milestone-count').innerText = `${data.completed_milestones}/${data.total_milestones} Chặng`;
+                document.getElementById('ui-progress-pct').innerText = `${data.progress_pct}%`;
+                document.getElementById('roadmapProgressBar').style.width = `${data.progress_pct}%`;
+
+                renderMilestonesList(data.milestones);
+            });
+    }
+
+    function changeTargetBand() {
+        const newBand = document.getElementById('targetBandSelect').value;
+        fetch('/api/roadmap/set_target', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ target_band: newBand })
+        }).then(r => r.json()).then(res => {
+            alert(res.message);
+            loadRoadmap();
+        });
+    }
+
+    function renderMilestonesList(milestones) {
+        const container = document.getElementById('milestones-container');
+        if(!milestones || milestones.length === 0) {
+            container.innerHTML = '<div style="color: #94a3b8; text-align: center;">Chưa có chặng nào trong lộ trình này.</div>';
+            return;
+        }
+
+        let html = '';
+        let currentBandGroup = '';
+
+        milestones.forEach((m, idx) => {
+            if(m.band_level !== currentBandGroup) {
+                currentBandGroup = m.band_level;
+                html += `
+                <div style="display: flex; align-items: center; gap: 15px; margin-top: 15px;">
+                    <span class="pixel-title" style="font-size: 16px; color: var(--neon-amber); margin: 0;">[ KHU VỰC: BAND ${m.band_level} ]</span>
+                    <div style="flex: 1; height: 1px; background: dashed rgba(245, 158, 11, 0.4);"></div>
+                </div>`;
+            }
+
+            let statusClass = m.is_completed ? "completed" : (m.is_unlocked ? "unlocked" : "locked");
+            let badgeText = m.is_completed ? "✓ ĐÃ QUA ẢI" : (m.is_unlocked ? "▶ ĐANG MỞ" : "🔒 ĐÃ KHÓA");
+            let badgeColor = m.is_completed ? "var(--pixel-green)" : (m.is_unlocked ? "var(--neon-cyan)" : "#64748b");
+
+            html += `
+            <div class="milestone-node ${statusClass}" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: flex-start; gap: 15px;">
+                    <div style="background: rgba(0,0,0,0.5); border: 2px solid ${badgeColor}; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-family: var(--text-mono); font-weight: bold; color: ${badgeColor}; font-size: 16px;">
+                        ${idx + 1}
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                            <strong style="color: #fff; font-size: 16px;">${m.title}</strong>
+                            <span style="font-size: 11px; font-family: var(--text-mono); padding: 2px 8px; border-radius: 4px; border: 1px solid ${badgeColor}; color: ${badgeColor};">${badgeText}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;">${m.description || ''}</div>
+                        <div style="display: flex; gap: 8px; font-size: 11px; font-family: var(--text-mono);">
+                            <span style="background: rgba(245, 158, 11, 0.1); color: var(--neon-amber); padding: 2px 6px; border-radius: 4px;">Ngữ pháp lõi: Có</span>
+                            <span style="background: rgba(103, 232, 249, 0.1); color: var(--neon-cyan); padding: 2px 6px; border-radius: 4px;">${m.vocab_count} Từ vựng</span>
+                            <span style="background: rgba(110, 231, 183, 0.1); color: var(--pixel-green); padding: 2px 6px; border-radius: 4px;">+${m.reward_coins} Xu Thưởng</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    ${m.is_unlocked ? 
+                        `<button class="pixel-btn" onclick="openMilestoneRoom(${m.id})" style="background: ${m.is_completed ? 'rgba(0,0,0,0.6)' : 'var(--neon-cyan)'}; color: ${m.is_completed ? 'var(--pixel-green)' : '#000'}; border: 1px solid ${m.is_completed ? 'var(--pixel-green)' : 'var(--neon-cyan)'};">
+                            ${m.is_completed ? 'ÔN LẠI ẢI' : 'VÀO HỌC & VƯỢT ẢI'}
+                        </button>` 
+                        : `<button class="pixel-btn" disabled style="background: transparent; border: 1px solid #475569; color: #64748b; cursor: not-allowed;">CHƯA MỞ KHÓA</button>`
+                    }
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function openMilestoneRoom(milestoneId) {
+        currentMilestoneId = milestoneId;
+        wordPassed = false;
+        syntaxPassed = false;
+        scrambleSelectedLetters = [];
+        syntaxSelectedChunks = [];
+
+        fetch(`/api/roadmap/milestone/${milestoneId}`)
+            .then(res => res.json())
+            .then(data => {
+                currentMilestoneData = data;
+                
+                // Bind Modal Header
+                document.getElementById('modal-milestone-title').innerText = data.milestone.title;
+                document.getElementById('modal-milestone-desc').innerText = data.milestone.description || '';
+
+                // Bind Grammar
+                if(data.grammar) {
+                    document.getElementById('modal-grammar-box').style.display = 'block';
+                    document.getElementById('modal-grammar-structure').innerText = data.grammar.structure;
+                    document.getElementById('modal-grammar-exp').innerText = data.grammar.explanation;
+                    document.getElementById('modal-grammar-ex').innerText = `Ví dụ: "${data.grammar.example}"`;
+                } else {
+                    document.getElementById('modal-grammar-box').style.display = 'none';
+                }
+
+                // Bind Vocabularies
+                let vHtml = '';
+                data.vocabularies.forEach(v => {
+                    vHtml += `
+                    <div style="background: rgba(0,0,0,0.5); padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border);">
+                        <strong style="color: var(--neon-cyan); font-size: 14px;">${v.word}</strong>
+                        <div style="color: #cbd5e1; font-size: 12px;">${v.meaning}</div>
+                    </div>`;
+                });
+                document.getElementById('modal-vocab-list').innerHTML = vHtml || '<div style="color:#64748b;">Chưa có từ vựng chỉ định.</div>';
+
+                // Setup Scramble Challenge
+                setupWordScramble(data.scramble_challenge);
+
+                // Setup Syntax Challenge
+                setupSyntaxChallenge(data.syntax_challenge);
+
+                switchModalTab('learn');
+                document.getElementById('milestone-modal').style.display = 'flex';
+            });
+    }
+
+    function closeMilestoneModal() {
+        document.getElementById('milestone-modal').style.display = 'none';
+    }
+
+    function switchModalTab(tab) {
+        ['learn', 'scramble', 'syntax'].forEach(t => {
+            document.getElementById(`m-tab-${t}`).style.display = (t === tab) ? 'block' : 'none';
+            const btn = document.getElementById(`m-tab-btn-${t}`);
+            if(t === tab) {
+                btn.style.background = 'rgba(103, 232, 249, 0.15)';
+                btn.style.borderColor = 'var(--neon-cyan)';
+                btn.style.color = 'var(--neon-cyan)';
+            } else {
+                btn.style.background = 'transparent';
+                btn.style.borderColor = 'var(--glass-border)';
+                btn.style.color = '#94a3b8';
+            }
+        });
+
+        if(tab === 'scramble') {
+            scrambleStartTime = Date.now();
+        }
+    }
+
+    /* MINIGAME 1: GHÉP CHỮ */
+    function setupWordScramble(scrambleData) {
+        if(!scrambleData || scrambleData.status !== 'success') return;
+        document.getElementById('scramble-meaning').innerText = `Nghĩa: "${scrambleData.meaning}" (${scrambleData.cefr_level})`;
+        document.getElementById('scramble-feedback').style.display = 'none';
+
+        resetScrambleWord();
+    }
+
+    function resetScrambleWord() {
+        if(!currentMilestoneData || !currentMilestoneData.scramble_challenge) return;
+        scrambleSelectedLetters = [];
+        const letters = currentMilestoneData.scramble_challenge.shuffled_letters || [];
+        
+        // Slots
+        document.getElementById('scramble-slots').innerHTML = letters.map((_, i) => 
+            `<div id="slot-${i}" style="width: 44px; height: 48px; border-bottom: 3px solid var(--neon-cyan); display: flex; justify-content: center; align-items: center; font-family: var(--text-mono); font-size: 22px; font-weight: bold; color: #fff;"></div>`
+        ).join('');
+
+        // Pool
+        document.getElementById('scramble-pool').innerHTML = letters.map((ch, idx) => 
+            `<div class="letter-tile" id="tile-${idx}" onclick="pickLetter(${idx}, '${ch}')">${ch}</div>`
+        ).join('');
+    }
+
+    function pickLetter(tileIdx, letter) {
+        const tile = document.getElementById(`tile-${tileIdx}`);
+        if(tile.classList.contains('used')) return;
+
+        tile.classList.add('used');
+        const slotIdx = scrambleSelectedLetters.length;
+        scrambleSelectedLetters.push({ tileIdx: tileIdx, letter: letter });
+        document.getElementById(`slot-${slotIdx}`).innerText = letter;
+    }
+
+    function submitWordScramble() {
+        if(!currentMilestoneData || !currentMilestoneData.scramble_challenge) return;
+        const answer = scrambleSelectedLetters.map(s => s.letter).join('');
+        const vocabId = currentMilestoneData.scramble_challenge.vocab_id;
+        const timeSpent = (Date.now() - scrambleStartTime) / 1000;
+
+        fetch('/api/game/scramble/verify', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ vocab_id: vocabId, answer: answer, response_time: timeSpent })
+        }).then(r => r.json()).then(res => {
+            const fb = document.getElementById('scramble-feedback');
+            fb.style.display = 'block';
+            fb.style.background = res.is_correct ? 'rgba(110, 231, 183, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+            fb.style.color = res.is_correct ? 'var(--pixel-green)' : '#ef4444';
+            fb.style.border = `1px solid ${res.is_correct ? 'var(--pixel-green)' : '#ef4444'}`;
+            fb.innerText = res.message;
+
+            if(res.is_correct) {
+                wordPassed = true;
+                setTimeout(() => switchModalTab('syntax'), 1200);
+            }
+        });
+    }
+
+    /* MINIGAME 2: GHÉP CÚ PHÁP */
+    function setupSyntaxChallenge(syntaxData) {
+        if(!syntaxData || syntaxData.status !== 'success') return;
+        document.getElementById('syntax-explanation').innerText = `${syntaxData.structure}: ${syntaxData.explanation}`;
+        document.getElementById('syntax-feedback').style.display = 'none';
+
+        resetSyntaxSentence();
+    }
+
+    function resetSyntaxSentence() {
+        if(!currentMilestoneData || !currentMilestoneData.syntax_challenge) return;
+        syntaxSelectedChunks = [];
+        const chunks = currentMilestoneData.syntax_challenge.shuffled_chunks || [];
+
+        document.getElementById('syntax-slots').innerHTML = '<div style="color: #64748b; font-size: 13px; font-style: italic;">Bấm chọn các khối từ bên dưới để ghép câu hoàn chỉnh...</div>';
+
+        document.getElementById('syntax-pool').innerHTML = chunks.map((chunk, idx) => 
+            `<div class="syntax-tile" id="syn-tile-${idx}" onclick="pickSyntaxChunk(${idx}, '${chunk.replace(/'/g, "\\'")}')">${chunk}</div>`
+        ).join('');
+    }
+
+    function pickSyntaxChunk(tileIdx, chunk) {
+        const tile = document.getElementById(`syn-tile-${tileIdx}`);
+        if(tile.classList.contains('used')) return;
+
+        tile.classList.add('used');
+        syntaxSelectedChunks.push({ tileIdx: tileIdx, text: chunk });
+
+        const slotContainer = document.getElementById('syntax-slots');
+        slotContainer.innerHTML = syntaxSelectedChunks.map(c => 
+            `<span style="background: rgba(103, 232, 249, 0.2); border: 1px solid var(--neon-cyan); padding: 4px 8px; border-radius: 4px; font-family: var(--text-mono); color: #fff; margin-right: 6px;">${c.text}</span>`
+        ).join('');
+    }
+
+    function submitSyntaxSentence() {
+        if(!currentMilestoneData || !currentMilestoneData.syntax_challenge) return;
+        const original = currentMilestoneData.syntax_challenge.original_sentence;
+        const chunks = syntaxSelectedChunks.map(c => c.text);
+
+        fetch('/api/game/syntax/verify', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ original_sentence: original, user_chunks: chunks })
+        }).then(r => r.json()).then(res => {
+            const fb = document.getElementById('syntax-feedback');
+            fb.style.display = 'block';
+            fb.style.background = res.is_correct ? 'rgba(110, 231, 183, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+            fb.style.color = res.is_correct ? 'var(--pixel-green)' : '#ef4444';
+            fb.style.border = `1px solid ${res.is_correct ? 'var(--pixel-green)' : '#ef4444'}`;
+            fb.innerText = res.message;
+
+            if(res.is_correct) {
+                syntaxPassed = true;
+            }
+        });
+    }
+
+    function finalizeMilestoneGateway() {
+        let totalScore = 0;
+        if(wordPassed) totalScore += 5.0;
+        if(syntaxPassed) totalScore += 5.0;
+
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ score: totalScore })
+        }).then(r => r.json()).then(res => {
+            alert(res.message);
+            if(res.passed) {
+                closeMilestoneModal();
+                loadRoadmap();
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -69,11 +69,21 @@ document.addEventListener("DOMContentLoaded", () => {
                     const sidebarRank = document.getElementById("sidebar-rank");
                     const sidebarStreak = document.getElementById("sidebar-streak");
                     const sidebarCoins = document.getElementById("sidebar-coins");
+                    const sidebarTitle = document.getElementById("sidebar-title");
+                    const sidebarAvatarContainer = document.getElementById("sidebar-avatar-container");
+                    const sidebarAvatarImg = document.getElementById("sidebar-avatar-img");
 
                     if (sidebarUser) sidebarUser.innerText = data.username;
                     if (sidebarRank) sidebarRank.innerText = data.level;
                     if (sidebarStreak) sidebarStreak.innerText = data.streak;
                     if (sidebarCoins) sidebarCoins.innerText = data.coins;
+                    if (sidebarTitle && data.equipped_title) sidebarTitle.innerText = data.equipped_title;
+                    if (sidebarAvatarContainer && data.equipped_frame) {
+                        sidebarAvatarContainer.className = `avatar-container ${data.equipped_frame}`;
+                    }
+                    if (sidebarAvatarImg && data.avatar) {
+                        sidebarAvatarImg.src = `/static/uploads/avatars/${data.avatar}`;
+                    }
 
                     if (data.role === 'admin') {
                         const adminNav = document.getElementById('nav-admin');

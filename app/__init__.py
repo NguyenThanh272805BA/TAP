@@ -78,15 +78,22 @@ def create_app():
     @app.route('/shop')
     def shop_page():
         return render_template('shop.html')
+
+    @app.route('/roadmap')
+    def roadmap_page():
+        return render_template('roadmap.html')
+
     # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
     from app.controllers.game_controller import game_bp
     from app.controllers.ai_controller import ai_bp
     from app.controllers.admin_controller import admin_bp
+    from app.controllers.roadmap_controller import roadmap_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(game_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(roadmap_bp)
 
     return app

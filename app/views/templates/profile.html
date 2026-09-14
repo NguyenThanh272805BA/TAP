@@ -15,11 +15,14 @@
         </form>
 
         <div style="position: relative; cursor: pointer; margin-bottom: 20px;" onclick="document.getElementById('avatar-input').click()" title="Bấm để đổi Avatar">
-            <img id="profile-avatar" src="/static/uploads/avatars/default_avatar.png" onerror="this.src='/static/uploads/covers/default_cover.jpg'" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--neon-purple); box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); transition: 0.3s;" onmouseover="this.style.filter='brightness(0.7)'" onmouseout="this.style.filter='brightness(1)'">
-            <div style="position: absolute; bottom: 0; right: 0; background: var(--neon-purple); border-radius: 50%; padding: 8px; font-size: 12px;">📷</div>
+            <div class="avatar-container frame-default" id="profile-avatar-container" style="width: 150px; height: 150px;">
+                <img id="profile-avatar" class="avatar-img" src="/static/uploads/avatars/default_avatar.png" onerror="this.src='/static/uploads/covers/default_cover.jpg'" onmouseover="this.style.filter='brightness(0.7)'" onmouseout="this.style.filter='brightness(1)'">
+            </div>
+            <div style="position: absolute; bottom: 0; right: 0; background: var(--neon-purple); border-radius: 50%; padding: 8px; font-size: 12px; z-index: 5;">📷</div>
         </div>
 
-        <div id="profile-username" style="font-size: 24px; color: #fff; font-family: var(--text-pixel); font-weight: bold; margin-bottom: 5px;">PLAYER_NAME</div>
+        <div id="profile-username" style="font-size: 24px; color: #fff; font-family: var(--text-pixel); font-weight: bold; margin-bottom: 3px;">PLAYER_NAME</div>
+        <div id="profile-title" style="font-size: 12px; color: var(--neon-pink); font-family: var(--text-mono); margin-bottom: 12px;">TÂN BINH NGƠ NGÁC</div>
         <div id="profile-level" style="font-size: 13px; color: var(--neon-cyan); margin-bottom: 20px; text-transform: uppercase; border: 1px solid var(--neon-cyan); padding: 4px 10px; border-radius: 6px;">RANK</div>
 
         <div style="width: 100%;">
@@ -29,7 +32,7 @@
         </div>
     </div>
 
-    <!-- KHU VỰC BÊN PHẢI: THỐNG KÊ & THÀNH TỰU -->
+    <!-- KHU VỰC BÊN PHẢI: THỐNG KÊ, KHO ĐỒ & THÀNH TỰU -->
     <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 25px;">
         
         <!-- THỐNG KÊ TỔNG QUAN -->
@@ -42,8 +45,8 @@
                     <div id="stat-learned" style="font-size: 20px; font-family: var(--text-mono); color: #fff; font-weight: bold;">0</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
-                    <div style="color: #94a3b8; font-size: 13px;">CEFR CAO NHẤT ĐẠT ĐƯỢC</div>
-                    <div id="stat-cefr" style="font-size: 20px; font-family: var(--text-mono); color: var(--neon-pink); font-weight: bold; text-shadow: 0 0 10px var(--neon-pink);">A1</div>
+                    <div style="color: #94a3b8; font-size: 13px;">TARGET BAND MỤC TIÊU</div>
+                    <div id="stat-band" style="font-size: 20px; font-family: var(--text-mono); color: var(--neon-pink); font-weight: bold; text-shadow: 0 0 10px var(--neon-pink);">B2</div>
                 </div>
                 <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
                     <div style="color: #94a3b8; font-size: 13px;">CHUỖI SINH TỒN (STREAK)</div>
@@ -56,11 +59,19 @@
             </div>
         </div>
 
+        <!-- KHO ĐỒ TRANG TRÍ CỦA TÔI -->
+        <div class="bento-card" style="padding: 25px;">
+            <div class="pixel-title" style="color: var(--neon-cyan); margin-bottom: 15px;">MY_INVENTORY // KHO ĐỒ & KHUNG TRANG TRÍ</div>
+            <div id="my-cosmetics-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+                <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang tải kho đồ...</div>
+            </div>
+        </div>
+
         <!-- DANH SÁCH THÀNH TỰU (ACHIEVEMENTS) -->
         <div class="bento-card" style="padding: 25px; flex-grow: 1;">
-            <div class="pixel-title" style="color: var(--pixel-green); margin-bottom: 20px;">ACHIEVEMENTS // HUÂN CHƯƠNG KẺ SỐNG SÓT</div>
+            <div class="pixel-title" style="color: var(--pixel-green); margin-bottom: 20px;">ACHIEVEMENTS // HUÂN CHƯƠNG CHIẾN TÍCH</div>
             
-            <div id="achievements-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-height: 300px; overflow-y: auto; padding-right: 10px;">
+            <div id="achievements-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-height: 250px; overflow-y: auto; padding-right: 10px;">
                 <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang quét kho lưu trữ thành tựu...</div>
             </div>
         </div>
@@ -73,6 +84,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         loadProfileData();
+        loadMyInventory();
     });
 
     function loadProfileData() {
@@ -83,13 +95,19 @@
 
                 // Bind User Info
                 document.getElementById('profile-username').innerText = data.username;
+                document.getElementById('profile-title').innerText = data.equipped_title || 'Tân Binh Ngơ Ngác';
                 document.getElementById('profile-level').innerText = data.level;
                 document.getElementById('profile-bio').value = data.bio;
                 document.getElementById('profile-avatar').src = `/static/uploads/avatars/${data.avatar}`;
+                
+                // Khung Avatar
+                if(data.equipped_frame) {
+                    document.getElementById('profile-avatar-container').className = `avatar-container ${data.equipped_frame}`;
+                }
 
                 // Bind Stats
                 document.getElementById('stat-learned').innerText = data.learned_count;
-                document.getElementById('stat-cefr').innerText = data.highest_cefr;
+                document.getElementById('stat-band').innerText = `${data.target_band || 'B2'} (${data.highest_cefr})`;
                 document.getElementById('stat-streak').innerHTML = `${data.streak} 🔥`;
                 document.getElementById('stat-coins').innerHTML = `${data.coins} 💰`;
 
@@ -102,7 +120,7 @@
                     data.achievements.forEach(ach => {
                         achHtml += `
                         <div style="background: rgba(0,0,0,0.6); border-radius: 8px; padding: 15px; display: flex; align-items: center; gap: 15px; border-left: 3px solid var(--pixel-green); transition: transform 0.3s;" onmouseover="this.style.transform='translateX(5px)'" onmouseout="this.style.transform='none'">
-                            <div style="font-size: 30px; filter: drop-shadow(0 0 10px var(--pixel-green));">🏆</div>
+                            <div style="font-size: 26px; filter: drop-shadow(0 0 8px var(--pixel-green));">🏆</div>
                             <div>
                                 <div style="color: #fff; font-family: var(--text-pixel); font-size: 12px; margin-bottom: 5px;">${ach.title}</div>
                                 <div style="color: #94a3b8; font-size: 11px; line-height: 1.4;">${ach.description}</div>
@@ -112,6 +130,54 @@
                     achContainer.innerHTML = achHtml;
                 }
             });
+    }
+
+    function loadMyInventory() {
+        fetch('/api/game/cosmetics/my_inventory')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('my-cosmetics-container');
+                if(!data.inventory || data.inventory.length === 0) {
+                    container.innerHTML = '<div style="color: #94a3b8;">Kho đồ đang trống. Hãy ghé Shop hoặc hoàn thành chặng học!</div>';
+                    return;
+                }
+
+                let html = '';
+                data.inventory.forEach(item => {
+                    let isEquipped = item.is_equipped;
+                    html += `
+                    <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; border: 1px solid ${isEquipped ? 'var(--neon-cyan)' : 'var(--glass-border)'}; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <strong style="color: #fff; font-size: 13px;">${item.name}</strong>
+                                <span style="font-size: 10px; color: ${isEquipped ? 'var(--neon-cyan)' : '#94a3b8'}; font-family: var(--text-mono);">${item.type === 'AVATAR_FRAME' ? 'KHUNG' : 'DANH HIỆU'}</span>
+                            </div>
+                            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">${item.description || ''}</div>
+                        </div>
+                        <button class="pixel-btn" onclick="equipItem(${item.id})" style="background: ${isEquipped ? 'rgba(0,0,0,0.8)' : 'var(--neon-cyan)'}; color: ${isEquipped ? 'var(--neon-cyan)' : '#000'}; border: 1px solid var(--neon-cyan); padding: 6px; font-size: 10px;">
+                            ${isEquipped ? '✓ ĐANG ĐEO' : 'TRANG BỊ'}
+                        </button>
+                    </div>`;
+                });
+
+                container.innerHTML = html;
+            });
+    }
+
+    function equipItem(itemId) {
+        fetch('/api/game/cosmetics/equip', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ item_id: itemId })
+        }).then(r => r.json()).then(res => {
+            if(res.error) {
+                alert(res.error);
+            } else {
+                alert(res.message);
+                loadProfileData();
+                loadMyInventory();
+            }
+        });
     }
 
     function submitProfileUpdate() {

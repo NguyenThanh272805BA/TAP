@@ -15,10 +15,13 @@ from app.models.story_topic import StoryTopic
 from app.models.notification import Notification
 
 from app.utils.achievement_manager import check_and_unlock_achievements
+from app.models.cosmetic import CosmeticItem, UserCosmetic
+from app.ml_models.scramble_engine import LocalScrambleEngine
 
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
 recommender_engine = VocabRecommender()
 srs_engine = SmartSRS()
+scramble_engine = LocalScrambleEngine()
 
 
 @game_bp.route('/story/topics', methods=['GET'])
@@ -562,3 +565,237 @@ def mark_notifications_read():
     Notification.query.filter_by(user_id=user_id, is_read=False).update({"is_read": True})
     db.session.commit()
     return jsonify({"success": True}), 200
+
+
+# =========================================================================
+# PHÂN HỆ MINIGAME: ẢI GHÉP CHỮ & CÚ PHÁP (100% LOCAL-FIRST AI)
+# =========================================================================
+
+@game_bp.route('/scramble/generate', methods=['POST'])
+def generate_scramble():
+    """Tạo ải ghép chữ mới - 100% Local AI (< 5ms)"""
+    data = request.get_json(silent=True) or {}
+    vocab_id = data.get('vocab_id')
+    cefr_filter = data.get('cefr')
+    res = scramble_engine.generate_word_scramble(vocab_id=vocab_id, cefr_filter=cefr_filter)
+    return jsonify(res), 200
+
+
+@game_bp.route('/scramble/verify', methods=['POST'])
+def verify_scramble():
+    """Xác thực câu trả lời ghép chữ và đồng bộ vào Smart SRS"""
+    data = request.get_json(silent=True) or {}
+    vocab_id = data.get('vocab_id')
+    user_answer = data.get('answer', '')
+    response_time = float(data.get('response_time', 5.0))
+    user_id = session.get('user_id')
+
+    if not vocab_id:
+        return jsonify({"error": "Thiếu ID từ vựng!"}), 400
+
+    res = scramble_engine.verify_word_scramble(vocab_id, user_answer, response_time, user_id=user_id)
+    return jsonify(res), 200
+
+
+@game_bp.route('/syntax/generate', methods=['POST'])
+def generate_syntax():
+    """Tạo ải lắp ráp cú pháp câu - 100% Local AI"""
+    data = request.get_json(silent=True) or {}
+    grammar_id = data.get('grammar_id')
+    res = scramble_engine.generate_syntax_scramble(grammar_id=grammar_id)
+    return jsonify(res), 200
+
+
+@game_bp.route('/syntax/verify', methods=['POST'])
+def verify_syntax():
+    """Xác thực trật tự cú pháp bằng LanguageTool cục bộ"""
+    data = request.get_json(silent=True) or {}
+    original = data.get('original_sentence', '')
+    user_chunks = data.get('user_chunks', [])
+    res = scramble_engine.verify_syntax_scramble(original, user_chunks)
+    return jsonify(res), 200
+
+
+# =========================================================================
+# PHÂN HỆ VẬT PHẨM TRANG TRÍ & KHUNG AVATAR (COSMETICS & IDENTITY)
+# =========================================================================
+
+def ensure_default_cosmetics():
+    """Khởi tạo danh mục 15 Khung Avatar và 3 Danh hiệu chiến binh mặc định"""
+    items = [
+        # 15 KHUNG AVATAR ĐỘNG BAO QUÁT ÔM TRỌN AVATAR
+        {"name": "Khung Tiêu Chuẩn", "type": "AVATAR_FRAME", "css": "frame-default", "price": 0, "desc": "Khung viền kim loại cổ điển tối giản"},
+        {"name": "Khung Băng Thanh Neon", "type": "AVATAR_FRAME", "css": "frame-neon-cyan", "price": 100, "desc": "Viền ánh sáng Cyberpunk xanh ngọc kèm tia sét phát xung"},
+        {"name": "Khung Hồng Thạch Cyber", "type": "AVATAR_FRAME", "css": "frame-neon-pink", "price": 120, "desc": "Viền hồng Neon ngọt ngào với biểu tượng trái tim phát quang"},
+        {"name": "Khung Hỏa Ngục Huyền Thoại", "type": "AVATAR_FRAME", "css": "frame-flame", "price": 200, "desc": "Vòng hào quang rực lửa thiêu đốt mọi câu sai ngữ pháp"},
+        {"name": "Khung Hoàng Kim Đế Vương", "type": "AVATAR_FRAME", "css": "frame-gold-dragon", "price": 300, "desc": "Ánh kim long hoàng gia dành riêng cho cao thủ tiếng Anh"},
+        {"name": "Khung Ma Trận Số", "type": "AVATAR_FRAME", "css": "frame-glitch-matrix", "price": 180, "desc": "Viền mã nhị phân Hacker xanh lục với linh vật Cyber"},
+        {"name": "Khung Cực Quang Huyền Ảo", "type": "AVATAR_FRAME", "css": "frame-aurora", "price": 220, "desc": "Dải cực quang phương Bắc xoay vòng chuyển màu mượt mà"},
+        {"name": "Khung Hư Không Vũ Trụ", "type": "AVATAR_FRAME", "css": "frame-void-galaxy", "price": 280, "desc": "Vòng xoáy tím huyền bí của bụi sao vũ trụ bao la"},
+        {"name": "Khung Sấm Sét Lôi Thần", "type": "AVATAR_FRAME", "css": "frame-thunder", "price": 240, "desc": "Dòng điện cao thế vàng xanh phóng tia chớp liên tục"},
+        {"name": "Khung Cyberpunk 2077 HUD", "type": "AVATAR_FRAME", "css": "frame-cyber-hud", "price": 260, "desc": "Hệ thống ngắm bắn công nghệ tương lai xoay vòng quanh avatar"},
+        {"name": "Khung Băng Tuyết Vĩnh Cửu", "type": "AVATAR_FRAME", "css": "frame-frost", "price": 190, "desc": "Lớp băng giá tinh thể Bắc Cực tỏa hơi sương lạnh buốt"},
+        {"name": "Khung Hào Quang Thiên Thần", "type": "AVATAR_FRAME", "css": "frame-angel-halo", "price": 350, "desc": "Vòng thánh quang thiên giới bồng bềnh che chở avatar"},
+        {"name": "Khung Ác Ma Dạ Xoa", "type": "AVATAR_FRAME", "css": "frame-demon-horns", "price": 360, "desc": "Cặp sừng quỷ đỏ rực đầy uy lực và ma mị"},
+        {"name": "Khung Cầu Vồng Quang Phổ", "type": "AVATAR_FRAME", "css": "frame-rainbow-chroma", "price": 400, "desc": "Dải màu RGB Chroma 360 độ xoay tít cực kỳ cuốn hút"},
+        {"name": "Khung Độc Cô Cầu Bại", "type": "AVATAR_FRAME", "css": "frame-champion-crown", "price": 500, "desc": "Vương miện kim cương tối thượng khẳng định ngôi vương"},
+
+        # DANH HIỆU CHIẾN BINH
+        {"name": "Chiến Binh Cú Pháp", "type": "PLAYER_TITLE", "css": "title-syntax", "price": 80, "desc": "Danh hiệu cho người yêu thích cấu trúc ngữ pháp"},
+        {"name": "Đại Đội Trưởng Chính Tả", "type": "PLAYER_TITLE", "css": "title-spelling", "price": 120, "desc": "Danh hiệu cho tay gỡ bom từ vựng siêu cấp"},
+        {"name": "Kẻ Hủy Diệt Ngữ Pháp", "type": "PLAYER_TITLE", "css": "title-destroyer", "price": 200, "desc": "Danh xưng huyền thoại của bậc thầy ngôn ngữ"}
+    ]
+
+    for it in items:
+        c = CosmeticItem.query.filter_by(css_class=it["css"]).first()
+        if not c:
+            c = CosmeticItem(name=it["name"], type=it["type"], css_class=it["css"], price_coins=it["price"], description=it["desc"])
+            db.session.add(c)
+    db.session.commit()
+
+
+@game_bp.route('/cosmetics', methods=['GET'])
+def get_cosmetics():
+    """Lấy danh mục vật phẩm trong Cửa hàng Trang trí kèm trạng thái sở hữu"""
+    user_id = session.get('user_id')
+    ensure_default_cosmetics()
+
+    items = CosmeticItem.query.order_by(CosmeticItem.price_coins.asc()).all()
+    user_owned_map = {}
+
+    if user_id:
+        user_cos = UserCosmetic.query.filter_by(user_id=user_id).all()
+        for uc in user_cos:
+            user_owned_map[uc.cosmetic_id] = uc.is_equipped
+
+    result = []
+    for item in items:
+        is_owned = (item.id in user_owned_map) or (item.price_coins == 0)
+        is_equipped = user_owned_map.get(item.id, False)
+
+        result.append({
+            "id": item.id,
+            "name": item.name,
+            "type": item.type,
+            "css_class": item.css_class,
+            "description": item.description,
+            "price_coins": item.price_coins,
+            "is_owned": is_owned,
+            "is_equipped": is_equipped
+        })
+
+    return jsonify({"cosmetics": result}), 200
+
+
+@game_bp.route('/cosmetics/buy', methods=['POST'])
+def buy_cosmetic():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    data = request.get_json(silent=True) or {}
+    item_id = data.get('item_id')
+
+    item = CosmeticItem.query.get(item_id)
+    if not item:
+        return jsonify({"error": "Vật phẩm không tồn tại!"}), 404
+
+    user = User.query.get(user_id)
+
+    # Kiểm tra xem đã sở hữu chưa
+    existing = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=item_id).first()
+    if existing:
+        return jsonify({"error": "Bạn đã sở hữu vật phẩm này rồi!"}), 400
+
+    if user.coins < item.price_coins:
+        return jsonify({"error": f"Không đủ Xu! Bạn cần {item.price_coins} Xu (Hiện có: {user.coins} Xu)."}), 400
+
+    user.coins -= item.price_coins
+    new_owned = UserCosmetic(user_id=user_id, cosmetic_id=item.id, is_equipped=False)
+    db.session.add(new_owned)
+    db.session.commit()
+
+    return jsonify({
+        "message": f"🎉 Mua thành công '{item.name}'! Vật phẩm đã vào kho đồ của bạn.",
+        "new_coins": user.coins
+    }), 200
+
+
+@game_bp.route('/cosmetics/equip', methods=['POST'])
+def equip_cosmetic():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    data = request.get_json(silent=True) or {}
+    item_id = data.get('item_id')
+
+    item = CosmeticItem.query.get(item_id)
+    if not item:
+        return jsonify({"error": "Vật phẩm không tồn tại!"}), 404
+
+    user = User.query.get(user_id)
+
+    # Đảm bảo người dùng sở hữu vật phẩm này
+    if item.price_coins > 0:
+        owned = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=item_id).first()
+        if not owned:
+            return jsonify({"error": "Bạn chưa sở hữu vật phẩm này!"}), 403
+
+    if item.type == 'AVATAR_FRAME':
+        user.equipped_frame = item.css_class
+    elif item.type == 'PLAYER_TITLE':
+        user.equipped_title = item.name
+
+    # Cập nhật cờ is_equipped trong bảng UserCosmetic
+    UserCosmetic.query.filter(UserCosmetic.user_id == user_id, UserCosmetic.cosmetic.has(type=item.type)).update({"is_equipped": False}, synchronize_session=False)
+    target_uc = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=item_id).first()
+    if target_uc:
+        target_uc.is_equipped = True
+
+    db.session.commit()
+
+    return jsonify({
+        "message": f"✨ Đã trang bị {item.type.replace('_', ' ')}: '{item.name}'!",
+        "equipped_frame": user.equipped_frame,
+        "equipped_title": user.equipped_title
+    }), 200
+
+
+@game_bp.route('/cosmetics/my_inventory', methods=['GET'])
+def get_my_inventory():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    user = User.query.get(user_id)
+    owned_list = UserCosmetic.query.filter_by(user_id=user_id).all()
+
+    items = []
+    # Luôn có item default
+    items.append({
+        "id": 0,
+        "name": "Khung Tiêu Chuẩn",
+        "type": "AVATAR_FRAME",
+        "css_class": "frame-default",
+        "is_equipped": (getattr(user, 'equipped_frame', 'frame-default') == 'frame-default')
+    })
+
+    for uc in owned_list:
+        c = uc.cosmetic
+        if c:
+            is_active = (user.equipped_frame == c.css_class) if c.type == 'AVATAR_FRAME' else (user.equipped_title == c.name)
+            items.append({
+                "id": c.id,
+                "name": c.name,
+                "type": c.type,
+                "css_class": c.css_class,
+                "description": c.description,
+                "is_equipped": is_active
+            })
+
+    return jsonify({
+        "inventory": items,
+        "current_frame": getattr(user, 'equipped_frame', 'frame-default'),
+        "current_title": getattr(user, 'equipped_title', 'Tân Binh Ngơ Ngác')
+    }), 200

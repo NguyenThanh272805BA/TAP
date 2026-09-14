@@ -88,7 +88,12 @@ def get_current_user_profile():
         "streak": user.streak_count,
         "coins": user.coins,
         "is_checked_in": is_checked_in,
-        "role": user.role
+        "role": user.role,
+        "avatar": getattr(user, 'avatar', 'default_avatar.png'),
+        "equipped_frame": getattr(user, 'equipped_frame', 'frame-default'),
+        "equipped_title": getattr(user, 'equipped_title', 'Tân Binh Ngơ Ngác'),
+        "target_band": getattr(user, 'target_band', 'B2'),
+        "current_band": getattr(user, 'current_band', 'A1')
     }), 200
 
 
@@ -143,7 +148,11 @@ def get_profile_stats():
         "streak": user.streak_count,
         "learned_count": learned_count,
         "highest_cefr": highest_cefr,
-        "achievements": achievements
+        "achievements": achievements,
+        "equipped_frame": getattr(user, 'equipped_frame', 'frame-default'),
+        "equipped_title": getattr(user, 'equipped_title', 'Tân Binh Ngơ Ngác'),
+        "target_band": getattr(user, 'target_band', 'B2'),
+        "current_band": getattr(user, 'current_band', 'A1')
     }), 200
 
 
