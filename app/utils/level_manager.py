@@ -6,11 +6,11 @@ from app import db
 
 # BẢNG ÁNH XẠ RANK HỌC THUẬT THEO KHUNG CEFR & TIẾN ĐỘ CHẶNG (ACADEMIC ROADMAP TIERS)
 ACADEMIC_TIERS = [
-    {"band": "C2", "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)", "min_milestones": 25, "req_vocab": 3000, "req_sentence": 2000},
-    {"band": "C1", "rank_name": "Kiến Trúc Sư C1 (Platinum)", "min_milestones": 18, "req_vocab": 1800, "req_sentence": 1200},
-    {"band": "B2", "rank_name": "Pháp Sư B2 (Gold)", "min_milestones": 12, "req_vocab": 1000, "req_sentence": 600},
-    {"band": "B1", "rank_name": "Chiến Binh B1 (Silver)", "min_milestones": 7, "req_vocab": 500, "req_sentence": 300},
-    {"band": "A2", "rank_name": "Thợ Săn A2 (Bronze II)", "min_milestones": 3, "req_vocab": 150, "req_sentence": 80},
+    {"band": "C2", "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)", "min_milestones": 12, "req_vocab": 1200, "req_sentence": 800},
+    {"band": "C1", "rank_name": "Kiến Trúc Sư C1 (Platinum)", "min_milestones": 8, "req_vocab": 800, "req_sentence": 500},
+    {"band": "B2", "rank_name": "Pháp Sư B2 (Gold)", "min_milestones": 6, "req_vocab": 500, "req_sentence": 300},
+    {"band": "B1", "rank_name": "Chiến Binh B1 (Silver)", "min_milestones": 4, "req_vocab": 250, "req_sentence": 150},
+    {"band": "A2", "rank_name": "Thợ Săn A2 (Bronze II)", "min_milestones": 2, "req_vocab": 80, "req_sentence": 40},
     {"band": "A1", "rank_name": "Tân Binh A1 (Bronze I)", "min_milestones": 0, "req_vocab": 0, "req_sentence": 0}
 ]
 

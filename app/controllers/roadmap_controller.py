@@ -20,20 +20,27 @@ CEFR_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 
 def ensure_default_milestones():
-    """Tự động khởi tạo dữ liệu giáo trình các chặng nếu bảng trống (Local Database Seed)"""
-    if RoadmapMilestone.query.count() > 0:
-        return
-
-    # 1. Khởi tạo một số ngữ pháp nếu chưa có
+    """Tự động khởi tạo và bổ sung đầy đủ giáo trình các chặng từ A1 đến C2 (Local Database Seed)"""
+    # 1. Khởi tạo ngữ pháp chuẩn từ A1 đến C2 nếu chưa có
     sample_grammars = [
+        # A1
         {"structure": "S + V(s/es) + O", "explanation": "Thì Hiện tại đơn: Diễn tả thói quen hoặc sự thật hiển nhiên.", "example": "She plays tennis every Sunday."},
         {"structure": "S + is/am/are + V-ing", "explanation": "Thì Hiện tại tiếp diễn: Diễn tả hành động đang xảy ra.", "example": "They are studying in the library."},
+        # A2
         {"structure": "S + V(ed)/V2 + O", "explanation": "Thì Quá khứ đơn: Diễn tả hành động đã chấm dứt trong quá khứ.", "example": "We visited London last summer."},
         {"structure": "S + have/has + V3/ed", "explanation": "Thì Hiện tại hoàn thành: Hành động bắt đầu trong quá khứ kéo dài đến hiện tại.", "example": "He has lived here for ten years."},
+        # B1
         {"structure": "If + S + V(present), S + will + V", "explanation": "Câu điều kiện Loại 1: Khả năng có thật ở hiện tại/tương lai.", "example": "If it rains tomorrow, we will stay home."},
-        {"structure": "If + S + V(past), S + would + V", "explanation": "Câu điều kiện Loại 2: Giả định trái ngược với thực tế ở hiện tại.", "example": "If I had a million dollars, I would travel the world."},
         {"structure": "S + is/are + V3/ed + by O", "explanation": "Câu bị động (Passive Voice): Nhấn mạnh vào đối tượng chịu tác động.", "example": "The novel was written by a famous author."},
-        {"structure": "Not only + Auxiliary + S + V, but also...", "explanation": "Đảo ngữ nâng cao: Không những... mà còn...", "example": "Not only did he pass the exam, but he also got the highest score."}
+        # B2
+        {"structure": "If + S + V(past), S + would + V", "explanation": "Câu điều kiện Loại 2: Giả định trái ngược với thực tế ở hiện tại.", "example": "If I had a million dollars, I would travel the world."},
+        {"structure": "Not only + Auxiliary + S + V, but also...", "explanation": "Đảo ngữ nâng cao: Không những... mà còn...", "example": "Not only did he pass the exam, but he also got the highest score."},
+        # C1
+        {"structure": "Had + S + V3, S + would have + V3", "explanation": "Đảo ngữ Điều kiện Loại 3: Giả định quá khứ trang trọng chuẩn IELTS 7.5+.", "example": "Had we anticipated these risks, we would have succeeded."},
+        {"structure": "It + is/was + [focus] + that/who + ...", "explanation": "Câu chẻ nhấn mạnh (Cleft sentence) học thuật cao cấp.", "example": "It was empirical evidence that convinced the international committee."},
+        # C2
+        {"structure": "No sooner + had + S + V3 + than + S + V2", "explanation": "Đảo ngữ thời gian kép: Vừa mới... thì đã...", "example": "No sooner had the keynote commenced than sudden breakthroughs were announced."},
+        {"structure": "Having + V3/ed, S + V + O", "explanation": "Rút gọn mệnh đề phân từ hoàn thành (Perfect Participle) đỉnh cao.", "example": "Having mastered the intricate paradigms, the scholar published groundbreaking research."}
     ]
 
     grammar_ids = []
@@ -45,7 +52,7 @@ def ensure_default_milestones():
             db.session.flush()
         grammar_ids.append(g.id)
 
-    # 2. Khởi tạo các chặng Milestone cho A1, A2, B1, B2
+    # 2. Khởi tạo các chặng Milestone cho toàn bộ các Band: A1, A2, B1, B2, C1, C2
     milestones_data = [
         # BAND A1
         {"band": "A1", "order": 1, "title": "Khởi Đầu: Nhập Môn Hiện Tại Đơn", "desc": "Làm quen với cấu trúc câu căn bản và 5 từ vựng thường nhật.", "grammar_idx": 0, "coins": 40},
@@ -57,17 +64,29 @@ def ensure_default_milestones():
 
         # BAND B1
         {"band": "B1", "order": 1, "title": "Dự Đoán: Điều Kiện Có Thực", "desc": "Thành thạo câu điều kiện loại 1 trong thương thuyết và đời sống.", "grammar_idx": 4, "coins": 80},
-        {"band": "B1", "order": 2, "title": "Khách Quan: Cú Pháp Bị Động", "desc": "Chuyển đổi câu chủ động sang bị động trong văn cảnh học thuật.", "grammar_idx": 6, "coins": 90},
+        {"band": "B1", "order": 2, "title": "Khách Quan: Cú Pháp Bị Động", "desc": "Chuyển đổi câu chủ động sang bị động trong văn cảnh học thuật.", "grammar_idx": 5, "coins": 90},
 
         # BAND B2
-        {"band": "B2", "order": 1, "title": "Giả Định: Điều Kiện Phi Thực Tế", "desc": "Lập luận giả thuyết nâng cao với câu điều kiện loại 2.", "grammar_idx": 5, "coins": 100},
+        {"band": "B2", "order": 1, "title": "Giả Định: Điều Kiện Phi Thực Tế", "desc": "Lập luận giả thuyết nâng cao với câu điều kiện loại 2.", "grammar_idx": 6, "coins": 100},
         {"band": "B2", "order": 2, "title": "Đỉnh Cao: Đảo Ngữ Nhấn Mạnh", "desc": "Cú pháp nâng cao giúp bài viết và bài nói đạt điểm C1/B2 xuất sắc.", "grammar_idx": 7, "coins": 120},
+
+        # BAND C1
+        {"band": "C1", "order": 1, "title": "Học Thuật: Đảo Ngữ Điều Kiện Loại 3", "desc": "Lập luận giả định quá khứ sắc sảo chuẩn văn phong IELTS 7.5+.", "grammar_idx": 8, "coins": 140},
+        {"band": "C1", "order": 2, "title": "Sắc Bén: Câu Chẻ Nhấn Mạnh (Cleft Sentence)", "desc": "Kỹ thuật cô đọng trọng tâm câu văn của các chuyên gia ngôn ngữ.", "grammar_idx": 9, "coins": 160},
+
+        # BAND C2
+        {"band": "C2", "order": 1, "title": "Chuyên Sâu: Đảo Ngữ Thời Gian Tối Thượng", "desc": "Bậc thầy liên kết thời gian và nhịp điệu câu văn cấp độ C2.", "grammar_idx": 10, "coins": 180},
+        {"band": "C2", "order": 2, "title": "Độc Cô Cầu Bại: Rút Gọn Phân Từ Học Thuật", "desc": "Đỉnh cao cú pháp rút gọn mệnh đề của các nhà nghiên cứu quốc tế.", "grammar_idx": 11, "coins": 200},
     ]
 
-    all_vocabs = Vocabulary.query.limit(30).all()
+    all_vocabs = Vocabulary.query.limit(60).all()
     vocab_ids = [v.id for v in all_vocabs] if all_vocabs else []
 
     for idx, m_data in enumerate(milestones_data):
+        existing = RoadmapMilestone.query.filter_by(band_level=m_data["band"], step_order=m_data["order"]).first()
+        if existing:
+            continue
+
         g_id = grammar_ids[m_data["grammar_idx"]] if m_data["grammar_idx"] < len(grammar_ids) else None
         # Chia nhỏ từ vựng cho từng chặng
         start_v = (idx * 3) % max(1, len(vocab_ids))
@@ -217,10 +236,13 @@ def get_milestone_details(milestone_id):
         "theme": v.theme
     } for v in vocabs]
 
-    # 3. Sinh 1 câu đố ghép chữ mẫu cho chặng này (100% Local AI)
+    # 3. Sinh câu đố ghép chữ cho chặng này (Hỗ trợ đổi từ vựng tiếp theo bằng vocab_idx)
+    vocab_idx = int(request.args.get('vocab_idx', 0))
     scramble_puzzle = None
+    cur_vocab_idx = 0
     if vocabs:
-        sample_v = vocabs[0]
+        cur_vocab_idx = vocab_idx % len(vocabs)
+        sample_v = vocabs[cur_vocab_idx]
         scramble_puzzle = scramble_engine.generate_word_scramble(vocab_id=sample_v.id)
 
     # 4. Sinh 1 câu đố ghép cú pháp mẫu (100% Local AI)
@@ -240,6 +262,8 @@ def get_milestone_details(milestone_id):
         },
         "grammar": grammar_info,
         "vocabularies": vocab_list,
+        "current_vocab_idx": cur_vocab_idx,
+        "total_vocabs": len(vocabs),
         "scramble_challenge": scramble_puzzle,
         "syntax_challenge": syntax_puzzle
     }), 200
@@ -273,36 +297,68 @@ def submit_milestone(milestone_id):
     user = User.query.get(user_id)
     reward_msg = ""
 
-    if passed and not progress.is_completed:
-        progress.is_completed = True
-        progress.completed_at = datetime.now()
+    if passed:
+        # 1. Luôn đồng bộ mở khóa toàn bộ từ vựng chặng vào UserVocabulary & Smart SRS
+        vocab_ids = milestone.get_vocab_ids()
+        if vocab_ids:
+            from app.models.user_vocabulary import UserVocabulary
+            from app.ml_models.srs_predictor import SmartSRS
+            srs = SmartSRS()
+            new_vocabs_count = 0
+            for vid in vocab_ids:
+                uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=vid).first()
+                if not uv:
+                    next_dt, interval = srs.predict_next_review(0, 2.0, 0.0)
+                    uv = UserVocabulary(
+                        user_id=user_id, 
+                        vocab_id=vid, 
+                        is_unlocked=True,
+                        memorization_level='DA_THUOC',
+                        fail_count=0,
+                        avg_response_time=2.0,
+                        previous_interval=interval,
+                        next_review_time=next_dt
+                    )
+                    db.session.add(uv)
+                    new_vocabs_count += 1
+                elif not uv.is_unlocked:
+                    uv.is_unlocked = True
+                    uv.memorization_level = 'DA_THUOC'
+                    new_vocabs_count += 1
+            if new_vocabs_count > 0:
+                reward_msg += f" + Mở khóa {new_vocabs_count} từ vựng vào Smart SRS"
 
-        # Thưởng xu
-        user.coins += milestone.reward_coins
-        reward_msg = f" +{milestone.reward_coins} Xu Thưởng"
+        # 2. Các phần thưởng chỉ cấp 1 lần đầu tiên khi vượt ải
+        if not progress.is_completed:
+            progress.is_completed = True
+            progress.completed_at = datetime.now()
 
-        # Tặng cosmetic nếu có
-        if milestone.reward_cosmetic_id:
-            cosmetic = CosmeticItem.query.get(milestone.reward_cosmetic_id)
-            if cosmetic and not UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=cosmetic.id).first():
-                db.session.add(UserCosmetic(user_id=user_id, cosmetic_id=cosmetic.id))
-                reward_msg += f" + Nhận Khung/Danh hiệu: {cosmetic.name}!"
+            # Thưởng xu
+            user.coins += milestone.reward_coins
+            reward_msg = f" +{milestone.reward_coins} Xu Thưởng" + reward_msg
 
-        # Kiểm tra thăng cấp / thăng rank học thuật
-        level_up, new_rank = check_and_update_level(user_id)
+            # Tặng cosmetic nếu có
+            if milestone.reward_cosmetic_id:
+                cosmetic = CosmeticItem.query.get(milestone.reward_cosmetic_id)
+                if cosmetic and not UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=cosmetic.id).first():
+                    db.session.add(UserCosmetic(user_id=user_id, cosmetic_id=cosmetic.id))
+                    reward_msg += f" + Nhận Khung/Danh hiệu: {cosmetic.name}!"
 
-        # Kiểm tra thành tựu Milestone
-        total_completed = UserMilestoneProgress.query.filter_by(user_id=user_id, is_completed=True).count()
-        check_and_unlock_achievements(user_id, 'MILESTONE', total_completed)
+            # Kiểm tra thăng cấp / thăng rank học thuật
+            level_up, new_rank = check_and_update_level(user_id)
 
-        # Gửi thông báo
-        notif = Notification(
-            user_id=user_id,
-            title=f"VƯỢT ẢI CHẶNG: {milestone.title}",
-            message=f"Chúc mừng bạn đạt {score:.1f} điểm! Đã mở khóa chặng kế tiếp.{reward_msg}",
-            type="ACHIEVEMENT"
-        )
-        db.session.add(notif)
+            # Kiểm tra thành tựu Milestone
+            total_completed = UserMilestoneProgress.query.filter_by(user_id=user_id, is_completed=True).count()
+            check_and_unlock_achievements(user_id, 'MILESTONE', total_completed)
+
+            # Gửi thông báo
+            notif = Notification(
+                user_id=user_id,
+                title=f"VƯỢT ẢI CHẶNG: {milestone.title}",
+                message=f"Chúc mừng bạn đạt {score:.1f} điểm! Đã mở khóa chặng kế tiếp.{reward_msg}",
+                type="ACHIEVEMENT"
+            )
+            db.session.add(notif)
 
     db.session.commit()
 

@@ -135,7 +135,8 @@ function loadDailyQuests() {
         data.quests.forEach((q, idx) => {
             const statusColor = q.is_completed ? "var(--pixel-green)" : "var(--glass-border)";
             const statusText = q.is_completed ? "[ ĐÃ XONG ]" : "[ ĐANG CHỜ ]";
-            const questDesc = q.type === 'NEW' ? `Học từ mới: <strong style="color: var(--neon-cyan);">${q.word}</strong>` : `Ôn tập từ: <strong style="color: var(--neon-amber);">${q.word}</strong>`;
+            const cefrBadge = q.cefr_level ? `<span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(34,211,238,0.15); color: var(--neon-cyan); font-weight: bold; margin-left: 6px;">${q.cefr_level}</span>` : '';
+            const questDesc = q.type === 'NEW' ? `Học từ mới: <strong style="color: var(--neon-cyan);">${q.word}</strong>${cefrBadge}` : `Ôn tập từ: <strong style="color: var(--neon-amber);">${q.word}</strong>${cefrBadge}`;
             const opacity = q.is_completed ? "0.6" : "1";
 
             html += `
@@ -168,7 +169,24 @@ function loadDashboardLeaderboard() {
         data.leaderboard.forEach((u, idx) => {
             let color = idx === 0 ? "var(--neon-amber)" : (idx === 1 ? "#cbd5e1" : "#d97706");
             if(idx > 2) color = "#94a3b8";
-            html += `<div style="color: ${color}; margin-bottom: 8px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">#${idx+1} ${u.username} - <span style="color:#fff;">${u.score} Combo</span></div>`;
+            const avatarSrc = u.avatar ? `/static/uploads/avatars/${u.avatar}` : `/static/uploads/avatars/default_avatar.png`;
+            const frameClass = u.equipped_frame || 'frame-default';
+            const titleText = u.equipped_title || 'Tân Binh Ngơ Ngác';
+
+            html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <span style="color: ${color}; font-weight: bold; font-size: 13px;">#${idx+1}</span>
+                    <div class="avatar-container ${frameClass}" style="width: 32px; height: 32px; flex-shrink: 0; padding: 3px;">
+                        <img src="${avatarSrc}" class="avatar-img" onerror="this.src='/static/uploads/covers/default_cover.jpg'">
+                    </div>
+                    <div style="min-width: 0; overflow: hidden;">
+                        <div style="color: #fff; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.username}</div>
+                        <div style="font-size: 9px; color: var(--neon-pink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">« ${titleText} »</div>
+                    </div>
+                </div>
+                <span style="color: var(--pixel-green); font-size: 12px; font-weight: bold; flex-shrink: 0;">${u.score} pts</span>
+            </div>`;
         });
         lbContainer.innerHTML = html;
     });
@@ -367,8 +385,27 @@ function updateChibeEmotion(score) {
 }
 
 // ==============================================================
-// [ PHASE 6 ] KIẾN TRÚC STREAMING THỜI GIAN THỰC (SSE)
+// [ PHASE 6 ] KIẾN TRÚC STREAMING THỜI GIAN THỰC (SSE) & FORMATTER SẠCH SẼ
 // ==============================================================
+
+function renderStructuredFeedback(rawText) {
+    if (!rawText) return "";
+    let clean = rawText;
+    // 1. Xóa toàn bộ ký tự markdown thừa (**bold**, *italic*, > quotes, leftover asterisks)
+    clean = clean.replace(/\*\*(.*?)\*\*/g, '$1');
+    clean = clean.replace(/\*(.*?)\*/g, '$1');
+    clean = clean.replace(/^>\s*/gm, '');
+    clean = clean.replace(/\*\*/g, '');
+
+    // 2. Định dạng các đề mục sư phạm rõ ràng, màu sắc chuyên nghiệp
+    clean = clean.replace(/\[ĐÁNH GIÁ TỔNG QUAN\]/g, '<div style="color: var(--neon-cyan); font-weight: 700; margin-top: 10px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ ĐÁNH GIÁ TỔNG QUAN ]</div>');
+    clean = clean.replace(/\[CHI TIẾT LỖI SAI & PHÂN TÍCH\]/g, '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ CHI TIẾT LỖI SAI & PHÂN TÍCH ]</div>');
+    clean = clean.replace(/\[CÂU CHUẨN ĐỀ XUẤT\]/g, '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ CÂU CHUẨN ĐỀ XUẤT ]</div>');
+    clean = clean.replace(/\[GÓP Ý & HƯỚNG DẪN HOÀN THIỆN\]/g, '<div style="color: var(--neon-amber); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ GÓP Ý & HƯỚNG DẪN HOÀN THIỆN ]</div>');
+    clean = clean.replace(/\[NĂNG LỰC TỪ VỰNG & CEFR\]/g, '<div style="color: var(--neon-purple); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ NĂNG LỰC TỪ VỰNG & CEFR ]</div>');
+
+    return clean.replace(/\n/g, '<br>');
+}
 
 function submitChallenge() {
     const userInputField = document.getElementById("userInput");
@@ -391,6 +428,7 @@ function submitChallenge() {
     `;
     const scoreBox = document.getElementById('aiFeedbackScore');
     const textBox = document.getElementById('aiFeedbackText');
+    let accumulatedText = "";
 
     fetch('/api/ai/evaluate', {
         method: 'POST',
@@ -425,7 +463,8 @@ function submitChallenge() {
                             }
                         }
                         else if (data.type === 'chunk') {
-                            textBox.innerHTML += data.text.replace(/\n/g, '<br>');
+                            accumulatedText += data.text;
+                            textBox.innerHTML = renderStructuredFeedback(accumulatedText);
                             textBox.parentNode.scrollTop = textBox.parentNode.scrollHeight;
                         }
                         else if (data.type === 'levelup') {
@@ -990,6 +1029,7 @@ function submitQuickQuest() {
     `;
     const scoreDiv = document.getElementById('quickQuestScore');
     const textDiv = document.getElementById('quickQuestText');
+    let accumulatedText = "";
 
     fetch('/api/ai/evaluate', {
         method: 'POST',
@@ -1021,7 +1061,8 @@ function submitQuickQuest() {
                             if(data.quest_notification) alert(data.quest_notification);
                         }
                         else if (data.type === 'chunk') {
-                            textDiv.innerHTML += data.text.replace(/\n/g, '<br>');
+                            accumulatedText += data.text;
+                            textDiv.innerHTML = renderStructuredFeedback(accumulatedText);
                         }
                     } catch (e) {
                         console.error("Parse Error:", e);

@@ -56,7 +56,20 @@
         <button class="pixel-btn" onclick="closeMilestoneModal()" style="position: absolute; top: 15px; right: 15px; background: #ef4444; padding: 6px 12px; font-size: 10px;">[ ĐÓNG ]</button>
         
         <div class="pixel-title" id="modal-milestone-title" style="color: var(--neon-cyan); font-size: 18px; margin-bottom: 5px;">TIÊU ĐỀ CHẶNG</div>
-        <div id="modal-milestone-desc" style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Mô tả chặng</div>
+        <div id="modal-milestone-desc" style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Mô tả chặng</div>
+
+        <!-- BẢNG ĐIỂM THỜI GIAN THỰC (LIVE EXAM SCORECARD) -->
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 13px; font-family: var(--text-mono);">
+                <span>ẢI 1 (TỪ VỰNG): <strong id="scorecard-word" style="color: #64748b;">0/5.0 ĐIỂM</strong></span>
+                <span style="margin: 0 10px; color: #475569;">|</span>
+                <span>ẢI 2 (CÚ PHÁP): <strong id="scorecard-syntax" style="color: #64748b;">0/5.0 ĐIỂM</strong></span>
+            </div>
+            <div style="font-size: 14px; font-family: var(--text-mono); font-weight: bold;">
+                TỔNG ĐIỂM: <span id="scorecard-total" style="color: var(--neon-amber);">0.0 / 10.0</span>
+                <span id="scorecard-status" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.2); color: #ef4444; margin-left: 8px;">CHƯA ĐẠT (Cần >= 7.0)</span>
+            </div>
+        </div>
 
         <!-- TAB NAVIGATION TRONG MODAL -->
         <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px dashed var(--glass-border); padding-bottom: 12px;">
@@ -84,8 +97,14 @@
 
         <!-- NỘI DUNG 2: MINIGAME GHÉP CHỮ -->
         <div id="m-tab-scramble" style="display: none;">
-            <div style="color: var(--neon-pink); font-family: var(--text-pixel); font-size: 14px; text-align: center; margin-bottom: 10px;">
-                ẢI 1: GỠ BOM TỪ VỰNG // GHÉP CÁC Ô KÝ TỰ THEO THỨ TỰ ĐÚNG
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <div style="color: var(--neon-pink); font-family: var(--text-pixel); font-size: 14px;">
+                    ẢI 1: GỠ BOM TỪ VỰNG // GHÉP KÝ TỰ THEO THỨ TỰ
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 12px; color: var(--neon-cyan); font-family: var(--text-mono);" id="scramble-vocab-counter">Từ 1/4</span>
+                    <button class="pixel-btn" onclick="nextScrambleWord()" style="background: rgba(103, 232, 249, 0.2); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 4px 8px; font-size: 10px;">TỪ TIẾP ▶</button>
+                </div>
             </div>
             <div id="scramble-meaning" style="color: #cbd5e1; font-size: 15px; text-align: center; margin-bottom: 15px; font-weight: bold;">Nghĩa của từ</div>
 
@@ -134,6 +153,8 @@
     let wordPassed = false;
     let syntaxPassed = false;
     let scrambleStartTime = 0;
+    let currentVocabIdx = 0;
+    let totalVocabsCount = 1;
 
     document.addEventListener("DOMContentLoaded", () => {
         loadRoadmap();
@@ -225,17 +246,47 @@
         container.innerHTML = html;
     }
 
+    function updateExamScorecard() {
+        const wScore = wordPassed ? 5.0 : 0.0;
+        const sScore = syntaxPassed ? 5.0 : 0.0;
+        const total = wScore + sScore;
+
+        const wElem = document.getElementById('scorecard-word');
+        wElem.innerText = wordPassed ? "✓ 5.0/5.0 ĐIỂM" : "0/5.0 ĐIỂM";
+        wElem.style.color = wordPassed ? "var(--pixel-green)" : "#64748b";
+
+        const sElem = document.getElementById('scorecard-syntax');
+        sElem.innerText = syntaxPassed ? "✓ 5.0/5.0 ĐIỂM" : "0/5.0 ĐIỂM";
+        sElem.style.color = syntaxPassed ? "var(--pixel-green)" : "#64748b";
+
+        document.getElementById('scorecard-total').innerText = `${total.toFixed(1)} / 10.0`;
+        const stElem = document.getElementById('scorecard-status');
+        if (total >= 7.0) {
+            stElem.innerText = "✓ ĐỦ ĐIỀU KIỆN QUA ẢI";
+            stElem.style.background = "rgba(110, 231, 183, 0.2)";
+            stElem.style.color = "var(--pixel-green)";
+        } else {
+            stElem.innerText = "CHƯA ĐẠT (Cần >= 7.0)";
+            stElem.style.background = "rgba(239, 68, 68, 0.2)";
+            stElem.style.color = "#ef4444";
+        }
+    }
+
     function openMilestoneRoom(milestoneId) {
         currentMilestoneId = milestoneId;
         wordPassed = false;
         syntaxPassed = false;
+        currentVocabIdx = 0;
         scrambleSelectedLetters = [];
         syntaxSelectedChunks = [];
+        updateExamScorecard();
 
-        fetch(`/api/roadmap/milestone/${milestoneId}`)
+        fetch(`/api/roadmap/milestone/${milestoneId}?vocab_idx=0`)
             .then(res => res.json())
             .then(data => {
                 currentMilestoneData = data;
+                currentVocabIdx = data.current_vocab_idx || 0;
+                totalVocabsCount = data.total_vocabs || 1;
                 
                 // Bind Modal Header
                 document.getElementById('modal-milestone-title').innerText = data.milestone.title;
@@ -273,6 +324,17 @@
             });
     }
 
+    function nextScrambleWord() {
+        if(!currentMilestoneId) return;
+        currentVocabIdx = (currentVocabIdx + 1) % totalVocabsCount;
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}?vocab_idx=${currentVocabIdx}`)
+            .then(res => res.json())
+            .then(data => {
+                currentMilestoneData.scramble_challenge = data.scramble_challenge;
+                setupWordScramble(data.scramble_challenge);
+            });
+    }
+
     function closeMilestoneModal() {
         document.getElementById('milestone-modal').style.display = 'none';
     }
@@ -300,6 +362,7 @@
     /* MINIGAME 1: GHÉP CHỮ */
     function setupWordScramble(scrambleData) {
         if(!scrambleData || scrambleData.status !== 'success') return;
+        document.getElementById('scramble-vocab-counter').innerText = `Từ ${currentVocabIdx + 1}/${totalVocabsCount}`;
         document.getElementById('scramble-meaning').innerText = `Nghĩa: "${scrambleData.meaning}" (${scrambleData.cefr_level})`;
         document.getElementById('scramble-feedback').style.display = 'none';
 
@@ -352,6 +415,7 @@
 
             if(res.is_correct) {
                 wordPassed = true;
+                updateExamScorecard();
                 setTimeout(() => switchModalTab('syntax'), 1200);
             }
         });
@@ -410,6 +474,7 @@
 
             if(res.is_correct) {
                 syntaxPassed = true;
+                updateExamScorecard();
             }
         });
     }
@@ -418,6 +483,11 @@
         let totalScore = 0;
         if(wordPassed) totalScore += 5.0;
         if(syntaxPassed) totalScore += 5.0;
+
+        if(totalScore < 7.0) {
+            const ok = confirm(`⚠️ CẢNH BÁO: Điểm bài thi hiện tại của bạn là ${totalScore.toFixed(1)}/10.0 (Yêu cầu tối thiểu 7.0 điểm).\n\nBạn chưa hoàn thành đủ 2 ải! Nếu nộp bây giờ bạn sẽ bị tính là TRƯỢT CHẶNG. Bạn có chắc chắn muốn nộp không?`);
+            if(!ok) return;
+        }
 
         fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit`, {
             method: 'POST',

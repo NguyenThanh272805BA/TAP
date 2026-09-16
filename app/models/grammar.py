@@ -10,7 +10,10 @@ class Grammar(db.Model):
     explanation = db.Column(db.Text, nullable=False)
     is_slang = db.Column(db.Boolean, default=False)
     example = db.Column(db.Text)
+    cefr_level = db.Column(db.String(10), default='A1')
+    category = db.Column(db.String(50), default='General')
+    difficulty_score = db.Column(db.Integer, default=1)
     created_at = db.Column(db.DateTime, default=func.now())
 
     def __repr__(self):
-        return f"<Grammar {self.structure} - Slang: {self.is_slang}>"
+        return f"<Grammar {self.structure} - CEFR: {self.cefr_level}>"

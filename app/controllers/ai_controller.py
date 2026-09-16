@@ -61,18 +61,7 @@ def sanitize_input(text):
     return sanitized
 
 
-def check_and_complete_quest(user_id, text_input):
-    today = date.today()
-    quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today, is_completed=False).all()
-    for q in quests:
-        v = Vocabulary.query.get(q.vocab_id)
-        if v and v.word.lower() in text_input.lower():
-            q.is_completed = True
-            user = User.query.get(user_id)
-            user.coins += 20
-            db.session.commit()
-            return v.word
-    return None
+from app.controllers.game_controller import check_and_complete_quest
 
 
 def manage_sliding_window(active_run, max_turns=3):
@@ -120,7 +109,6 @@ def evaluate():
         return jsonify({"message": "Phát hiện Hacking!", "result": hack_result}), 200
 
     user_input = safe_input
-    quest_completed_word = check_and_complete_quest(user_id, user_input)
     detected_intent = intent_engine.predict(user_input)
 
     # -------------------------------------------------------------
@@ -132,6 +120,14 @@ def evaluate():
     # Ép kiểu float an toàn và lấy default để phòng trường hợp Fallback LLM trả về rỗng
     local_score = float(gec_res.get('score', 0.0))
     local_feedback = gec_res.get('feedback', 'Không có nhận xét từ hệ thống.')
+
+    # Chỉ hoàn thành quest khi câu không phải là cụm từ rời rạc (fragment) và điểm đạt >= 5.0
+    is_valid_sentence = not gec_res.get('is_fragment', False) and len(user_input.split()) >= 2
+    quest_completed_word = None
+    if local_score >= 5.0 and is_valid_sentence:
+        success, word = check_and_complete_quest(user_id, user_input, score=local_score, is_valid_sentence=is_valid_sentence)
+        if success:
+            quest_completed_word = word
 
     def generate_stream():
         meta_data = {

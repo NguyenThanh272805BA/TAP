@@ -6,6 +6,7 @@ from app.models.user_vocabulary import UserVocabulary
 from app.models.grammar import Grammar
 from app.models.daily_quest import DailyQuest
 from datetime import datetime, date, timedelta
+import re
 import random
 import time
 from app.ml_models.recommender import VocabRecommender
@@ -16,12 +17,16 @@ from app.models.notification import Notification
 
 from app.utils.achievement_manager import check_and_unlock_achievements
 from app.models.cosmetic import CosmeticItem, UserCosmetic
+from app.models.test import TestLog
+from app.models.user_grammar import UserGrammar
 from app.ml_models.scramble_engine import LocalScrambleEngine
+from app.ml_models.exam_engine import LocalExamEngine
 
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
 recommender_engine = VocabRecommender()
 srs_engine = SmartSRS()
 scramble_engine = LocalScrambleEngine()
+exam_engine = LocalExamEngine()
 
 
 @game_bp.route('/story/topics', methods=['GET'])
@@ -382,8 +387,81 @@ def gacha_verify():
 @game_bp.route('/gacha/leaderboard', methods=['GET'])
 def get_leaderboard():
     top_users = User.query.order_by(User.infinity_score.desc()).limit(5).all()
-    result = [{"username": u.username, "score": u.infinity_score or 0} for u in top_users]
+    result = [{
+        "username": u.username,
+        "score": u.infinity_score or 0,
+        "avatar": u.avatar or "default_avatar.png",
+        "equipped_frame": getattr(u, 'equipped_frame', 'frame-default') or 'frame-default',
+        "equipped_title": getattr(u, 'equipped_title', 'Tân Binh Ngơ Ngác') or 'Tân Binh Ngơ Ngác',
+        "current_level": getattr(u, 'current_level', 'Tân Binh A1 (Bronze I)') or 'Tân Binh A1 (Bronze I)'
+    } for u in top_users]
     return jsonify({"leaderboard": result}), 200
+
+
+CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+
+
+def get_cefr_policy_for_user(user) -> dict:
+    """Xác định chính sách dải cấp độ từ vựng phù hợp với trình độ CEFR của người chơi."""
+    raw_band = getattr(user, 'current_band', 'A1') or 'A1'
+    band = raw_band.upper().strip()
+    if band not in CEFR_LEVELS:
+        lvl_str = str(getattr(user, 'current_level', '')).lower()
+        if 'c2' in lvl_str or 'độc cô' in lvl_str:
+            band = 'C2'
+        elif 'c1' in lvl_str or 'kiến trúc' in lvl_str:
+            band = 'C1'
+        elif 'b2' in lvl_str or 'pháp sư' in lvl_str:
+            band = 'B2'
+        elif 'b1' in lvl_str or 'chiến binh' in lvl_str:
+            band = 'B1'
+        elif 'a2' in lvl_str or 'thợ săn' in lvl_str:
+            band = 'A2'
+        else:
+            band = 'A1'
+
+    if band == 'A1':
+        return {
+            'target_band': 'A1',
+            'allowed_new': ['A1', 'A2'],
+            'allowed_review': ['A1'],
+            'max_allowed_tier_index': 1  # Tối đa A2
+        }
+    elif band == 'A2':
+        return {
+            'target_band': 'A2',
+            'allowed_new': ['A2', 'B1'],
+            'allowed_review': ['A1', 'A2'],
+            'max_allowed_tier_index': 2  # Tối đa B1
+        }
+    elif band == 'B1':
+        return {
+            'target_band': 'B1',
+            'allowed_new': ['B1', 'B2'],
+            'allowed_review': ['A1', 'A2', 'B1'],
+            'max_allowed_tier_index': 3  # Tối đa B2
+        }
+    elif band == 'B2':
+        return {
+            'target_band': 'B2',
+            'allowed_new': ['B2', 'C1'],
+            'allowed_review': ['A2', 'B1', 'B2'],
+            'max_allowed_tier_index': 4  # Tối đa C1
+        }
+    elif band == 'C1':
+        return {
+            'target_band': 'C1',
+            'allowed_new': ['C1', 'C2'],
+            'allowed_review': ['B1', 'B2', 'C1'],
+            'max_allowed_tier_index': 5  # Tối đa C2
+        }
+    else:  # C2
+        return {
+            'target_band': 'C2',
+            'allowed_new': ['C2'],
+            'allowed_review': ['B2', 'C1', 'C2'],
+            'max_allowed_tier_index': 5
+        }
 
 
 @game_bp.route('/quests/today', methods=['GET'])
@@ -392,27 +470,85 @@ def get_daily_quests():
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Người dùng không tồn tại!"}), 404
+
+    policy = get_cefr_policy_for_user(user)
     today = date.today()
     quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today).all()
 
-    if not quests:
-        # Tối ưu hóa: Thay thế ORDER BY RAND() bằng Random ID ở Python
-        locked_ids = [v[0] for v in db.session.query(Vocabulary.id).filter_by(is_unlocked=False).all()]
-        new_vocab_ids = random.sample(locked_ids, min(2, len(locked_ids)))
-        new_vocabs = Vocabulary.query.filter(Vocabulary.id.in_(new_vocab_ids)).all() if new_vocab_ids else []
+    # Cơ chế Self-healing: Nếu phát hiện nhiệm vụ trong ngày chứa từ vựng vượt quá cấp độ cho phép
+    # (ví dụ: người chơi A1 bị gán từ C2 như 'Chemical reaction'), tự động dọn dẹp để sinh lại chuẩn.
+    if quests:
+        needs_regeneration = False
+        for q in quests:
+            v = Vocabulary.query.get(q.vocab_id)
+            if not v:
+                needs_regeneration = True
+                break
+            v_cefr = (v.cefr_level or 'A1').upper().strip()
+            v_tier_idx = CEFR_LEVELS.index(v_cefr) if v_cefr in CEFR_LEVELS else 0
+            if v_tier_idx > policy['max_allowed_tier_index']:
+                needs_regeneration = True
+                break
 
-        review_ids = [v[0] for v in db.session.query(UserVocabulary.vocab_id).filter_by(
+        if needs_regeneration:
+            for q in quests:
+                db.session.delete(q)
+            db.session.commit()
+            quests = []
+
+    if not quests:
+        # 1. Chọn 2 từ vựng MỚI (NEW) phù hợp chính xác cấp độ CEFR của người học
+        learned_ids = [uv[0] for uv in db.session.query(UserVocabulary.vocab_id).filter_by(
             user_id=user_id, memorization_level='DA_THUOC'
         ).all()]
-        review_vocab_ids = random.sample(review_ids, min(2, len(review_ids)))
-        review_vocabs = UserVocabulary.query.filter(UserVocabulary.vocab_id.in_(review_vocab_ids),
-                                                    UserVocabulary.user_id == user_id).all() if review_vocab_ids else []
+
+        new_candidates = [v[0] for v in db.session.query(Vocabulary.id).filter(
+            Vocabulary.cefr_level.in_(policy['allowed_new']),
+            ~Vocabulary.id.in_(learned_ids) if learned_ids else True
+        ).all()]
+
+        if len(new_candidates) < 2:
+            new_candidates = [v[0] for v in db.session.query(Vocabulary.id).filter(
+                Vocabulary.cefr_level.in_(policy['allowed_new'])
+            ).all()]
+
+        new_vocab_ids = random.sample(new_candidates, min(2, len(new_candidates))) if new_candidates else []
+        new_vocabs = Vocabulary.query.filter(Vocabulary.id.in_(new_vocab_ids)).all() if new_vocab_ids else []
+
+        # 2. Chọn 2 từ vựng ÔN TẬP (REVIEW) phù hợp với cấp độ CEFR
+        review_candidates = [
+            uv[0] for uv in db.session.query(UserVocabulary.vocab_id).join(
+                Vocabulary, UserVocabulary.vocab_id == Vocabulary.id
+            ).filter(
+                UserVocabulary.user_id == user_id,
+                UserVocabulary.memorization_level == 'DA_THUOC',
+                Vocabulary.cefr_level.in_(policy['allowed_review'])
+            ).all()
+        ]
+
+        review_vocab_ids = []
+        if len(review_candidates) >= 2:
+            review_vocab_ids = random.sample(review_candidates, 2)
+        elif len(review_candidates) == 1:
+            review_vocab_ids = list(review_candidates)
+            supp_pool = [vid for vid in new_candidates if vid not in new_vocab_ids and vid not in review_vocab_ids]
+            if supp_pool:
+                review_vocab_ids.append(random.choice(supp_pool))
+        else:
+            supp_pool = [vid for vid in new_candidates if vid not in new_vocab_ids]
+            if len(supp_pool) >= 2:
+                review_vocab_ids = random.sample(supp_pool, 2)
+            elif supp_pool:
+                review_vocab_ids = list(supp_pool)
 
         for nv in new_vocabs:
             db.session.add(DailyQuest(user_id=user_id, vocab_id=nv.id, quest_type='NEW', assigned_date=today))
 
-        for rv in review_vocabs:
-            db.session.add(DailyQuest(user_id=user_id, vocab_id=rv.vocab_id, quest_type='REVIEW', assigned_date=today))
+        for r_id in review_vocab_ids:
+            db.session.add(DailyQuest(user_id=user_id, vocab_id=r_id, quest_type='REVIEW', assigned_date=today))
 
         db.session.commit()
         quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today).all()
@@ -427,21 +563,40 @@ def get_daily_quests():
                 "word": v.word,
                 "meaning": v.meaning,
                 "type": q.quest_type,
+                "cefr_level": v.cefr_level,
                 "is_completed": q.is_completed
             })
 
     return jsonify({"quests": result}), 200
 
 
-def check_and_complete_quest(user_id, text_input):
+def check_and_complete_quest(user_id, text_input, score=None, is_valid_sentence=True):
+    """
+    Kiểm tra và hoàn thành nhiệm vụ hàng ngày:
+    - Yêu cầu câu phải đạt điểm tối thiểu >= 5.0
+    - Yêu cầu câu không phải là cụm từ rời rạc (fragment)
+    - Khớp chính xác từ vựng theo ranh giới từ (word boundary)
+    """
+    if score is not None and score < 5.0:
+        return False, None
+    if not is_valid_sentence:
+        return False, None
+
     today = date.today()
     quests = DailyQuest.query.filter_by(user_id=user_id, assigned_date=today, is_completed=False).all()
+    cleaned_input = (text_input or '').lower().strip()
+
     for q in quests:
         v = Vocabulary.query.get(q.vocab_id)
-        if v and v.word.lower() in text_input.lower():
+        if not v or not v.word:
+            continue
+        v_word = v.word.lower().strip()
+        pattern = rf"\b{re.escape(v_word)}\b"
+        if re.search(pattern, cleaned_input):
             q.is_completed = True
             user = User.query.get(user_id)
-            user.coins += 20
+            if user:
+                user.coins += 20
             db.session.commit()
             return True, v.word
     return False, None
@@ -771,19 +926,27 @@ def get_my_inventory():
     user = User.query.get(user_id)
     owned_list = UserCosmetic.query.filter_by(user_id=user_id).all()
 
+    default_frame = CosmeticItem.query.filter_by(css_class='frame-default').first()
+    default_frame_id = default_frame.id if default_frame else 1
+
     items = []
-    # Luôn có item default
+    seen_ids = set()
+
+    # Luôn có item default với ID chuẩn từ Database
     items.append({
-        "id": 0,
+        "id": default_frame_id,
         "name": "Khung Tiêu Chuẩn",
         "type": "AVATAR_FRAME",
         "css_class": "frame-default",
+        "description": "Khung kim loại cổ điển cơ bản.",
         "is_equipped": (getattr(user, 'equipped_frame', 'frame-default') == 'frame-default')
     })
+    seen_ids.add(default_frame_id)
 
     for uc in owned_list:
         c = uc.cosmetic
-        if c:
+        if c and c.id not in seen_ids:
+            seen_ids.add(c.id)
             is_active = (user.equipped_frame == c.css_class) if c.type == 'AVATAR_FRAME' else (user.equipped_title == c.name)
             items.append({
                 "id": c.id,
@@ -798,4 +961,216 @@ def get_my_inventory():
         "inventory": items,
         "current_frame": getattr(user, 'equipped_frame', 'frame-default'),
         "current_title": getattr(user, 'equipped_title', 'Tân Binh Ngơ Ngác')
-    }), 200
+    }), 200
+
+
+# =====================================================================
+# [ PHÂN HỆ MỚI: TỔNG QUAN CHỦ ĐỀ, NGỮ PHÁP CEFR & NGÂN HÀNG ĐỀ THI LOCAL AI ]
+# =====================================================================
+
+@game_bp.route('/vocabularies/overview', methods=['GET'])
+def get_vocabularies_overview():
+    """Lấy dữ liệu thống kê tổng quan theo từng Topic để hiển thị Bento Grid trực quan"""
+    user_id = session.get('user_id')
+    from collections import defaultdict
+    all_vocab = Vocabulary.query.all()
+
+    memorized_set = set()
+    if user_id:
+        uvs = UserVocabulary.query.filter_by(user_id=user_id, memorization_level='DA_THUOC').all()
+        memorized_set = {uv.vocab_id for uv in uvs}
+
+    themes_map = defaultdict(list)
+    for v in all_vocab:
+        t_name = v.theme or "General"
+        themes_map[t_name].append(v)
+
+    overview = []
+    for t_name, words in themes_map.items():
+        total = len(words)
+        memorized = sum(1 for w in words if w.id in memorized_set)
+        pct = round((memorized / total) * 100, 1) if total > 0 else 0
+
+        cefr_counts = defaultdict(int)
+        for w in words:
+            cefr_counts[w.cefr_level or 'A1'] += 1
+        top_cefr = max(cefr_counts.items(), key=lambda x: x[1])[0] if cefr_counts else 'A1'
+
+        sample_words = [w.word for w in words[:4]]
+
+        overview.append({
+            "theme": t_name,
+            "total_words": total,
+            "memorized_words": memorized,
+            "progress_percent": pct,
+            "representative_cefr": top_cefr,
+            "sample_words": sample_words
+        })
+
+    overview.sort(key=lambda x: x["theme"])
+    return jsonify({"topics": overview}), 200
+
+
+@game_bp.route('/grammar/personalized', methods=['GET'])
+def get_personalized_grammar():
+    """Lấy danh sách ngữ pháp phân cấp CEFR kèm trạng thái làm chủ cá nhân của người dùng"""
+    user_id = session.get('user_id')
+    user = User.query.get(user_id) if user_id else None
+    user_band = getattr(user, 'current_band', 'A1') if user else 'A1'
+
+    user_grammars_map = {}
+    if user_id:
+        ugs = UserGrammar.query.filter_by(user_id=user_id).all()
+        for ug in ugs:
+            user_grammars_map[ug.grammar_id] = ug
+
+    all_grammars = Grammar.query.order_by(Grammar.difficulty_score.asc()).all()
+    grouped = {band: [] for band in ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']}
+    mastery_stats = {band: {"total": 0, "mastered": 0} for band in ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']}
+
+    for g in all_grammars:
+        band = g.cefr_level if g.cefr_level in grouped else 'A1'
+        ug = user_grammars_map.get(g.id)
+
+        status = ug.mastery_status if ug else 'CHUA_HOC'
+        practice_count = ug.practice_count if ug else 0
+        best_score = ug.best_score if ug else 0.0
+        is_recommended = (band == user_band)
+
+        mastery_stats[band]["total"] += 1
+        if status == 'DA_NAM_VUNG':
+            mastery_stats[band]["mastered"] += 1
+
+        grouped[band].append({
+            "id": g.id,
+            "structure": g.structure,
+            "explanation": g.explanation,
+            "example": g.example,
+            "category": g.category or "General",
+            "cefr_level": band,
+            "difficulty_score": g.difficulty_score or 1,
+            "mastery_status": status,
+            "practice_count": practice_count,
+            "best_score": best_score,
+            "is_recommended": is_recommended
+        })
+
+    return jsonify({
+        "user_band": user_band,
+        "mastery_stats": mastery_stats,
+        "grammars_by_band": grouped
+    }), 200
+
+
+@game_bp.route('/grammar/toggle_mastery', methods=['POST'])
+def toggle_grammar_mastery():
+    """Cập nhật trạng thái làm chủ cấu trúc ngữ pháp (CHUA_HOC -> DANG_LUYEN -> DA_NAM_VUNG)"""
+    data = request.get_json() or {}
+    grammar_id = data.get('grammar_id')
+    new_status = data.get('status')
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+    if not grammar_id:
+        return jsonify({"error": "Thiếu grammar_id!"}), 400
+
+    ug = UserGrammar.query.filter_by(user_id=user_id, grammar_id=grammar_id).first()
+    if not ug:
+        ug = UserGrammar(user_id=user_id, grammar_id=grammar_id, mastery_status=new_status or 'DANG_LUYEN')
+        db.session.add(ug)
+    else:
+        if new_status:
+            ug.mastery_status = new_status
+        else:
+            cycle = {'CHUA_HOC': 'DANG_LUYEN', 'DANG_LUYEN': 'DA_NAM_VUNG', 'DA_NAM_VUNG': 'CHUA_HOC'}
+            ug.mastery_status = cycle.get(ug.mastery_status, 'DANG_LUYEN')
+
+    db.session.commit()
+    return jsonify({
+        "status": "success",
+        "grammar_id": grammar_id,
+        "mastery_status": ug.mastery_status
+    }), 200
+
+
+@game_bp.route('/exam/mock/generate', methods=['POST'])
+def generate_mock_exam():
+    """Sinh đề thi thử tự động chuẩn hóa theo Band CEFR hoặc đề toàn diện bằng AI Local 100%"""
+    data = request.get_json() or {}
+    band = data.get('band', 'ALL')
+    num_q = int(data.get('num_questions', 10))
+    user_id = session.get('user_id')
+
+    exam_payload = exam_engine.generate_mock_exam(band=band, num_questions=num_q, user_id=user_id)
+
+    # Lưu answer_key vào session để đối soát khi submit
+    session['current_exam_id'] = exam_payload['exam_id']
+    session['current_exam_answer_key'] = exam_payload['answer_key']
+
+    safe_response = {k: v for k, v in exam_payload.items() if k != 'answer_key'}
+    return jsonify(safe_response), 200
+
+
+@game_bp.route('/exam/mock/submit', methods=['POST'])
+def submit_mock_exam():
+    """Chấm điểm bài thi thử tự động, tính subscores CEFR và lưu kết quả vào TestLog"""
+    data = request.get_json() or {}
+    answers = data.get('answers', {})
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    answer_key = session.get('current_exam_answer_key')
+    if not answer_key:
+        answer_key = data.get('answer_key')
+
+    if not answer_key:
+        return jsonify({"error": "Không tìm thấy dữ liệu đề thi đối soát hoặc phiên làm bài đã hết hạn."}), 400
+
+    eval_result = exam_engine.evaluate_mock_exam(user_answers=answers, answer_key=answer_key, user_id=user_id)
+
+    user = User.query.get(user_id)
+    if user:
+        coins = eval_result.get('coins_reward', 10)
+        user.coins = (user.coins or 0) + coins
+
+        log_feedback = f"[{eval_result['band_title']}] Điểm: {eval_result['final_score']}/10 ({eval_result['percentage']}%). {eval_result['diagnostic_advice']}"
+        test_log = TestLog(
+            user_id=user_id,
+            score=eval_result['final_score'],
+            ai_feedback=log_feedback
+        )
+        db.session.add(test_log)
+
+        achieved_band = eval_result.get('estimated_band', 'A1')
+        band_ranks = {'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6}
+        if band_ranks.get(achieved_band, 1) > band_ranks.get(getattr(user, 'current_band', 'A1'), 1) and eval_result['final_score'] >= 8.0:
+            user.current_band = achieved_band
+            eval_result['band_upgraded'] = True
+            eval_result['new_band'] = achieved_band
+
+        db.session.commit()
+
+    return jsonify(eval_result), 200
+
+
+@game_bp.route('/exam/history', methods=['GET'])
+def get_exam_history():
+    """Lấy danh sách 15 bài thi thử gần nhất của người dùng"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    logs = TestLog.query.filter_by(user_id=user_id).order_by(TestLog.created_at.desc()).limit(15).all()
+    history = []
+    for l in logs:
+        history.append({
+            "id": l.id,
+            "score": l.score,
+            "ai_feedback": l.ai_feedback,
+            "created_at": l.created_at.strftime("%Y-%m-%d %H:%M") if l.created_at else ""
+        })
+    return jsonify({"history": history}), 200
+

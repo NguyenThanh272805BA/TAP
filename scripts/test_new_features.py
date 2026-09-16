@@ -145,6 +145,70 @@ class TestNewFeatures(unittest.TestCase):
         self.assertTrue(len(inv['inventory']) > 0)
         print("[✓] test_04_cosmetics_and_shop_api passed!")
 
+    def test_05_system_flow_improvements(self):
+        """Kiểm tra toàn bộ 5 cải tiến luồng hệ thống mới"""
+        with self.app.app_context():
+            # 1. Kiểm tra Lộ trình phủ trọn C1 & C2 (Đủ 12 chặng)
+            self.client.post('/api/roadmap/set_target', json={'target_band': 'C2'})
+            res_c2 = self.client.get('/api/roadmap/current')
+            self.assertEqual(res_c2.status_code, 200)
+            data_c2 = res_c2.get_json()
+            self.assertEqual(data_c2['target_band'], 'C2')
+            self.assertEqual(data_c2['total_milestones'], 12)
+            c2_bands = {m['band_level'] for m in data_c2['milestones']}
+            self.assertEqual(c2_bands, {'A1', 'A2', 'B1', 'B2', 'C1', 'C2'})
+
+            # 2. Kiểm tra Vượt ải tự động mở khóa từ vựng vào Smart SRS
+            m_target = data_c2['milestones'][0]
+            from app.models.user_vocabulary import UserVocabulary
+            vocab_ids = RoadmapMilestone.query.get(m_target['id']).get_vocab_ids()
+            
+            res_sub = self.client.post(f"/api/roadmap/milestone/{m_target['id']}/submit", json={'score': 10.0})
+            self.assertEqual(res_sub.status_code, 200)
+            
+            # Đảm bảo từ vựng chặng đã được nạp vào UserVocabulary
+            for vid in vocab_ids:
+                uv = UserVocabulary.query.filter_by(user_id=self.user_id, vocab_id=vid).first()
+                self.assertIsNotNone(uv)
+                self.assertTrue(uv.is_unlocked)
+                self.assertEqual(uv.memorization_level, 'DA_THUOC')
+
+            # 3. Kiểm tra trang bị Khung Tiêu Chuẩn từ kho đồ không bị lỗi ID 0
+            res_inv = self.client.get('/api/game/cosmetics/my_inventory')
+            inv_items = res_inv.get_json()['inventory']
+            default_item = next((it for it in inv_items if it['css_class'] == 'frame-default'), None)
+            self.assertIsNotNone(default_item)
+            self.assertGreater(default_item['id'], 0) # Không được bằng 0!
+            
+            # Trang bị lại Khung Tiêu Chuẩn
+            res_equip_def = self.client.post('/api/game/cosmetics/equip', json={'item_id': default_item['id']})
+            self.assertEqual(res_equip_def.status_code, 200)
+            self.assertEqual(res_equip_def.get_json()['equipped_frame'], 'frame-default')
+
+            # 4. Kiểm tra Leaderboard API trả về Avatar + Khung phát sáng + Danh hiệu
+            res_lb = self.client.get('/api/game/gacha/leaderboard')
+            self.assertEqual(res_lb.status_code, 200)
+            lb_list = res_lb.get_json()['leaderboard']
+            if lb_list:
+                top1 = lb_list[0]
+                self.assertIn('avatar', top1)
+                self.assertIn('equipped_frame', top1)
+                self.assertIn('equipped_title', top1)
+                self.assertIn('current_level', top1)
+
+            # 5. Kiểm tra phân trang từ vựng trong câu đố ghép chữ (vocab_idx)
+            res_p1 = self.client.get(f"/api/roadmap/milestone/{m_target['id']}?vocab_idx=0")
+            res_p2 = self.client.get(f"/api/roadmap/milestone/{m_target['id']}?vocab_idx=1")
+            self.assertEqual(res_p1.status_code, 200)
+            self.assertEqual(res_p2.status_code, 200)
+            p1_data = res_p1.get_json()
+            p2_data = res_p2.get_json()
+            self.assertIn('current_vocab_idx', p1_data)
+            self.assertEqual(p1_data['current_vocab_idx'], 0)
+            self.assertEqual(p2_data['current_vocab_idx'], 1)
+
+            print("[✓] test_05_system_flow_improvements passed successfully!")
+
 
 if __name__ == '__main__':
     unittest.main()

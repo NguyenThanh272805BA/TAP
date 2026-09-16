@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}TRAINING CHAMBER{% endblock %}
+{% block title %}TRAINING & MOCK EXAM CHAMBER{% endblock %}
 
 {% block content %}
 <style>
@@ -37,13 +37,72 @@
         font-weight: bold;
         background: var(--neon-purple);
         color: #fff;
-        margin-left: 10px;
-        box-shadow: 0 0 8px rgba(216, 180, 254, 0.5);
+        box-shadow: 0 0 8px rgba(216, 180, 254, 0.4);
+    }
+    .cefr-badge.a1 { background: #059669; }
+    .cefr-badge.a2 { background: #0284c7; }
+    .cefr-badge.b1 { background: #d97706; }
+    .cefr-badge.b2 { background: #7c3aed; }
+    .cefr-badge.c1 { background: #db2777; }
+    .cefr-badge.c2 { background: #e11d48; box-shadow: 0 0 12px rgba(225, 29, 72, 0.6); }
+
+    .content-section { display: none; animation: fadeIn 0.35s ease; }
+    .content-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Bento Topic Cards Grid */
+    .bento-topic-card {
+        background: rgba(15, 23, 42, 0.7);
+        border: 2px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 20px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+    }
+    .bento-topic-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--neon-cyan);
+        box-shadow: 0 8px 25px rgba(6, 182, 212, 0.15);
     }
 
-    .content-section { display: none; animation: fadeIn 0.4s ease; }
-    .content-section.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    /* Filter Pills */
+    .filter-pill {
+        padding: 6px 14px;
+        font-size: 12px;
+        font-family: var(--text-mono);
+        border-radius: 20px;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--glass-border);
+        color: #94a3b8;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .filter-pill:hover, .filter-pill.active {
+        background: rgba(103, 232, 249, 0.2);
+        border-color: var(--neon-cyan);
+        color: var(--neon-cyan);
+        font-weight: bold;
+    }
+
+    /* Grammar Status Badges */
+    .mastery-tag {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-family: var(--text-mono);
+        cursor: pointer;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .mastery-chua { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid #475569; }
+    .mastery-luyen { background: rgba(245, 158, 11, 0.15); color: var(--neon-amber); border: 1px solid var(--neon-amber); }
+    .mastery-vung { background: rgba(34, 197, 94, 0.15); color: var(--pixel-green); border: 1px solid var(--pixel-green); font-weight: bold; }
 
     @media (max-width: 768px) {
         .tab-nav { flex-direction: column; gap: 10px; }
@@ -53,48 +112,145 @@
 
 <div class="bento-container" style="display: flex; flex-direction: column; max-width: 1200px; margin: 0 auto; align-items: stretch;">
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-        <div class="pixel-title" style="font-size: 22px; color: var(--neon-cyan);">LÒ ĐÚC & HỌC TẬP</div>
-        <button class="pixel-btn" onclick="document.getElementById('level-guide-modal').style.display='flex'" style="background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-size: 11px; padding: 8px 15px;">[?] ĐIỀU KIỆN THĂNG CẤP</button>
+    <!-- TOP HEADER WITH MOCK EXAM CTA -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div class="pixel-title" style="font-size: 22px; color: var(--neon-cyan);">LÒ ĐÚC & HỌC TẬP THÍCH ỨNG</div>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Hệ thống phân cấp ngữ pháp CEFR & Kho từ vựng Bento thông minh 100% Local AI</div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="pixel-btn pulse-neon" onclick="window.location.href='/test'" style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.2)); border: 2px solid var(--neon-pink); color: #fff; font-size: 11px; padding: 10px 18px; letter-spacing: 0.5px;">
+                🎯 PHÒNG THI THỬ CEFR (MOCK EXAM)
+            </button>
+            <button class="pixel-btn" onclick="document.getElementById('level-guide-modal').style.display='flex'" style="background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-size: 11px; padding: 10px 15px;">
+                [?] ĐIỀU KIỆN THĂNG CẤP
+            </button>
+        </div>
     </div>
 
-    <!-- MENU NGANG -->
+    <!-- MENU TABS CHÍNH -->
     <div class="tab-nav">
-        <div class="tab-btn active-vocab" id="tab-vocab" onclick="switchTabUI('vocab')">📚 KHO TỪ VỰNG</div>
-        <div class="tab-btn" id="tab-grammar" onclick="switchTabUI('grammar')">⚙️ NGỮ PHÁP LÕI</div>
-        <div class="tab-btn" id="tab-battle" onclick="switchTabUI('battle')">⚔️ BATTLE ZONE (CHAT)</div>
+        <div class="tab-btn active-vocab" id="tab-vocab" onclick="switchTabUI('vocab')">📚 KHO TỪ VỰNG (CHỦ ĐỀ)</div>
+        <div class="tab-btn" id="tab-grammar" onclick="switchTabUI('grammar')">⚙️ NGỮ PHÁP PHÂN CẤP (CEFR)</div>
+        <div class="tab-btn" id="tab-battle" onclick="switchTabUI('battle')">⚔️ BATTLE ZONE (CHAT VỚI MASTER G)</div>
     </div>
 
-    <!-- TAB 1: TỪ VỰNG -->
+    <!-- ========================================================================= -->
+    <!-- TAB 1: KHO TỪ VỰNG (BENTO GRID HIỆN ĐẠI & TÌM KIẾM NHANH) -->
+    <!-- ========================================================================= -->
     <div id="section-vocab" class="content-section active bento-card card-wide" style="padding: 25px;">
 
-        <!-- Bảng AI Gợi ý -->
+        <!-- Bảng AI Gợi ý Thông Minh -->
         <div style="background: rgba(0,0,0,0.4); border-radius: 12px; border: 1px solid var(--neon-cyan); margin-bottom: 25px; padding: 16px;">
-            <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 14px; margin-bottom: 15px; border-bottom: 1px dashed rgba(6, 182, 212, 0.3); padding-bottom: 10px;">🤖 AI GỢI Ý HỌC TẬP (LỘ TRÌNH THÔNG MINH)</div>
-            <div id="ml-recommendations" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
-                <div class="typing-effect" style="font-size: 14px; color: #cbd5e1;">Đang phân tích dữ liệu học tập của bạn...</div>
+            <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 14px; margin-bottom: 12px; border-bottom: 1px dashed rgba(6, 182, 212, 0.3); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <span>🤖 AI GỢI Ý TỪ VỰNG ƯU TIÊN (LOCAL SRS)</span>
+                <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">Dựa trên khoảng quên lãng</span>
+            </div>
+            <div id="ml-recommendations" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+                <div class="typing-effect" style="font-size: 13px; color: #cbd5e1;">Đang tải từ vựng ưu tiên...</div>
             </div>
         </div>
 
-        <!-- Khung Đúc Từ Vựng Mới -->
-        <div style="display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap;">
-            <input type="text" id="newTopicInput" placeholder="Nhập chủ đề muốn học (VD: Động vật, Công nghệ...)" class="auth-input" style="flex: 1; min-width: 250px; margin-bottom: 0;">
-            <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); white-space: nowrap;">TẠO UNIT MỚI</button>
-            <button class="pixel-btn pulse-neon" onclick="startExamMode()" style="background: rgba(0,0,0,0.8); border: 2px solid var(--neon-amber); color: var(--neon-amber); white-space: nowrap;">KIỂM TRA ĐỊNH KỲ</button>
+        <!-- THANH CÔNG CỤ TÌM KIẾM & BỘ LỌC ĐA CHIỀU (Khắc phục hoàn toàn sự rối mắt) -->
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; margin-bottom: 25px;">
+            <!-- Hàng 1: Search & Tạo Unit mới -->
+            <div style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div style="flex: 2; min-width: 260px; position: relative;">
+                    <input type="text" id="vocabSearchInput" oninput="handleVocabSearch()" placeholder="🔍 Tìm kiếm từ vựng hoặc chủ đề (VD: cat, school, technology)..." class="auth-input" style="margin-bottom: 0; padding-left: 15px; width: 100%;">
+                </div>
+                <div style="display: flex; gap: 8px; flex: 1; min-width: 250px;">
+                    <input type="text" id="newTopicInput" placeholder="Đúc chủ đề mới..." class="auth-input" style="flex: 1; margin-bottom: 0;">
+                    <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); font-size: 10px; padding: 10px 14px; white-space: nowrap;">TẠO UNIT</button>
+                </div>
+            </div>
+
+            <!-- Hàng 2: Bộ lọc CEFR Pills & Chế độ xem -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-right: 4px;">CẤP ĐỘ CEFR:</span>
+                    <button class="filter-pill active" onclick="filterByCEFR('ALL', this)">TẤT CẢ</button>
+                    <button class="filter-pill" onclick="filterByCEFR('A1', this)">A1</button>
+                    <button class="filter-pill" onclick="filterByCEFR('A2', this)">A2</button>
+                    <button class="filter-pill" onclick="filterByCEFR('B1', this)">B1</button>
+                    <button class="filter-pill" onclick="filterByCEFR('B2', this)">B2</button>
+                    <button class="filter-pill" onclick="filterByCEFR('C1', this)">C1</button>
+                    <button class="filter-pill" onclick="filterByCEFR('C2', this)">C2</button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="btn-view-bento" class="filter-pill active" onclick="switchVocabView('bento')">⊞ THẺ CHỦ ĐỀ</button>
+                    <button id="btn-view-all" class="filter-pill" onclick="switchVocabView('all')">☰ TẤT CẢ TỪ VỰNG</button>
+                </div>
+            </div>
         </div>
 
-        <!-- Vùng Hiển thị Danh sách Unit (Đã nâng cấp UI Accordion) -->
-        <div id="vocab-library-content"></div>
+        <!-- VÙNG HIỂN THỊ CHÍNH: BENTO TOPIC CARDS GRID -->
+        <div id="topics-bento-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 14px;">DANH MỤC CHỦ ĐỀ (<span id="topics-count-badge">0</span>)</div>
+                <div id="topics-stats-text" style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">Đang tải dữ liệu tổng quan...</div>
+            </div>
+            <div id="topics-bento-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;">
+                <div class="typing-effect" style="color: #cbd5e1; font-size: 14px;">Đang nạp các chủ đề từ vựng...</div>
+            </div>
+        </div>
+
+        <!-- VÙNG HIỂN THỊ PHỤ: DANH SÁCH TẤT CẢ TỪ VỰNG (KHI SEARCH HOẶC CHỌN XEM ALL) -->
+        <div id="all-words-container" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 14px;">DANH SÁCH TỪ VỰNG CHI TIẾT (<span id="words-count-badge">0</span>)</div>
+            </div>
+            <div id="words-flat-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;"></div>
+        </div>
     </div>
 
-    <!-- TAB 2: NGỮ PHÁP -->
+    <!-- ========================================================================= -->
+    <!-- TAB 2: NGỮ PHÁP PHÂN CẤP CEFR & CÁ NHÂN HÓA -->
+    <!-- ========================================================================= -->
     <div id="section-grammar" class="content-section bento-card card-wide" style="padding: 25px;">
-        <div id="grammar-library-content">
-            <div class="typing-effect" style="color: var(--neon-amber); font-size: 14px;">Đang tải ngữ pháp...</div>
+
+        <!-- Bảng Tổng Quan Năng Lực Ngữ Pháp Cá Nhân -->
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-amber); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <div class="pixel-title" style="color: var(--neon-amber); font-size: 16px; margin: 0;">NĂNG LỰC NGỮ PHÁP CÁ NHÂN</div>
+                    <div style="font-size: 13px; color: #cbd5e1; margin-top: 4px;">
+                        Trình độ hiện tại: <strong id="user-current-band-badge" style="color: var(--neon-pink); font-family: var(--text-mono); font-size: 15px;">A1 - TÂN BINH</strong>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="pixel-btn" onclick="window.location.href='/test'" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--neon-amber); color: var(--neon-amber); font-size: 10px; padding: 8px 14px;">
+                        THI ĐÁNH GIÁ NĂNG LỰC ĐẦU VÀO
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thanh Tiến Độ Nắm Vững Ngữ Pháp Từng Band -->
+            <div id="grammar-mastery-progress-bars" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+                <!-- Render từ JS -->
+            </div>
+        </div>
+
+        <!-- Bộ Lọc Band Ngữ Pháp -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 8px;">
+            <button class="filter-pill active" onclick="switchGrammarBand('ALL', this)">TẤT CẢ BANDS</button>
+            <button class="filter-pill" onclick="switchGrammarBand('A1', this)">A1 - TÂN BINH</button>
+            <button class="filter-pill" onclick="switchGrammarBand('A2', this)">A2 - SƠ CẤP</button>
+            <button class="filter-pill" onclick="switchGrammarBand('B1', this)">B1 - TRUNG CẤP</button>
+            <button class="filter-pill" onclick="switchGrammarBand('B2', this)">B2 - TRUNG CAO</button>
+            <button class="filter-pill" onclick="switchGrammarBand('C1', this)">C1 - CAO CẤP</button>
+            <button class="filter-pill" onclick="switchGrammarBand('C2', this)">C2 - ĐỘC CÔ</button>
+        </div>
+
+        <!-- Danh sách Thẻ Cấu Trúc Ngữ Pháp Phân Cấp -->
+        <div id="grammar-cards-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px;">
+            <div class="typing-effect" style="color: var(--neon-amber); font-size: 14px;">Đang tải danh mục ngữ pháp phân cấp...</div>
         </div>
     </div>
 
-    <!-- TAB 3: BATTLE ZONE (CHAT VỚI AI) -->
+    <!-- ========================================================================= -->
+    <!-- TAB 3: BATTLE ZONE (CHAT VỚI MASTER G) -->
+    <!-- ========================================================================= -->
     <div id="section-battle" class="content-section bento-card card-wide" style="padding: 25px; min-height: 500px; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
             <div class="pixel-title" id="training-title" style="font-size: 18px; color: var(--neon-pink); margin: 0;">BATTLE_ZONE // THỰC CHIẾN</div>
@@ -113,13 +269,37 @@
 
 </div>
 
+<!-- ========================================================================= -->
+<!-- MODAL FOCUS VIEW: XEM CHI TIẾT TỪ VỰNG THEO CHỦ ĐỀ ĐÃ CHỌN (GỌN GÀNG) -->
+<!-- ========================================================================= -->
+<div id="topic-focus-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center;">
+    <div style="background: rgba(15, 23, 42, 0.98); border: 2px solid var(--neon-cyan); border-radius: 16px; padding: 25px; max-width: 900px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 30px rgba(6, 182, 212, 0.3);">
+        
+        <!-- Modal Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 15px; margin-bottom: 15px;">
+            <div>
+                <div class="pixel-title" id="modal-topic-title" style="color: var(--neon-cyan); font-size: 18px; margin: 0;">UNIT: TOPIC</div>
+                <div id="modal-topic-subtitle" style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-top: 4px;">0 từ vựng</div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="pixel-btn" onclick="closeTopicModal()" style="background: #ef4444; padding: 6px 12px; font-size: 10px;">[ ĐÓNG ]</button>
+            </div>
+        </div>
+
+        <!-- Modal Body (Lưới từ vựng của topic) -->
+        <div id="modal-words-container" style="overflow-y: auto; flex-grow: 1; padding-right: 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px;">
+            <!-- Render từ JS -->
+        </div>
+    </div>
+</div>
+
 <!-- MODAL HƯỚNG DẪN THĂNG CẤP -->
 <div id="level-guide-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 999999; justify-content: center; align-items: center;">
     <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid var(--neon-cyan); border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto; position: relative;">
         <button class="pixel-btn" onclick="document.getElementById('level-guide-modal').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: #ef4444; padding: 8px 12px; font-size: 10px;">[ ĐÓNG ]</button>
         <div class="pixel-title" style="color: var(--neon-cyan); margin-bottom: 20px; font-size: 18px;">QUY TẮC THĂNG CẤP (RANKING SYSTEM)</div>
         <div style="color: #cbd5e1; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
-            Cấp độ của bạn không thể mua bằng Xu. Bạn phải chứng minh năng lực qua 2 yếu tố:<br>
+            Cấp độ của bạn được bảo chứng qua 2 yếu tố:<br>
             <strong style="color: var(--pixel-green);">1. Kho từ vựng:</strong> Số lượng từ vựng đánh dấu "ĐÃ THUỘC".<br>
             <strong style="color: var(--neon-amber);">2. Kỹ năng thực chiến:</strong> Số lần đặt câu trong Battle Zone được AI đánh giá từ <strong style="color:#fff;">5.0 điểm trở lên</strong>.
         </div>
@@ -132,11 +312,11 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td style="padding: 10px; color: #94a3b8;">Tân Binh Ngơ Ngác</td><td style="padding: 10px;">Mặc định</td><td style="padding: 10px;">Mặc định</td></tr>
-                <tr><td style="padding: 10px; color: var(--pixel-green);">Thợ Săn Ngôn Từ</td><td style="padding: 10px;">80 từ</td><td style="padding: 10px;">50 câu</td></tr>
-                <tr><td style="padding: 10px; color: var(--neon-cyan);">Pháp Sư Ngôn Ngữ</td><td style="padding: 10px;">500 từ</td><td style="padding: 10px;">350 câu</td></tr>
-                <tr><td style="padding: 10px; color: var(--neon-amber);">Lãnh Chúa Từ Điển</td><td style="padding: 10px;">1450 từ</td><td style="padding: 10px;">1000 câu</td></tr>
-                <tr><td style="padding: 10px; color: var(--neon-pink); font-weight: bold;">ĐỘC CÔ CẦU BẠI</td><td style="padding: 10px;">5000 từ</td><td style="padding: 10px;">3500 câu</td></tr>
+                <tr><td style="padding: 10px; color: #94a3b8;">Tân Binh Ngơ Ngác (A1)</td><td style="padding: 10px;">Mặc định</td><td style="padding: 10px;">Mặc định</td></tr>
+                <tr><td style="padding: 10px; color: var(--pixel-green);">Thợ Săn Ngôn Từ (A2)</td><td style="padding: 10px;">80 từ</td><td style="padding: 10px;">50 câu</td></tr>
+                <tr><td style="padding: 10px; color: var(--neon-cyan);">Pháp Sư Ngôn Ngữ (B1)</td><td style="padding: 10px;">500 từ</td><td style="padding: 10px;">350 câu</td></tr>
+                <tr><td style="padding: 10px; color: var(--neon-amber);">Lãnh Chúa Từ Điển (B2)</td><td style="padding: 10px;">1450 từ</td><td style="padding: 10px;">1000 câu</td></tr>
+                <tr><td style="padding: 10px; color: var(--neon-pink); font-weight: bold;">ĐỘC CÔ CẦU BẠI (C1/C2)</td><td style="padding: 10px;">5000 từ</td><td style="padding: 10px;">3500 câu</td></tr>
             </tbody>
         </table>
     </div>
@@ -145,11 +325,16 @@
 
 {% block extra_js %}
 <script>
-    let globalVocabData = {};
-    let currentExamData = [];
+    let globalTopicsOverview = [];
+    let globalVocabList = [];
+    let globalGrammarData = {};
+    let currentCEFRFilter = 'ALL';
+    let currentGrammarBand = 'ALL';
+    let currentVocabView = 'bento'; // 'bento' hoặc 'all'
 
     document.addEventListener("DOMContentLoaded", () => {
         switchTabUI('vocab');
+        loadVocabOverview();
     });
 
     function switchTabUI(tab) {
@@ -160,163 +345,306 @@
         document.getElementById(`section-${tab}`).classList.add('active');
 
         if (tab === 'vocab') {
-            fetchLibraryData('/api/game/vocabularies', 'vocab');
+            if (globalTopicsOverview.length === 0) loadVocabOverview();
+            loadMLRecommendations();
         } else if (tab === 'grammar') {
-            fetchLibraryData('/api/game/grammars', 'grammar');
+            loadPersonalizedGrammar();
         } else if (tab === 'battle') {
             renderBattleZone('free');
         }
     }
 
-    function fetchLibraryData(apiUrl, mode) {
-        const container = document.getElementById(mode === 'vocab' ? "vocab-library-content" : "grammar-library-content");
+    // =========================================================================
+    // PHÂN HỆ 1: KHO TỪ VỰNG BENTO & TÌM KIẾM THÔNG MINH
+    // =========================================================================
 
-        fetch(apiUrl).then(res => res.json()).then(data => {
-            if (mode === 'vocab') {
-                const list = data.vocabularies;
-                globalVocabData = {};
-                list.forEach(item => {
-                    const themeName = item.theme || "General";
-                    if(!globalVocabData[themeName]) globalVocabData[themeName] = [];
-                    globalVocabData[themeName].push(item);
-                });
-                renderThemesList(container);
-                loadMLRecommendations();
-            } else {
-                let html = "<div style='display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;'>";
-                data.grammars.forEach((g) => {
-                    html += `
-                    <div style="background: rgba(0,0,0,0.4); border-radius: 8px; border-left: 3px solid var(--neon-amber); padding: 15px; display: flex; flex-direction: column;">
-                        <strong style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 16px; margin-bottom: 8px;">${g.structure}</strong>
-                        <span style="font-size: 14px; color: #cbd5e1; margin-bottom: 12px; flex-grow: 1;">${g.explanation}</span>
-                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; font-family: var(--text-mono); font-size: 12px; color: #94a3b8;">
-                            Ví dụ: ${g.example}
-                        </div>
-                        <button class="pixel-btn" onclick="openBattleZone('grammar', '${g.structure.replace(/'/g, "\\'")}')" style="margin-top: 15px; font-size: 10px; background: rgba(0,0,0,0.5); border: 1px solid var(--neon-amber); color: var(--neon-amber);">THỰC HÀNH CẤU TRÚC NÀY</button>
-                    </div>`;
-                });
-                html += "</div>";
-                container.innerHTML = html;
-            }
-        });
+    function loadVocabOverview() {
+        // Tải tổng quan Topics
+        fetch('/api/game/vocabularies/overview')
+            .then(res => res.json())
+            .then(data => {
+                globalTopicsOverview = data.topics || [];
+                renderTopicBentoCards(globalTopicsOverview);
+            });
+
+        // Tải toàn bộ từ vựng phục vụ tìm kiếm tức thì
+        fetch('/api/game/vocabularies')
+            .then(res => res.json())
+            .then(data => {
+                globalVocabList = data.vocabularies || [];
+            });
     }
 
-    /* ĐẠI TU: GIAO DIỆN ACCORDION CHO UNIT TỪ VỰNG */
-    function renderThemesList(container) {
-        let html = '';
-        let index = 0;
+    function renderTopicBentoCards(topics) {
+        const container = document.getElementById('topics-bento-grid');
+        const countBadge = document.getElementById('topics-count-badge');
+        const statsText = document.getElementById('topics-stats-text');
 
-        for (const theme of Object.keys(globalVocabData)) {
-            const safeThemeId = 'theme_unit_' + index++;
-            const wordCount = globalVocabData[theme].length;
+        countBadge.innerText = topics.length;
+
+        if (!topics || topics.length === 0) {
+            container.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1;">Không tìm thấy chủ đề phù hợp với bộ lọc.</div>';
+            statsText.innerText = "";
+            return;
+        }
+
+        let totalWords = 0;
+        let totalMastered = 0;
+        let html = '';
+
+        topics.forEach(t => {
+            totalWords += t.total_words;
+            totalMastered += t.memorized_words;
+
+            const icon = getTopicIcon(t.theme);
+            const cefrClass = (t.representative_cefr || 'A1').toLowerCase();
+            const pct = t.progress_percent;
+            const progressColor = pct >= 80 ? 'var(--pixel-green)' : (pct >= 40 ? 'var(--neon-cyan)' : 'var(--neon-amber)');
+
+            const chipsHtml = (t.sample_words || []).map(w => `<span style="background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px; font-size: 11px; color: #cbd5e1;">${w}</span>`).join(' ');
 
             html += `
-            <div class="unit-accordion" style="margin-bottom: 15px; border: 2px solid var(--glass-border); border-radius: 12px; background: rgba(0,0,0,0.4); overflow: hidden; transition: all 0.3s;">
-                <!-- Header (Bấm để Mở/Đóng) -->
-                <div onclick="toggleThemeAccordion('${safeThemeId}')" style="padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(103, 232, 249, 0.05); transition: 0.3s;" onmouseover="this.style.background='rgba(103, 232, 249, 0.15)'" onmouseout="this.style.background='rgba(103, 232, 249, 0.05)'">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 16px; margin: 0; letter-spacing: 1px;">[ UNIT: ${theme.toUpperCase()} ]</div>
-                        <span style="background: rgba(0,0,0,0.5); color: #94a3b8; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-family: var(--text-mono); border: 1px solid var(--glass-border);">${wordCount} Từ vựng</span>
+            <div class="bento-topic-card">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 26px;">${icon}</span>
+                            <div>
+                                <strong style="color: #fff; font-size: 16px; letter-spacing: 0.5px;">${t.theme.toUpperCase()}</strong>
+                                <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">${t.total_words} từ vựng</div>
+                            </div>
+                        </div>
+                        <span class="cefr-badge ${cefrClass}">${t.representative_cefr}</span>
                     </div>
-                    <div id="icon_${safeThemeId}" style="color: var(--neon-cyan); font-size: 14px; transition: transform 0.3s;">▼</div>
+
+                    <!-- Từ tiêu biểu -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px;">
+                        ${chipsHtml}
+                    </div>
                 </div>
 
-                <!-- Content (Lưới Từ vựng bên trong) -->
-                <div id="content_${safeThemeId}" style="display: none; padding: 20px; border-top: 1px dashed rgba(103, 232, 249, 0.2); background: rgba(0,0,0,0.2);">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
-                        ${generateWordsHtml(theme)}
+                <div>
+                    <!-- Thanh tiến độ -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: var(--text-mono); margin-bottom: 5px;">
+                            <span style="color: #94a3b8;">Tiến độ đã thuộc</span>
+                            <span style="color: ${progressColor}; font-weight: bold;">${t.memorized_words}/${t.total_words} (${pct}%)</span>
+                        </div>
+                        <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${pct}%; height: 100%; background: ${progressColor}; transition: width 0.4s ease;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Nút hành động -->
+                    <div style="display: flex; gap: 8px;">
+                        <button class="pixel-btn" onclick="openTopicFocus('${t.theme.replace(/'/g, "\\'")}')" style="background: rgba(103, 232, 249, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); flex: 1; font-size: 10px; padding: 8px;">
+                            MỞ CHỦ ĐỀ NÀY
+                        </button>
                     </div>
                 </div>
             </div>`;
-        }
+        });
+
+        const overallPct = totalWords > 0 ? ((totalMastered / totalWords) * 100).toFixed(1) : 0;
+        statsText.innerText = `Đã thuộc ${totalMastered}/${totalWords} từ vựng toàn hệ thống (${overallPct}%)`;
         container.innerHTML = html;
     }
 
-    // Logic Đóng/Mở Accordion
-    function toggleThemeAccordion(themeId) {
-        const content = document.getElementById(`content_${themeId}`);
-        const icon = document.getElementById(`icon_${themeId}`);
-        const parentCard = content.parentElement;
+    function getTopicIcon(theme) {
+        const t = (theme || '').toUpperCase();
+        if (t.includes('ANIMAL') || t.includes('ĐỘNG VẬT')) return '🐾';
+        if (t.includes('TECH') || t.includes('CÔNG NGHỆ') || t.includes('INTERNET')) return '💻';
+        if (t.includes('FOOD') || t.includes('DINH DƯỠNG') || t.includes('ẨM THỰC')) return '🥗';
+        if (t.includes('SCHOOL') || t.includes('TRƯỜNG HỌC') || t.includes('GIÁO DỤC')) return '🎓';
+        if (t.includes('SCIENCE') || t.includes('KHOA HỌC')) return '🔬';
+        if (t.includes('BUSINESS') || t.includes('KINH DOANH')) return '💼';
+        if (t.includes('TRADITION') || t.includes('TRUYỀN THỐNG')) return '🏮';
+        if (t.includes('SKIN') || t.includes('BỆNH') || t.includes('Y TẾ')) return '🩹';
+        return '📚';
+    }
 
-        if (content.style.display === 'none' || !content.style.display) {
-            content.style.display = 'block';
-            icon.style.transform = 'rotate(180deg)';
-            parentCard.style.borderColor = 'var(--neon-cyan)';
-            parentCard.style.boxShadow = '0 0 15px rgba(103, 232, 249, 0.1)';
+    function filterByCEFR(band, btn) {
+        currentCEFRFilter = band;
+        document.querySelectorAll('.filter-pill').forEach(p => {
+            if (['ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(p.innerText.trim())) {
+                p.classList.remove('active');
+            }
+        });
+        btn.classList.add('active');
+        handleVocabSearch();
+    }
+
+    function switchVocabView(viewMode) {
+        currentVocabView = viewMode;
+        const btnBento = document.getElementById('btn-view-bento');
+        const btnAll = document.getElementById('btn-view-all');
+        const bentoContainer = document.getElementById('topics-bento-container');
+        const allWordsContainer = document.getElementById('all-words-container');
+
+        if (viewMode === 'bento') {
+            btnBento.classList.add('active');
+            btnAll.classList.remove('active');
+            bentoContainer.style.display = 'block';
+            allWordsContainer.style.display = 'none';
         } else {
-            content.style.display = 'none';
-            icon.style.transform = 'rotate(0deg)';
-            parentCard.style.borderColor = 'var(--glass-border)';
-            parentCard.style.boxShadow = 'none';
+            btnAll.classList.add('active');
+            btnBento.classList.remove('active');
+            bentoContainer.style.display = 'none';
+            allWordsContainer.style.display = 'block';
+            renderFlatWordsList(globalVocabList);
         }
     }
 
-    function generateWordsHtml(theme) {
-        const words = globalVocabData[theme];
-        let wHtml = '';
+    function handleVocabSearch() {
+        const query = document.getElementById('vocabSearchInput').value.trim().toLowerCase();
+
+        if (currentVocabView === 'bento') {
+            let filteredTopics = globalTopicsOverview;
+
+            if (currentCEFRFilter !== 'ALL') {
+                filteredTopics = filteredTopics.filter(t => (t.representative_cefr || 'A1').toUpperCase() === currentCEFRFilter);
+            }
+
+            if (query) {
+                filteredTopics = filteredTopics.filter(t => 
+                    t.theme.toLowerCase().includes(query) ||
+                    (t.sample_words && t.sample_words.some(w => w.toLowerCase().includes(query)))
+                );
+            }
+            renderTopicBentoCards(filteredTopics);
+        } else {
+            let filteredWords = globalVocabList;
+            if (currentCEFRFilter !== 'ALL') {
+                filteredWords = filteredWords.filter(w => (w.cefr_level || 'A1').toUpperCase() === currentCEFRFilter);
+            }
+            if (query) {
+                filteredWords = filteredWords.filter(w => 
+                    w.word.toLowerCase().includes(query) ||
+                    (w.meaning && w.meaning.toLowerCase().includes(query)) ||
+                    (w.theme && w.theme.toLowerCase().includes(query))
+                );
+            }
+            renderFlatWordsList(filteredWords);
+        }
+    }
+
+    function renderFlatWordsList(words) {
+        const container = document.getElementById('words-flat-grid');
+        const countBadge = document.getElementById('words-count-badge');
+        countBadge.innerText = words.length;
+
+        if (!words || words.length === 0) {
+            container.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1;">Không tìm thấy từ vựng nào khớp với tìm kiếm.</div>';
+            return;
+        }
+
+        let html = '';
         words.forEach(w => {
-            const opacity = w.is_unlocked ? "1" : "0.5";
-            const memoText = w.is_memorized ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
-            const memoBg = w.is_memorized ? "var(--pixel-green)" : "transparent";
-            const memoBorder = w.is_memorized ? "var(--pixel-green)" : "var(--glass-border)";
-            const memoColor = w.is_memorized ? "#000" : "var(--glass-border)";
-            const safeWord = w.word.replace(/'/g, "\\'");
+            const isMem = w.is_memorized;
+            const memoText = isMem ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
+            const memoBg = isMem ? "var(--pixel-green)" : "transparent";
+            const memoBorder = isMem ? "var(--pixel-green)" : "var(--glass-border)";
+            const memoColor = isMem ? "#000" : "var(--glass-border)";
+            const cefrClass = (w.cefr_level || 'A1').toLowerCase();
 
-            const cefrBadge = w.cefr_level ? `<span class="cefr-badge">${w.cefr_level}</span>` : "";
-
-            wHtml += `
-            <div style="background: rgba(0,0,0,0.5); border-radius: 8px; opacity: ${opacity}; border: 1px solid rgba(255,255,255,0.05); padding: 15px; display: flex; flex-direction: column; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <div style="display: flex; align-items: center;">
-                        <strong style="color: var(--neon-cyan); font-size: 18px;">${w.word}</strong>
-                        ${cefrBadge}
+            html += `
+            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong style="color: var(--neon-cyan); font-size: 17px;">${w.word}</strong>
+                        <span class="cefr-badge ${cefrClass}">${w.cefr_level || 'A1'}</span>
                     </div>
+                    <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">${w.meaning}</div>
                 </div>
-                <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 15px; flex-grow: 1;">${w.meaning}</div>
-
                 <div style="display: flex; gap: 8px;">
-                    <button class="pixel-btn" onclick="openBattleZone('vocab', '${safeWord}')" style="background: var(--neon-purple); font-size: 9px; padding: 8px; flex: 1;">ĐẶT CÂU</button>
-                    <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id}, this)" style="background: ${memoBg}; border: 1px solid ${memoBorder}; color: ${memoColor}; font-size: 9px; padding: 8px; flex: 1.5;">${memoText}</button>
+                    <button class="pixel-btn" onclick="openBattleZone('vocab', '${w.word.replace(/'/g, "\\'")}')" style="background: var(--neon-purple); font-size: 9px; padding: 8px; flex: 1;">ĐẶT CÂU</button>
+                    <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id}, this)" style="background: ${memoBg}; border: 1px solid ${memoBorder}; color: ${memoColor}; font-size: 9px; padding: 8px; flex: 1.3;">${memoText}</button>
                 </div>
             </div>`;
         });
-        return wHtml;
+        container.innerHTML = html;
     }
 
-    function loadMLRecommendations() {
-        fetch('/api/game/recommend').then(r => r.json()).then(data => {
-            const rDiv = document.getElementById('ml-recommendations');
-            if(data.recommendations && data.recommendations.length > 0) {
-                let rHtml = '';
-                data.recommendations.forEach(r => {
-                    const scoreText = (r.score > 0) ? `Độ phù hợp: ${(r.score * 100).toFixed(0)}%` : `Nên học từ này`;
-                    rHtml += `
-                        <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; border-left: 3px solid var(--neon-amber); display: flex; justify-content: space-between; align-items: center;">
-                            <strong style="color:#fff; font-size: 15px;">${r.word}</strong>
-                            <span style="font-size:11px; color:var(--neon-amber); background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 4px;">${scoreText}</span>
-                        </div>`;
-                });
-                rDiv.innerHTML = rHtml;
-            }
+    // Modal Focus Topic
+    function openTopicFocus(theme) {
+        const modal = document.getElementById('topic-focus-modal');
+        const title = document.getElementById('modal-topic-title');
+        const subtitle = document.getElementById('modal-topic-subtitle');
+        const container = document.getElementById('modal-words-container');
+
+        title.innerText = `UNIT // ${theme.toUpperCase()}`;
+        const topicWords = globalVocabList.filter(w => (w.theme || 'General').toUpperCase() === theme.toUpperCase());
+        subtitle.innerText = `${topicWords.length} từ vựng trong chủ đề này`;
+
+        let html = '';
+        topicWords.forEach(w => {
+            const isMem = w.is_memorized;
+            const memoText = isMem ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
+            const memoBg = isMem ? "var(--pixel-green)" : "transparent";
+            const memoBorder = isMem ? "var(--pixel-green)" : "var(--glass-border)";
+            const memoColor = isMem ? "#000" : "var(--glass-border)";
+            const cefrClass = (w.cefr_level || 'A1').toLowerCase();
+
+            html += `
+            <div style="background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <strong style="color: var(--neon-cyan); font-size: 16px;">${w.word}</strong>
+                        <span class="cefr-badge ${cefrClass}">${w.cefr_level || 'A1'}</span>
+                    </div>
+                    <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px;">${w.meaning}</div>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <button class="pixel-btn" onclick="openBattleZone('vocab', '${w.word.replace(/'/g, "\\'")}')" style="background: var(--neon-purple); font-size: 9px; padding: 6px; flex: 1;">ĐẶT CÂU</button>
+                    <button class="pixel-btn" onclick="toggleMemorizeStatus(${w.id}, this)" style="background: ${memoBg}; border: 1px solid ${memoBorder}; color: ${memoColor}; font-size: 9px; padding: 6px; flex: 1.2;">${memoText}</button>
+                </div>
+            </div>`;
         });
+
+        container.innerHTML = html;
+        modal.style.display = 'flex';
+    }
+
+    function closeTopicModal() {
+        document.getElementById('topic-focus-modal').style.display = 'none';
+        loadVocabOverview(); // Reload để cập nhật tiến độ
     }
 
     function toggleMemorizeStatus(vocabId, btnElement) {
         const userId = localStorage.getItem("user_id");
-        const originalText = btnElement.innerText;
         btnElement.innerText = "...";
 
         fetch('/api/game/vocab/toggle_memorize', {
             method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ vocab_id: vocabId, user_id: userId })
         }).then(res => res.json()).then(data => {
-            if(data.error) { btnElement.innerText = originalText; return; }
-            if (data.level_upgraded) alert(`🎉 CHÚC MỪNG!\nDanh hiệu mới: ${data.current_level}`);
-
+            if (data.error) return;
             const isMemorized = data.is_memorized;
             btnElement.innerText = isMemorized ? "[ X ] ĐÃ THUỘC" : "[ _ ] CHƯA THUỘC";
             btnElement.style.color = isMemorized ? "#000" : "var(--glass-border)";
             btnElement.style.background = isMemorized ? "var(--pixel-green)" : "transparent";
             btnElement.style.borderColor = isMemorized ? "var(--pixel-green)" : "var(--glass-border)";
+
+            // Cập nhật trạng thái trong bộ nhớ
+            const item = globalVocabList.find(w => w.id === vocabId);
+            if (item) item.is_memorized = isMemorized;
+        });
+    }
+
+    function loadMLRecommendations() {
+        fetch('/api/game/recommend').then(r => r.json()).then(data => {
+            const rDiv = document.getElementById('ml-recommendations');
+            if (data.recommendations && data.recommendations.length > 0) {
+                let rHtml = '';
+                data.recommendations.forEach(r => {
+                    const scoreText = (r.score > 0) ? `Độ phù hợp: ${(r.score * 100).toFixed(0)}%` : `Nên học từ này`;
+                    rHtml += `
+                        <div style="background: rgba(0,0,0,0.5); padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--neon-amber); display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color:#fff; font-size: 14px;">${r.word}</strong>
+                            <span style="font-size:10px; color:var(--neon-amber); background: rgba(245, 158, 11, 0.1); padding: 3px 6px; border-radius: 4px;">${scoreText}</span>
+                        </div>`;
+                });
+                rDiv.innerHTML = rHtml;
+            }
         });
     }
 
@@ -331,9 +659,140 @@
             method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ topic: topic })
         }).then(res => res.json()).then(data => {
             if (data.error) alert(data.error);
-            else { alert(data.message); fetchLibraryData('/api/game/vocabularies', 'vocab'); }
-        }).finally(() => { btnGenerate.disabled = false; btnGenerate.innerText = "TẠO UNIT MỚI"; topicInput.value = ""; });
+            else { alert(data.message); loadVocabOverview(); }
+        }).finally(() => { btnGenerate.disabled = false; btnGenerate.innerText = "TẠO UNIT"; topicInput.value = ""; });
     }
+
+    // =========================================================================
+    // PHÂN HỆ 2: NGỮ PHÁP PHÂN CẤP CEFR & QUẢN LÝ NĂNG LỰC CÁ NHÂN
+    // =========================================================================
+
+    function loadPersonalizedGrammar() {
+        fetch('/api/game/grammar/personalized')
+            .then(res => res.json())
+            .then(data => {
+                globalGrammarData = data;
+                document.getElementById('user-current-band-badge').innerText = `${data.user_band} (Cấp Độ Của Bạn)`;
+                renderGrammarMasteryBars(data.mastery_stats, data.user_band);
+                renderGrammarCards(data.grammars_by_band, currentGrammarBand);
+            });
+    }
+
+    function renderGrammarMasteryBars(stats, userBand) {
+        const container = document.getElementById('grammar-mastery-progress-bars');
+        let html = '';
+        ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].forEach(b => {
+            const st = stats[b] || { total: 0, mastered: 0 };
+            const pct = st.total > 0 ? Math.round((st.mastered / st.total) * 100) : 0;
+            const isUserBand = (b === userBand);
+            const borderCol = isUserBand ? 'var(--neon-pink)' : 'var(--glass-border)';
+
+            html += `
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid ${borderCol}; border-radius: 8px; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                    <strong style="color: ${isUserBand ? 'var(--neon-pink)' : '#cbd5e1'}; font-family: var(--text-mono);">${b} ${isUserBand ? '★' : ''}</strong>
+                    <span style="color: #94a3b8; font-family: var(--text-mono);">${st.mastered}/${st.total} (${pct}%)</span>
+                </div>
+                <div style="height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                    <div style="width: ${pct}%; height: 100%; background: ${isUserBand ? 'var(--neon-pink)' : 'var(--neon-amber)'};"></div>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function switchGrammarBand(band, btn) {
+        currentGrammarBand = band;
+        document.querySelectorAll('#section-grammar .filter-pill').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        if (globalGrammarData.grammars_by_band) {
+            renderGrammarCards(globalGrammarData.grammars_by_band, band);
+        }
+    }
+
+    function renderGrammarCards(grammarsByBand, selectedBand) {
+        const container = document.getElementById('grammar-cards-container');
+        let items = [];
+
+        if (selectedBand === 'ALL') {
+            ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].forEach(b => {
+                if (grammarsByBand[b]) items.push(...grammarsByBand[b]);
+            });
+        } else {
+            items = grammarsByBand[selectedBand] || [];
+        }
+
+        if (items.length === 0) {
+            container.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1;">Chưa có cấu trúc ngữ pháp cho cấp độ này.</div>';
+            return;
+        }
+
+        let html = '';
+        items.forEach(g => {
+            const cefrClass = (g.cefr_level || 'A1').toLowerCase();
+            const recommendBadge = g.is_recommended ? `<span style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--neon-amber); color: var(--neon-amber); font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: var(--text-mono);">⭐ KHUYÊN DÙNG</span>` : '';
+
+            let statusClass = 'mastery-chua';
+            let statusText = 'CHƯA HỌC';
+            if (g.mastery_status === 'DANG_LUYEN') { statusClass = 'mastery-luyen'; statusText = 'ĐANG LUYỆN'; }
+            else if (g.mastery_status === 'DA_NAM_VUNG') { statusClass = 'mastery-vung'; statusText = '✓ ĐÃ NẮM VỮNG'; }
+
+            html += `
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--glass-border); border-left: 4px solid var(--neon-amber); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span class="cefr-badge ${cefrClass}">${g.cefr_level}</span>
+                        ${recommendBadge}
+                        <button class="mastery-tag ${statusClass}" onclick="cycleGrammarMastery(${g.id}, this)">
+                            ${statusText}
+                        </button>
+                    </div>
+
+                    <strong style="color: #fff; font-family: var(--text-mono); font-size: 16px; margin-bottom: 6px; display: block;">${g.structure}</strong>
+                    <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">${g.explanation}</div>
+
+                    <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; font-family: var(--text-mono); font-size: 12px; color: #94a3b8; margin-bottom: 15px;">
+                        <span style="color: var(--neon-cyan);">VD:</span> ${g.example}
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button class="pixel-btn" onclick="openBattleZone('grammar', '${g.structure.replace(/'/g, "\\'")}')" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--neon-amber); color: var(--neon-amber); width: 100%; font-size: 10px; padding: 10px;">
+                        LUYỆN ĐẶT CÂU CẤU TRÚC NÀY
+                    </button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function cycleGrammarMastery(grammarId, btnElement) {
+        btnElement.innerText = "...";
+        fetch('/api/game/grammar/toggle_mastery', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ grammar_id: grammarId })
+        }).then(res => res.json()).then(data => {
+            if (data.status === 'success') {
+                const newStatus = data.mastery_status;
+                btnElement.className = 'mastery-tag';
+                if (newStatus === 'DA_NAM_VUNG') {
+                    btnElement.classList.add('mastery-vung');
+                    btnElement.innerText = '✓ ĐÃ NẮM VỮNG';
+                } else if (newStatus === 'DANG_LUYEN') {
+                    btnElement.classList.add('mastery-luyen');
+                    btnElement.innerText = 'ĐANG LUYỆN';
+                } else {
+                    btnElement.classList.add('mastery-chua');
+                    btnElement.innerText = 'CHƯA HỌC';
+                }
+            }
+        });
+    }
+
+    // =========================================================================
+    // PHÂN HỆ 3: BATTLE ZONE (GỬI BÀI CHO MASTER G)
+    // =========================================================================
 
     function openBattleZone(mode, targetText) {
         switchTabUI('battle');
@@ -380,51 +839,6 @@
         hintBox.innerHTML = "<span class='typing-effect'>Master G đang suy nghĩ gợi ý...</span>";
         fetch('/api/ai/hint', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ mode: mode }) })
             .then(res => res.json()).then(data => { hintBox.innerHTML = data.hint; });
-    }
-
-    function startExamMode() {
-        document.getElementById("dynamic-workspace").innerHTML = `<div style="color: var(--neon-amber); padding: 20px;">Đang tải dữ liệu từ thuật toán Smart SRS...</div>`;
-        switchTabUI('battle');
-        document.getElementById("training-title").innerText = "BATTLE_ZONE // KIỂM TRA ĐỊNH KỲ";
-        fetch('/api/game/exam/generate', { method: 'POST', headers: {'Content-Type': 'application/json'} })
-            .then(res => res.json()).then(data => { currentExamData = data.exam; renderExamPaper(); });
-    }
-
-    function renderExamPaper() {
-        let html = `<div style="margin-bottom: 20px; color: #cbd5e1; font-size: 14px;">Nhập nghĩa tiếng Việt. AI sẽ tự động phân tích mốc quên lãng của bạn!</div><div style="max-height: 50vh; overflow-y: auto; padding-right: 10px;">`;
-        currentExamData.forEach((item, index) => {
-            html += `
-            <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);">
-                <div style="color: var(--neon-cyan); font-size: 16px; font-weight: bold; margin-bottom: 10px;">${index + 1}. ${item.word}</div>
-                <input type="text" id="exam-input-${item.id}" placeholder="Nghĩa là gì..." class="auth-input" style="margin-bottom: 10px;">
-                <div id="exam-result-${item.id}" style="display: none; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
-                    <div style="color: var(--neon-amber); margin-bottom: 10px;">Nghĩa đúng: ${item.meaning}</div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="pixel-btn" id="btn-thuoc-${item.id}" onclick="setExamStatus(${item.id}, 'DA_THUOC')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--pixel-green); flex: 1; padding: 8px; font-size: 10px;">ĐÃ THUỘC</button>
-                        <button class="pixel-btn" id="btn-chua-${item.id}" onclick="setExamStatus(${item.id}, 'CHUA_THUOC')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-pink); flex: 1; padding: 8px; font-size: 10px;">CHƯA THUỘC</button>
-                    </div>
-                </div>
-            </div>`;
-        });
-        html += `</div><button class="pixel-btn" onclick="submitExam()" style="background: var(--neon-pink); width: 100%; margin-top: 15px; padding: 15px;">NỘP BÀI</button>`;
-        document.getElementById("dynamic-workspace").innerHTML = html;
-    }
-
-    function submitExam() {
-        currentExamData.forEach(item => {
-            document.getElementById(`exam-input-${item.id}`).disabled = true;
-            document.getElementById(`exam-result-${item.id}`).style.display = "block";
-        });
-        alert("Đã nộp bài! Hãy tự chấm điểm trung thực nhé!");
-    }
-
-    function setExamStatus(vocabId, level) {
-        document.getElementById(`btn-thuoc-${vocabId}`).style.background = level === 'DA_THUOC' ? "var(--pixel-green)" : "rgba(0,0,0,0.5)";
-        document.getElementById(`btn-chua-${vocabId}`).style.background = level === 'CHUA_THUOC' ? "var(--neon-pink)" : "rgba(0,0,0,0.5)";
-        fetch('/api/game/exam/update_status', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ vocab_id: vocabId, level: level })
-        });
     }
 </script>
 {% endblock %}
