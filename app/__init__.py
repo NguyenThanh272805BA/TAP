@@ -30,6 +30,12 @@ def create_app():
     # Cấu hình chuỗi kết nối MySQL thông qua driver pymysql
     app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_recycle': 280,
+        'pool_pre_ping': True,
+        'pool_size': 10,
+        'max_overflow': 20
+    }
 
     # Cấu hình SECRET_KEY mã hóa Session an toàn
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "Monimeo2005?")
@@ -53,13 +59,37 @@ def create_app():
     def learn_page():
         return render_template('learn.html')
 
+    # 3. Trung tâm Khảo thí CEFR (Lobby & Các phân hệ tách biệt)
     @app.route('/test')
     def test_page():
         return render_template('test.html')
 
+    @app.route('/test/placement')
+    def test_placement_page():
+        return render_template('test_placement.html')
+
+    @app.route('/test/bands')
+    def test_bands_page():
+        return render_template('test_bands.html')
+
+    @app.route('/test/history')
+    def test_history_page():
+        return render_template('test_history.html')
+
+    # 4. Phòng thi độc lập (Dedicated Exam Chamber)
+    @app.route('/test/room')
+    def exam_room_page():
+        return render_template('exam_room.html')
+
+    # 5. Đấu Trường Phản Xạ AI & Gacha (Tách biệt hoàn toàn khỏi Khảo thí)
+    @app.route('/arena')
+    def arena_page():
+        return render_template('arena.html')
+
     @app.route('/auth')
     def auth_portal():
         return render_template('auth.html')
+
 
     # Đã gom cụm route Story lên đây cho đồng bộ tầng Giao diện
     @app.route('/story')

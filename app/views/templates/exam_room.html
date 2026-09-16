@@ -1,0 +1,686 @@
+{% extends "base.html" %}
+
+{% block title %}PHÒNG THI THỬ CEFR TẬP TRUNG{% endblock %}
+
+{% block content %}
+<style>
+    /* Exam Room Focused Styling */
+    .exam-chamber-card {
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 30px;
+        backdrop-filter: blur(25px);
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+        position: relative;
+    }
+
+    /* Question Palette */
+    .palette-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+    }
+    .palette-btn {
+        height: 38px;
+        border-radius: 8px;
+        border: 1px solid var(--glass-border);
+        background: rgba(0,0,0,0.5);
+        color: #cbd5e1;
+        font-family: var(--text-mono);
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+    .palette-btn:hover {
+        border-color: var(--neon-cyan);
+        color: #fff;
+    }
+    .palette-btn.current {
+        border-color: var(--neon-amber);
+        color: var(--neon-amber);
+        font-weight: bold;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+    .palette-btn.answered {
+        background: rgba(34, 197, 94, 0.2);
+        border-color: var(--pixel-green);
+        color: var(--pixel-green);
+    }
+
+    /* Option Button */
+    .exam-option-btn {
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 16px 20px;
+        color: #e2e8f0;
+        font-size: 15px;
+        text-align: left;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        margin-bottom: 12px;
+    }
+    .exam-option-btn:hover {
+        background: rgba(103, 232, 249, 0.1);
+        border-color: var(--neon-cyan);
+        color: #fff;
+    }
+    .exam-option-btn.selected {
+        background: rgba(236, 72, 153, 0.2);
+        border-color: var(--neon-pink);
+        color: #fff;
+        font-weight: bold;
+        box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+    }
+
+    .timer-badge {
+        background: rgba(0, 0, 0, 0.6);
+        border: 2px solid var(--neon-cyan);
+        border-radius: 10px;
+        padding: 8px 18px;
+        font-family: var(--text-mono);
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--neon-cyan);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        letter-spacing: 1px;
+    }
+    .timer-badge.urgent {
+        border-color: #ef4444;
+        color: #ef4444;
+        animation: pulseGlow 1s infinite alternate;
+    }
+</style>
+
+<div class="bento-container" style="max-width: 1200px; margin: 2vh auto; display: flex; flex-direction: column; gap: 20px;">
+
+    <!-- TOP HEADER: EXAM CHAMBER CONTROL -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button class="pixel-btn" onclick="confirmExitExam()" style="background: rgba(0,0,0,0.5); border: 1px solid #64748b; color: #94a3b8; font-size: 11px; padding: 10px 16px;">
+                ◀ THOÁT KHẢO THÍ
+            </button>
+            <div>
+                <div class="pixel-title" style="font-size: 18px; color: var(--neon-pink); margin: 0;" id="in-exam-title">
+                    ĐỀ THI ĐÁNH GIÁ NĂNG LỰC CEFR
+                </div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;">
+                    Phòng thi chuẩn hóa 100% Local AI // Không gian tập trung cao độ
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="timer-badge" id="exam-timer-box">
+                <span>⏱️</span>
+                <span id="exam-timer">15:00</span>
+            </div>
+            <button class="pixel-btn" onclick="confirmSubmitExam()" style="background: var(--pixel-green); color: #000; font-size: 12px; font-weight: bold; padding: 10px 20px; box-shadow: 0 0 15px rgba(110, 231, 183, 0.4);">
+                NỘP BÀI THI 🏁
+            </button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH ĐANG NẠP ĐỀ (LOADING SCREEN) -->
+    <div id="exam-loading-screen" class="exam-chamber-card" style="text-align: center; padding: 60px 20px;">
+        <div class="pulse-neon" style="font-size: 18px; font-family: var(--text-pixel); color: var(--neon-cyan); margin-bottom: 12px;">
+            [ SYSTEM ] ĐANG TỔNG HỢP ĐỀ THI VÀ CẤU TRÚC ĐỀ THEO BAND...
+        </div>
+        <div class="typing-effect" style="color: #cbd5e1; font-size: 14px; max-width: 500px; margin: 0 auto;">
+            AI Local đang rà soát ngân hàng 5,000 từ vựng và ma trận ngữ pháp CEFR...
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH LÀM BÀI THI CHÍNH (EXAM ROOM CONTENT) -->
+    <div id="mock-exam-screen" style="display: none;">
+        <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 20px; align-items: start;">
+
+            <!-- CỘT TRÁI: THẺ CÂU HỎI & VÙNG TƯƠNG TÁC -->
+            <div class="exam-chamber-card">
+                <!-- Question Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 15px; margin-bottom: 25px;">
+                    <div>
+                        <span class="pixel-title" style="color: var(--neon-cyan); font-size: 16px;">
+                            CÂU HỎI <span id="current-q-num">1</span> / <span id="total-q-count">10</span>
+                        </span>
+                        <span id="question-type-badge" class="cefr-badge" style="margin-left: 10px; background: var(--neon-purple);">
+                            TRẮC NGHIỆM
+                        </span>
+                    </div>
+                    <span id="question-cefr-badge" class="cefr-badge a2" style="font-size: 11px;">
+                        BAND A2
+                    </span>
+                </div>
+
+                <!-- Dynamic Question Body Area -->
+                <div id="question-card" style="min-height: 250px; margin-bottom: 30px;">
+                    <!-- JS sẽ render nội dung câu hỏi vào đây -->
+                </div>
+
+                <!-- Navigation Controls -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--glass-border); padding-top: 20px;">
+                    <button class="pixel-btn" id="btn-prev-q" onclick="navigateQuestion(-1)" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); padding: 12px 20px;">
+                        ◀ CÂU TRƯỚC
+                    </button>
+
+                    <button class="pixel-btn" id="btn-next-q" onclick="navigateQuestion(1)" style="background: var(--neon-cyan); color: #000; padding: 12px 22px;">
+                        CÂU TIẾP THEO ▶
+                    </button>
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: QUESTION PALETTE -->
+            <div class="bento-card" style="padding: 22px;">
+                <div class="pixel-title" style="color: var(--neon-amber); font-size: 14px; margin-bottom: 15px; letter-spacing: 0.5px;">
+                    BẢNG CÂU HỎI
+                </div>
+                <div id="question-palette" class="palette-grid" style="margin-bottom: 20px;">
+                    <!-- Nút palette từ JS -->
+                </div>
+
+                <div style="border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 15px; font-size: 12px; color: #94a3b8; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="width: 14px; height: 14px; border-radius: 3px; background: rgba(34, 197, 94, 0.4); border: 1px solid var(--pixel-green);"></span>
+                        <span>Đã trả lời</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="width: 14px; height: 14px; border-radius: 3px; background: rgba(0,0,0,0.5); border: 1px solid var(--neon-amber);"></span>
+                        <span>Đang xem</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="width: 14px; height: 14px; border-radius: 3px; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border);"></span>
+                        <span>Chưa làm</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH BÁO CÁO KẾT QUẢ KHẢO THÍ (DIAGNOSTIC REPORT) -->
+    <div id="mock-report-screen" class="exam-chamber-card" style="display: none; padding: 35px;">
+        <div class="pixel-title" style="color: var(--pixel-green); font-size: 20px; margin-bottom: 5px; text-align: center;">
+            KẾT QUẢ KHẢO THÍ & BÁO CÁO NĂNG LỰC CEFR
+        </div>
+        <div style="text-align: center; color: #94a3b8; font-size: 13px; margin-bottom: 30px;">
+            Được phân tích tự động bằng Hệ thống AI Local Chẩn đoán Sư phạm
+        </div>
+
+        <!-- Thẻ Tổng Quan Điểm Số -->
+        <div style="background: rgba(0,0,0,0.5); border: 2px solid var(--pixel-green); border-radius: 16px; padding: 25px; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; text-align: center; align-items: center;">
+            <div>
+                <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">ĐIỂM SỐ TỔNG</div>
+                <div id="report-final-score" style="font-size: 40px; font-weight: 800; font-family: var(--text-mono); color: var(--pixel-green);">0 / 10</div>
+                <div id="report-percentage" style="font-size: 12px; color: #94a3b8;">(0% độ chính xác)</div>
+            </div>
+
+            <div>
+                <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">BAND NĂNG LỰC ƯỚC TÍNH</div>
+                <div id="report-estimated-band" style="font-size: 40px; font-weight: 800; font-family: var(--text-mono); color: var(--neon-cyan);">A1</div>
+                <div id="report-band-title" style="font-size: 12px; color: var(--neon-cyan); font-weight: bold;">CĂN BẢN</div>
+            </div>
+
+            <div>
+                <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">PHẦN THƯỞNG CHIẾN TÍCH</div>
+                <div id="report-coins-reward" style="font-size: 36px; font-weight: 800; font-family: var(--text-mono); color: var(--neon-amber);">+10</div>
+                <div style="font-size: 12px; color: #94a3b8;">XU VÀNG</div>
+            </div>
+        </div>
+
+        <!-- 4 Thanh Đo Phân Tích Kỹ Năng Con (Subscores) -->
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 14px; padding: 20px; margin-bottom: 30px;">
+            <div class="pixel-title" style="color: var(--neon-cyan); font-size: 13px; margin-bottom: 15px;">
+                CHI TIẾT 4 NĂNG LỰC CỐT LÕI (CEFR SUBSCORES):
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                        <span>📚 Vốn Từ Vựng (Vocabulary)</span>
+                        <strong id="sub-vocab" style="color: var(--neon-cyan);">0/10</strong>
+                    </div>
+                    <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div id="bar-vocab" style="width: 0%; height: 100%; background: var(--neon-cyan); transition: width 0.6s ease;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                        <span>⚙️ Ngữ Pháp & Cấu Trúc (Grammar)</span>
+                        <strong id="sub-grammar" style="color: var(--neon-amber);">0/10</strong>
+                    </div>
+                    <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div id="bar-grammar" style="width: 0%; height: 100%; background: var(--neon-amber); transition: width 0.6s ease;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                        <span>🧩 Lắp Ráp Cú Pháp (Syntax)</span>
+                        <strong id="sub-syntax" style="color: var(--neon-pink);">0/10</strong>
+                    </div>
+                    <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div id="bar-syntax" style="width: 0%; height: 100%; background: var(--neon-pink); transition: width 0.6s ease;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                        <span>✍️ Diễn Đạt Tự Luận (Writing)</span>
+                        <strong id="sub-writing" style="color: var(--pixel-green);">0/10</strong>
+                    </div>
+                    <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                        <div id="bar-writing" style="width: 0%; height: 100%; background: var(--pixel-green); transition: width 0.6s ease;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lời Khuyên Sư Phạm Chẩn Đoán Từ AI -->
+        <div style="background: rgba(30, 41, 75, 0.5); border-left: 4px solid var(--neon-cyan); border-radius: 10px; padding: 18px; margin-bottom: 30px;">
+            <div style="color: var(--neon-cyan); font-weight: bold; font-size: 14px; margin-bottom: 6px; font-family: var(--text-pixel);">
+                💡 LỜI KHUYÊN HỌC TẬP TỪ AI MASTER G:
+            </div>
+            <div id="report-diagnostic-advice" style="font-size: 14px; color: #e2e8f0; line-height: 1.6;">
+                Đang tổng hợp nhận xét...
+            </div>
+        </div>
+
+        <!-- Danh Sách Rà Soát Chi Tiết Từng Câu Hỏi -->
+        <div class="pixel-title" style="color: var(--neon-pink); font-size: 14px; margin-bottom: 15px;">
+            CHI TIẾT TỪNG CÂU HỎI VÀ ĐÁP ÁN:
+        </div>
+        <div id="review-cards-list" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 30px;">
+            <!-- Render từ JS -->
+        </div>
+
+        <!-- Hành Động Sau Khi Xem Báo Cáo -->
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button class="pixel-btn" onclick="window.location.href='/test'" style="background: var(--neon-cyan); color: #000; padding: 14px 28px; font-weight: bold;">
+                TRỞ VỀ TRUNG TÂM KHẢO THÍ
+            </button>
+            <button class="pixel-btn" onclick="location.reload()" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-pink); color: var(--neon-pink); padding: 14px 25px;">
+                LÀM LẠI ĐỀ THI NÀY
+            </button>
+            <button class="pixel-btn" onclick="window.location.href='/learn'" style="background: var(--neon-purple); padding: 14px 25px;">
+                VÀO LÒ ĐÚC ÔN TẬP
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentMockExam = null;
+    let currentQuestionIdx = 0;
+    let userMockAnswers = {};
+    let examCountdownTimer = null;
+    let examRemainingSeconds = 900;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const band = urlParams.get('band') || 'ALL';
+        const num = parseInt(urlParams.get('num') || '10');
+
+        initMockExam(band, num);
+    });
+
+    function initMockExam(band, num) {
+        fetch('/api/game/exam/mock/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ band: band, num_questions: num })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            document.getElementById('exam-loading-screen').style.display = 'none';
+
+            if (data.status === 'success') {
+                currentMockExam = data;
+                currentQuestionIdx = 0;
+                userMockAnswers = {};
+
+                // Cài đặt đồng hồ
+                examRemainingSeconds = (data.time_limit_minutes || 15) * 60;
+                startExamTimer();
+
+                document.getElementById('mock-exam-screen').style.display = 'block';
+                document.getElementById('in-exam-title').innerText = data.title;
+                document.getElementById('total-q-count').innerText = data.total_questions;
+
+                renderQuestionPalette();
+                renderCurrentQuestion();
+            } else {
+                alert("Lỗi tạo đề: " + (data.error || "Vui lòng thử lại sau."));
+                window.location.href = '/test';
+            }
+        })
+        .catch(err => {
+            document.getElementById('exam-loading-screen').innerHTML = `
+                <div style="color: #ef4444; font-size: 16px; margin-bottom: 15px;">[LỖI]: ${err.message || 'Không thể kết nối máy chủ.'}</div>
+                <button class="pixel-btn" onclick="window.location.href='/test'" style="background: var(--neon-cyan); color: #000; padding: 10px 20px;">QUAY VỀ TRUNG TÂM KHẢO THÍ</button>
+            `;
+        });
+    }
+
+    function startExamTimer() {
+        clearInterval(examCountdownTimer);
+        const timerDisplay = document.getElementById('exam-timer');
+        const timerBox = document.getElementById('exam-timer-box');
+
+        examCountdownTimer = setInterval(() => {
+            examRemainingSeconds--;
+
+            if (examRemainingSeconds <= 120) {
+                timerBox.classList.add('urgent');
+            }
+
+            if (examRemainingSeconds <= 0) {
+                clearInterval(examCountdownTimer);
+                alert("⏰ Đã hết thời gian làm bài! Hệ thống sẽ tự động nộp bài thi của bạn.");
+                submitMockExamDirect();
+                return;
+            }
+
+            const m = Math.floor(examRemainingSeconds / 60).toString().padStart(2, '0');
+            const s = (examRemainingSeconds % 60).toString().padStart(2, '0');
+            timerDisplay.innerText = `${m}:${s}`;
+        }, 1000);
+    }
+
+    function renderQuestionPalette() {
+        const palette = document.getElementById('question-palette');
+        let html = '';
+        currentMockExam.questions.forEach((q, idx) => {
+            const isAnswered = userMockAnswers.hasOwnProperty(q.id.toString()) && userMockAnswers[q.id.toString()] !== "";
+            const isCurrent = (idx === currentQuestionIdx);
+
+            let cls = 'palette-btn';
+            if (isCurrent) cls += ' current';
+            if (isAnswered) cls += ' answered';
+
+            html += `<button class="${cls}" onclick="jumpToQuestion(${idx})">${idx + 1}</button>`;
+        });
+        palette.innerHTML = html;
+    }
+
+    function jumpToQuestion(idx) {
+        saveCurrentInputAnswer();
+        currentQuestionIdx = idx;
+        renderQuestionPalette();
+        renderCurrentQuestion();
+    }
+
+    function navigateQuestion(step) {
+        saveCurrentInputAnswer();
+        const nextIdx = currentQuestionIdx + step;
+        if (nextIdx >= 0 && nextIdx < currentMockExam.questions.length) {
+            currentQuestionIdx = nextIdx;
+            renderQuestionPalette();
+            renderCurrentQuestion();
+        }
+    }
+
+    function saveCurrentInputAnswer() {
+        if (!currentMockExam) return;
+        const q = currentMockExam.questions[currentQuestionIdx];
+        if (q.type === 'writing_challenge' || q.type === 'writing' || q.type === 'error_correction') {
+            const input = document.getElementById(`user-answer-${q.id}`);
+            if (input) {
+                userMockAnswers[q.id.toString()] = input.value.trim();
+            }
+        }
+    }
+
+    function renderCurrentQuestion() {
+        const q = currentMockExam.questions[currentQuestionIdx];
+        document.getElementById('current-q-num').innerText = currentQuestionIdx + 1;
+
+        const typeLabels = {
+            'mcq_vocab': 'TRẮC NGHIỆM TỪ VỰNG NGỮ CẢNH',
+            'multiple_choice': 'TRẮC NGHIỆM NGỮ CẢNH',
+            'error_spotting': 'NHẬN DIỆN & SỬA LỖI SAI',
+            'error_correction': 'PHÁT HIỆN & SỬA LỖI',
+            'syntax_scramble': 'LẮP RÁP CÚ PHÁP CÂU',
+            'scramble': 'SẮP XẾP CÚ PHÁP',
+            'writing_challenge': 'TỰ LUẬN VIẾT CÂU THỰC CHIẾN',
+            'writing': 'TỰ LUẬN VIẾT CÂU'
+        };
+        document.getElementById('question-type-badge').innerText = typeLabels[q.type] || q.type.toUpperCase();
+
+        const bandVal = q.band || q.cefr_level || 'A1';
+        const cefrBadge = document.getElementById('question-cefr-badge');
+        cefrBadge.innerText = `BAND ${bandVal}`;
+        cefrBadge.className = `cefr-badge ${bandVal.toLowerCase()}`;
+
+        const card = document.getElementById('question-card');
+        const savedAnswer = userMockAnswers[q.id.toString()] || '';
+
+        let contentHtml = `<div style="font-size: 16px; color: #fff; line-height: 1.6; margin-bottom: 25px; font-weight: 500; white-space: pre-wrap;">${q.prompt}</div>`;
+
+        if (q.type === 'writing_challenge' || q.type === 'writing') {
+            contentHtml += `
+                <div style="margin-top: 15px;">
+                    <div style="font-size: 12px; color: var(--neon-amber); margin-bottom: 10px; font-family: var(--text-mono);">
+                        💡 Yêu cầu: Viết một câu hoàn chỉnh có Chủ ngữ và Vị ngữ. AI Local Master G sẽ phân tích ngữ pháp và từ vựng ngay khi nộp bài.
+                    </div>
+                    <label style="display: block; font-size: 13px; color: var(--neon-pink); margin-bottom: 8px; font-family: var(--text-mono);">
+                        > CÂU TRẢ LỜI TỰ LUẬN CỦA BẠN:
+                    </label>
+                    <textarea id="user-answer-${q.id}" class="auth-input" style="width: 100%; min-height: 120px; padding: 14px; font-size: 15px; resize: none; margin-bottom: 0; font-family: var(--text-mono);" placeholder="Nhập câu tiếng Anh hoàn chỉnh theo yêu cầu đề bài..." oninput="onTextInputChange('${q.id}', this.value)">${savedAnswer}</textarea>
+                </div>`;
+        } else {
+            // MCQ, Error Spotting, Syntax Scramble with Options
+            contentHtml += `<div style="display: flex; flex-direction: column; gap: 10px;">`;
+            (q.options || []).forEach((opt, oIdx) => {
+                const isSelected = (savedAnswer === opt);
+                const letter = ['A', 'B', 'C', 'D'][oIdx] || (oIdx + 1);
+                contentHtml += `
+                    <button class="exam-option-btn ${isSelected ? 'selected' : ''}" onclick="selectOptionAnswer('${q.id}', '${opt.replace(/'/g, "\\'")}', this)">
+                        <span style="font-family: var(--text-mono); font-weight: bold; color: var(--neon-cyan);">${letter}.</span>
+                        <span>${opt}</span>
+                    </button>`;
+            });
+            contentHtml += `</div>`;
+        }
+
+        card.innerHTML = contentHtml;
+
+        // Cập nhật trạng thái nút điều hướng
+        document.getElementById('btn-prev-q').disabled = (currentQuestionIdx === 0);
+        document.getElementById('btn-next-q').disabled = (currentQuestionIdx === currentMockExam.questions.length - 1);
+    }
+
+    function selectOptionAnswer(qId, opt, btn) {
+        userMockAnswers[qId.toString()] = opt;
+        document.querySelectorAll('.exam-option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        renderQuestionPalette();
+    }
+
+    function onTextInputChange(qId, val) {
+        userMockAnswers[qId.toString()] = val.trim();
+        renderQuestionPalette();
+    }
+
+    function setupScrambleUI(q, savedVal) {
+        const slotsRow = document.getElementById(`scramble-slots-${q.id}`);
+        const poolRow = document.getElementById(`scramble-pool-${q.id}`);
+        const words = q.options || [];
+
+        let currentSelected = savedVal ? savedVal.split(' ') : [];
+
+        function renderTiles() {
+            slotsRow.innerHTML = '';
+            currentSelected.forEach((w, idx) => {
+                const t = document.createElement('span');
+                t.className = 'syntax-tile';
+                t.innerText = w;
+                t.onclick = () => {
+                    currentSelected.splice(idx, 1);
+                    userMockAnswers[q.id.toString()] = currentSelected.join(' ');
+                    renderTiles();
+                    renderQuestionPalette();
+                };
+                slotsRow.appendChild(t);
+            });
+
+            poolRow.innerHTML = '';
+            words.forEach(w => {
+                const countInSelected = currentSelected.filter(x => x === w).length;
+                const countInTotal = words.filter(x => x === w).length;
+                const isAvailable = countInSelected < countInTotal;
+
+                const t = document.createElement('span');
+                t.className = `syntax-tile ${!isAvailable ? 'used' : ''}`;
+                t.innerText = w;
+                if (isAvailable) {
+                    t.onclick = () => {
+                        currentSelected.push(w);
+                        userMockAnswers[q.id.toString()] = currentSelected.join(' ');
+                        renderTiles();
+                        renderQuestionPalette();
+                    };
+                }
+                poolRow.appendChild(t);
+            });
+        }
+
+        renderTiles();
+    }
+
+    function confirmSubmitExam() {
+        saveCurrentInputAnswer();
+        const answeredCount = Object.keys(userMockAnswers).filter(k => userMockAnswers[k] !== "").length;
+        const total = currentMockExam.total_questions;
+
+        let msg = `Bạn đã hoàn thành ${answeredCount}/${total} câu hỏi. Bạn có chắc chắn muốn nộp bài thi?`;
+        if (answeredCount < total) {
+            msg = `⚠️ Chú ý: Bạn còn ${total - answeredCount} câu chưa trả lời. Bạn có chắc chắn muốn nộp bài ngay bây giờ?`;
+        }
+
+        if (confirm(msg)) {
+            submitMockExamDirect();
+        }
+    }
+
+    function submitMockExamDirect() {
+        clearInterval(examCountdownTimer);
+        saveCurrentInputAnswer();
+
+        const card = document.getElementById('question-card');
+        card.innerHTML = `
+            <div style="text-align: center; padding: 50px 20px; color: var(--neon-pink);">
+                <div class="pulse-neon" style="font-size: 18px; margin-bottom: 10px;">
+                    🤖 AI LOCAL MASTER G ĐANG CHẤM BÀI & PHÂN TÍCH NĂNG LỰC CEFR...
+                </div>
+                <div class="typing-effect" style="font-size: 13px; color: #cbd5e1;">
+                    Đang tính toán subscores 4 kỹ năng và đề xuất lộ trình cải thiện...
+                </div>
+            </div>`;
+
+        fetch('/api/game/exam/mock/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ answers: userMockAnswers, exam_id: currentMockExam.exam_id })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+        })
+        .then(evalResult => {
+            if (evalResult.status === 'success') {
+                renderExamReport(evalResult);
+            } else {
+                alert("Lỗi chấm thi: " + (evalResult.error || "Vui lòng thử lại."));
+            }
+        })
+        .catch(err => {
+            alert("Lỗi gửi kết quả bài thi: " + err.message);
+            card.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #ef4444;">
+                    <div style="font-size: 16px; margin-bottom: 15px;">⚠️ Có lỗi khi gửi bài thi: ${err.message}</div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button class="pixel-btn" onclick="submitMockExamDirect()" style="background: var(--neon-pink); padding: 12px 24px; font-size: 12px;">THỬ NỘP LẠI</button>
+                        <button class="pixel-btn" onclick="renderCurrentQuestion()" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); padding: 12px 24px; font-size: 12px;">QUAY LẠI BÀI THI</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function renderExamReport(report) {
+        document.getElementById('mock-exam-screen').style.display = 'none';
+        document.getElementById('mock-report-screen').style.display = 'block';
+
+        document.getElementById('report-final-score').innerText = `${report.final_score} / 10`;
+        document.getElementById('report-percentage').innerText = `(${report.percentage}% độ chính xác)`;
+        document.getElementById('report-estimated-band').innerText = report.estimated_band;
+        document.getElementById('report-band-title').innerText = report.band_title;
+        document.getElementById('report-coins-reward').innerText = `+${report.coins_reward}`;
+
+        // Subscores
+        const subs = report.subscores || {};
+        document.getElementById('sub-vocab').innerText = `${subs.vocab || 0}/10`;
+        document.getElementById('bar-vocab').style.width = `${(subs.vocab || 0) * 10}%`;
+
+        document.getElementById('sub-grammar').innerText = `${subs.grammar || 0}/10`;
+        document.getElementById('bar-grammar').style.width = `${(subs.grammar || 0) * 10}%`;
+
+        document.getElementById('sub-syntax').innerText = `${subs.syntax || 0}/10`;
+        document.getElementById('bar-syntax').style.width = `${(subs.syntax || 0) * 10}%`;
+
+        document.getElementById('sub-writing').innerText = `${subs.writing || 0}/10`;
+        document.getElementById('bar-writing').style.width = `${(subs.writing || 0) * 10}%`;
+
+        document.getElementById('report-diagnostic-advice').innerText = report.diagnostic_advice;
+
+        // Review Cards
+        const reviewContainer = document.getElementById('review-cards-list');
+        let rHtml = '';
+        (report.question_results || []).forEach((res, idx) => {
+            const isCor = res.is_correct;
+            const borderCol = isCor ? 'var(--pixel-green)' : '#ef4444';
+            const icon = isCor ? '✓ ĐÚNG' : '✗ CHƯA CHÍNH XÁC';
+            const tagCol = isCor ? 'var(--pixel-green)' : '#ef4444';
+
+            rHtml += `
+            <div style="background: rgba(0,0,0,0.5); border: 1px solid ${borderCol}; border-radius: 12px; padding: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong style="color: #fff; font-size: 15px;">Câu ${idx + 1} [Dạng bài: ${res.type}]</strong>
+                    <span style="color: ${tagCol}; font-weight: bold; font-family: var(--text-mono); font-size: 13px;">${icon} (${res.awarded_score}đ)</span>
+                </div>
+                <div style="font-size: 14px; color: #cbd5e1; margin-bottom: 8px;">
+                    <span style="color: #94a3b8;">Câu trả lời của bạn:</span> <strong style="color: #fff;">${res.user_answer || '(Bỏ trống)'}</strong>
+                </div>
+                ${!isCor ? `<div style="font-size: 14px; color: var(--pixel-green); margin-bottom: 8px;"><span style="color: #94a3b8;">Đáp án chính xác:</span> <strong>${res.correct_answer}</strong></div>` : ''}
+                <div style="font-size: 13px; color: #94a3b8; line-height: 1.5; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px;">
+                    💡 ${res.explanation || res.ai_feedback}
+                </div>
+            </div>`;
+        });
+        reviewContainer.innerHTML = rHtml;
+    }
+
+    function confirmExitExam() {
+        if (confirm("⚠️ CẢNH BÁO: Bài thi chưa được nộp. Nếu bạn thoát ra lúc này, toàn bộ tiến trình sẽ bị hủy bỏ. Bạn có chắc chắn muốn quay lại?")) {
+            clearInterval(examCountdownTimer);
+            window.location.href = '/test';
+        }
+    }
+</script>
+{% endblock %}

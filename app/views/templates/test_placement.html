@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}ĐÁNH GIÁ NĂNG LỰC ĐẦU VÀO - CEFR PLACEMENT TEST{% endblock %}
+
+{% block content %}
+<style>
+    /* Sub-Navigation Bar */
+    .test-sub-nav {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 8px;
+        border-radius: 14px;
+        border: 1px solid var(--glass-border);
+    }
+    .test-nav-btn {
+        flex: 1;
+        min-width: 180px;
+        padding: 12px 18px;
+        font-size: 13px;
+        font-family: var(--text-pixel);
+        border-radius: 10px;
+        text-align: center;
+        text-decoration: none;
+        color: #94a3b8;
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .test-nav-btn:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--glass-border);
+    }
+    .test-nav-btn.active {
+        color: #fff;
+        background: rgba(236, 72, 153, 0.2);
+        border-color: var(--neon-pink);
+        box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+    }
+
+    .length-select-card {
+        background: rgba(0,0,0,0.5);
+        border: 2px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+    .length-select-card:hover, .length-select-card.selected {
+        border-color: var(--neon-pink);
+        background: rgba(236, 72, 153, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(236, 72, 153, 0.25);
+    }
+
+    .cefr-step-node {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+        flex: 1;
+        min-width: 100px;
+    }
+</style>
+
+<!-- MAIN WRAPPER: Flex Column prevents 3-column grid bug -->
+<div style="display: flex; flex-direction: column; gap: 25px; width: 100%; max-width: 1200px; margin: 0 auto;">
+
+    <!-- TOP HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid var(--glass-border); padding-bottom: 20px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 28px;">🌟</span>
+                <div>
+                    <div class="pixel-title" style="font-size: 22px; color: var(--neon-pink); margin: 0; letter-spacing: 1px;">
+                        BÀI THI ĐÁNH GIÁ NĂNG LỰC ĐẦU VÀO (PLACEMENT TEST)
+                    </div>
+                    <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
+                        Kiểm tra năng lực thích ứng đa tầng — Chẩn đoán chuẩn xác trình độ CEFR từ A1 đến C2
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <a href="/test" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; font-size: 11px; padding: 10px 18px; text-decoration: none;">
+                ◀ VỀ TỔNG QUAN
+            </a>
+        </div>
+    </div>
+
+    <!-- SUB-NAVIGATION BAR -->
+    <div class="test-sub-nav">
+        <a href="/test" class="test-nav-btn">
+            <span>🏠</span> TỔNG QUAN KHẢO THÍ
+        </a>
+        <a href="/test/placement" class="test-nav-btn active">
+            <span>🌟</span> ĐÁNH GIÁ ĐẦU VÀO
+        </a>
+        <a href="/test/bands" class="test-nav-btn">
+            <span>🎯</span> ĐỀ THI THEO BAND
+        </a>
+        <a href="/test/history" class="test-nav-btn">
+            <span>📜</span> LỊCH SỬ & BẢNG ĐIỂM
+        </a>
+    </div>
+
+    <!-- KHỐI 1: GIỚI THIỆU THANG ĐO LŨY TIẾN CEFR -->
+    <div class="bento-card" style="padding: 28px;">
+        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 16px; margin-bottom: 10px;">
+            THANG ĐO NĂNG LỰC ĐỘC LẬP TỪ A1 ĐẾN C2
+        </div>
+        <div style="font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 20px;">
+            Đề thi Placement Test được xây dựng dựa trên nguyên lý phân tầng tăng dần độ khó: câu hỏi bắt đầu từ những mẫu câu căn bản thường nhật (A1/A2), chuyển tiếp qua ngữ pháp trung cấp phức hợp (B1/B2) và kết thúc bằng câu chẻ nhấn mạnh, đảo ngữ và cấu trúc học thuật (C1/C2).
+        </div>
+
+        <!-- Mốc 6 Cấp Độ Trực Quan -->
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="cefr-step-node" style="border-color: #059669;">
+                <div class="cefr-badge a1" style="font-size: 10px; margin-bottom: 6px;">BAND A1</div>
+                <div style="font-size: 12px; color: #fff; font-weight: bold;">Tân Binh</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">S-V-O, Hiện tại đơn</div>
+            </div>
+
+            <div class="cefr-step-node" style="border-color: #0284c7;">
+                <div class="cefr-badge a2" style="font-size: 10px; margin-bottom: 6px;">BAND A2</div>
+                <div style="font-size: 12px; color: #fff; font-weight: bold;">Sơ Cấp</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Quá khứ, So sánh</div>
+            </div>
+
+            <div class="cefr-step-node" style="border-color: #d97706;">
+                <div class="cefr-badge b1" style="font-size: 10px; margin-bottom: 6px;">BAND B1</div>
+                <div style="font-size: 12px; color: #fff; font-weight: bold;">Trung Cấp</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Bị động, HTHT</div>
+            </div>
+
+            <div class="cefr-step-node" style="border-color: #7c3aed;">
+                <div class="cefr-badge b2" style="font-size: 10px; margin-bottom: 6px;">BAND B2</div>
+                <div style="font-size: 12px; color: #fff; font-weight: bold;">Trung Cao</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Điều kiện 2, QKHT</div>
+            </div>
+
+            <div class="cefr-step-node" style="border-color: #db2777;">
+                <div class="cefr-badge c1" style="font-size: 10px; margin-bottom: 6px;">BAND C1</div>
+                <div style="font-size: 12px; color: #fff; font-weight: bold;">Cao Cấp</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Đảo ngữ, Câu chẻ</div>
+            </div>
+
+            <div class="cefr-step-node" style="border-color: #e11d48;">
+                <div class="cefr-badge c2" style="font-size: 10px; margin-bottom: 6px;">BAND C2</div>
+                <div style="font-size: 12px; color: #fff; font-weight: bold;">Thành Thạo</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Học thuật đỉnh cao</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KHỐI 2: CHỌN ĐỘ DÀI & VÀO PHÒNG THI -->
+    <div class="bento-card" style="padding: 30px;">
+        <div class="pixel-title" style="color: var(--neon-pink); font-size: 16px; margin-bottom: 10px;">
+            CẤU HÌNH BÀI THI ĐẦU VÀO
+        </div>
+        <div style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">
+            Chọn gói thời gian phù hợp với thời gian hiện tại của bạn:
+        </div>
+
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px;">
+            <div id="card-len-5" class="length-select-card" onclick="setExamLength(5)">
+                <span style="font-size: 28px;">⚡</span>
+                <div>
+                    <div style="font-size: 15px; font-weight: bold; color: #fff; margin-bottom: 4px;">5 CÂU (QUICK PLACEMENT)</div>
+                    <div style="font-size: 12px; color: #94a3b8;">Thời lượng: 7 phút • Đánh giá sơ bộ nhanh gọn</div>
+                </div>
+            </div>
+
+            <div id="card-len-10" class="length-select-card selected" onclick="setExamLength(10)">
+                <span style="font-size: 28px;">📋</span>
+                <div>
+                    <div style="font-size: 15px; font-weight: bold; color: #fff; margin-bottom: 4px;">10 CÂU (CHUẨN HÓA TOÀN DIỆN - KHUYÊN DÙNG)</div>
+                    <div style="font-size: 12px; color: #94a3b8;">Thời lượng: 15 phút • Đầy đủ 4 dạng câu hỏi • Phân tích radar chi tiết</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HƯỚNG DẪN TỪ MASTER G -->
+        <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--neon-amber); padding: 18px; border-radius: 10px; margin-bottom: 30px;">
+            <div class="pixel-title" style="color: var(--neon-amber); font-size: 13px; margin-bottom: 6px;">
+                💡 QUY TẮC PHÒNG THI TỪ MASTER G:
+            </div>
+            <div style="font-size: 13px; color: #e2e8f0; line-height: 1.6;">
+                1. Hãy làm bài thi độc lập, không tra từ điển hoặc sử dụng công cụ dịch để có kết quả đánh giá thực chất nhất.<br>
+                2. Với câu hỏi viết tự luận cuối bài, hãy viết câu hoàn chỉnh có Chủ ngữ và Vị ngữ. AI Master G sẽ chấm điểm và phản hồi lỗi tức thì.<br>
+                3. Khi bắt đầu, hệ thống sẽ mở <strong>Phòng thi chuyên dụng độc lập</strong> với đồng hồ đếm ngược bảo vệ tiến trình của bạn.
+            </div>
+        </div>
+
+        <!-- NÚT BẮT ĐẦU -->
+        <div style="display: flex; justify-content: flex-end;">
+            <button id="btn-launch-placement" class="pixel-btn pulse-neon" onclick="startPlacementExam()" style="background: var(--neon-pink); padding: 16px 36px; font-size: 14px; letter-spacing: 0.5px;">
+                BẮT ĐẦU BÀI TEST ĐẦU VÀO ▶
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let chosenLength = 10;
+
+    function setExamLength(len) {
+        chosenLength = len;
+        document.getElementById('card-len-5').classList.remove('selected');
+        document.getElementById('card-len-10').classList.remove('selected');
+        document.getElementById(`card-len-${len}`).classList.add('selected');
+    }
+
+    function startPlacementExam() {
+        const btn = document.getElementById('btn-launch-placement');
+        btn.disabled = true;
+        btn.innerText = "ĐANG CHUẨN BỊ PHÒNG THI...";
+
+        // Chuyển hướng tới phòng thi độc lập /test/room với gói ALL
+        window.location.href = `/test/room?band=ALL&num=${chosenLength}`;
+    }
+</script>
+{% endblock %}

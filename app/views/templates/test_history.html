@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}LỊCH SỬ KHẢO THÍ & BÁO CÁO NĂNG LỰC{% endblock %}
+
+{% block content %}
+<style>
+    /* Sub-Navigation Bar */
+    .test-sub-nav {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 8px;
+        border-radius: 14px;
+        border: 1px solid var(--glass-border);
+    }
+    .test-nav-btn {
+        flex: 1;
+        min-width: 180px;
+        padding: 12px 18px;
+        font-size: 13px;
+        font-family: var(--text-pixel);
+        border-radius: 10px;
+        text-align: center;
+        text-decoration: none;
+        color: #94a3b8;
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .test-nav-btn:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--glass-border);
+    }
+    .test-nav-btn.active {
+        color: #fff;
+        background: rgba(245, 158, 11, 0.2);
+        border-color: var(--neon-amber);
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+    }
+
+    .history-stat-card {
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 18px;
+        text-align: center;
+        flex: 1;
+        min-width: 160px;
+    }
+</style>
+
+<!-- MAIN WRAPPER: Flex Column prevents 3-column grid bug -->
+<div style="display: flex; flex-direction: column; gap: 25px; width: 100%; max-width: 1200px; margin: 0 auto;">
+
+    <!-- TOP HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid var(--glass-border); padding-bottom: 20px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 28px;">📜</span>
+                <div>
+                    <div class="pixel-title" style="font-size: 22px; color: var(--neon-amber); margin: 0; letter-spacing: 1px;">
+                        LỊCH SỬ KHẢO THÍ & BÁO CÁO NĂNG LỰC
+                    </div>
+                    <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
+                        Nhật ký sư phạm theo dõi quá trình phát triển năng lực ngôn ngữ và thăng hạng CEFR
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="pixel-btn" onclick="loadHistoryData()" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); font-size: 11px; padding: 10px 16px;">
+                🔄 LÀM MỚI
+            </button>
+            <a href="/test" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; font-size: 11px; padding: 10px 18px; text-decoration: none;">
+                ◀ VỀ TỔNG QUAN
+            </a>
+        </div>
+    </div>
+
+    <!-- SUB-NAVIGATION BAR -->
+    <div class="test-sub-nav">
+        <a href="/test" class="test-nav-btn">
+            <span>🏠</span> TỔNG QUAN KHẢO THÍ
+        </a>
+        <a href="/test/placement" class="test-nav-btn">
+            <span>🌟</span> ĐÁNH GIÁ ĐẦU VÀO
+        </a>
+        <a href="/test/bands" class="test-nav-btn">
+            <span>🎯</span> ĐỀ THI THEO BAND
+        </a>
+        <a href="/test/history" class="test-nav-btn active">
+            <span>📜</span> LỊCH SỬ & BẢNG ĐIỂM
+        </a>
+    </div>
+
+    <!-- KHỐI 1: 4 THỐNG KÊ TỔNG QUAN -->
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <div class="history-stat-card" style="border-color: var(--neon-cyan);">
+            <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">TỔNG SỐ BÀI THI</div>
+            <div id="stat-total-tests" style="font-size: 32px; font-weight: 800; color: var(--neon-cyan); font-family: var(--text-mono);">0</div>
+            <div style="font-size: 11px; color: #cbd5e1;">Bài đã chấm điểm</div>
+        </div>
+
+        <div class="history-stat-card" style="border-color: var(--pixel-green);">
+            <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">ĐIỂM CAO NHẤT</div>
+            <div id="stat-max-score" style="font-size: 32px; font-weight: 800; color: var(--pixel-green); font-family: var(--text-mono);">0.0</div>
+            <div style="font-size: 11px; color: #cbd5e1;">Thang điểm 10.0</div>
+        </div>
+
+        <div class="history-stat-card" style="border-color: var(--neon-amber);">
+            <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">ĐIỂM TRUNG BÌNH</div>
+            <div id="stat-avg-score" style="font-size: 32px; font-weight: 800; color: var(--neon-amber); font-family: var(--text-mono);">0.0</div>
+            <div style="font-size: 11px; color: #cbd5e1;">Độ ổn định năng lực</div>
+        </div>
+
+        <div class="history-stat-card" style="border-color: var(--neon-pink);">
+            <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">BAND ĐẠT ĐƯỢC</div>
+            <div id="stat-current-band" style="font-size: 32px; font-weight: 800; color: var(--neon-pink); font-family: var(--text-mono);">A1</div>
+            <div style="font-size: 11px; color: #cbd5e1;">Cấp độ hiện tại</div>
+        </div>
+    </div>
+
+    <!-- KHỐI 2: DANH SÁCH CHI TIẾT TỪNG BÀI THI -->
+    <div class="bento-card" style="padding: 28px;">
+        <div class="pixel-title" style="color: var(--neon-amber); font-size: 16px; margin-bottom: 20px;">
+            CHI TIẾT CÁC KỲ THI THỬ ĐÃ THỰC HIỆN
+        </div>
+
+        <div id="exam-history-container" style="display: flex; flex-direction: column; gap: 14px;">
+            <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang quét cơ sở dữ liệu khảo thí...</div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadHistoryData();
+    });
+
+    function loadHistoryData() {
+        const container = document.getElementById('exam-history-container');
+        container.innerHTML = '<div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang quét cơ sở dữ liệu khảo thí...</div>';
+
+        fetch('/api/game/exam/history')
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                const list = data.history || [];
+                updateStats(list);
+
+                if (list.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 45px 20px; background: rgba(0,0,0,0.3); border-radius: 14px; border: 1px dashed var(--glass-border);">
+                            <div style="font-size: 36px; margin-bottom: 12px;">📋</div>
+                            <div style="color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 6px;">Bạn chưa thực hiện bài thi thử nào!</div>
+                            <div style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Hãy tham gia bài Test Đầu Vào hoặc chọn một gói đề theo Band để ghi danh bảng vàng.</div>
+                            <div style="display: flex; gap: 12px; justify-content: center;">
+                                <a href="/test/placement" class="pixel-btn" style="background: var(--neon-pink); font-size: 11px; padding: 10px 20px; text-decoration: none;">TEST ĐẦU VÀO ▶</a>
+                                <a href="/test/bands" class="pixel-btn" style="background: var(--neon-cyan); color: #000; font-size: 11px; padding: 10px 20px; text-decoration: none;">CHỌN ĐỀ THEO BAND ▶</a>
+                            </div>
+                        </div>`;
+                    return;
+                }
+
+                let html = '';
+                list.forEach((item, idx) => {
+                    const score = parseFloat(item.score || 0);
+                    const scoreColor = score >= 8.0 ? 'var(--pixel-green)' : (score >= 5.0 ? 'var(--neon-amber)' : '#ef4444');
+                    const statusTag = score >= 8.0 ? '✓ ĐẠT CHUẨN' : (score >= 5.0 ? '⚡ TRUNG BÌNH' : '✗ CẦN CỐ GẮNG');
+                    const tagBg = score >= 8.0 ? 'rgba(34,197,94,0.15)' : (score >= 5.0 ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)');
+
+                    html += `
+                    <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--neon-amber)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+                        <div style="min-width: 280px; flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <span style="font-family: var(--text-mono); color: var(--neon-cyan); font-weight: bold; font-size: 14px;">#${item.id}</span>
+                                <span style="font-size: 10px; font-family: var(--text-mono); padding: 2px 8px; border-radius: 4px; color: ${scoreColor}; background: ${tagBg}; border: 1px solid ${scoreColor}; font-weight: bold;">${statusTag}</span>
+                                <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">${item.created_at || 'Vừa xong'}</span>
+                            </div>
+                            <div style="font-size: 14px; color: #fff; line-height: 1.5;">
+                                ${item.ai_feedback || 'Đã hoàn thành bài kiểm tra CEFR.'}
+                            </div>
+                        </div>
+                        <div style="text-align: right; min-width: 100px;">
+                            <div style="font-size: 28px; font-weight: 800; font-family: var(--text-mono); color: ${scoreColor};">
+                                ${score.toFixed(1)} <span style="font-size: 14px; color: #94a3b8;">/ 10</span>
+                            </div>
+                            <div style="font-size: 11px; color: #94a3b8;">Điểm năng lực</div>
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                container.innerHTML = `
+                    <div style="color: #ef4444; font-size: 13px; padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border: 1px solid #ef4444;">
+                        Không thể tải lịch sử thi: ${err.message}. Vui lòng kiểm tra lại kết nối máy chủ.
+                    </div>`;
+            });
+    }
+
+    function updateStats(list) {
+        document.getElementById('stat-total-tests').innerText = list.length;
+        if (list.length === 0) return;
+
+        let maxScore = 0;
+        let sumScore = 0;
+        list.forEach(i => {
+            const s = parseFloat(i.score || 0);
+            if (s > maxScore) maxScore = s;
+            sumScore += s;
+        });
+
+        const avgScore = (sumScore / list.length).toFixed(1);
+        document.getElementById('stat-max-score').innerText = maxScore.toFixed(1);
+        document.getElementById('stat-avg-score').innerText = avgScore;
+
+        // Lấy Band từ user info
+        fetch('/api/auth/user/me')
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && data.current_band) {
+                    document.getElementById('stat-current-band').innerText = data.current_band;
+                }
+            })
+            .catch(() => {});
+    }
+</script>
+{% endblock %}

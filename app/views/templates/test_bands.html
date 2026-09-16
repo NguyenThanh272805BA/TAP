@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}NGÂN HÀNG ĐỀ THI THEO CẤP ĐỘ CEFR{% endblock %}
+
+{% block content %}
+<style>
+    /* Sub-Navigation Bar */
+    .test-sub-nav {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 8px;
+        border-radius: 14px;
+        border: 1px solid var(--glass-border);
+    }
+    .test-nav-btn {
+        flex: 1;
+        min-width: 180px;
+        padding: 12px 18px;
+        font-size: 13px;
+        font-family: var(--text-pixel);
+        border-radius: 10px;
+        text-align: center;
+        text-decoration: none;
+        color: #94a3b8;
+        background: transparent;
+        border: 1px solid transparent;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .test-nav-btn:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--glass-border);
+    }
+    .test-nav-btn.active {
+        color: #fff;
+        background: rgba(103, 232, 249, 0.2);
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 15px rgba(103, 232, 249, 0.3);
+    }
+
+    /* Band Selector Pill Buttons */
+    .band-tab-pill {
+        flex: 1;
+        min-width: 140px;
+        padding: 14px 16px;
+        background: rgba(0,0,0,0.5);
+        border: 2px solid var(--glass-border);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        text-align: center;
+        color: #cbd5e1;
+    }
+    .band-tab-pill:hover {
+        border-color: var(--neon-cyan);
+        transform: translateY(-2px);
+        color: #fff;
+    }
+    .band-tab-pill.active {
+        border-color: var(--neon-cyan);
+        background: rgba(103, 232, 249, 0.15);
+        color: #fff;
+        box-shadow: 0 0 18px rgba(103, 232, 249, 0.3);
+    }
+
+    /* Exam Card in Grid */
+    .band-grid-card {
+        background: rgba(15, 23, 42, 0.7);
+        border: 2px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 22px;
+        transition: all 0.25s ease;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .band-grid-card:hover {
+        border-color: var(--neon-cyan);
+        transform: translateY(-3px);
+        background: rgba(103, 232, 249, 0.08);
+        box-shadow: 0 8px 25px rgba(103, 232, 249, 0.2);
+    }
+
+    .filter-pill {
+        background: rgba(0,0,0,0.6);
+        border: 1px solid var(--glass-border);
+        color: #94a3b8;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-family: var(--text-pixel);
+        font-size: 11px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .filter-pill.active {
+        border-color: var(--neon-cyan);
+        color: #fff;
+        background: rgba(103, 232, 249, 0.2);
+        box-shadow: 0 0 10px rgba(103, 232, 249, 0.3);
+    }
+</style>
+
+<!-- MAIN WRAPPER: Flex Column prevents 3-column grid bug -->
+<div style="display: flex; flex-direction: column; gap: 25px; width: 100%; max-width: 1200px; margin: 0 auto;">
+
+    <!-- TOP HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid var(--glass-border); padding-bottom: 20px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 28px;">🎯</span>
+                <div>
+                    <div class="pixel-title" style="font-size: 22px; color: var(--neon-cyan); margin: 0; letter-spacing: 1px;">
+                        NGÂN HÀNG ĐỀ THI CHUẨN HÓA THEO CẤP ĐỘ CEFR
+                    </div>
+                    <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
+                        Luyện thi chuyên sâu theo từng Band mục tiêu — Đạt điểm >= 8.0 để thăng cấp Band trên hệ thống
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <a href="/test" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; font-size: 11px; padding: 10px 18px; text-decoration: none;">
+                ◀ VỀ TỔNG QUAN
+            </a>
+        </div>
+    </div>
+
+    <!-- SUB-NAVIGATION BAR -->
+    <div class="test-sub-nav">
+        <a href="/test" class="test-nav-btn">
+            <span>🏠</span> TỔNG QUAN KHẢO THÍ
+        </a>
+        <a href="/test/placement" class="test-nav-btn">
+            <span>🌟</span> ĐÁNH GIÁ ĐẦU VÀO
+        </a>
+        <a href="/test/bands" class="test-nav-btn active">
+            <span>🎯</span> ĐỀ THI THEO BAND
+        </a>
+        <a href="/test/history" class="test-nav-btn">
+            <span>📜</span> LỊCH SỬ & BẢNG ĐIỂM
+        </a>
+    </div>
+
+    <!-- KHỐI 1: BỘ CHỌN CẤP ĐỘ BAND TIÊU ĐIỂM -->
+    <div class="bento-card" style="padding: 28px;">
+        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 15px; margin-bottom: 15px;">
+            BƯỚC 1: CHỌN TRÌNH ĐỘ MỤC TIÊU BẠN MUỐN THỬ SỨC
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 25px;">
+            <div class="band-tab-pill" id="pill-A1" onclick="selectBand('A1')">
+                <span class="cefr-badge a1" style="font-size: 10px; margin-bottom: 6px; display: inline-block;">BAND A1</span>
+                <div style="font-size: 14px; font-weight: bold;">TÂN BINH</div>
+            </div>
+
+            <div class="band-tab-pill" id="pill-A2" onclick="selectBand('A2')">
+                <span class="cefr-badge a2" style="font-size: 10px; margin-bottom: 6px; display: inline-block;">BAND A2</span>
+                <div style="font-size: 14px; font-weight: bold;">SƠ CẤP</div>
+            </div>
+
+            <div class="band-tab-pill active" id="pill-B1" onclick="selectBand('B1')">
+                <span class="cefr-badge b1" style="font-size: 10px; margin-bottom: 6px; display: inline-block;">BAND B1</span>
+                <div style="font-size: 14px; font-weight: bold;">TRUNG CẤP</div>
+            </div>
+
+            <div class="band-tab-pill" id="pill-B2" onclick="selectBand('B2')">
+                <span class="cefr-badge b2" style="font-size: 10px; margin-bottom: 6px; display: inline-block;">BAND B2</span>
+                <div style="font-size: 14px; font-weight: bold;">TRUNG CAO</div>
+            </div>
+
+            <div class="band-tab-pill" id="pill-C1" onclick="selectBand('C1')">
+                <span class="cefr-badge c1" style="font-size: 10px; margin-bottom: 6px; display: inline-block;">BAND C1</span>
+                <div style="font-size: 14px; font-weight: bold;">CAO CẤP</div>
+            </div>
+        </div>
+
+        <!-- BẢNG CHI TIẾT CỦA BAND ĐANG CHỌN -->
+        <div id="band-detail-box" style="background: rgba(0,0,0,0.5); border: 2px solid var(--neon-cyan); border-radius: 14px; padding: 25px; margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <span id="detail-badge" class="cefr-badge b1">BAND B1</span>
+                    <strong id="detail-title" style="color: #fff; font-size: 18px; margin-left: 10px;">ĐỀ THI CHUẨN HÓA B1 - TRUNG CẤP</strong>
+                </div>
+                <div style="font-size: 12px; color: var(--neon-amber); font-family: var(--text-mono);">
+                    🎯 Mục tiêu nâng Band: Đạt >= 8.0/10.0
+                </div>
+            </div>
+
+            <div id="detail-desc" style="font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 18px;">
+                Tập trung đo lường: Thì Hiện tại hoàn thành, Mệnh đề quan hệ xác định, Câu bị động và Điều kiện loại 1. Từ vựng Oxford B1 giao tiếp văn phòng và đời sống học đường.
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px; border: 1px solid var(--glass-border);">
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">TRỌNG TÂM NGỮ PHÁP</div>
+                    <div id="detail-grammar" style="color: var(--neon-cyan); font-weight: bold; font-size: 13px; margin-top: 4px;">Present Perfect, Passive, Conditionals</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">TỪ VỰNG TIÊU CHUẨN</div>
+                    <div id="detail-vocab" style="color: var(--pixel-green); font-weight: bold; font-size: 13px; margin-top: 4px;">Oxford 3000 / B1 Core Vocab</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">PHẦN THƯỞNG CHIẾN TÍCH</div>
+                    <div style="color: var(--neon-amber); font-weight: bold; font-size: 13px; margin-top: 4px;">+20 Xu Vàng & Điểm Xếp Hạng</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BƯỚC 2: CHỌN ĐỘ DÀI & NÚT VÀO PHÒNG THI -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--glass-border); padding-top: 20px; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">ĐỘ DÀI ĐỀ:</span>
+                <button id="btn-len-5" class="filter-pill" onclick="selectLength(5)">⚡ 5 CÂU (7 PHÚT)</button>
+                <button id="btn-len-10" class="filter-pill active" onclick="selectLength(10)">📋 10 CÂU (15 PHÚT)</button>
+            </div>
+
+            <button id="btn-start-band-exam" class="pixel-btn pulse-neon" onclick="startBandExam()" style="background: var(--neon-cyan); color: #000; padding: 14px 30px; font-size: 13px; font-weight: bold;">
+                VÀO PHÒNG THI BAND B1 ▶
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let activeBand = 'B1';
+    let chosenLength = 10;
+
+    const bandInfoMap = {
+        'A1': {
+            title: 'ĐỀ THI CHUẨN HÓA A1 - TÂN BINH',
+            badgeClass: 'a1',
+            desc: 'Cấu trúc câu S-V-O cơ bản, Hiện tại đơn, to be, đại từ nhân xưng và từ vựng sinh hoạt thường nhật.',
+            grammar: 'Present Simple, Subject-Verb-Object, Pronouns',
+            vocab: 'Oxford 3000 / A1 Daily Life Words'
+        },
+        'A2': {
+            title: 'ĐỀ THI CHUẨN HÓA A2 - SƠ CẤP',
+            badgeClass: 'a2',
+            desc: 'Quá khứ đơn, Be going to, So sánh hơn và So sánh hơn nhất, Động từ khuyết thiếu cơ bản (can, should).',
+            grammar: 'Past Simple, Comparative, Be going to',
+            vocab: 'Oxford 3000 / A2 Travel & Hobby'
+        },
+        'B1': {
+            title: 'ĐỀ THI CHUẨN HÓA B1 - TRUNG CẤP',
+            badgeClass: 'b1',
+            desc: 'Hiện tại hoàn thành, Câu bị động, Câu điều kiện loại 1 và Mệnh đề quan hệ xác định (who, which, that).',
+            grammar: 'Present Perfect, Passive Voice, Relative Clauses',
+            vocab: 'Oxford 3000 / B1 Academic & Work'
+        },
+        'B2': {
+            title: 'ĐỀ THI CHUẨN HÓA B2 - TRUNG CAO CẤP',
+            badgeClass: 'b2',
+            desc: 'Điều kiện loại 2, Quá khứ hoàn thành, Câu gián tiếp tường thuật và Động từ khuyết thiếu trong quá khứ.',
+            grammar: 'Second Conditional, Past Perfect, Indirect Speech',
+            vocab: 'Oxford 5000 / B2 Professional & Media'
+        },
+        'C1': {
+            title: 'ĐỀ THI CHUẨN HÓA C1 - CAO CẤP',
+            badgeClass: 'c1',
+            desc: 'Đảo ngữ nâng cao, Câu chẻ nhấn mạnh (Cleft sentences), Cấu trúc giả định thức và chuẩn văn phong học thuật IELTS 7.5+.',
+            grammar: 'Inversion, Cleft Sentences, Subjunctive Mood',
+            vocab: 'Oxford 5000 / C1 Scholarly & Abstract'
+        }
+    };
+
+    function selectBand(band) {
+        activeBand = band;
+        document.querySelectorAll('.band-tab-pill').forEach(p => p.classList.remove('active'));
+        document.getElementById(`pill-${band}`).classList.add('active');
+
+        const info = bandInfoMap[band];
+        if (info) {
+            document.getElementById('detail-badge').className = `cefr-badge ${info.badgeClass}`;
+            document.getElementById('detail-badge').innerText = `BAND ${band}`;
+            document.getElementById('detail-title').innerText = info.title;
+            document.getElementById('detail-desc').innerText = info.desc;
+            document.getElementById('detail-grammar').innerText = info.grammar;
+            document.getElementById('detail-vocab').innerText = info.vocab;
+            document.getElementById('btn-start-band-exam').innerText = `VÀO PHÒNG THI BAND ${band} ▶`;
+        }
+    }
+
+    function selectLength(len) {
+        chosenLength = len;
+        document.getElementById('btn-len-5').classList.remove('active');
+        document.getElementById('btn-len-10').classList.remove('active');
+        document.getElementById(`btn-len-${len}`).classList.add('active');
+    }
+
+    function startBandExam() {
+        const btn = document.getElementById('btn-start-band-exam');
+        btn.disabled = true;
+        btn.innerText = "ĐANG CHUẨN BỊ PHÒNG THI...";
+
+        // Chuyển hướng sang giao diện phòng thi độc lập /test/room
+        window.location.href = `/test/room?band=${activeBand}&num=${chosenLength}`;
+    }
+</script>
+{% endblock %}

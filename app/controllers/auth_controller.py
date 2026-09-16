@@ -79,10 +79,14 @@ def get_current_user_profile():
         return jsonify({"error": "Chưa đăng nhập hệ thống!"}), 401
 
     user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Không tìm thấy người dùng!"}), 404
+
     today = date.today()
     is_checked_in = (user.last_checkin == today)
 
     return jsonify({
+        "id": user.id,
         "username": user.username,
         "level": user.current_level,
         "streak": user.streak_count,
@@ -95,6 +99,32 @@ def get_current_user_profile():
         "target_band": getattr(user, 'target_band', 'B2'),
         "current_band": getattr(user, 'current_band', 'A1')
     }), 200
+
+
+@auth_bp.route('/user/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Không tìm thấy người dùng!"}), 404
+
+    today = date.today()
+    is_checked_in = (user.last_checkin == today)
+
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "level": user.current_level,
+        "streak": user.streak_count,
+        "coins": user.coins,
+        "is_checked_in": is_checked_in,
+        "role": user.role,
+        "avatar": getattr(user, 'avatar', 'default_avatar.png'),
+        "equipped_frame": getattr(user, 'equipped_frame', 'frame-default'),
+        "equipped_title": getattr(user, 'equipped_title', 'Tân Binh Ngơ Ngác'),
+        "target_band": getattr(user, 'target_band', 'B2'),
+        "current_band": getattr(user, 'current_band', 'A1')
+    }), 200
+
 
 
 # ==========================================

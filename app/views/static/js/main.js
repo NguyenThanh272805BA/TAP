@@ -51,6 +51,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const currentPath = window.location.pathname;
 
+    // Cập nhật Active Link trên Sidebar Navigation
+    document.querySelectorAll('#main-sidebar-nav .nav-item').forEach(item => {
+        const href = item.getAttribute('href');
+        if (href) {
+            if (currentPath === href || (href !== '/' && currentPath.startsWith(href))) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        }
+    });
+
     if (currentPath !== '/auth' && currentPath !== '/') {
         fetch('/api/auth/user/me')
             .then(res => {
@@ -119,13 +131,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-function loadDailyQuests() {
-    fetch('/api/game/quests/today')
-    .then(res => res.json())
-    .then(data => {
-        const container = document.getElementById("daily-quests-container");
-        if(!container) return;
 
+function loadDailyQuests() {
+    const container = document.getElementById("daily-quests-container");
+    if(!container) return;
+
+    fetch('/api/game/quests/today')
+    .then(res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        return res.json();
+    })
+    .then(data => {
         let html = '';
         if (!data.quests || data.quests.length === 0) {
             container.innerHTML = '<div style="color: var(--pixel-green); font-size: 14px;">Bạn đã hoàn thành mọi nhiệm vụ hôm nay!</div>';
@@ -152,14 +168,20 @@ function loadDailyQuests() {
         });
         container.innerHTML = html;
     })
-    .catch(err => console.error("Lỗi tải Daily Quests:", err));
+    .catch(err => {
+        console.error("Lỗi tải Daily Quests:", err);
+        container.innerHTML = '<div style="color: #94a3b8; font-size: 13px;">Chưa thể đồng bộ nhiệm vụ lúc này.</div>';
+    });
 }
 
 function loadDashboardLeaderboard() {
     const lbContainer = document.getElementById("dashboard-leaderboard");
     if (!lbContainer) return;
     fetch('/api/game/gacha/leaderboard')
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        return res.json();
+    })
     .then(data => {
         if (!data.leaderboard || data.leaderboard.length === 0) {
             lbContainer.innerHTML = '<span style="color: #94a3b8;">Chưa có cao thủ nào.</span>';
@@ -189,8 +211,13 @@ function loadDashboardLeaderboard() {
             </div>`;
         });
         lbContainer.innerHTML = html;
+    })
+    .catch(err => {
+        console.error("Lỗi tải Leaderboard:", err);
+        lbContainer.innerHTML = '<span style="color: #94a3b8; font-size: 12px;">Đang bảo trì bảng xếp hạng...</span>';
     });
 }
+
 
 function renderStreakUI(streakCount) {
     const activeDays = streakCount % 7 === 0 && streakCount > 0 ? 7 : streakCount % 7;
@@ -407,7 +434,7 @@ function renderStructuredFeedback(rawText) {
     return clean.replace(/\n/g, '<br>');
 }
 
-function submitChallenge() {
+function submitChallenge(modeParam) {
     const userInputField = document.getElementById("userInput");
     const aiResponseBox = document.getElementById("aiResponseBox");
     const aiFeedbackDiv = document.getElementById("aiFeedback");
@@ -420,12 +447,18 @@ function submitChallenge() {
         return;
     }
 
-    userInputField.disabled = true; // Khóa an toàn
+    const currentMode = modeParam || activeFeature || 'grammar';
+
+    userInputField.disabled = true; // Khóa an toàn chống spam click
     aiResponseBox.style.display = "block";
     aiFeedbackDiv.innerHTML = `
+        <div id="aiFeedbackLoading" class="pulse-neon" style="color: var(--neon-cyan); font-size: 14px; margin-bottom: 10px;">
+            <span class="typing-effect">🤖 Master G đang chấm điểm & phân tích câu ngữ pháp...</span>
+        </div>
         <div id="aiFeedbackScore" style="display:none; font-family: var(--text-pixel); margin-bottom: 10px;"></div>
         <div id="aiFeedbackText" style="line-height: 1.6; color: inherit; font-family: var(--text-main); font-size:16px;"></div>
     `;
+    const loadingBox = document.getElementById('aiFeedbackLoading');
     const scoreBox = document.getElementById('aiFeedbackScore');
     const textBox = document.getElementById('aiFeedbackText');
     let accumulatedText = "";
@@ -433,9 +466,14 @@ function submitChallenge() {
     fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textValue, mode: activeFeature })
+        body: JSON.stringify({ text: textValue, mode: currentMode })
     })
     .then(async response => {
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || `Lỗi phản hồi từ máy chủ (${response.status})`);
+        }
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = ""; // BỘ ĐỆM
@@ -452,6 +490,10 @@ function submitChallenge() {
                 if (part.startsWith('data: ')) {
                     try {
                         const data = JSON.parse(part.substring(6));
+
+                        if (loadingBox && loadingBox.style.display !== 'none') {
+                            loadingBox.style.display = 'none';
+                        }
 
                         if (data.type === 'meta') {
                             scoreBox.innerHTML = `RATING_SCORE: ${data.score}/10`;
@@ -471,22 +513,29 @@ function submitChallenge() {
                             triggerFireworksEffect();
                             alert(`ĐẲNG CẤP MỚI: BẠN VỪA THĂNG CẤP LÊN '${data.rank}'!`);
                         }
+                        else if (data.type === 'error') {
+                            textBox.innerHTML = `<span style="color: var(--neon-pink);">[ERROR] ${data.message}</span>`;
+                        }
                     } catch (e) {
                         console.error("Parse Error:", e);
                     }
                 }
             }
         }
+        if (loadingBox) loadingBox.style.display = 'none';
         userInputField.disabled = false;
         userInputField.value = "";
         userInputField.focus();
     })
     .catch(error => {
         triggerCardShake();
-        aiFeedbackDiv.innerHTML = "<span style='color: var(--neon-pink);'>ERROR: Mất kết nối tới Server.</span>";
+        if (loadingBox) loadingBox.style.display = 'none';
+        aiFeedbackDiv.innerHTML = `<span style='color: var(--neon-pink); font-family: var(--text-mono);'>[LỖI]: ${error.message || 'Mất kết nối tới Server.'}</span>`;
         userInputField.disabled = false;
+        userInputField.focus();
     });
 }
+
 
 function loadVocabQuests() {
     const container = document.querySelector("#vocab-card .pixel-text");
@@ -1024,9 +1073,13 @@ function submitQuickQuest() {
     inputEl.disabled = true;
     feedbackBox.style.display = "block";
     feedbackBox.innerHTML = `
+        <div id="quickQuestLoading" class="pulse-neon" style="color: var(--neon-purple); font-size: 13px; margin-bottom: 5px;">
+            <span class="typing-effect">🤖 Master G đang chấm câu nhiệm vụ...</span>
+        </div>
         <div id="quickQuestScore" style="display:none; font-family: var(--text-pixel); margin-bottom: 5px;"></div>
         <div id="quickQuestText" style="color: inherit; line-height:1.5;"></div>
     `;
+    const loadingDiv = document.getElementById('quickQuestLoading');
     const scoreDiv = document.getElementById('quickQuestScore');
     const textDiv = document.getElementById('quickQuestText');
     let accumulatedText = "";
@@ -1037,6 +1090,11 @@ function submitQuickQuest() {
         body: JSON.stringify({ text: textValue, mode: 'free' })
     })
     .then(async res => {
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `Lỗi máy chủ (${res.status})`);
+        }
+
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = ""; // BỘ ĐỆM
@@ -1054,6 +1112,10 @@ function submitQuickQuest() {
                     try {
                         const data = JSON.parse(part.substring(6));
 
+                        if (loadingDiv && loadingDiv.style.display !== 'none') {
+                            loadingDiv.style.display = 'none';
+                        }
+
                         if (data.type === 'meta') {
                             scoreDiv.style.display = 'block';
                             scoreDiv.style.color = data.score >= 5.0 ? 'var(--pixel-green)' : 'var(--neon-pink)';
@@ -1070,15 +1132,18 @@ function submitQuickQuest() {
                 }
             }
         }
+        if (loadingDiv) loadingDiv.style.display = 'none';
         inputEl.disabled = false;
         inputEl.value = "";
         loadDailyQuests();
     })
     .catch(err => {
-        feedbackBox.innerHTML = "<span style='color: var(--neon-pink);'>[ERROR] Sự cố mạng!</span>";
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        feedbackBox.innerHTML = `<span style='color: var(--neon-pink); font-family: var(--text-mono); font-size:12px;'>[LỖI]: ${err.message || 'Sự cố kết nối máy chủ!'}</span>`;
         inputEl.disabled = false;
     });
 }
+
 
 function showMasterGTutorial() {
     const overlay = document.createElement("div");
