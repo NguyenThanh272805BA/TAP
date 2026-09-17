@@ -24,6 +24,13 @@ wandb/
 model_cache/
 *.log
 
+# Documentation & Academic Reports (Blocked from Git)
+docs/
+
+# Offline Scripts, Testing & MLOps Tools (Blocked from Git)
+scripts/
+
 # System & OS
 Thumbs.db
 .DS_Store
+scratch/

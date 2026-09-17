@@ -552,7 +552,13 @@
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <strong style="color: var(--neon-cyan); font-size: 17px;">${w.word}</strong>
-                        <span class="cefr-badge ${cefrClass}">${w.cefr_level || 'A1'}</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <button class="btn-speak-audio" data-speak="${w.word.replace(/"/g, '&quot;')}" title="Nghe phát âm">
+                                <span class="speaker-icon">🔊</span>
+                                <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                            </button>
+                            <span class="cefr-badge ${cefrClass}">${w.cefr_level || 'A1'}</span>
+                        </div>
                     </div>
                     <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">${w.meaning}</div>
                 </div>
@@ -590,7 +596,13 @@
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <strong style="color: var(--neon-cyan); font-size: 16px;">${w.word}</strong>
-                        <span class="cefr-badge ${cefrClass}">${w.cefr_level || 'A1'}</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <button class="btn-speak-audio" data-speak="${w.word.replace(/"/g, '&quot;')}" title="Nghe phát âm">
+                                <span class="speaker-icon">🔊</span>
+                                <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                            </button>
+                            <span class="cefr-badge ${cefrClass}">${w.cefr_level || 'A1'}</span>
+                        </div>
                     </div>
                     <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px;">${w.meaning}</div>
                 </div>
@@ -639,7 +651,13 @@
                     const scoreText = (r.score > 0) ? `Độ phù hợp: ${(r.score * 100).toFixed(0)}%` : `Nên học từ này`;
                     rHtml += `
                         <div style="background: rgba(0,0,0,0.5); padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--neon-amber); display: flex; justify-content: space-between; align-items: center;">
-                            <strong style="color:#fff; font-size: 14px;">${r.word}</strong>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <strong style="color:#fff; font-size: 14px;">${r.word}</strong>
+                                <button class="btn-speak-audio" data-speak="${r.word.replace(/"/g, '&quot;')}" title="Nghe phát âm" style="padding: 2px 6px; font-size: 10px;">
+                                    <span class="speaker-icon">🔊</span>
+                                    <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                                </button>
+                            </div>
                             <span style="font-size:10px; color:var(--neon-amber); background: rgba(245, 158, 11, 0.1); padding: 3px 6px; border-radius: 4px;">${scoreText}</span>
                         </div>`;
                 });
@@ -751,8 +769,12 @@
                     <strong style="color: #fff; font-family: var(--text-mono); font-size: 16px; margin-bottom: 6px; display: block;">${g.structure}</strong>
                     <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">${g.explanation}</div>
 
-                    <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; font-family: var(--text-mono); font-size: 12px; color: #94a3b8; margin-bottom: 15px;">
-                        <span style="color: var(--neon-cyan);">VD:</span> ${g.example}
+                    <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; font-family: var(--text-mono); font-size: 12px; color: #94a3b8; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                        <div><span style="color: var(--neon-cyan);">VD:</span> ${g.example}</div>
+                        <button class="btn-speak-audio" data-speak="${g.example.replace(/"/g, '&quot;')}" title="Nghe câu ví dụ" style="flex-shrink: 0; padding: 3px 7px;">
+                            <span class="speaker-icon">🔊</span>
+                            <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                        </button>
                     </div>
                 </div>
 

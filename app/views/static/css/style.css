@@ -1168,4 +1168,107 @@ body.clean-mode .pixel-btn:hover {
     opacity: 0.5;
     filter: grayscale(0.8);
     cursor: not-allowed;
-}
+}
+
+/* =========================================================
+   [ AUDIO PRONUNCIATION ENGINE (PHÁT ÂM THANH TỪ VỰNG & ĐOẠN VĂN) ]
+   ========================================================= */
+.btn-speak-audio {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(103, 232, 249, 0.12);
+    border: 1px solid rgba(103, 232, 249, 0.4);
+    color: var(--neon-cyan);
+    border-radius: 6px;
+    padding: 5px 9px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--text-mono);
+    font-weight: 600;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    vertical-align: middle;
+    line-height: 1;
+}
+
+.btn-speak-audio:hover {
+    background: rgba(103, 232, 249, 0.28);
+    border-color: var(--neon-cyan);
+    color: #fff;
+    box-shadow: 0 0 14px rgba(103, 232, 249, 0.45);
+    transform: translateY(-1px);
+}
+
+.btn-speak-audio:active {
+    transform: translateY(1px);
+}
+
+.btn-speak-audio.audio-playing {
+    background: rgba(244, 114, 182, 0.25) !important;
+    border-color: var(--neon-pink) !important;
+    color: var(--neon-pink) !important;
+    box-shadow: 0 0 16px rgba(244, 114, 182, 0.6) !important;
+    animation: audioButtonPulse 0.9s infinite alternate ease-in-out;
+}
+
+@keyframes audioButtonPulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.05); }
+}
+
+/* Hiệu ứng 3 cột sóng âm nhảy nhót (Waveform Bars) */
+.btn-speak-audio .wave-container {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    height: 12px;
+}
+
+.btn-speak-audio.audio-playing .wave-container {
+    display: inline-flex;
+}
+
+.btn-speak-audio.audio-playing .speaker-icon {
+    display: none;
+}
+
+.btn-speak-audio .wave-bar {
+    width: 2.5px;
+    height: 10px;
+    background: currentColor;
+    border-radius: 2px;
+}
+
+.btn-speak-audio.audio-playing .wave-bar:nth-child(1) {
+    animation: waveJump 0.5s infinite ease-in-out alternate;
+}
+.btn-speak-audio.audio-playing .wave-bar:nth-child(2) {
+    animation: waveJump 0.7s infinite ease-in-out alternate 0.15s;
+}
+.btn-speak-audio.audio-playing .wave-bar:nth-child(3) {
+    animation: waveJump 0.6s infinite ease-in-out alternate 0.3s;
+}
+
+@keyframes waveJump {
+    0% { height: 3px; }
+    100% { height: 12px; }
+}
+
+/* Nút chỉnh tốc độ đọc (Speed Badge) */
+.audio-speed-badge {
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 2px 5px;
+    margin-left: 4px;
+    color: var(--neon-amber);
+    border: 1px solid rgba(253, 224, 71, 0.3);
+    cursor: pointer;
+    transition: 0.2s;
+}
+.audio-speed-badge:hover {
+    background: rgba(253, 224, 71, 0.25);
+}
+

@@ -782,12 +782,18 @@ function openStoryModal(storyId) {
     const title = document.getElementById('modal-story-title');
     const enBox = document.getElementById('modal-story-en');
     const vnBox = document.getElementById('modal-story-vn');
+    const speakBtn = document.getElementById('btn-speak-modal-story');
 
     const statusColor = story.status === 'Survived' ? 'var(--pixel-green)' : 'var(--neon-pink)';
 
     title.innerHTML = `[ <span style="color:${statusColor}">${story.status.toUpperCase()}</span> ] ${story.topic.toUpperCase()}`;
     enBox.innerHTML = story.summary_en ? story.summary_en.replace(/\n/g, '<br>') : "<span style='color: #94a3b8;'>Không có dữ liệu văn bản.</span>";
     vnBox.innerHTML = story.summary_vn ? story.summary_vn.replace(/\n/g, '<br>') : "<span style='color: #94a3b8;'>Không có dữ liệu văn bản.</span>";
+
+    if (speakBtn) {
+        speakBtn.setAttribute('data-speak', story.summary_en || '');
+    }
+
     modal.style.display = 'flex';
 }
 
@@ -876,7 +882,13 @@ function appendStoryScene(data, isInit = false) {
 
     terminal.innerHTML += `
         <div style="background: rgba(30, 41, 75, 0.7); border-left: 3px solid var(--neon-purple); padding: 16px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-            <div style="color: inherit; font-family: var(--text-main); font-size: 16px; margin-bottom: 10px; line-height: 1.6; font-weight:600;">${data.scene_en}</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px;">
+                <div style="color: inherit; font-family: var(--text-main); font-size: 16px; line-height: 1.6; font-weight:600;">${data.scene_en}</div>
+                <button class="btn-speak-audio" data-speak="${data.scene_en.replace(/"/g, '&quot;')}" title="Nghe đọc đoạn văn này" style="flex-shrink: 0; padding: 4px 8px;">
+                    <span class="speaker-icon">🔊</span>
+                    <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                </button>
+            </div>
             <div style="color: #94a3b8; font-family: var(--text-main); font-size: 14px; font-style: italic; line-height: 1.5;">${data.scene_vn}</div>
         </div>
     `;
@@ -1418,3 +1430,127 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+/* =========================================================================
+   [ AUDIO PRONUNCIATION ENGINE (WEB SPEECH API) ]
+   Hỗ trợ phát âm từ vựng, câu ví dụ và đoạn văn với SpeechSynthesis.
+   ========================================================================= */
+const TAPAudio = {
+    synth: ('speechSynthesis' in window) ? window.speechSynthesis : null,
+    currentUtterance: null,
+    currentButton: null,
+    rate: 1.0,
+    voice: null,
+
+    init() {
+        if (!this.synth) {
+            console.warn("[TAP Audio] Web Speech API không được hỗ trợ trên trình duyệt này.");
+            return;
+        }
+
+        const pickVoice = () => {
+            const voices = this.synth.getVoices();
+            if (!voices || voices.length === 0) return;
+            const preferredVoices = ['Google US English', 'Samantha', 'Microsoft David', 'Microsoft Zira', 'Daniel', 'Karen'];
+            let foundVoice = null;
+            for (let name of preferredVoices) {
+                foundVoice = voices.find(v => v.name && v.name.includes(name));
+                if (foundVoice) break;
+            }
+            if (!foundVoice) {
+                foundVoice = voices.find(v => v.lang && (v.lang.startsWith('en-US') || v.lang.startsWith('en-GB') || v.lang.startsWith('en')));
+            }
+            this.voice = foundVoice || voices[0];
+        };
+
+        pickVoice();
+        if (this.synth.onvoiceschanged !== undefined) {
+            this.synth.onvoiceschanged = pickVoice;
+        }
+
+        // Global Event Delegation cho tất cả các nút có class .btn-speak-audio
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-speak-audio');
+            if (btn) {
+                e.stopPropagation();
+                const text = btn.getAttribute('data-speak') || btn.innerText;
+                if (btn.classList.contains('audio-playing')) {
+                    this.stop();
+                } else {
+                    this.speak(text, btn);
+                }
+            }
+        });
+    },
+
+    speak(text, buttonEl = null, customRate = null) {
+        if (!this.synth) {
+            alert("Trình duyệt không hỗ trợ Web Speech API!");
+            return;
+        }
+
+        this.stop();
+
+        if (!text || !text.trim()) return;
+
+        // Xóa các thẻ HTML nếu có trong chuỗi
+        const cleanText = text.replace(/<[^>]*>?/gm, '').trim();
+        if (!cleanText) return;
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = 'en-US';
+        utterance.rate = customRate || this.rate;
+        utterance.pitch = 1.0;
+        if (this.voice) {
+            utterance.voice = this.voice;
+        }
+
+        if (buttonEl) {
+            this.currentButton = buttonEl;
+            buttonEl.classList.add('audio-playing');
+        }
+
+        utterance.onend = () => {
+            this.resetActiveState();
+        };
+
+        utterance.onerror = (e) => {
+            console.error("[TAP Audio Error]", e);
+            this.resetActiveState();
+        };
+
+        this.currentUtterance = utterance;
+        this.synth.speak(utterance);
+    },
+
+    stop() {
+        if (this.synth) {
+            this.synth.cancel();
+        }
+        this.resetActiveState();
+    },
+
+    resetActiveState() {
+        if (this.currentButton) {
+            this.currentButton.classList.remove('audio-playing');
+            this.currentButton = null;
+        }
+        document.querySelectorAll('.btn-speak-audio.audio-playing').forEach(b => b.classList.remove('audio-playing'));
+    },
+
+    toggleSpeed(badgeEl = null) {
+        this.rate = (this.rate === 1.0) ? 0.75 : 1.0;
+        const text = this.rate === 1.0 ? '1.0x' : '0.75x';
+        if (badgeEl) {
+            badgeEl.innerText = text;
+        }
+        return this.rate;
+    }
+};
+
+// Tự động khởi chạy
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => TAPAudio.init());
+} else {
+    TAPAudio.init();
+}

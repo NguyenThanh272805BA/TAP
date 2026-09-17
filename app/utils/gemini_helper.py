@@ -66,7 +66,7 @@ class GeminiKeyManager:
 key_manager = GeminiKeyManager()
 
 
-def call_gemini_with_retry(prompt, system_instruction=None, model='gemini-2.5-flash', enforce_json=False):
+def call_gemini_with_retry(prompt, system_instruction=None, model='gemini-3.6-flash', enforce_json=False):
     """
     Hàm gọi AI tích hợp thuật toán luân chuyển Key (Đồng bộ).
     Hỗ trợ System Instruction để chống Prompt Injection và Regex bóc tách JSON chống Hallucination.
@@ -120,7 +120,7 @@ def call_gemini_with_retry(prompt, system_instruction=None, model='gemini-2.5-fl
     raise Exception("Mạng lưới AI sụp đổ hoàn toàn do cạn kiệt tài nguyên!")
 
 
-def stream_gemini_response(prompt, system_instruction=None, model='gemini-2.5-flash'):
+def stream_gemini_response(prompt, system_instruction=None, model='gemini-3.6-flash'):
     """
     [ PHASE 2 ]: Generator Streaming trả về từng Chunk dữ liệu thời gian thực (hỗ trợ Key Rotation).
     """

@@ -87,7 +87,16 @@
             <div class="pixel-title" id="modal-story-title" style="color: var(--neon-cyan); margin-bottom: 25px; font-size: 18px; padding-right: 60px;">[ BÁO CÁO SINH TỒN ]</div>
 
             <div style="margin-bottom: 20px;">
-                <div style="color: #94a3b8; font-size: 12px; margin-bottom: 8px; font-family: var(--text-pixel);">> BẢN GHI TIẾNG ANH:</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="color: #94a3b8; font-size: 12px; font-family: var(--text-pixel);">> BẢN GHI TIẾNG ANH:</div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <button id="btn-speak-modal-story" class="btn-speak-audio" title="Nghe đọc toàn bộ bản ghi">
+                            <span class="speaker-icon">🔊 PHÁT ÂM TOÀN BỘ</span>
+                            <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                        </button>
+                        <span class="audio-speed-badge" onclick="TAPAudio.toggleSpeed(this)" title="Chỉnh tốc độ đọc">1.0x</span>
+                    </div>
+                </div>
                 <div id="modal-story-en" style="color: #fff; font-size: 15px; line-height: 1.6; background: rgba(0,0,0,0.5); padding: 18px; border-radius: 8px; border-left: 3px solid var(--neon-purple); font-family: var(--text-main);"></div>
             </div>
 

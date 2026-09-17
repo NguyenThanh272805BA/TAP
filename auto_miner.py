@@ -31,7 +31,7 @@ def bulk_mine_vocab(amount=5):
     try:
         # Gọi API bằng cú pháp Client mới
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.6-flash',
             contents=prompt
         )
         clean_json = response.text.strip().replace('```json', '').replace('```', '')
@@ -72,7 +72,7 @@ def bulk_mine_grammar(amount=3):
     try:
         # Gọi API bằng cú pháp Client mới
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.6-flash',
             contents=prompt
         )
         clean_json = response.text.strip().replace('```json', '').replace('```', '')
