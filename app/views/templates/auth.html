@@ -1,132 +1,234 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Fluent - Portal Authentication</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Global Fluent — Authentication Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        .tab-btn {
-            flex: 1;
-            background: rgba(0,0,0,0.4);
-            border: 2px solid var(--glass-border);
-            color: #94a3b8;
-            padding: 12px;
-            cursor: pointer;
-            font-family: var(--text-pixel);
-            font-size: 10px;
-            transition: all 0.3s;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --cyan:   #06b6d4; --pink: #ec4899; --purple: #a855f7;
+            --green:  #22d3a0; --amber: #f59e0b; --dark: #050b14;
+            --card: rgba(8,18,36,0.78); --border: rgba(6,182,212,0.25);
+            --text: #e2e8f0; --muted: #64748b;
         }
-        .tab-btn.active {
-            background: rgba(6, 182, 212, 0.2);
-            border-color: var(--neon-cyan);
-            color: var(--neon-cyan);
-        }
+        body { font-family:'Outfit',sans-serif; background:var(--dark); min-height:100vh;
+               display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+        .bg-orb { position:fixed; border-radius:50%; filter:blur(80px); opacity:.18;
+                  animation:float 8s ease-in-out infinite; pointer-events:none; }
+        .bg-orb.o1{width:500px;height:500px;background:var(--cyan);top:-15%;left:-10%;animation-delay:0s;}
+        .bg-orb.o2{width:400px;height:400px;background:var(--purple);bottom:-10%;right:-5%;animation-delay:3s;}
+        .bg-orb.o3{width:300px;height:300px;background:var(--pink);top:50%;left:40%;animation-delay:5s;}
+        @keyframes float{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-25px) scale(1.05);}}
+        .grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;
+            background-image:linear-gradient(rgba(6,182,212,.04) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(6,182,212,.04) 1px,transparent 1px);
+            background-size:50px 50px;}
+        #particles-canvas{position:fixed;inset:0;pointer-events:none;z-index:1;}
+        .auth-card{position:relative;z-index:10;width:100%;max-width:440px;
+            background:var(--card);border:1px solid var(--border);border-radius:24px;
+            padding:40px 42px;backdrop-filter:blur(24px);
+            box-shadow:0 0 0 1px rgba(6,182,212,.08),0 32px 64px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);
+            animation:slideUp .5s cubic-bezier(.34,1.56,.64,1) both;}
+        @keyframes slideUp{from{opacity:0;transform:translateY(40px) scale(.96);}to{opacity:1;transform:none;}}
+        .logo-wrap{text-align:center;margin-bottom:28px;}
+        .logo-icon{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;
+            background:linear-gradient(135deg,rgba(6,182,212,.2),rgba(168,85,247,.2));
+            border:1px solid rgba(6,182,212,.35);border-radius:18px;margin-bottom:12px;
+            font-size:28px;box-shadow:0 0 24px rgba(6,182,212,.25);animation:pulseLogo 3s ease-in-out infinite;}
+        @keyframes pulseLogo{0%,100%{box-shadow:0 0 20px rgba(6,182,212,.25);}50%{box-shadow:0 0 36px rgba(6,182,212,.45);}}
+        .logo-name{font-size:1.55rem;font-weight:800;letter-spacing:.04em;
+            background:linear-gradient(90deg,var(--cyan),var(--purple));
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .logo-tagline{font-size:.76rem;color:var(--muted);margin-top:4px;
+            font-family:'JetBrains Mono',monospace;letter-spacing:.08em;}
+        .tab-bar{display:flex;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);
+            border-radius:12px;padding:4px;margin-bottom:26px;gap:4px;}
+        .tab-btn{flex:1;padding:10px;border:none;border-radius:9px;
+            font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;
+            letter-spacing:.06em;cursor:pointer;transition:all .25s;color:var(--muted);background:transparent;}
+        .tab-btn.active{background:linear-gradient(135deg,rgba(6,182,212,.22),rgba(168,85,247,.18));
+            color:var(--cyan);border:1px solid rgba(6,182,212,.3);box-shadow:0 0 12px rgba(6,182,212,.15);}
+        .tab-btn:not(.active):hover{color:var(--text);background:rgba(255,255,255,.04);}
+        .form-group{margin-bottom:18px;}
+        .form-label{display:block;font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:600;
+            color:var(--muted);letter-spacing:.1em;margin-bottom:7px;text-transform:uppercase;}
+        .input-wrap{position:relative;}
+        .auth-input{width:100%;padding:13px 16px;background:rgba(0,0,0,.4);
+            border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--text);
+            font-family:'Outfit',sans-serif;font-size:.95rem;outline:none;transition:all .2s;}
+        .auth-input::placeholder{color:var(--muted);}
+        .auth-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(6,182,212,.12);background:rgba(6,182,212,.05);}
+        .auth-input.pass-field{padding-right:46px;}
+        .toggle-pass{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+            background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.1rem;
+            padding:4px;transition:color .2s;display:flex;align-items:center;}
+        .toggle-pass:hover{color:var(--cyan);}
+        .btn-submit{width:100%;padding:14px;border:none;border-radius:12px;
+            font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:700;letter-spacing:.08em;
+            cursor:pointer;position:relative;overflow:hidden;transition:all .25s;margin-top:6px;}
+        .btn-submit.mode-login{background:linear-gradient(135deg,#06b6d4,#0891b2);color:#000;
+            box-shadow:0 4px 20px rgba(6,182,212,.35);}
+        .btn-submit.mode-register{background:linear-gradient(135deg,#22d3a0,#10b981);color:#000;
+            box-shadow:0 4px 20px rgba(34,211,160,.35);}
+        .btn-submit:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(6,182,212,.45);}
+        .btn-submit:active:not(:disabled){transform:translateY(0);}
+        .btn-submit:disabled{opacity:.65;cursor:not-allowed;transform:none;}
+        .btn-text{transition:opacity .2s;}
+        .btn-loader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+        .btn-submit.loading .btn-text{opacity:0;}
+        .btn-submit.loading .btn-loader{opacity:1;}
+        .spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;
+            border-radius:50%;animation:spin .7s linear infinite;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        .auth-msg{margin-top:16px;padding:11px 15px;border-radius:9px;font-size:.87rem;display:none;animation:fadeIn .25s;}
+        .auth-msg.error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+        .auth-msg.success{background:rgba(34,211,160,.12);border:1px solid rgba(34,211,160,.3);color:#34d399;}
+        .auth-msg.info{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#fbbf24;}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+        .divider{text-align:center;font-size:.72rem;color:var(--muted);
+            font-family:'JetBrains Mono',monospace;margin:20px 0 0;
+            display:flex;align-items:center;gap:12px;}
+        .divider::before,.divider::after{content:'';flex:1;height:1px;
+            background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);}
+        .auth-footer{text-align:center;margin-top:14px;font-size:.78rem;color:var(--muted);}
+        .auth-footer span{color:var(--cyan);cursor:pointer;}
+        .auth-footer span:hover{text-decoration:underline;}
     </style>
 </head>
 <body>
+    <div class="grid-bg"></div>
+    <div class="bg-orb o1"></div>
+    <div class="bg-orb o2"></div>
+    <div class="bg-orb o3"></div>
+    <canvas id="particles-canvas"></canvas>
 
-    <div class="bento-container" style="margin-top: 10vh; max-width: 450px;">
-        <div class="bento-card" style="grid-column: span 4; padding: 35px;">
-            <div class="pixel-title" style="font-size: 18px; color: var(--neon-pink); text-align: center; margin-bottom: 25px;">
-                GLOBAL FLUENT
+    <div class="auth-card">
+        <div class="logo-wrap">
+            <div class="logo-icon">🌐</div>
+            <div class="logo-name">GLOBAL FLUENT</div>
+            <div class="logo-tagline">// MULTI-BRAIN HYBRID AI PLATFORM</div>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tab-login"    onclick="switchTab('login')"   >⚡ ĐĂNG NHẬP</button>
+            <button class="tab-btn"        id="tab-register" onclick="switchTab('register')" >✨ ĐĂNG KÝ</button>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="username">PLAYER_NAME</label>
+            <div class="input-wrap">
+                <input type="text" id="username" class="auth-input"
+                       placeholder="Nhập tên tài khoản..." autocomplete="username" spellcheck="false">
             </div>
+        </div>
 
-            <!-- TABS -->
-            <div style="display: flex; gap: 10px; margin-bottom: 25px;">
-                <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">LOGIN</button>
-                <button class="tab-btn" id="tab-register" onclick="switchTab('register')">REGISTER</button>
+        <div class="form-group">
+            <label class="form-label" for="password">ACCESS_KEY</label>
+            <div class="input-wrap">
+                <input type="password" id="password" class="auth-input pass-field"
+                       placeholder="Nhập mật khẩu..." autocomplete="current-password">
+                <button class="toggle-pass" id="toggle-pass-btn" onclick="togglePassword()" type="button">👁</button>
             </div>
+        </div>
 
-            <div style="margin-bottom: 20px;">
-                <div class="pixel-title" style="font-size: 10px; margin-bottom: 8px;">PLAYER_NAME:</div>
-                <input type="text" id="username" class="auth-input" placeholder="Nhập tên tài khoản...">
-            </div>
+        <button id="btn-submit" class="btn-submit mode-login" onclick="handleAuth()">
+            <span class="btn-text" id="btn-text">XÁC NHẬN ĐĂNG NHẬP</span>
+            <span class="btn-loader"><div class="spinner"></div></span>
+        </button>
 
-            <div style="margin-bottom: 30px;">
-                <div class="pixel-title" style="font-size: 10px; margin-bottom: 8px;">ACCESS_PASSWORD:</div>
-                <input type="password" id="password" class="auth-input" placeholder="Nhập mật khẩu...">
-            </div>
+        <div id="auth-msg" class="auth-msg"></div>
 
-            <div style="display: flex; flex-direction: column; gap: 15px;">
-                <button id="btn-submit" class="pixel-btn" style="background: var(--neon-cyan); color: #000; width: 100%; font-size: 12px;" onclick="handleAuth()">XÁC NHẬN ĐĂNG NHẬP</button>
-            </div>
-
-            <div class="pixel-text" id="auth-msg" style="font-size: 14px; color: var(--neon-pink); margin-top: 20px; text-align: center; display: none;"></div>
+        <div class="divider">hoặc</div>
+        <div class="auth-footer" id="auth-footer">
+            Chưa có tài khoản? <span onclick="switchTab('register')">Tạo ngay →</span>
         </div>
     </div>
 
     <script>
-        let currentMode = 'login';
+        // Particles
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+        resize(); window.addEventListener('resize',resize);
+        for(let i=0;i<55;i++){
+            particles.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,
+                r:Math.random()*1.5+.3,dx:(Math.random()-.5)*.4,dy:(Math.random()-.5)*.4,
+                alpha:Math.random()*.5+.1,color:Math.random()>.5?'6,182,212':'168,85,247'});
+        }
+        function animP(){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            for(const p of particles){
+                p.x+=p.dx; p.y+=p.dy;
+                if(p.x<0||p.x>canvas.width)p.dx*=-1;
+                if(p.y<0||p.y>canvas.height)p.dy*=-1;
+                ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+                ctx.fillStyle=`rgba(${p.color},${p.alpha})`; ctx.fill();
+            }
+            requestAnimationFrame(animP);
+        }
+        animP();
 
-        function switchTab(mode) {
-            currentMode = mode;
-            document.getElementById('auth-msg').style.display = 'none';
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-
-            const btnSubmit = document.getElementById('btn-submit');
-            const tabLogin = document.getElementById('tab-login');
-            const tabRegister = document.getElementById('tab-register');
-
-            if (mode === 'login') {
-                tabLogin.classList.add('active');
-                tabRegister.classList.remove('active');
-                btnSubmit.innerText = "XÁC NHẬN ĐĂNG NHẬP";
-                btnSubmit.style.background = "var(--neon-cyan)";
+        // Auth Logic
+        let currentMode='login', passVisible=false;
+        function switchTab(mode){
+            currentMode=mode;
+            document.getElementById('auth-msg').style.display='none';
+            document.getElementById('username').value='';
+            document.getElementById('password').value='';
+            const btn=document.getElementById('btn-submit'),btnText=document.getElementById('btn-text');
+            const tabLogin=document.getElementById('tab-login'),tabReg=document.getElementById('tab-register');
+            const footer=document.getElementById('auth-footer');
+            if(mode==='login'){
+                tabLogin.classList.add('active'); tabReg.classList.remove('active');
+                btn.className='btn-submit mode-login'; btnText.textContent='XAC NHAN DANG NHAP';
+                footer.innerHTML='Chua co tai khoan? <span onclick="switchTab(\'register\')">Tao ngay →</span>';
             } else {
-                tabRegister.classList.add('active');
-                tabLogin.classList.remove('active');
-                btnSubmit.innerText = "TẠO TÀI KHOẢN MỚI";
-                btnSubmit.style.background = "var(--pixel-green)";
+                tabReg.classList.add('active'); tabLogin.classList.remove('active');
+                btn.className='btn-submit mode-register'; btnText.textContent='TAO TAI KHOAN MOI';
+                footer.innerHTML='Da co tai khoan? <span onclick="switchTab(\'login\')">Dang nhap →</span>';
             }
         }
-
-        function handleAuth() {
-            const user = document.getElementById("username").value.trim();
-            const pass = document.getElementById("password").value.trim();
-            const msg = document.getElementById("auth-msg");
-
-            if(!user || !pass) {
-                msg.style.display = "block";
-                msg.style.color = "var(--neon-pink)";
-                msg.innerText = "LỖI: Không được bỏ trống thông tin!";
-                return;
-            }
-
-            msg.style.display = "block";
-            msg.style.color = "var(--neon-amber)";
-            msg.innerText = "ĐANG XỬ LÝ DỮ LIỆU LÕI...";
-
-            fetch(`/api/auth/${currentMode}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ username: user, password: pass })
-            })
-            .then(res => res.json().then(data => ({ status: res.status, body: data })))
-            .then(obj => {
-                if(obj.status === 200 || obj.status === 201) {
-                    msg.style.color = "var(--pixel-green)";
-                    msg.innerText = "THÀNH CÔNG! ĐANG ĐIỀU HƯỚNG VÀO CHIẾN TRƯỜNG...";
-
-                    const userData = obj.body.user || { id: obj.body.user_id, username: user };
-                    localStorage.setItem("user_id", userData.id);
-                    localStorage.setItem("username", userData.username);
-
-                    setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+        function togglePassword(){
+            passVisible=!passVisible;
+            document.getElementById('password').type=passVisible?'text':'password';
+            document.getElementById('toggle-pass-btn').textContent=passVisible?'🙈':'👁';
+        }
+        function showMsg(text,type){
+            const el=document.getElementById('auth-msg');
+            el.textContent=text; el.className='auth-msg '+type; el.style.display='block';
+        }
+        function setLoading(on){
+            const btn=document.getElementById('btn-submit');
+            btn.disabled=on; on?btn.classList.add('loading'):btn.classList.remove('loading');
+        }
+        function handleAuth(){
+            const user=document.getElementById('username').value.trim();
+            const pass=document.getElementById('password').value.trim();
+            if(!user||!pass){showMsg('Vui long nhap day du thong tin!','error');return;}
+            if(pass.length<4){showMsg('Mat khau phai co it nhat 4 ky tu!','error');return;}
+            setLoading(true); showMsg('Dang xu ly...','info');
+            fetch(`/api/auth/${currentMode}`,{method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({username:user,password:pass})})
+            .then(res=>res.json().then(data=>({status:res.status,body:data})))
+            .then(obj=>{
+                setLoading(false);
+                if(obj.status===200||obj.status===201){
+                    showMsg('Thanh cong! Dang tai ban dieu khien...','success');
+                    const userData=obj.body.user||{id:obj.body.user_id,username:user};
+                    localStorage.setItem('user_id',userData.id);
+                    localStorage.setItem('username',userData.username);
+                    setTimeout(()=>{window.location.href='/dashboard';},900);
                 } else {
-                    msg.style.color = "var(--neon-pink)";
-                    msg.innerText = `LỖI: ${obj.body.error}`;
+                    showMsg(obj.body.error||'Da co loi xay ra!','error');
                 }
-            });
+            }).catch(()=>{setLoading(false);showMsg('Khong the ket noi may chu!','error');});
         }
-
-        // Hỗ trợ gõ phím Enter để thao tác nhanh
-        document.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                handleAuth();
-            }
-        });
+        document.addEventListener('keydown',e=>{if(e.key==='Enter')handleAuth();});
     </script>
 </body>
 </html>

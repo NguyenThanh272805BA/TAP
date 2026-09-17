@@ -1,19 +1,226 @@
 {% extends "base.html" %}
 
-{% block title %}DASHBOARD{% endblock %}
+{% block title %}BẢNG ĐIỀU KHIỂN - TRUNG TÂM TÁC CHIẾN{% endblock %}
 
 {% block content %}
+<style>
+    /* Dashboard Custom Enhancements */
+    .dash-hero {
+        background: linear-gradient(135deg, rgba(30, 41, 75, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 26px 30px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .dash-hero::after {
+        content: "";
+        position: absolute;
+        top: -50%; right: -10%;
+        width: 320px; height: 320px;
+        background: radial-gradient(circle, rgba(103, 232, 249, 0.12) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .hero-stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--glass-border);
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-family: var(--text-mono);
+        transition: transform 0.2s, border-color 0.2s;
+    }
+    .hero-stat-pill:hover {
+        transform: translateY(-2px);
+        border-color: var(--neon-cyan);
+    }
+
+    /* Quick Launch Grid */
+    .quick-launch-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 25px;
+    }
+    @media (max-width: 900px) {
+        .quick-launch-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 550px) {
+        .quick-launch-grid { grid-template-columns: 1fr; }
+    }
+
+    .launch-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        text-decoration: none;
+        color: #fff;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    .launch-card::before {
+        content: "";
+        position: absolute;
+        left: 0; top: 0; bottom: 0; width: 4px;
+        background: var(--accent-color, var(--neon-cyan));
+        opacity: 0.8;
+    }
+    .launch-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--accent-color, var(--neon-cyan));
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        background: rgba(30, 41, 75, 0.7);
+    }
+    .launch-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Streak UI Styling */
+    .streak-container {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        margin-top: 18px;
+    }
+    .streak-day-box {
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        padding: 14px 8px;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    .streak-day-box.active {
+        background: linear-gradient(180deg, rgba(253, 224, 71, 0.25) 0%, rgba(245, 158, 11, 0.15) 100%);
+        border-color: var(--neon-amber);
+        box-shadow: 0 0 12px rgba(253, 224, 71, 0.25);
+    }
+    .streak-day-box.active .day-num {
+        color: var(--neon-amber);
+        font-weight: bold;
+    }
+    .streak-day-box.gift {
+        border-color: var(--neon-pink);
+    }
+    .streak-day-box.gift::after {
+        content: "🎁";
+        font-size: 11px;
+        position: absolute;
+        top: 4px; right: 4px;
+    }
+</style>
+
+<!-- HERO WELCOME BANNER -->
+<div class="dash-hero">
+    <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="font-size: 18px;">⚡</span>
+            <span class="pixel-title" style="color: var(--neon-cyan); font-size: 13px; letter-spacing: 1px;">
+                GLOBAL FLUENT // HUB CHỈ HUY
+            </span>
+        </div>
+        <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -0.5px;">
+            Chào mừng trở lại, <span id="dash-player-name" style="color: var(--neon-pink); font-family: var(--text-pixel);">Player</span>!
+        </h1>
+        <div style="font-size: 14px; color: #94a3b8; max-width: 580px; line-height: 1.6;">
+            Hệ thống Multi-Brain AI đã sẵn sàng tối ưu lộ trình học từ vựng, ngữ cảnh phản xạ và chấm bài thi CEFR hôm nay của bạn.
+        </div>
+    </div>
+
+    <!-- QUICK STATUS PILLS -->
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <div class="hero-stat-pill">
+            <span style="font-size: 20px;">🔥</span>
+            <div>
+                <div style="font-size: 10px; color: #94a3b8;">CHUỖI NGÀY</div>
+                <div style="font-size: 16px; font-weight: bold; color: var(--neon-amber);" id="dash-streak-count">0 Ngày</div>
+            </div>
+        </div>
+        <div class="hero-stat-pill">
+            <span style="font-size: 20px;">🪙</span>
+            <div>
+                <div style="font-size: 10px; color: #94a3b8;">TÀI SẢN XU</div>
+                <div style="font-size: 16px; font-weight: bold; color: var(--pixel-green);" id="dash-coins-count">0 Xu</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK LAUNCH HUB -->
+<div class="quick-launch-grid">
+    <a href="/roadmap" class="launch-card" style="--accent-color: var(--neon-cyan);">
+        <div class="launch-icon">🎯</div>
+        <div>
+            <div style="font-weight: 600; font-size: 14px;">Lộ Trình Band</div>
+            <div style="font-size: 11px; color: #94a3b8;">Target CEFR A1 → C2</div>
+        </div>
+    </a>
+    <a href="/learn" class="launch-card" style="--accent-color: var(--neon-purple);">
+        <div class="launch-icon">🔨</div>
+        <div>
+            <div style="font-weight: 600; font-size: 14px;">Lò Đúc & Học Tập</div>
+            <div style="font-size: 11px; color: #94a3b8;">SRS Spaced Memory</div>
+        </div>
+    </a>
+    <a href="/test" class="launch-card" style="--accent-color: var(--neon-amber);">
+        <div class="launch-icon">📝</div>
+        <div>
+            <div style="font-weight: 600; font-size: 14px;">Khảo Thí CEFR</div>
+            <div style="font-size: 11px; color: #94a3b8;">Chấm điểm AI Hybrid</div>
+        </div>
+    </a>
+    <a href="/story" class="launch-card" style="--accent-color: var(--neon-pink);">
+        <div class="launch-icon">⚔️</div>
+        <div>
+            <div style="font-weight: 600; font-size: 14px;">RPG Sinh Tồn</div>
+            <div style="font-size: 11px; color: #94a3b8;">Nhập vai AI Game Master</div>
+        </div>
+    </a>
+</div>
+
+<!-- MAIN BENTO CONTAINER -->
 <div class="bento-container">
     <!-- TRUNG TÂM KIỂM SOÁT ĐIỂM DANH 7 NGÀY -->
     <div class="bento-card card-wide">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <div>
-                <div class="pixel-title" style="color: var(--neon-amber);">NHIỆM VỤ ĐIỂM DANH (7 NGÀY)</div>
-                <div style="font-size: 14px; color: #94a3b8;">Duy trì chuỗi truy cập để nhận Xu thưởng. Chuỗi sẽ vỡ nếu bạn bỏ lỡ 1 ngày!</div>
+                <div class="pixel-title" style="color: var(--neon-amber); font-size: 14px; margin-bottom: 4px;">
+                    NHIỆM VỤ ĐIỂM DANH (7 NGÀY CHU KỲ)
+                </div>
+                <div style="font-size: 13px; color: #94a3b8;">
+                    Duy trì chuỗi đăng nhập mỗi ngày để tích lũy Xu thưởng lớn. Chuỗi sẽ vỡ nếu bạn bỏ lỡ một ngày!
+                </div>
             </div>
             <div style="text-align: right;">
-                <button id="btn-checkin" class="pixel-btn" style="background: var(--neon-amber); padding: 12px 20px;" onclick="triggerCheckin()">ĐIỂM DANH NHẬN THƯỞNG</button>
-                <div id="checkin-timer" style="font-size: 12px; color: var(--neon-pink); margin-top: 5px; font-family: var(--text-mono); display: none;"></div>
+                <button id="btn-checkin" class="pixel-btn" style="background: var(--neon-amber); color: #000; padding: 12px 22px; font-size: 11px;" onclick="triggerCheckin()">
+                    ✨ ĐIỂM DANH NHẬN THƯỞNG
+                </button>
+                <div id="checkin-timer" style="font-size: 12px; color: var(--neon-pink); margin-top: 6px; font-family: var(--text-mono); display: none;"></div>
             </div>
         </div>
 
@@ -31,8 +238,12 @@
     <!-- BẢNG NHIỆM VỤ HÀNG NGÀY (DAILY QUESTS) CẢI TIẾN -->
     <div class="bento-card card-medium" id="daily-quest-card">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 15px;">
-            <div class="pixel-title" style="color: var(--neon-cyan); margin: 0;">DAILY_QUESTS // NHIỆM VỤ HÀNG NGÀY</div>
-            <div style="color: var(--neon-amber); font-family: var(--text-pixel); font-size: 12px;">+20 XU/QUEST</div>
+            <div class="pixel-title" style="color: var(--neon-cyan); margin: 0; font-size: 14px;">
+                DAILY_QUESTS // NHIỆM VỤ HÀNG NGÀY
+            </div>
+            <div style="color: var(--neon-amber); font-family: var(--text-pixel); font-size: 12px; background: rgba(253, 224, 71, 0.1); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(253, 224, 71, 0.3);">
+                +20 XU/QUEST
+            </div>
         </div>
 
         <div id="daily-quests-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
@@ -40,23 +251,57 @@
         </div>
 
         <!-- QUICK CHAT CHO NHIỆM VỤ -->
-        <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; border: 1px dashed var(--neon-purple);">
-            <div style="font-size: 13px; color: var(--neon-purple); margin-bottom: 10px; font-weight: bold;">> QUICK_ACTION: HOÀN THÀNH NHIỆM VỤ NHANH</div>
+        <div style="background: rgba(0,0,0,0.6); padding: 18px; border-radius: 12px; border: 1px dashed var(--neon-purple);">
+            <div style="font-size: 13px; color: var(--neon-purple); margin-bottom: 10px; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                <span>></span>
+                <span>QUICK_ACTION: HOÀN THÀNH NHIỆM VỤ NHANH VỚI AI</span>
+            </div>
             <div style="display: flex; gap: 10px;">
-                <input type="text" id="quickQuestInput" class="auth-input" style="margin-bottom: 0;" placeholder="Nhập câu chứa từ vựng nhiệm vụ vào đây...">
-                <button class="pixel-btn" style="background: var(--neon-purple);" onclick="submitQuickQuest()">GỬI (ENTER)</button>
+                <input type="text" id="quickQuestInput" class="auth-input" style="margin-bottom: 0;" placeholder="Nhập câu tiếng Anh chứa từ vựng nhiệm vụ..." onkeydown="if(event.key==='Enter') submitQuickQuest()">
+                <button class="pixel-btn" style="background: var(--neon-purple); flex-shrink: 0;" onclick="submitQuickQuest()">GỬI (ENTER)</button>
             </div>
             <!-- Hiển thị kết quả AI -->
-            <div id="quickQuestFeedback" style="display: none; margin-top: 15px; font-size: 14px; background: rgba(15, 23, 42, 0.9); padding: 12px; border-left: 3px solid var(--neon-pink); border-radius: 6px; line-height: 1.5;"></div>
+            <div id="quickQuestFeedback" style="display: none; margin-top: 15px; font-size: 14px; background: rgba(15, 23, 42, 0.9); padding: 14px; border-left: 3px solid var(--neon-pink); border-radius: 8px; line-height: 1.6;"></div>
         </div>
     </div>
 
     <!-- BẢNG XẾP HẠNG (LEADERBOARD NHỎ) -->
-   <div class="bento-card" style="align-self: start; position: sticky; top: 20px;">
-        <div class="pixel-title">TOP RANKING (INFINITY)</div>
-        <div id="dashboard-leaderboard" style="font-size: 14px; line-height: 2; margin-top: 10px;">
+    <div class="bento-card" style="align-self: start; position: sticky; top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 12px;">
+            <div class="pixel-title" style="font-size: 13px; color: var(--neon-pink);">TOP RANKING (INFINITY)</div>
+            <span style="font-size: 16px;">🏆</span>
+        </div>
+        <div id="dashboard-leaderboard" style="font-size: 14px; line-height: 2;">
             <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang tải dữ liệu mạng...</div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Đồng bộ thông tin player lên hero banner
+        const username = localStorage.getItem('username');
+        if (username) {
+            const playerEl = document.getElementById('dash-player-name');
+            if (playerEl) playerEl.textContent = username;
+        }
+
+        fetch('/api/auth/user/me')
+            .then(res => res.json())
+            .then(user => {
+                if (user && !user.error) {
+                    const playerEl = document.getElementById('dash-player-name');
+                    const streakEl = document.getElementById('dash-streak-count');
+                    const coinsEl = document.getElementById('dash-coins-count');
+
+                    if (playerEl) playerEl.textContent = user.username;
+                    if (streakEl) streakEl.textContent = `${user.streak || 0} Ngày`;
+                    if (coinsEl) coinsEl.textContent = `${user.coins || 0} Xu`;
+                }
+            })
+            .catch(() => {});
+    });
+</script>
 {% endblock %}

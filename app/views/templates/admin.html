@@ -1,105 +1,764 @@
 {% extends "base.html" %}
 
-{% block title %}GOD MODE - ADMIN PANEL{% endblock %}
+{% block title %}ADMIN CONTROL CENTER{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 25px;">
-    <div class="pixel-title" style="font-size: 24px; color: var(--neon-pink); margin-bottom: 5px;">[ GOD_MODE ] TERMINAL</div>
-    <div style="color: #94a3b8; font-size: 15px;">Hệ thống quản trị dữ liệu tối cao. Mọi thay đổi ở đây đều ảnh hưởng trực tiếp đến máy chủ.</div>
-</div>
+<style>
+    /* Admin Specific Styling */
+    .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--glass-border);
+    }
 
-<!-- THỐNG KÊ TỔNG QUAN -->
-<div class="bento-container" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 25px;">
-    <div class="bento-card" style="padding: 20px; text-align: center;">
-        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 11px;">TỔNG PLAYER</div>
-        <div id="stat-users" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
-    </div>
-    <div class="bento-card" style="padding: 20px; text-align: center;">
-        <div class="pixel-title" style="color: var(--pixel-green); font-size: 11px;">TỪ VỰNG (UNIT)</div>
-        <div id="stat-vocab" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
-    </div>
-    <div class="bento-card" style="padding: 20px; text-align: center;">
-        <div class="pixel-title" style="color: var(--neon-amber); font-size: 11px;">NGỮ PHÁP</div>
-        <div id="stat-grammar" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
-    </div>
-    <div class="bento-card" style="padding: 20px; text-align: center;">
-        <div class="pixel-title" style="color: var(--neon-purple); font-size: 11px;">LƯỢT CHẤM ĐIỂM</div>
-        <div id="stat-tests" style="font-family: var(--text-mono); font-size: 32px; font-weight: 700; color: #fff;">0</div>
-    </div>
-</div>
+    .admin-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-family: var(--text-mono);
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    .badge-live {
+        background: rgba(110, 231, 183, 0.15);
+        color: var(--pixel-green);
+        border-color: rgba(110, 231, 183, 0.4);
+    }
+    .badge-live::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--pixel-green);
+        box-shadow: 0 0 8px var(--pixel-green);
+        animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
+    }
 
-<!-- QUẢN LÝ CHỦ ĐỀ RPG (STORY TOPICS) -->
-<div class="bento-card card-wide" style="margin-bottom: 25px; padding: 30px;">
-    <div class="pixel-title" style="color: var(--neon-purple); font-size: 16px; margin-bottom: 20px;">RPG_SYSTEM // THÊM BỐI CẢNH CỐT TRUYỆN MỚI</div>
+    /* Tabs Navigation */
+    .admin-tabs {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
+    .tab-btn {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--glass-border);
+        color: #94a3b8;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-family: var(--text-pixel);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tab-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        border-color: var(--neon-cyan);
+        transform: translateY(-1px);
+    }
+    .tab-btn.active {
+        background: linear-gradient(135deg, rgba(103, 232, 249, 0.2), rgba(216, 180, 254, 0.2));
+        color: #fff;
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 15px rgba(103, 232, 249, 0.25);
+    }
 
-    <form id="form-topic" onsubmit="submitNewTopic(event)" enctype="multipart/form-data" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-        <div>
-            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">TÊN CHỦ ĐỀ (VD: Bệnh viện ma ám):</label>
-            <input type="text" id="topic_title" name="title" class="auth-input" required>
+    /* Tab Panes */
+    .tab-pane {
+        display: none;
+        animation: tabFadeIn 0.3s ease forwards;
+    }
+    .tab-pane.active {
+        display: block;
+    }
+    @keyframes tabFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
-            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">THỂ LOẠI (VD: Horror, Sci-fi):</label>
-            <input type="text" id="topic_genre" name="genre" class="auth-input" required>
+    /* Stat Cards */
+    .admin-stat-card {
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 22px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .admin-stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, transparent, var(--card-glow, var(--neon-cyan)), transparent);
+        opacity: 0.8;
+    }
+    .admin-stat-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(255,255,255,0.4);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
 
-            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block; margin-top: 5px;">CHẾ ĐỘ CHƠI (PLAY MODE):</label>
-            <select name="play_mode" class="auth-input" style="padding: 12px; margin-bottom: 15px; width: 100%; box-sizing: border-box; cursor: pointer;">
-                <option value="both">Cho người chơi tự chọn (Both)</option>
-                <option value="write">Chỉ được tự gõ tiếng Anh (Writing Only)</option>
-                <option value="choose">Chỉ được chọn đáp án (Choosing Only)</option>
-            </select>
+    /* Modern Table */
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid var(--glass-border);
+        background: rgba(10, 15, 30, 0.6);
+    }
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 13px;
+    }
+    .modern-table th {
+        background: rgba(15, 23, 42, 0.85);
+        padding: 14px 16px;
+        font-family: var(--text-pixel);
+        font-size: 11px;
+        letter-spacing: 0.8px;
+        color: var(--neon-cyan);
+        border-bottom: 1px solid var(--glass-border);
+        white-space: nowrap;
+    }
+    .modern-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: #cbd5e1;
+        vertical-align: middle;
+    }
+    .modern-table tr:hover td {
+        background: rgba(255, 255, 255, 0.03);
+    }
 
-            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">ẢNH BÌA (Tùy chọn):</label>
-            <input type="file" id="topic_cover" name="cover_image" class="auth-input" accept="image/*" style="padding: 10px;">
+    /* Small Action Buttons */
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 11px;
+        font-family: var(--text-mono);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+        background: rgba(0,0,0,0.4);
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .btn-action-danger {
+        border-color: #ef4444;
+        color: #f87171;
+    }
+    .btn-action-danger:hover {
+        background: #ef4444;
+        color: #fff;
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    }
+    .btn-action-warning {
+        border-color: #f59e0b;
+        color: #fbbf24;
+    }
+    .btn-action-warning:hover {
+        background: #f59e0b;
+        color: #000;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+    .btn-action-primary {
+        border-color: var(--neon-cyan);
+        color: var(--neon-cyan);
+    }
+    .btn-action-primary:hover {
+        background: var(--neon-cyan);
+        color: #000;
+        box-shadow: 0 0 10px rgba(103, 232, 249, 0.4);
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 18px;
+    }
+    .search-input {
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: #fff;
+        padding: 10px 14px;
+        font-size: 13px;
+        outline: none;
+        flex-grow: 1;
+        min-width: 220px;
+        transition: border-color 0.2s;
+    }
+    .search-input:focus {
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 10px rgba(103, 232, 249, 0.2);
+    }
+    .select-filter {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: #fff;
+        padding: 10px 14px;
+        font-size: 13px;
+        outline: none;
+        cursor: pointer;
+    }
+
+    /* Modal Overlay */
+    .admin-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(3, 7, 18, 0.75);
+        backdrop-filter: blur(8px);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .admin-modal.show {
+        display: flex;
+    }
+    .admin-modal-content {
+        background: #0f172a;
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 520px;
+        padding: 30px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        position: relative;
+        animation: modalPop 0.25s ease forwards;
+    }
+    @keyframes modalPop {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Pagination */
+    .pagination-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 18px;
+        background: rgba(15, 23, 42, 0.5);
+        border-top: 1px solid var(--glass-border);
+        font-size: 12px;
+        color: #94a3b8;
+    }
+    .page-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--glass-border);
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-family: var(--text-pixel);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .page-btn:hover:not(:disabled) {
+        background: var(--neon-cyan);
+        color: #000;
+    }
+    .page-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+    /* Danger Card */
+    .danger-box {
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+</style>
+
+<!-- HEADER -->
+<div class="admin-header">
+    <div>
+        <div class="pixel-title" style="font-size: 24px; color: var(--neon-pink); margin-bottom: 4px; display: flex; align-items: center; gap: 10px;">
+            <span>[ GOD_MODE ]</span>
+            <span style="color: #fff; font-size: 20px;">COMMAND CENTER</span>
         </div>
-        <div style="display: flex; flex-direction: column;">
-            <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">SYSTEM PROMPT (Định hình tính cách AI và bối cảnh chi tiết):</label>
-            <textarea id="topic_prompt" name="system_prompt" style="flex-grow: 1; margin-bottom: 15px;" required placeholder="VD: Bạn là Game Master dẫn dắt người chơi thoát khỏi một bệnh viện bỏ hoang..."></textarea>
-
-            <button type="submit" class="pixel-btn" style="background: var(--neon-purple); width: 100%;">TẠO THẾ GIỚI MỚI</button>
+        <div style="color: #94a3b8; font-size: 14px;">
+            Bảng điều phối toàn diện máy chủ, dữ liệu tri thức và quản trị người chơi.
         </div>
-    </form>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <span class="admin-badge badge-live">SERVER ONLINE</span>
+        <button class="pixel-btn" onclick="refreshCurrentTab()" style="background: var(--neon-purple); font-size: 11px; padding: 10px 16px;">
+            🔄 LÀM MỚI DỮ LIỆU
+        </button>
+    </div>
 </div>
 
-<!-- QUẢN LÝ NGƯỜI CHƠI -->
-<div class="bento-card card-wide" style="min-height: 400px; padding: 30px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 16px;">DATA_TABLE // USERS</div>
-        <button class="pixel-btn" onclick="fetchAdminData()" style="background: var(--neon-purple); font-size: 10px;">REFRESH DATA</button>
+<!-- NAVIGATION TABS -->
+<div class="admin-tabs">
+    <button class="tab-btn active" onclick="switchAdminTab('overview')">
+        📊 TỔNG QUAN
+    </button>
+    <button class="tab-btn" onclick="switchAdminTab('users')">
+        👥 QUẢN LÝ NGƯỜI CHƠI
+    </button>
+    <button class="tab-btn" onclick="switchAdminTab('vocab')">
+        📖 TỪ ĐIỂN TỪ VỰNG
+    </button>
+    <button class="tab-btn" onclick="switchAdminTab('topics')">
+        ⚔️ BỐI CẢNH RPG
+    </button>
+    <button class="tab-btn" onclick="switchAdminTab('danger')" style="color: #f87171; border-color: rgba(239,68,68,0.3);">
+        ⚠️ VÙNG NGUY HIỂM
+    </button>
+</div>
+
+<!-- =========================================================
+     TAB 1: TỔNG QUAN
+     ========================================================= -->
+<div id="pane-overview" class="tab-pane active">
+    <div class="bento-container" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 25px;">
+        <div class="admin-stat-card" style="--card-glow: var(--neon-cyan);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div class="pixel-title" style="color: var(--neon-cyan); font-size: 11px;">TỔNG NGƯỜI CHƠI</div>
+                <span style="font-size: 20px;">👥</span>
+            </div>
+            <div id="stat-users" style="font-family: var(--text-mono); font-size: 34px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Tài khoản đăng ký thực tế</div>
+        </div>
+
+        <div class="admin-stat-card" style="--card-glow: var(--pixel-green);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div class="pixel-title" style="color: var(--pixel-green); font-size: 11px;">KHO TỪ VỰNG</div>
+                <span style="font-size: 20px;">📚</span>
+            </div>
+            <div id="stat-vocab" style="font-family: var(--text-mono); font-size: 34px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Đơn vị từ CEFR trong database</div>
+        </div>
+
+        <div class="admin-stat-card" style="--card-glow: var(--neon-amber);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div class="pixel-title" style="color: var(--neon-amber); font-size: 11px;">CHUYÊN ĐỀ NGỮ PHÁP</div>
+                <span style="font-size: 20px;">🧠</span>
+            </div>
+            <div id="stat-grammar" style="font-family: var(--text-mono); font-size: 34px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Quy tắc cú pháp & AI Diagnostics</div>
+        </div>
+
+        <div class="admin-stat-card" style="--card-glow: var(--neon-purple);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div class="pixel-title" style="color: var(--neon-purple); font-size: 11px;">LƯỢT KHẢO THÍ (TESTS)</div>
+                <span style="font-size: 20px;">📝</span>
+            </div>
+            <div id="stat-tests" style="font-family: var(--text-mono); font-size: 34px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Số lần hoàn thành bài thi CEFR</div>
+        </div>
     </div>
 
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+    <!-- THÔNG TIN HỆ THỐNG VÀ LỐI TẮT -->
+    <div class="bento-container" style="grid-template-columns: 2fr 1fr; gap: 20px;">
+        <div class="bento-card" style="padding: 25px;">
+            <div class="pixel-title" style="color: var(--neon-cyan); font-size: 14px; margin-bottom: 15px;">
+                KIẾN TRÚC HYBRID AI // BỘ NÃO TRUNG TÂM
+            </div>
+            <div style="color: #cbd5e1; font-size: 14px; line-height: 1.8;">
+                <p style="margin-top: 0;">Hệ thống TAP đang vận hành mô hình <strong>Multi-Brain Hybrid Edge-Cloud AI</strong>:</p>
+                <ul style="padding-left: 20px; color: #94a3b8;">
+                    <li><strong>Phân loại ý định & ngữ pháp:</strong> DistilBERT INT8 + Multilayer Perceptron (MLP).</li>
+                    <li><strong>Thuật toán ghi nhớ ngắt quãng:</strong> Ebbinghaus Non-linear Fit & Smart SRS.</li>
+                    <li><strong>Gợi ý từ vựng không gian vector:</strong> Cosine Similarity Content-Based Filtering.</li>
+                    <li><strong>Chấm điểm & sinh bối cảnh:</strong> Google Gemini 2.5 Flash kết hợp Rule-based Fallback.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="bento-card" style="padding: 25px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div class="pixel-title" style="color: var(--neon-pink); font-size: 14px; margin-bottom: 15px;">
+                    LỐI TẮT QUẢN TRỊ
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn-action btn-action-primary" onclick="switchAdminTab('vocab'); openAddVocabModal();" style="padding: 10px; justify-content: center;">
+                        ➕ Thêm từ vựng mới
+                    </button>
+                    <button class="btn-action btn-action-warning" onclick="switchAdminTab('topics')" style="padding: 10px; justify-content: center;">
+                        ⚔️ Tạo chủ đề RPG mới
+                    </button>
+                    <button class="btn-action btn-action-danger" onclick="switchAdminTab('danger')" style="padding: 10px; justify-content: center;">
+                        ⚠️ Truy cập Vùng Nguy Hiểm
+                    </button>
+                </div>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 15px; text-align: center;">
+                Session: Admin Authenticated
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     TAB 2: QUẢN LÝ NGƯỜI CHƠI
+     ========================================================= -->
+<div id="pane-users" class="tab-pane">
+    <div class="filter-bar">
+        <input type="text" id="user-search" class="search-input" placeholder="🔍 Tìm kiếm theo username..." oninput="filterUsers()">
+        <select id="user-role-filter" class="select-filter" onchange="filterUsers()">
+            <option value="ALL">Tất cả vai trò</option>
+            <option value="admin">Quản trị viên (Admin)</option>
+            <option value="user">Người chơi (User)</option>
+        </select>
+        <span id="user-count-badge" class="admin-badge" style="background: rgba(255,255,255,0.06);">0 Players</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="modern-table">
             <thead>
-                <tr style="border-bottom: 2px solid var(--glass-border); color: var(--neon-pink); font-family: var(--text-pixel); font-size: 10px;">
-                    <th style="padding: 12px;">ID</th>
-                    <th style="padding: 12px;">USERNAME</th>
-                    <th style="padding: 12px;">ROLE</th>
-                    <th style="padding: 12px;">LEVEL</th>
-                    <th style="padding: 12px;">COINS</th>
-                    <th style="padding: 12px;">CREATED</th>
-                    <th style="padding: 12px; text-align: right;">ACTION</th>
+                <tr>
+                    <th>ID</th>
+                    <th>NGƯỜI CHƠI</th>
+                    <th>VAI TRÒ</th>
+                    <th>LEVEL & BAND</th>
+                    <th>XU THƯỞNG</th>
+                    <th>NGÀY TẠO</th>
+                    <th style="text-align: right;">THAO TÁC QUẢN TRỊ</th>
                 </tr>
             </thead>
-            <tbody id="admin-user-list" style="font-family: var(--text-mono); font-size: 14px; color: #e2e8f0;">
-                <!-- Dữ liệu render bằng JS -->
-                <tr><td colspan="7" style="text-align: center; padding: 20px;">Đang tải dữ liệu lõi...</td></tr>
+            <tbody id="user-table-body">
+                <tr><td colspan="7" style="text-align: center; padding: 25px; color: #94a3b8;">Đang tải danh sách người chơi...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- =========================================================
+     TAB 3: QUẢN LÝ TỪ VỰNG
+     ========================================================= -->
+<div id="pane-vocab" class="tab-pane">
+    <div class="filter-bar">
+        <input type="text" id="vocab-search" class="search-input" placeholder="🔍 Tìm kiếm từ vựng, nghĩa tiếng Việt, chủ đề..." onkeydown="if(event.key==='Enter') fetchVocabData(1)">
+        <select id="vocab-level-filter" class="select-filter" onchange="fetchVocabData(1)">
+            <option value="ALL">Tất cả Level CEFR</option>
+            <option value="A1">Band A1 (Căn bản)</option>
+            <option value="A2">Band A2 (Sơ cấp)</option>
+            <option value="B1">Band B1 (Trung cấp)</option>
+            <option value="B2">Band B2 (Trung cao)</option>
+            <option value="C1">Band C1 (Cao cấp)</option>
+            <option value="C2">Band C2 (Bậc thầy)</option>
+        </select>
+        <button class="pixel-btn" onclick="fetchVocabData(1)" style="background: var(--neon-cyan); color: #000; font-size: 11px; padding: 10px 16px;">
+            LỌC
+        </button>
+        <button class="pixel-btn" onclick="openAddVocabModal()" style="background: var(--pixel-green); color: #000; font-size: 11px; padding: 10px 16px;">
+            ➕ THÊM TỪ MỚI
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th style="width: 70px;">ID</th>
+                    <th>TỪ TIẾNG ANH</th>
+                    <th>NGHĨA TIẾNG VIỆT</th>
+                    <th>CHỦ ĐỀ</th>
+                    <th>CEFR LEVEL</th>
+                    <th style="text-align: right; width: 120px;">THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody id="vocab-table-body">
+                <tr><td colspan="6" style="text-align: center; padding: 25px; color: #94a3b8;">Đang tải kho từ vựng...</td></tr>
+            </tbody>
+        </table>
+
+        <!-- PAGINATION BAR -->
+        <div class="pagination-bar">
+            <div>
+                Hiển thị <span id="vocab-showing">0</span> trên tổng số <span id="vocab-total">0</span> từ vựng
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button id="btn-vocab-prev" class="page-btn" onclick="changeVocabPage(-1)">← Trước</button>
+                <span style="color: #fff; font-family: var(--text-mono); margin: 0 4px;" id="vocab-page-indicator">Trang 1 / 1</span>
+                <button id="btn-vocab-next" class="page-btn" onclick="changeVocabPage(1)">Sau →</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     TAB 4: BỐI CẢNH RPG (STORY TOPICS)
+     ========================================================= -->
+<div id="pane-topics" class="tab-pane">
+    <div class="bento-container" style="grid-template-columns: 1fr 1.2fr; gap: 25px;">
+        <!-- FORM THÊM CHỦ ĐỀ -->
+        <div class="bento-card" style="padding: 25px;">
+            <div class="pixel-title" style="color: var(--neon-purple); font-size: 15px; margin-bottom: 18px;">
+                RPG_SYSTEM // THÊM BỐI CẢNH MỚI
+            </div>
+
+            <form id="form-topic" onsubmit="submitNewTopic(event)" enctype="multipart/form-data">
+                <div style="margin-bottom: 12px;">
+                    <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">TÊN CHỦ ĐỀ:</label>
+                    <input type="text" id="topic_title" name="title" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Bệnh viện ma ám, Thám hiểm sao Hỏa...">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">THỂ LOẠI (GENRE):</label>
+                    <input type="text" id="topic_genre" name="genre" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="Horror, Sci-Fi, Cyberpunk, Fantasy...">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">CHẾ ĐỘ CHƠI (PLAY MODE):</label>
+                    <select name="play_mode" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                        <option value="both">Cho người chơi tự do lựa chọn (Both)</option>
+                        <option value="write">Chỉ được tự gõ tiếng Anh (Writing Only)</option>
+                        <option value="choose">Chỉ được chọn phương án (Choosing Only)</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">ẢNH BÌA THUMBNAIL:</label>
+                    <input type="file" id="topic_cover" name="cover_image" class="search-input" accept="image/*" style="width: 100%; box-sizing: border-box; padding: 7px 10px;">
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">SYSTEM PROMPT (Định hình ngữ cảnh AI):</label>
+                    <textarea id="topic_prompt" name="system_prompt" rows="5" class="search-input" style="width: 100%; box-sizing: border-box; resize: vertical;" required placeholder="Bạn là AI Game Master dẫn dắt người chơi khám phá..."></textarea>
+                </div>
+
+                <button type="submit" id="btn-create-topic" class="pixel-btn" style="background: var(--neon-purple); width: 100%;">
+                    TẠO THẾ GIỚI MỚI
+                </button>
+            </form>
+        </div>
+
+        <!-- DANH SÁCH CHỦ ĐỀ HIỆN CÓ -->
+        <div class="bento-card" style="padding: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                <div class="pixel-title" style="color: var(--neon-cyan); font-size: 15px;">
+                    DANH SÁCH CHỦ ĐỀ HIỆN HỮU
+                </div>
+                <span id="topic-count-badge" class="admin-badge" style="background: rgba(255,255,255,0.06);">0 Topics</span>
+            </div>
+
+            <div id="topic-list-container" style="display: flex; flex-direction: column; gap: 12px; max-height: 560px; overflow-y: auto; padding-right: 5px;">
+                <div style="color: #94a3b8; text-align: center; padding: 30px;">Đang tải danh sách chủ đề RPG...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     TAB 5: VÙNG NGUY HIỂM & DỌN DẸP
+     ========================================================= -->
+<div id="pane-danger" class="tab-pane">
+    <div class="danger-box">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 26px;">⚠️</span>
+            <div>
+                <div class="pixel-title" style="color: #f87171; font-size: 16px;">VÙNG NGUY HIỂM - THAO TÁC CẤP TOÀN CỤC</div>
+                <div style="font-size: 13px; color: #fca5a5;">Mọi hành động trong khu vực này sẽ thay đổi hoặc xóa dữ liệu trực tiếp trong cơ sở dữ liệu MySQL và KHÔNG THỂ HOÀN TÁC.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bento-container" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+        <!-- DỌN DẸP TOÀN BỘ DATA USER (CLEAN ALL DATA) -->
+        <div class="bento-card" style="padding: 25px; border-color: rgba(239, 68, 68, 0.4);">
+            <div class="pixel-title" style="color: #ef4444; font-size: 14px; margin-bottom: 12px;">
+                [ RESET DATABASE ] DỌN DẸP DỮ LIỆU HỆ THỐNG
+            </div>
+            <div style="font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 18px;">
+                Thực thi tương đương script <code>clean_data.py</code>:
+                <ul style="padding-left: 18px; margin: 10px 0; color: #cbd5e1;">
+                    <li>Xóa <strong>toàn bộ tài khoản user thường</strong></li>
+                    <li>Xóa toàn bộ tiến độ học từ vựng, ngữ pháp, thành tựu</li>
+                    <li>Xóa toàn bộ lịch sử thi cử (TestLog) và RPG Sessions</li>
+                    <li><strong>Giữ nguyên:</strong> Tất cả tài khoản Quản trị viên (Admin)</li>
+                    <li><strong>Giữ nguyên:</strong> Dữ liệu từ điển Vocabulary & Grammar cốt lõi</li>
+                </ul>
+            </div>
+            <button class="pixel-btn" onclick="openResetDataModal()" style="background: #ef4444; width: 100%; padding: 14px; font-size: 12px;">
+                🔥 KHỞI CHẠY RESET TOÀN BỘ DỮ LIỆU
+            </button>
+        </div>
+
+        <!-- THÔNG TIN SCRIPT PYTHON ĐỘC LẬP -->
+        <div class="bento-card" style="padding: 25px;">
+            <div class="pixel-title" style="color: var(--neon-amber); font-size: 14px; margin-bottom: 12px;">
+                [ TERMINAL ] SCRIPT CLEAN_DATA.PY ĐỘC LẬP
+            </div>
+            <div style="font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 15px;">
+                Ngoài giao diện web, quản trị viên có thể chạy trực tiếp bằng dòng lệnh từ terminal:
+            </div>
+            <div style="background: rgba(0,0,0,0.6); padding: 14px; border-radius: 8px; font-family: var(--text-mono); font-size: 12px; color: var(--neon-cyan); border: 1px solid var(--glass-border); margin-bottom: 15px;">
+                python clean_data.py
+            </div>
+            <div style="font-size: 12px; color: #64748b;">
+                Script có lớp bảo vệ bằng văn bản xác nhận nhập tay (Type Confirmation) để đảm bảo không bị bấm nhầm.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: THÊM TỪ VỰNG MỚI
+     ========================================================= -->
+<div id="modal-add-vocab" class="admin-modal">
+    <div class="admin-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="pixel-title" style="color: var(--pixel-green); font-size: 16px;">➕ THÊM TỪ VỰNG VÀO TỪ ĐIỂN</div>
+            <button onclick="closeAddVocabModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="form-add-vocab" onsubmit="submitNewVocab(event)">
+            <div style="margin-bottom: 14px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">TỪ TIẾNG ANH (WORD):</label>
+                <input type="text" id="add-vocab-word" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: ephemeral, resilience...">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">NGHĨA TIẾNG VIỆT (MEANING):</label>
+                <input type="text" id="add-vocab-meaning" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Phù du, chóng tàn; Khả năng phục hồi...">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">LEVEL CEFR:</label>
+                    <select id="add-vocab-level" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                        <option value="A1">A1 (Căn bản)</option>
+                        <option value="A2">A2 (Sơ cấp)</option>
+                        <option value="B1">B1 (Trung cấp)</option>
+                        <option value="B2" selected>B2 (Trung cao)</option>
+                        <option value="C1">C1 (Cao cấp)</option>
+                        <option value="C2">C2 (Bậc thầy)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">CHỦ ĐỀ (THEME):</label>
+                    <input type="text" id="add-vocab-theme" class="search-input" style="width: 100%; box-sizing: border-box;" value="General" placeholder="Technology, Nature...">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeAddVocabModal()" class="btn-action" style="padding: 10px 18px; color: #94a3b8;">HỦY</button>
+                <button type="submit" id="btn-save-vocab" class="pixel-btn" style="background: var(--pixel-green); color: #000; padding: 10px 20px;">LƯU TỪ VỰNG</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- =========================================================
+     MODAL: XÁC NHẬN RESET TOÀN BỘ DỮ LIỆU
+     ========================================================= -->
+<div id="modal-reset-data" class="admin-modal">
+    <div class="admin-modal-content" style="border-color: rgba(239, 68, 68, 0.6);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+            <span style="font-size: 24px;">🚨</span>
+            <div class="pixel-title" style="color: #ef4444; font-size: 16px;">XÁC NHẬN DỌN DẸP DỮ LIỆU</div>
+        </div>
+
+        <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-bottom: 18px;">
+            Hành động này sẽ <strong>xóa toàn bộ người dùng thường</strong>, thành tựu, tiến độ học, phiên chơi RPG và điểm số kiểm tra.<br>
+            Tài khoản Admin và dữ liệu từ điển gốc sẽ được giữ lại an toàn.
+        </div>
+
+        <div style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border: 1px dashed #ef4444; margin-bottom: 15px;">
+            <div style="font-size: 12px; color: #f87171; margin-bottom: 6px;">Vui lòng gõ chính xác cụm từ sau để mở khóa:</div>
+            <div style="font-family: var(--text-mono); font-size: 13px; color: var(--neon-amber); font-weight: bold; user-select: all;">XAC_NHAN_XOA_TOAN_BO</div>
+        </div>
+
+        <input type="text" id="input-confirm-reset" class="search-input" style="width: 100%; box-sizing: border-box; margin-bottom: 20px; text-align: center; font-family: var(--text-mono);" placeholder="Gõ xác nhận vào đây...">
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" onclick="closeResetDataModal()" class="btn-action" style="padding: 10px 18px; color: #94a3b8;">HỦY BỎ</button>
+            <button type="button" id="btn-execute-reset" onclick="executeResetData()" class="pixel-btn" style="background: #ef4444; padding: 10px 20px;">
+                XÁC NHẬN XÓA
+            </button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    let currentAdminTab = 'overview';
+    let cachedUsers = [];
+    let vocabCurrentPage = 1;
+    let vocabTotalPages = 1;
+
     document.addEventListener("DOMContentLoaded", () => {
-        fetchAdminData();
+        fetchAdminStats();
+        fetchAdminUsers();
+        fetchAdminTopics();
     });
 
-    function fetchAdminData() {
-        // Lấy thống kê
+    // ==========================================
+    // TAB MANAGEMENT
+    // ==========================================
+    function switchAdminTab(tabName) {
+        currentAdminTab = tabName;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+        const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabName));
+        if (targetBtn) targetBtn.classList.add('active');
+
+        const targetPane = document.getElementById(`pane-${tabName}`);
+        if (targetPane) targetPane.classList.add('active');
+
+        if (tabName === 'vocab') {
+            fetchVocabData(vocabCurrentPage);
+        } else if (tabName === 'users') {
+            fetchAdminUsers();
+        } else if (tabName === 'topics') {
+            fetchAdminTopics();
+        } else if (tabName === 'overview') {
+            fetchAdminStats();
+        }
+    }
+
+    function refreshCurrentTab() {
+        fetchAdminStats();
+        if (currentAdminTab === 'users') fetchAdminUsers();
+        if (currentAdminTab === 'vocab') fetchVocabData(vocabCurrentPage);
+        if (currentAdminTab === 'topics') fetchAdminTopics();
+    }
+
+    // ==========================================
+    // STATS
+    // ==========================================
+    function fetchAdminStats() {
         fetch('/api/admin/stats')
             .then(res => res.json())
             .then(data => {
-                if(data.error) {
+                if (data.error) {
                     alert(data.error);
                     window.location.href = '/dashboard';
                     return;
@@ -109,46 +768,289 @@
                 document.getElementById('stat-grammar').innerText = data.grammar;
                 document.getElementById('stat-tests').innerText = data.tests;
             })
-            .catch(err => console.error("Admin Auth Error"));
+            .catch(err => console.error("Admin Auth/Stats Error:", err));
+    }
 
-        // Lấy danh sách user
+    // ==========================================
+    // USERS MANAGEMENT
+    // ==========================================
+    function fetchAdminUsers() {
         fetch('/api/admin/users')
             .then(res => res.json())
             .then(users => {
-                const tbody = document.getElementById('admin-user-list');
-                tbody.innerHTML = '';
-
-                users.forEach(u => {
-                    const roleColor = u.role === 'admin' ? 'color: var(--neon-pink); font-weight: bold;' : 'color: #94a3b8;';
-                    tbody.innerHTML += `
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
-                            <td style="padding: 12px;">#${u.id}</td>
-                            <td style="padding: 12px; color: var(--neon-cyan);">${u.username}</td>
-                            <td style="padding: 12px; ${roleColor}">${u.role.toUpperCase()}</td>
-                            <td style="padding: 12px;">${u.level}</td>
-                            <td style="padding: 12px; color: var(--neon-amber);">${u.coins}</td>
-                            <td style="padding: 12px; color: #94a3b8;">${u.created_at}</td>
-                            <td style="padding: 12px; text-align: right;">
-                                <button onclick="deleteUser(${u.id})" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid #ef4444; color: #ef4444; padding: 6px 12px; font-size: 9px; box-shadow: none;">BAN / XÓA</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            });
+                cachedUsers = users;
+                renderUsersTable(users);
+                document.getElementById('user-count-badge').textContent = `${users.length} Players`;
+            })
+            .catch(err => console.error("Fetch Users Error:", err));
     }
 
-    function deleteUser(userId) {
-        if(!confirm("CẢNH BÁO TỐI CAO: Bạn có chắc chắn muốn xóa vĩnh viễn Player này khỏi cơ sở dữ liệu?")) return;
+    function renderUsersTable(users) {
+        const tbody = document.getElementById('user-table-body');
+        tbody.innerHTML = '';
+
+        if (!users || users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 25px; color: #94a3b8;">Không tìm thấy người chơi nào.</td></tr>`;
+            return;
+        }
+
+        users.forEach(u => {
+            const isAdmin = u.role === 'admin';
+            const roleBadge = isAdmin
+                ? `<span class="admin-badge" style="background: rgba(249, 168, 212, 0.15); color: var(--neon-pink); border-color: rgba(249, 168, 212, 0.4);">ADMIN</span>`
+                : `<span class="admin-badge" style="background: rgba(103, 232, 249, 0.1); color: var(--neon-cyan); border-color: rgba(103, 232, 249, 0.3);">PLAYER</span>`;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-family: var(--text-mono); color: #94a3b8;">#${u.id}</td>
+                    <td>
+                        <div style="font-weight: 600; color: #fff;">${u.username}</div>
+                    </td>
+                    <td>${roleBadge}</td>
+                    <td>
+                        <span style="color: var(--neon-purple);">${u.level || 'Tân Binh'}</span>
+                    </td>
+                    <td>
+                        <span style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">🪙 ${u.coins}</span>
+                    </td>
+                    <td style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">${u.created_at}</td>
+                    <td style="text-align: right;">
+                        <div style="display: inline-flex; gap: 8px;">
+                            <button onclick="resetUserProgress(${u.id}, '${u.username}')" class="btn-action btn-action-warning" title="Reset toàn bộ tiến độ, điểm số về 0">
+                                🔄 Reset
+                            </button>
+                            ${!isAdmin ? `
+                                <button onclick="deleteUser(${u.id}, '${u.username}')" class="btn-action btn-action-danger" title="Xóa tài khoản vĩnh viễn">
+                                    🗑️ Xóa
+                                </button>
+                            ` : `
+                                <span style="font-size: 11px; color: #64748b; padding: 6px;">Bảo vệ</span>
+                            `}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function filterUsers() {
+        const search = document.getElementById('user-search').value.toLowerCase().trim();
+        const role = document.getElementById('user-role-filter').value;
+
+        const filtered = cachedUsers.filter(u => {
+            const matchSearch = u.username.toLowerCase().includes(search);
+            const matchRole = role === 'ALL' || u.role === role;
+            return matchSearch && matchRole;
+        });
+        renderUsersTable(filtered);
+    }
+
+    function resetUserProgress(userId, username) {
+        if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn RESET toàn bộ tiến độ học tập và điểm số của @${username} về mặc định? (Tài khoản vẫn được giữ nguyên)`)) {
+            return;
+        }
+
+        fetch(`/api/admin/users/${userId}/reset`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(`LỖI: ${data.error}`);
+                else {
+                    alert(data.message);
+                    fetchAdminUsers();
+                }
+            })
+            .catch(err => alert("Lỗi kết nối máy chủ!"));
+    }
+
+    function deleteUser(userId, username) {
+        if (!confirm(`CẢNH BÁO TỐI CAO: Xóa vĩnh viễn người chơi @${username} khỏi cơ sở dữ liệu?`)) return;
 
         fetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
             .then(res => res.json())
             .then(data => {
-                if(data.error) alert(data.error);
+                if (data.error) alert(`LỖI: ${data.error}`);
                 else {
                     alert(data.message);
-                    fetchAdminData(); // Refresh bảng
+                    fetchAdminUsers();
+                    fetchAdminStats();
                 }
-            });
+            })
+            .catch(err => alert("Lỗi kết nối máy chủ!"));
+    }
+
+    // ==========================================
+    // VOCABULARY MANAGEMENT
+    // ==========================================
+    function fetchVocabData(page = 1) {
+        vocabCurrentPage = page;
+        const search = document.getElementById('vocab-search').value.trim();
+        const level = document.getElementById('vocab-level-filter').value;
+
+        const url = `/api/admin/vocabulary?page=${page}&per_page=15&search=${encodeURIComponent(search)}&level=${encodeURIComponent(level)}`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                vocabTotalPages = data.total_pages || 1;
+                document.getElementById('vocab-showing').textContent = data.vocabularies.length;
+                document.getElementById('vocab-total').textContent = data.total;
+                document.getElementById('vocab-page-indicator').textContent = `Trang ${data.page} / ${vocabTotalPages}`;
+
+                document.getElementById('btn-vocab-prev').disabled = data.page <= 1;
+                document.getElementById('btn-vocab-next').disabled = data.page >= vocabTotalPages;
+
+                renderVocabTable(data.vocabularies);
+            })
+            .catch(err => console.error("Fetch Vocab Error:", err));
+    }
+
+    function renderVocabTable(items) {
+        const tbody = document.getElementById('vocab-table-body');
+        tbody.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 25px; color: #94a3b8;">Không tìm thấy từ vựng nào.</td></tr>`;
+            return;
+        }
+
+        items.forEach(v => {
+            const levelColor = {
+                'A1': 'var(--pixel-green)', 'A2': 'var(--neon-cyan)',
+                'B1': 'var(--neon-amber)', 'B2': 'var(--neon-purple)',
+                'C1': 'var(--neon-pink)', 'C2': '#f43f5e'
+            }[v.cefr_level] || '#fff';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-family: var(--text-mono); color: #94a3b8;">#${v.id}</td>
+                    <td style="font-weight: bold; color: var(--neon-cyan); font-size: 14px;">${v.word}</td>
+                    <td style="color: #e2e8f0;">${v.meaning}</td>
+                    <td><span class="admin-badge" style="background: rgba(255,255,255,0.06); font-size: 10px;">${v.theme}</span></td>
+                    <td>
+                        <span class="admin-badge" style="color: ${levelColor}; border-color: ${levelColor}; font-size: 10px;">
+                            ${v.cefr_level}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <button onclick="deleteVocabItem(${v.id}, '${v.word}')" class="btn-action btn-action-danger" title="Xóa từ vựng">
+                            🗑️ Xóa
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function changeVocabPage(delta) {
+        const newPage = vocabCurrentPage + delta;
+        if (newPage >= 1 && newPage <= vocabTotalPages) {
+            fetchVocabData(newPage);
+        }
+    }
+
+    function openAddVocabModal() {
+        document.getElementById('modal-add-vocab').classList.add('show');
+        document.getElementById('add-vocab-word').focus();
+    }
+    function closeAddVocabModal() {
+        document.getElementById('modal-add-vocab').classList.remove('show');
+        document.getElementById('form-add-vocab').reset();
+    }
+
+    function submitNewVocab(e) {
+        e.preventDefault();
+        const word = document.getElementById('add-vocab-word').value.trim();
+        const meaning = document.getElementById('add-vocab-meaning').value.trim();
+        const cefr_level = document.getElementById('add-vocab-level').value;
+        const theme = document.getElementById('add-vocab-theme').value.trim();
+
+        const btn = document.getElementById('btn-save-vocab');
+        btn.disabled = true;
+        btn.innerText = 'ĐANG LƯU...';
+
+        fetch('/api/admin/vocabulary', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ word, meaning, cefr_level, theme })
+        })
+        .then(res => res.json().then(data => ({ status: res.status, body: data })))
+        .then(res => {
+            btn.disabled = false;
+            btn.innerText = 'LƯU TỪ VỰNG';
+            if (res.status === 201) {
+                alert(res.body.message);
+                closeAddVocabModal();
+                fetchVocabData(1);
+                fetchAdminStats();
+            } else {
+                alert(res.body.error || 'Lỗi khi thêm từ vựng!');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerText = 'LƯU TỪ VỰNG';
+            alert("Lỗi kết nối máy chủ!");
+        });
+    }
+
+    function deleteVocabItem(id, word) {
+        if (!confirm(`Bạn có chắc muốn xóa vĩnh viễn từ vựng '${word}' khỏi từ điển?`)) return;
+
+        fetch(`/api/admin/vocabulary/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else {
+                    alert(data.message);
+                    fetchVocabData(vocabCurrentPage);
+                    fetchAdminStats();
+                }
+            })
+            .catch(err => alert("Lỗi kết nối máy chủ!"));
+    }
+
+    // ==========================================
+    // RPG TOPICS MANAGEMENT
+    // ==========================================
+    function fetchAdminTopics() {
+        fetch('/api/admin/topics')
+            .then(res => res.json())
+            .then(topics => {
+                document.getElementById('topic-count-badge').textContent = `${topics.length} Topics`;
+                renderTopicsList(topics);
+            })
+            .catch(err => console.error("Fetch Topics Error:", err));
+    }
+
+    function renderTopicsList(topics) {
+        const container = document.getElementById('topic-list-container');
+        container.innerHTML = '';
+
+        if (!topics || topics.length === 0) {
+            container.innerHTML = `<div style="color: #94a3b8; text-align: center; padding: 30px;">Chưa có chủ đề nào được tạo.</div>`;
+            return;
+        }
+
+        topics.forEach(t => {
+            const coverUrl = t.cover_image ? `/static/uploads/covers/${t.cover_image}` : '/static/uploads/covers/default_cover.jpg';
+            container.innerHTML += `
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 10px; padding: 14px; display: flex; gap: 14px; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; gap: 14px; align-items: center; overflow: hidden;">
+                        <img src="${coverUrl}" onerror="this.src='/static/uploads/covers/default_cover.jpg'" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid var(--glass-border);">
+                        <div style="overflow: hidden;">
+                            <div style="color: #fff; font-weight: 600; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${t.title}</div>
+                            <div style="display: flex; gap: 8px; margin-top: 4px; align-items: center;">
+                                <span class="admin-badge" style="background: rgba(216, 180, 254, 0.15); color: var(--neon-purple); font-size: 10px; padding: 2px 8px;">${t.genre}</span>
+                                <span style="font-size: 11px; color: #94a3b8;">Chế độ: ${t.play_mode || 'both'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="deleteTopic(${t.id}, '${t.title}')" class="btn-action btn-action-danger" style="flex-shrink: 0;">
+                        🗑️ Xóa
+                    </button>
+                </div>
+            `;
+        });
     }
 
     function submitNewTopic(event) {
@@ -156,8 +1058,7 @@
         const form = document.getElementById('form-topic');
         const formData = new FormData(form);
 
-        // Nút submit vô hiệu hóa tạm thời để tránh spam
-        const btnSubmit = form.querySelector('button[type="submit"]');
+        const btnSubmit = document.getElementById('btn-create-topic');
         const oldText = btnSubmit.innerText;
         btnSubmit.disabled = true;
         btnSubmit.innerText = "ĐANG TẠO...";
@@ -168,16 +1069,86 @@
         })
         .then(res => res.json())
         .then(data => {
-            if(data.error) alert(data.error);
+            if (data.error) alert(data.error);
             else {
                 alert(data.message);
                 form.reset();
+                fetchAdminTopics();
             }
         })
         .catch(err => alert("Lỗi khi kết nối với máy chủ!"))
         .finally(() => {
             btnSubmit.disabled = false;
             btnSubmit.innerText = oldText;
+        });
+    }
+
+    function deleteTopic(topicId, title) {
+        if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn chủ đề '${title}'?`)) return;
+
+        fetch(`/api/admin/topics/${topicId}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else {
+                    alert(data.message);
+                    fetchAdminTopics();
+                }
+            })
+            .catch(err => alert("Lỗi kết nối máy chủ!"));
+    }
+
+    // ==========================================
+    // DANGER ZONE & RESET DATA
+    // ==========================================
+    function openResetDataModal() {
+        document.getElementById('input-confirm-reset').value = '';
+        document.getElementById('modal-reset-data').classList.add('show');
+        document.getElementById('input-confirm-reset').focus();
+    }
+    function closeResetDataModal() {
+        document.getElementById('modal-reset-data').classList.remove('show');
+    }
+
+    function executeResetData() {
+        const input = document.getElementById('input-confirm-reset').value.trim();
+        if (input !== 'XAC_NHAN_XOA_TOAN_BO') {
+            alert("Mã xác nhận chưa chính xác! Vui lòng gõ đúng 'XAC_NHAN_XOA_TOAN_BO'");
+            return;
+        }
+
+        const btn = document.getElementById('btn-execute-reset');
+        btn.disabled = true;
+        btn.innerText = 'ĐANG DỌN DẸP...';
+
+        fetch('/api/admin/reset-data', {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ confirm_code: input })
+        })
+        .then(res => res.json().then(data => ({ status: res.status, body: data })))
+        .then(res => {
+            btn.disabled = false;
+            btn.innerText = 'XÁC NHẬN XÓA';
+            closeResetDataModal();
+
+            if (res.status === 200) {
+                const stats = res.body.deleted_stats || {};
+                let report = `DỌN DẸP THÀNH CÔNG!\n`;
+                for (const [k, v] of Object.entries(stats)) {
+                    report += `\n- ${k}: đã xóa ${v}`;
+                }
+                report += `\n\nAdmin giữ lại: ${(res.body.admins_retained || []).join(', ')}`;
+                alert(report);
+                refreshCurrentTab();
+            } else {
+                alert(`LỖI: ${res.body.error || 'Có lỗi xảy ra trong quá trình dọn dẹp!'}`);
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerText = 'XÁC NHẬN XÓA';
+            alert("Lỗi kết nối máy chủ!");
         });
     }
 </script>

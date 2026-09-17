@@ -18,7 +18,7 @@ class StorySession(db.Model):
 
     # Relationships
     user = db.relationship('User', backref=db.backref('story_sessions', lazy=True, cascade="all, delete-orphan"))
-    topic = db.relationship('StoryTopic', backref='sessions')
+    topic = db.relationship('StoryTopic', backref=db.backref('sessions', lazy=True, cascade="all, delete-orphan"))
 
     def __repr__(self):
         return f"<StorySession User:{self.user_id} - Topic:{self.topic_id} - Status:{self.status}>"
