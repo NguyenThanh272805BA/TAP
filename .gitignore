@@ -1,16 +1,95 @@
-# Python & Virtual Environments
+# ==============================================================================
+# ENVIRONMENT & SECRETS (Bảo mật & Biến môi trường)
+# ==============================================================================
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# ==============================================================================
+# PYTHON CACHE & BYTECODE (Bộ đệm & Trình biên dịch Python)
+# ==============================================================================
 __pycache__/
-venv/
-.venv/
+*.py[cod]
+*$py.class
 *.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==============================================================================
+# VIRTUAL ENVIRONMENTS (Môi trường ảo)
+# ==============================================================================
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
 .cache/
 
-# IDE & Editor Settings
+# ==============================================================================
+# IDE & EDITORS (Cấu hình riêng của trình soạn thảo / IDE)
+# ==============================================================================
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+*.bak
+.project
+.pydevproject
+.settings/
+*.sublime-workspace
+*.sublime-project
 
-# Large Model Weights, Checkpoints & Training Artifacts (Avoid Git LFS issues)
+# ==============================================================================
+# TESTING, COVERAGE & LINTERS (Kiểm thử & Phân tích tĩnh)
+# ==============================================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+
+# ==============================================================================
+# LOGS, DATABASE & TEMPORARY FILES (Nhật ký, CSDL tạm & Tệp rác)
+# ==============================================================================
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+instance/
+temp/
+tmp/
+scratch/
+
+# ==============================================================================
+# LARGE AI/ML WEIGHTS & TRAINING ARTIFACTS (Tránh quá tải Git / Git LFS)
+# ==============================================================================
 app/ml_models/saved_models/
 *.pt
 *.pth
@@ -18,19 +97,29 @@ app/ml_models/saved_models/
 *.safetensors
 *.onnx
 *.h5
+*.tflite
+*.ckpt
 checkpoints/
 runs/
 wandb/
 model_cache/
-*.log
 
-# Documentation & Academic Reports (Blocked from Git)
+# ==============================================================================
+# DOCUMENTATION & OFFLINE SCRIPTS (Tài liệu nội bộ & Scripts ngoại tuyến)
+# ==============================================================================
 docs/
-
-# Offline Scripts, Testing & MLOps Tools (Blocked from Git)
 scripts/
 
-# System & OS
+# ==============================================================================
+# OPERATING SYSTEM (Tệp rác hệ điều hành Windows / macOS / Linux)
+# ==============================================================================
 Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
 .DS_Store
-scratch/
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
