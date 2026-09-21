@@ -30,21 +30,25 @@
     .tab-btn.active-battle { background: rgba(244, 114, 182, 0.15); border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 15px rgba(244, 114, 182, 0.3); }
 
     .cefr-badge {
-        padding: 3px 8px;
-        border-radius: 6px;
-        font-size: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 10px;
+        border-radius: 9999px; /* Bo tròn hoàn toàn dạng pill */
+        border: 1.5px solid #000000; /* Viền đen rõ nét */
+        font-size: 10.5px;
         font-family: var(--text-mono);
-        font-weight: bold;
+        font-weight: 800;
         background: var(--neon-purple);
-        color: #fff;
-        box-shadow: 0 0 8px rgba(216, 180, 254, 0.4);
+        color: #ffffff;
+        box-shadow: 0 2px 0 #000000;
     }
     .cefr-badge.a1 { background: #059669; }
     .cefr-badge.a2 { background: #0284c7; }
     .cefr-badge.b1 { background: #d97706; }
     .cefr-badge.b2 { background: #7c3aed; }
     .cefr-badge.c1 { background: #db2777; }
-    .cefr-badge.c2 { background: #e11d48; box-shadow: 0 0 12px rgba(225, 29, 72, 0.6); }
+    .cefr-badge.c2 { background: #e11d48; box-shadow: 0 2px 0 #000000, 0 0 12px rgba(225, 29, 72, 0.6); }
 
     .content-section { display: none; animation: fadeIn 0.35s ease; }
     .content-section.active { display: block; }
@@ -52,9 +56,9 @@
 
     /* Bento Topic Cards Grid */
     .bento-topic-card {
-        background: rgba(15, 23, 42, 0.7);
-        border: 2px solid var(--glass-border);
-        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000; /* Viền đen */
+        border-radius: 14px; /* Bo góc */
         padding: 20px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
@@ -62,11 +66,12 @@
         justify-content: space-between;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 4px 0 #000000;
     }
     .bento-topic-card:hover {
         transform: translateY(-4px);
-        border-color: var(--neon-cyan);
-        box-shadow: 0 8px 25px rgba(6, 182, 212, 0.15);
+        border-color: #000000;
+        box-shadow: 0 8px 0 #000000, 0 12px 25px rgba(6, 182, 212, 0.25);
     }
 
     /* Filter Pills */
@@ -132,7 +137,6 @@
     <div class="tab-nav">
         <div class="tab-btn active-vocab" id="tab-vocab" onclick="switchTabUI('vocab')">📚 KHO TỪ VỰNG (CHỦ ĐỀ)</div>
         <div class="tab-btn" id="tab-grammar" onclick="switchTabUI('grammar')">⚙️ NGỮ PHÁP PHÂN CẤP (CEFR)</div>
-        <div class="tab-btn" id="tab-battle" onclick="switchTabUI('battle')">⚔️ BATTLE ZONE (CHAT VỚI MASTER G)</div>
     </div>
 
     <!-- ========================================================================= -->
@@ -248,25 +252,6 @@
         </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- TAB 3: BATTLE ZONE (CHAT VỚI MASTER G) -->
-    <!-- ========================================================================= -->
-    <div id="section-battle" class="content-section bento-card card-wide" style="padding: 25px; min-height: 500px; display: flex; flex-direction: column;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
-            <div class="pixel-title" id="training-title" style="font-size: 18px; color: var(--neon-pink); margin: 0;">BATTLE_ZONE // THỰC CHIẾN</div>
-            {% include 'master_g.html' %}
-        </div>
-
-        <div id="dynamic-workspace" style="flex-grow: 1; display: flex; flex-direction: column; gap: 15px;">
-            <!-- Render từ JS -->
-        </div>
-
-        <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 25px; padding: 25px;">
-            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 12px; font-size: 13px;">MASTER_G FEEDBACK:</div>
-            <div id="aiFeedback" class="pixel-text" style="font-size: 16px; color: #fff; line-height: 1.6;"></div>
-        </div>
-    </div>
-
 </div>
 
 <!-- ========================================================================= -->
@@ -321,6 +306,21 @@
         </table>
     </div>
 </div>
+
+<!-- MODAL THỰC HÀNH ĐẶT CÂU VỚI AI (POPUP TẬP TRUNG) -->
+<div id="practice-sentence-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center;">
+    <div style="background: rgba(15, 23, 42, 0.98); border: 2.5px solid #000; border-radius: 16px; box-shadow: 0 8px 0 #000; padding: 25px; max-width: 650px; width: 92%; display: flex; flex-direction: column; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
+            <div class="pixel-title" id="practice-modal-title" style="color: var(--neon-pink); font-size: 16px; margin: 0;">LUYỆN ĐẶT CÂU VỚI AI</div>
+            <button class="pixel-btn" onclick="closePracticeModal()" style="background: #ef4444; border: 2px solid #000; box-shadow: 0 3px 0 #000; padding: 6px 12px; font-size: 10px;">[ ĐÓNG ]</button>
+        </div>
+        <div id="practice-workspace" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 15px; padding: 16px;">
+            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 8px; font-size: 12px;">MASTER_G FEEDBACK:</div>
+            <div id="aiFeedback" class="pixel-text" style="font-size: 14px; color: #fff; line-height: 1.6;"></div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -349,8 +349,6 @@
             loadMLRecommendations();
         } else if (tab === 'grammar') {
             loadPersonalizedGrammar();
-        } else if (tab === 'battle') {
-            renderBattleZone('free');
         }
     }
 
@@ -813,23 +811,24 @@
     }
 
     // =========================================================================
-    // PHÂN HỆ 3: BATTLE ZONE (GỬI BÀI CHO MASTER G)
+    // PHÂN HỆ THỰC HÀNH: LUYỆN ĐẶT CÂU VỚI AI (MODAL POPUP)
     // =========================================================================
 
     function openBattleZone(mode, targetText) {
-        switchTabUI('battle');
-        document.getElementById("training-title").innerText = `BATTLE_ZONE // MỤC TIÊU: ${targetText.toUpperCase()}`;
+        const modal = document.getElementById("practice-sentence-modal");
+        modal.style.display = "flex";
+        document.getElementById("practice-modal-title").innerText = `THỰC HÀNH // MỤC TIÊU: ${targetText.toUpperCase()}`;
 
         let placeholder = mode === 'vocab' ? `Đặt một câu tiếng Anh có chứa từ '${targetText}'...` : `Viết câu sử dụng cấu trúc '${targetText}'...`;
 
-        document.getElementById("dynamic-workspace").innerHTML = `
-            <div class="pixel-text" style="font-size: 15px; margin-bottom: 5px;">HÃY CHỨNG MINH KỸ NĂNG CỦA BẠN:</div>
-            <textarea id="userInput" style="flex-grow: 1; min-height: 120px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 15px; font-family: var(--text-mono); font-size: 16px; border-radius: 12px; resize: none;" placeholder="${placeholder}"></textarea>
-            <div style="display: flex; gap: 10px;">
-                <button class="pixel-btn" onclick="submitChallenge('${mode}')" style="flex: 1; background: var(--neon-pink); padding: 15px;">GỬI CHO AI CHẤM (ENTER)</button>
-                <button class="pixel-btn" onclick="requestAIHint('${mode}')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-amber); color: var(--neon-amber); padding: 15px;">💡 GỢI Ý</button>
+        document.getElementById("practice-workspace").innerHTML = `
+            <div class="pixel-text" style="font-size: 14px; margin-bottom: 4px; color: var(--neon-cyan);">HÃY CHỨNG MINH KỸ NĂNG CỦA BẠN:</div>
+            <textarea id="userInput" style="width: 100%; min-height: 110px; background: rgba(0,0,0,0.6); border: 2px solid #000; box-shadow: 0 3px 0 #000; color: #fff; padding: 14px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: none; box-sizing: border-box;" placeholder="${placeholder}"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="pixel-btn" onclick="submitChallenge('${mode}')" style="flex: 1; background: var(--neon-pink); padding: 12px; font-size: 11px;">GỬI CHO AI CHẤM (ENTER)</button>
+                <button class="pixel-btn" onclick="requestAIHint('${mode}')" style="background: rgba(0,0,0,0.5); border: 2px solid #000; box-shadow: 0 3px 0 #000; color: var(--neon-amber); padding: 12px; font-size: 11px;">💡 GỢI Ý</button>
             </div>
-            <div id="ai-hint-box" style="display: none; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--neon-amber); color: #fff; font-size: 14px; margin-top: 10px;"></div>
+            <div id="ai-hint-box" style="display: none; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--neon-amber); color: #fff; font-size: 13px; margin-top: 10px;"></div>
         `;
         document.getElementById("aiResponseBox").style.display = "none";
 
@@ -840,19 +839,8 @@
         userInput.focus();
     }
 
-    function renderBattleZone(mode) {
-        document.getElementById("training-title").innerText = "BATTLE_ZONE // TỰ DO CHAT";
-        document.getElementById("dynamic-workspace").innerHTML = `
-            <div class="pixel-text" style="font-size: 15px; margin-bottom: 5px;">Hỏi AI bất kỳ điều gì về tiếng Anh, hoặc nhập câu để AI chấm lỗi sai:</div>
-            <textarea id="userInput" style="flex-grow: 1; min-height: 120px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); color: #fff; padding: 15px; font-family: var(--text-mono); font-size: 16px; border-radius: 12px; resize: none;" placeholder="VD: Giải thích cho tôi cấu trúc Past Simple..."></textarea>
-            <button class="pixel-btn" onclick="submitChallenge('free')" style="background: var(--neon-pink); padding: 15px; width: 100%;">GỬI CHO MASTER G (ENTER)</button>
-        `;
-        document.getElementById("aiResponseBox").style.display = "none";
-
-        const userInput = document.getElementById("userInput");
-        userInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitChallenge('free'); }
-        });
+    function closePracticeModal() {
+        document.getElementById("practice-sentence-modal").style.display = "none";
     }
 
     function requestAIHint(mode) {

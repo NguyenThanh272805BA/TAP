@@ -162,12 +162,21 @@ def get_ml_recommendations():
 @game_bp.route('/vocab/toggle_memorize', methods=['POST'])
 def toggle_memorize():
     data = request.get_json() or {}
-    vocab_id = data.get('vocab_id')
+    vocab_id = data.get('vocab_id') or data.get('id')
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+    if not vocab_id:
+        return jsonify({"error": "Thiếu mã từ vựng!"}), 400
+    try:
+        vocab_id = int(vocab_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Mã từ vựng không hợp lệ!"}), 400
 
     vocab = Vocabulary.query.get(vocab_id)
+    if not vocab:
+        return jsonify({"error": "Từ vựng không tồn tại!"}), 404
+
     user = User.query.get(user_id)
     uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=vocab_id).first()
 
@@ -275,25 +284,35 @@ def gacha_roll():
     return jsonify({
         "status": "success",
         "vocab_id": target.id,
+        "id": target.id,
         "word": target.word,
         "options": options,
         "timer": timer,
-        "current_stage": user.arena_stage or 1
+        "time_limit": timer,
+        "current_stage": user.arena_stage or 1,
+        "stage": user.arena_stage or 1
     }), 200
 
 
 @game_bp.route('/gacha/verify', methods=['POST'])
 def gacha_verify():
     data = request.get_json() or {}
-    vocab_id = data.get('vocab_id')
-    user_answer = data.get('answer', '')
-    is_timeout = data.get('timeout', False)
+    vocab_id = data.get('vocab_id') or data.get('id')
+    user_answer = data.get('answer') or data.get('selected', '')
+    is_timeout = data.get('timeout', False) or (user_answer == "TIMEOUT_NO_ANSWER")
     mode = data.get('mode', 'stage')
     current_gacha_streak = data.get('current_streak', 0)
 
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({"error": "Phiên làm việc hết hạn!"}), 401
+
+    if not vocab_id:
+        return jsonify({"error": "Thiếu mã nhận diện từ vựng (vocab_id)!"}), 400
+    try:
+        vocab_id = int(vocab_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Mã từ vựng không hợp lệ!"}), 400
 
     # BẢO MẬT KÉP: Lấy timestamp thật của server và vô hiệu hóa time ảo từ Client
     start_time = session.pop('gacha_start_time', None)
@@ -374,13 +393,22 @@ def gacha_verify():
 
     db.session.commit()
 
+    stage_completed = (mode == 'stage' and is_correct and (user.arena_stage or 1) >= 10)
+
     return jsonify({
+        "status": "success",
         "correct": is_correct,
+        "is_correct": is_correct,
+        "correct_meaning": vocab.meaning,
         "message": game_message,
+        "msg": game_message,
         "new_streak": current_gacha_streak,
         "arena_stage": user.arena_stage,
+        "stage": user.arena_stage,
         "infinity_score": user.infinity_score,
-        "is_game_over": is_game_over
+        "is_game_over": is_game_over,
+        "game_over": is_game_over,
+        "stage_completed": stage_completed
     }), 200
 
 
@@ -483,6 +511,9 @@ def get_daily_quests():
     if quests:
         needs_regeneration = False
         for q in quests:
+            if not q.vocab_id:
+                needs_regeneration = True
+                break
             v = Vocabulary.query.get(q.vocab_id)
             if not v:
                 needs_regeneration = True
@@ -555,6 +586,8 @@ def get_daily_quests():
 
     result = []
     for q in quests:
+        if not q.vocab_id:
+            continue
         v = Vocabulary.query.get(q.vocab_id)
         if v:
             result.append({
@@ -587,6 +620,8 @@ def check_and_complete_quest(user_id, text_input, score=None, is_valid_sentence=
     cleaned_input = (text_input or '').lower().strip()
 
     for q in quests:
+        if not q.vocab_id:
+            continue
         v = Vocabulary.query.get(q.vocab_id)
         if not v or not v.word:
             continue
@@ -635,10 +670,19 @@ def generate_exam():
 @game_bp.route('/exam/update_status', methods=['POST'])
 def update_exam_status():
     data = request.get_json() or {}
-    vocab_id = data.get('vocab_id')
+    vocab_id = data.get('vocab_id') or data.get('id')
     level = data.get('level')
     response_time_ms = data.get('response_time_ms', 2000.0)
     user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+    if not vocab_id:
+        return jsonify({"error": "Thiếu mã từ vựng!"}), 400
+    try:
+        vocab_id = int(vocab_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Mã từ vựng không hợp lệ!"}), 400
 
     uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=vocab_id).first()
     vocab = Vocabulary.query.get(vocab_id)
@@ -850,6 +894,12 @@ def buy_cosmetic():
 
     data = request.get_json(silent=True) or {}
     item_id = data.get('item_id')
+    if not item_id:
+        return jsonify({"error": "Thiếu mã vật phẩm!"}), 400
+    try:
+        item_id = int(item_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Mã vật phẩm không hợp lệ!"}), 400
 
     item = CosmeticItem.query.get(item_id)
     if not item:
@@ -884,6 +934,12 @@ def equip_cosmetic():
 
     data = request.get_json(silent=True) or {}
     item_id = data.get('item_id')
+    if not item_id:
+        return jsonify({"error": "Thiếu mã vật phẩm!"}), 400
+    try:
+        item_id = int(item_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Mã vật phẩm không hợp lệ!"}), 400
 
     item = CosmeticItem.query.get(item_id)
     if not item:

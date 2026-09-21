@@ -1,67 +1,201 @@
+from datetime import datetime
 from app.models.user import User
 from app.models.user_vocabulary import UserVocabulary
 from app.models.test import TestLog
 from app.models.roadmap import UserMilestoneProgress, RoadmapMilestone
 from app import db
 
-# BẢNG ÁNH XẠ RANK HỌC THUẬT THEO KHUNG CEFR & TIẾN ĐỘ CHẶNG (ACADEMIC ROADMAP TIERS)
+# BẢNG ÁNH XẠ RANK HỌC THUẬT THEO KHUNG CEFR & ĐIỂM RP (ACADEMIC ROADMAP TIERS)
 ACADEMIC_TIERS = [
-    {"band": "C2", "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)", "min_milestones": 12, "req_vocab": 1200, "req_sentence": 800},
-    {"band": "C1", "rank_name": "Kiến Trúc Sư C1 (Platinum)", "min_milestones": 8, "req_vocab": 800, "req_sentence": 500},
-    {"band": "B2", "rank_name": "Pháp Sư B2 (Gold)", "min_milestones": 6, "req_vocab": 500, "req_sentence": 300},
-    {"band": "B1", "rank_name": "Chiến Binh B1 (Silver)", "min_milestones": 4, "req_vocab": 250, "req_sentence": 150},
-    {"band": "A2", "rank_name": "Thợ Săn A2 (Bronze II)", "min_milestones": 2, "req_vocab": 80, "req_sentence": 40},
-    {"band": "A1", "rank_name": "Tân Binh A1 (Bronze I)", "min_milestones": 0, "req_vocab": 0, "req_sentence": 0}
+    {"band": "C2", "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)", "min_milestones": 12, "min_rp": 1600, "req_vocab": 1200, "req_sentence": 800},
+    {"band": "C1", "rank_name": "Kiến Trúc Sư C1 (Platinum)", "min_milestones": 8, "min_rp": 1200, "req_vocab": 800, "req_sentence": 500},
+    {"band": "B2", "rank_name": "Pháp Sư B2 (Gold)", "min_milestones": 6, "min_rp": 850, "req_vocab": 500, "req_sentence": 300},
+    {"band": "B1", "rank_name": "Chiến Binh B1 (Silver)", "min_milestones": 4, "min_rp": 550, "req_vocab": 250, "req_sentence": 150},
+    {"band": "A2", "rank_name": "Thợ Săn A2 (Bronze II)", "min_milestones": 2, "min_rp": 300, "req_vocab": 80, "req_sentence": 40},
+    {"band": "A1", "rank_name": "Tân Binh A1 (Bronze I)", "min_milestones": 0, "min_rp": 0, "req_vocab": 0, "req_sentence": 0}
 ]
 
-# Danh mục danh hiệu cổ điển để tương thích ngược
-LEGACY_RANKS = [
-    (20, "ĐỘC CÔ CẦU BẠI", 5000, 3500), (19, "Á Thần Ngôn Ngữ", 4000, 2700),
-    (18, "Triết Gia Toàn Thư", 3300, 2200), (17, "Kẻ Hủy Diệt Ngữ Pháp", 2700, 1800),
-    (16, "Kiến Trúc Sư Thực Tại", 2200, 1500), (15, "Kẻ Bẻ Cong Ngôn Ngữ", 1800, 1200),
-    (14, "Lãnh Chúa Từ Điển", 1450, 1000), (13, "Bậc Thầy Giao Tiếp", 1150, 800),
-    (12, "Nghệ Nhân Ghép Chữ", 900, 650), (11, "Học Giả Tinh Anh", 700, 500),
-    (10, "Pháp Sư Ngôn Ngữ", 500, 350), (9, "Hiệp Sĩ Cú Pháp", 350, 250),
-    (8, "Đạo Tặc Từ Vựng", 250, 180), (7, "Chiến Binh Giao Tiếp", 180, 120),
-    (6, "Trinh Sát Ngữ Pháp", 120, 80), (5, "Thợ Săn Ngôn Từ", 80, 50),
-    (4, "Kẻ Lang Thang", 50, 30), (3, "Kẻ Sống Sót", 30, 15),
-    (2, "Thực Tập Sinh", 10, 5), (1, "Tân Binh Ngơ Ngác", 0, 0)
-]
+SECTION_NAMES = {
+    "vocab_mcq": "Nhận Diện Từ Vựng (MCQ)",
+    "word_scramble": "Gỡ Bom Ký Tự (Scramble)",
+    "syntax": "Lắp Ráp Cú Pháp (Syntax)",
+    "grammar_cloze": "Vận Dụng Ngữ Pháp (Cloze)"
+}
+
+
+def compute_user_academic_tier(user):
+    """
+    Tính toán Rank học thuật của người dùng dựa trên đồng thời 2 yếu tố:
+    1. Số chặng Lộ trình đã vượt qua (Completed Milestones).
+    2. Điểm uy tín học thuật (Academic RP).
+    Nếu RP tụt sâu dưới ngưỡng an toàn, người dùng sẽ bị GIÁNG HẠNG (Demotion)!
+    """
+    if not user:
+        return "Tân Binh A1 (Bronze I)", "A1"
+
+    completed_milestones = UserMilestoneProgress.query.filter_by(user_id=user.id, is_completed=True).count()
+    user_rp = user.academic_rp if user.academic_rp is not None else 500
+
+    target_tier = ACADEMIC_TIERS[-1]  # Mặc định A1
+
+    for tier in ACADEMIC_TIERS:
+        # Điều kiện thăng/giữ hạng: Phải đủ cả mốc chặng VÀ đủ điểm RP uy tín
+        if completed_milestones >= tier["min_milestones"] and user_rp >= tier["min_rp"]:
+            target_tier = tier
+            break
+
+    return target_tier["rank_name"], target_tier["band"]
 
 
 def check_and_update_level(user_id):
     """
-    Hệ thống nâng cấp cấp bậc thích ứng:
-    Kết hợp giữa số Chặng Milestone lộ trình đã vượt qua + Số lượng từ đã thuộc và câu đã kiểm tra.
+    Kiểm tra và cập nhật trạng thái Rank/Level học thuật cho người dùng.
+    Hỗ trợ cả thăng hạng (Promotion) lẫn giáng hạng (Demotion).
     """
+    if not user_id:
+        return False, None
     user = User.query.get(user_id)
     if not user:
         return False, None
 
-    # 1. Đếm số lượng mốc học tập thực tế
-    vocab_count = UserVocabulary.query.filter_by(user_id=user_id, memorization_level='DA_THUOC').count()
-    sentences_count = TestLog.query.filter(TestLog.user_id == user_id, TestLog.score >= 5.0).count()
-    completed_milestones = UserMilestoneProgress.query.filter_by(user_id=user_id, is_completed=True).count()
-
-    new_rank_name = "Tân Binh A1 (Bronze I)"
-    new_current_band = "A1"
-
-    # 2. Quét kiểm tra thăng hạng theo Tier lộ trình học thuật
-    for tier in ACADEMIC_TIERS:
-        milestone_ok = completed_milestones >= tier["min_milestones"]
-        vocab_ok = vocab_count >= tier["req_vocab"]
-        
-        # Thăng cấp nếu hoàn thành chặng lộ trình tương ứng HOẶC cày cuốc tích lũy từ vựng
-        if milestone_ok or (vocab_ok and sentences_count >= tier["req_sentence"]):
-            new_rank_name = tier["rank_name"]
-            new_current_band = tier["band"]
-            break
+    new_rank_name, new_band = compute_user_academic_tier(user)
 
     level_changed = False
-    if user.current_level != new_rank_name or getattr(user, 'current_band', 'A1') != new_current_band:
+    old_rank = user.current_level
+
+    if user.current_level != new_rank_name or getattr(user, 'current_band', 'A1') != new_band:
         user.current_level = new_rank_name
-        user.current_band = new_current_band
+        user.current_band = new_band
         db.session.commit()
         level_changed = True
 
     return level_changed, user.current_level
+
+
+def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_abandoned=False):
+    """
+    Quy trình xử lý kết quả khảo thí chặng Lộ trình Target Band KHẮC NGHIỆT chuẩn đời thật:
+    1. Quy tắc Điểm Liệt: Mọi phần thi phải >= 5.0/10.0. Nếu có 1 phần < 5.0 -> TRƯỢT NGAY.
+    2. Điểm Chuẩn Qua Ải: Tổng điểm >= 7.5/10.0.
+    3. Thưởng / Phạt RP:
+       - Đỗ: +60 đến +100 RP.
+       - Trượt: Phạt -35 RP (Bỏ cuộc giữa chừng phạt -20 RP).
+       - Trượt liên tiếp >= 2: Tăng cảnh báo giáng hạng.
+       - Giáng hạng (Demotion) nếu RP tụt xuống dưới ngưỡng.
+    4. Kích hoạt Cooldown 45 giây trước khi được thi lại.
+    """
+    if not user_id or not milestone_id:
+        return {"error": "Thiếu mã người dùng hoặc mã chặng thi!"}
+    user = User.query.get(user_id)
+    milestone = RoadmapMilestone.query.get(milestone_id)
+    if not user or not milestone:
+        return {"error": "Không tìm thấy người dùng hoặc chặng thi!"}
+
+    if user.academic_rp is None:
+        user.academic_rp = 500
+
+    old_rank = user.current_level
+    old_band = getattr(user, 'current_band', 'A1')
+    old_rp = user.academic_rp
+
+    progress = UserMilestoneProgress.query.filter_by(user_id=user_id, milestone_id=milestone_id).first()
+    if not progress:
+        progress = UserMilestoneProgress(user_id=user_id, milestone_id=milestone_id, attempts=1, best_score=0.0)
+        db.session.add(progress)
+    else:
+        progress.attempts = (progress.attempts or 0) + 1
+
+    # Kiểm tra Điểm Liệt
+    disqualified = False
+    disqualified_sections = []
+    for sec_key, sec_score in section_scores.items():
+        if sec_score < 5.0:
+            disqualified = True
+            sec_label = SECTION_NAMES.get(sec_key, sec_key)
+            disqualified_sections.append(f"{sec_label} ({sec_score:.1f}/10)")
+
+    passed = False
+    disqualified_reason = None
+
+    if is_abandoned:
+        disqualified = True
+        disqualified_reason = "Bỏ dở bài thi giữa chừng! Hệ thống tính 0 điểm và phạt vi phạm quy chế thi."
+    elif disqualified:
+        disqualified_reason = f"DÍNH ĐIỂM LIỆT! Các phần thi dưới 5.0 điểm: {', '.join(disqualified_sections)}. Quy chế thi yêu cầu mọi phần phải đạt tối thiểu 5.0/10."
+    elif exam_score < 7.5:
+        disqualified_reason = f"Chưa đạt điểm chuẩn qua ải ({exam_score:.1f}/10.0). Điểm chuẩn học thuật yêu cầu tối thiểu 7.5/10.0."
+    else:
+        passed = True
+
+    rp_change = 0
+    demoted = False
+    promoted = False
+
+    if passed:
+        # Tính thưởng RP
+        if exam_score >= 9.5:
+            rp_change = 100
+        elif exam_score >= 8.5:
+            rp_change = 80
+        else:
+            rp_change = 60
+
+        user.academic_rp += rp_change
+        user.consecutive_fails = 0
+
+        if exam_score > (progress.best_score or 0.0):
+            progress.best_score = exam_score
+
+        if not progress.is_completed:
+            progress.is_completed = True
+            progress.completed_at = datetime.now()
+            # Thưởng xu khi đỗ chặng
+            user.coins += milestone.reward_coins
+
+        # Kiểm tra thăng hạng
+        new_rank, new_band = compute_user_academic_tier(user)
+        if new_rank != old_rank:
+            user.current_level = new_rank
+            user.current_band = new_band
+            promoted = True
+
+    else:
+        # Bị phạt trừ RP
+        if is_abandoned:
+            rp_change = -20
+        else:
+            rp_change = -35
+
+        user.academic_rp = max(0, user.academic_rp + rp_change)
+        user.consecutive_fails = (user.consecutive_fails or 0) + 1
+        user.last_exam_fail_time = datetime.now()
+
+        # Kiểm tra nguy cơ Giáng Hạng (Demotion)
+        new_rank, new_band = compute_user_academic_tier(user)
+        if new_rank != old_rank:
+            # RP tụt xuống dưới ngưỡng của bậc rank hiện tại -> Giáng cấp!
+            user.current_level = new_rank
+            user.current_band = new_band
+            demoted = True
+
+    db.session.commit()
+
+    return {
+        "passed": passed,
+        "score": exam_score,
+        "best_score": progress.best_score,
+        "is_completed": progress.is_completed,
+        "section_scores": section_scores,
+        "disqualified": disqualified,
+        "disqualified_reason": disqualified_reason,
+        "rp_change": rp_change,
+        "old_rp": old_rp,
+        "new_rp": user.academic_rp,
+        "promoted": promoted,
+        "demoted": demoted,
+        "current_rank": user.current_level,
+        "current_band": getattr(user, 'current_band', 'A1'),
+        "consecutive_fails": user.consecutive_fails,
+        "cooldown_seconds": 45 if not passed else 0,
+        "reward_coins": milestone.reward_coins if passed else 0
+    }

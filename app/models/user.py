@@ -21,6 +21,10 @@ class User(db.Model):
     arena_stage = db.Column(db.Integer, default=1)  # Ải hiện tại trong Gacha Arena (1-10)
     infinity_score = db.Column(db.Integer, default=0)  # Điểm cao nhất chế độ vô cực
     last_quest_date = db.Column(db.Date, nullable=True)  # Ngày giao quest gần nhất
+    academic_rp = db.Column(db.Integer, default=500)     # Điểm Rank uy tín học thuật (Rank Points)
+    study_time_minutes = db.Column(db.Integer, default=0) # Tổng thời gian học tập tích lũy (phút)
+    consecutive_fails = db.Column(db.Integer, default=0) # Số lần thi trượt liên tiếp
+    last_exam_fail_time = db.Column(db.DateTime, nullable=True) # Thời điểm trượt thi gần nhất để tính Cooldown
     avatar = db.Column(db.String(255), default='default_avatar.png')
     bio = db.Column(db.Text, default='Kẻ lang thang trong thế giới ngôn ngữ...')
 

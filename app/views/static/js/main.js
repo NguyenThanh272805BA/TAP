@@ -177,44 +177,47 @@ function loadDailyQuests() {
 function loadDashboardLeaderboard() {
     const lbContainer = document.getElementById("dashboard-leaderboard");
     if (!lbContainer) return;
-    fetch('/api/game/gacha/leaderboard')
+    fetch('/api/leaderboard?category=overall&limit=3')
     .then(res => {
         if (!res.ok) throw new Error("HTTP error " + res.status);
         return res.json();
     })
     .then(data => {
-        if (!data.leaderboard || data.leaderboard.length === 0) {
-            lbContainer.innerHTML = '<span style="color: #94a3b8;">Chưa có cao thủ nào.</span>';
+        const list = data.leaderboard || [];
+        if (list.length === 0) {
+            lbContainer.innerHTML = '<span style="color: #94a3b8; font-size: 12px;">Chưa có dữ liệu cao thủ.</span>';
             return;
         }
         let html = '';
-        data.leaderboard.forEach((u, idx) => {
+        list.forEach((u, idx) => {
             let color = idx === 0 ? "var(--neon-amber)" : (idx === 1 ? "#cbd5e1" : "#d97706");
-            if(idx > 2) color = "#94a3b8";
             const avatarSrc = u.avatar ? `/static/uploads/avatars/${u.avatar}` : `/static/uploads/avatars/default_avatar.png`;
             const frameClass = u.equipped_frame || 'frame-default';
             const titleText = u.equipped_title || 'Tân Binh Ngơ Ngác';
 
             html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-family: var(--text-mono); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                    <span style="color: ${color}; font-weight: bold; font-size: 13px;">#${idx+1}</span>
-                    <div class="avatar-container ${frameClass}" style="width: 32px; height: 32px; flex-shrink: 0; padding: 3px;">
+                    <span style="color: ${color}; font-weight: bold; font-size: 13px; width: 22px;">#${idx+1}</span>
+                    <div class="avatar-container ${frameClass}" style="width: 32px; height: 32px; flex-shrink: 0; padding: 2px;">
                         <img src="${avatarSrc}" class="avatar-img" onerror="this.src='/static/uploads/covers/default_cover.jpg'">
                     </div>
                     <div style="min-width: 0; overflow: hidden;">
-                        <div style="color: #fff; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.username}</div>
-                        <div style="font-size: 9px; color: var(--neon-pink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">« ${titleText} »</div>
+                        <div style="color: #fff; font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.username}</div>
+                        <div style="font-size: 9.5px; color: var(--neon-pink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">« ${titleText} »</div>
                     </div>
                 </div>
-                <span style="color: var(--pixel-green); font-size: 12px; font-weight: bold; flex-shrink: 0;">${u.score} pts</span>
+                <div style="text-align: right; flex-shrink: 0;">
+                    <div style="color: var(--pixel-green); font-size: 12px; font-weight: bold;">${u.primary_value} ${u.unit}</div>
+                    <div style="font-size: 9px; color: #64748b;">${u.current_band} • Lv.${u.arena_stage}</div>
+                </div>
             </div>`;
         });
         lbContainer.innerHTML = html;
     })
     .catch(err => {
         console.error("Lỗi tải Leaderboard:", err);
-        lbContainer.innerHTML = '<span style="color: #94a3b8; font-size: 12px;">Đang bảo trì bảng xếp hạng...</span>';
+        lbContainer.innerHTML = '<span style="color: #94a3b8; font-size: 12px;">Đang đồng bộ bảng xếp hạng...</span>';
     });
 }
 

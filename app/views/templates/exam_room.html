@@ -53,32 +53,36 @@
 
     /* Option Button */
     .exam-option-btn {
-        background: rgba(0,0,0,0.5);
-        border: 1px solid var(--glass-border);
-        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000; /* Viền đen */
+        border-radius: 12px; /* Bo góc */
         padding: 16px 20px;
         color: #e2e8f0;
         font-size: 15px;
+        font-weight: 600;
         text-align: left;
         cursor: pointer;
-        transition: 0.2s;
+        transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         align-items: center;
         gap: 14px;
         width: 100%;
         margin-bottom: 12px;
+        box-shadow: 0 4px 0 #000000, 0 6px 14px rgba(0,0,0,0.3);
     }
     .exam-option-btn:hover {
-        background: rgba(103, 232, 249, 0.1);
-        border-color: var(--neon-cyan);
+        background: rgba(6, 182, 212, 0.18);
+        border-color: #000000;
         color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 0 #000000, 0 10px 20px rgba(6, 182, 212, 0.25);
     }
     .exam-option-btn.selected {
-        background: rgba(236, 72, 153, 0.2);
-        border-color: var(--neon-pink);
+        background: rgba(236, 72, 153, 0.25);
+        border-color: #000000;
         color: #fff;
         font-weight: bold;
-        box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+        box-shadow: 0 4px 0 #000000, 0 0 15px rgba(236, 72, 153, 0.35);
     }
 
     .timer-badge {
@@ -492,8 +496,8 @@
                 const letter = ['A', 'B', 'C', 'D'][oIdx] || (oIdx + 1);
                 contentHtml += `
                     <button class="exam-option-btn ${isSelected ? 'selected' : ''}" onclick="selectOptionAnswer('${q.id}', '${opt.replace(/'/g, "\\'")}', this)">
-                        <span style="font-family: var(--text-mono); font-weight: bold; color: var(--neon-cyan);">${letter}.</span>
-                        <span>${opt}</span>
+                        <span class="option-letter-box">${letter}</span>
+                        <span style="font-size: 14px; font-weight: 600; line-height: 1.4;">${opt}</span>
                     </button>`;
             });
             contentHtml += `</div>`;

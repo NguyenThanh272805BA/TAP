@@ -82,6 +82,13 @@ class LocalScrambleEngine:
         """
         Xác thực kết quả ghép chữ của học viên và tự động đồng bộ vào Smart SRS.
         """
+        if not vocab_id:
+            return {"status": "error", "message": "Thiếu mã từ vựng!"}
+        try:
+            vocab_id = int(vocab_id)
+        except (ValueError, TypeError):
+            return {"status": "error", "message": "Mã từ vựng không hợp lệ!"}
+
         vocab = Vocabulary.query.get(vocab_id)
         if not vocab:
             return {"status": "error", "message": "Từ vựng không tồn tại!"}

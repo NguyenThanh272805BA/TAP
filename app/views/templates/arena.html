@@ -17,9 +17,9 @@
     }
 
     .mode-select-btn {
-        background: rgba(15, 23, 42, 0.85);
-        border: 2px solid var(--glass-border);
-        border-radius: 14px;
+        background: rgba(15, 23, 42, 0.88);
+        border: 2.5px solid #000000; /* Bo viền đen */
+        border-radius: 14px; /* Bo góc */
         padding: 22px 25px;
         text-align: left;
         cursor: pointer;
@@ -28,44 +28,47 @@
         align-items: center;
         gap: 18px;
         color: #fff;
+        box-shadow: 0 4px 0 #000000, 0 8px 20px rgba(0, 0, 0, 0.3);
     }
     .mode-select-btn:hover {
-        transform: translateY(-4px) scale(1.02);
-        border-color: var(--neon-cyan);
-        box-shadow: 0 10px 30px rgba(6, 182, 212, 0.25);
+        transform: translateY(-3px) scale(1.015);
+        border-color: #000000;
+        box-shadow: 0 7px 0 #000000, 0 12px 30px rgba(6, 182, 212, 0.35);
     }
-    .mode-select-btn.btn-stage:hover { border-color: var(--neon-cyan); }
-    .mode-select-btn.btn-infinity:hover { border-color: var(--neon-purple); }
+    .mode-select-btn.btn-stage:hover { border-color: #000000; }
+    .mode-select-btn.btn-infinity:hover { border-color: #000000; }
 
     .arena-option-btn {
-        background: rgba(0, 0, 0, 0.6);
-        border: 2px solid var(--glass-border);
-        border-radius: 12px;
-        color: #e2e8f0;
-        font-size: 15px;
+        background: rgba(15, 23, 42, 0.88);
+        border: 2.5px solid #000000; /* Bo viền đen của nút */
+        border-radius: 14px; /* Bo góc */
+        color: #ffffff;
+        font-size: 16px;
         font-family: var(--text-main);
-        padding: 18px 20px;
+        padding: 18px 22px;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         text-align: center;
-        font-weight: 600;
-        min-height: 65px;
+        font-weight: 700;
+        min-height: 68px;
         display: flex;
         align-items: center;
         justify-content: center;
+        box-shadow: 0 4px 0 #000000, 0 8px 18px rgba(0, 0, 0, 0.35);
     }
     .arena-option-btn:hover:not(:disabled) {
-        border-color: var(--neon-cyan);
-        background: rgba(6, 182, 212, 0.15);
-        color: #fff;
+        border-color: #000000;
+        background: rgba(6, 182, 212, 0.25);
+        color: #ffffff;
         transform: translateY(-2px);
-        box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        box-shadow: 0 6px 0 #000000, 0 12px 24px rgba(6, 182, 212, 0.35);
     }
     .arena-option-btn:active:not(:disabled) {
-        transform: translateY(0);
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 #000000;
     }
     .arena-option-btn:disabled {
-        opacity: 0.6;
+        opacity: 0.65;
         cursor: not-allowed;
     }
 
@@ -183,8 +186,8 @@
 
                 <!-- Từ vựng mục tiêu (Target Word) -->
                 <div style="text-align: center; margin-bottom: 35px;">
-                    <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); letter-spacing: 1px; margin-bottom: 6px;">TỪ VỰNG MỤC TIÊU // CHỌN NGHĨA ĐÚNG:</div>
-                    <div id="target-word" style="font-family: var(--text-mono); font-size: 44px; font-weight: 800; color: #fff; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 20px rgba(103, 232, 249, 0.6);">
+                    <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); letter-spacing: 1px; margin-bottom: 8px;">TỪ VỰNG MỤC TIÊU // CHỌN NGHĨA ĐÚNG:</div>
+                    <div id="target-word" style="font-family: var(--text-mono); font-size: 44px; font-weight: 800; color: #fff; letter-spacing: 4px; text-transform: uppercase; display: inline-block; padding: 10px 32px; border: 2.5px solid #000000; border-radius: 16px; background: rgba(15, 23, 42, 0.85); box-shadow: 0 5px 0 #000000, 0 10px 25px rgba(0,0,0,0.5); text-shadow: 0 0 20px rgba(103, 232, 249, 0.7);">
                         WORD
                     </div>
                 </div>
@@ -217,23 +220,36 @@
 
         </div>
 
-        <!-- CỘT PHẢI: BẢNG XẾP HẠNG TOP CAO THỦ PHẢN XẠ -->
-        <div class="bento-card" style="padding: 25px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 15px;">
-                <div class="pixel-title" style="color: var(--neon-amber); font-size: 15px; margin: 0;">
-                    🏆 BẢNG VINH DANH
+        <!-- CỘT PHẢI: TRẠM THÀNH TÍCH ĐẤU TRƯỜNG & LỐI TẮT BẢNG XẾP HẠNG -->
+        <div class="bento-card" style="padding: 25px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 15px; margin-bottom: 20px;">
+                    <div class="pixel-title" style="color: var(--neon-amber); font-size: 15px; margin: 0;">
+                        ⚔️ CHIẾN TÍCH ĐẤU SĨ
+                    </div>
+                    <span style="font-size: 10px; color: var(--neon-cyan); font-family: var(--text-mono);">PROFILE COMBAT</span>
                 </div>
-                <span style="font-size: 10px; color: var(--neon-amber); font-family: var(--text-mono);">TOP INFINITY</span>
+
+                <div id="arena-user-stats" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="background: rgba(0,0,0,0.4); padding: 14px; border-radius: 10px; border: 1.5px solid #000; box-shadow: 0 2px 0 #000; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #94a3b8; font-size: 13px;">Kỷ Lục Điểm Vô Cực:</span>
+                        <span id="arena-stat-infinity" style="color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold; font-size: 16px;">-- pts</span>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.4); padding: 14px; border-radius: 10px; border: 1.5px solid #000; box-shadow: 0 2px 0 #000; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #94a3b8; font-size: 13px;">Cấp Ải Đạt Được:</span>
+                        <span id="arena-stat-stage" style="color: var(--neon-pink); font-family: var(--text-mono); font-weight: bold; font-size: 16px;">Ải --/10</span>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.4); padding: 14px; border-radius: 10px; border: 1.5px solid #000; box-shadow: 0 2px 0 #000; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #94a3b8; font-size: 13px;">Kho Xu Sở Hữu:</span>
+                        <span id="arena-stat-coins" style="color: var(--pixel-green); font-family: var(--text-mono); font-weight: bold; font-size: 16px;">-- Xu</span>
+                    </div>
+                </div>
             </div>
 
-            <div id="leaderboard-container" style="display: flex; flex-direction: column; gap: 10px;">
-                <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang quét bảng vinh danh...</div>
-            </div>
-
-            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.1); text-align: center;">
-                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">Muốn thăng hạng và giành nhiều Xu?</div>
-                <button class="pixel-btn" onclick="startMode('infinity')" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--neon-amber); color: var(--neon-amber); width: 100%; font-size: 10px; padding: 10px;">
-                    ⚡ THI ĐẤU NGAY
+            <div style="margin-top: 25px; padding-top: 18px; border-top: 1px dashed rgba(255,255,255,0.1); text-align: center;">
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Theo dõi thứ hạng của bạn cùng các cao thủ:</div>
+                <button class="pixel-btn" onclick="window.location.href='/leaderboard?category=game'" style="background: rgba(245, 158, 11, 0.2); border: 2px solid #000; box-shadow: 0 4px 0 #000; color: var(--neon-amber); width: 100%; font-size: 11px; padding: 12px;">
+                    🏆 BẢNG XẾP HẠNG ĐẤU TRƯỜNG ➔
                 </button>
             </div>
         </div>
@@ -255,7 +271,6 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         fetchUserData();
-        loadLeaderboard();
     });
 
     function fetchUserData() {
@@ -270,58 +285,16 @@
                     const coinsEl = document.getElementById("arena-coins-val");
                     if (streakEl) streakEl.innerText = data.streak || 0;
                     if (coinsEl) coinsEl.innerText = data.coins || 0;
+
+                    const statInf = document.getElementById("arena-stat-infinity");
+                    const statStage = document.getElementById("arena-stat-stage");
+                    const statCoins = document.getElementById("arena-stat-coins");
+                    if (statInf) statInf.innerText = (data.infinity_score || 0) + " pts";
+                    if (statStage) statStage.innerText = "Ải " + (data.arena_stage || 1) + "/10";
+                    if (statCoins) statCoins.innerText = (data.coins || 0) + " Xu";
                 }
             })
             .catch(err => console.error("Lỗi đồng bộ thông tin Arena:", err));
-    }
-
-    function loadLeaderboard() {
-        const container = document.getElementById("leaderboard-container");
-        if (!container) return;
-
-        fetch('/api/game/gacha/leaderboard')
-            .then(res => {
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                return res.json();
-            })
-            .then(data => {
-                let html = '';
-                const list = data.leaderboard || [];
-                if (list.length === 0) {
-                    container.innerHTML = '<div style="color: #94a3b8; font-size: 13px; text-align: center;">Chưa có cao thủ nào ghi danh. Hãy là người đầu tiên!</div>';
-                    return;
-                }
-
-                list.forEach((u, idx) => {
-                    let color = idx === 0 ? "var(--neon-amber)" : (idx === 1 ? "#cbd5e1" : "#d97706");
-                    if (idx > 2) color = "#94a3b8";
-                    const avatarSrc = u.avatar ? `/static/uploads/avatars/${u.avatar}` : `/static/uploads/avatars/default_avatar.png`;
-                    const frameClass = u.equipped_frame || 'frame-default';
-                    const titleText = u.equipped_title || 'Tân Binh Ngơ Ngác';
-
-                    html += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px 14px; border-radius: 10px; border-left: 3px solid ${color}; gap: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                            <span style="color: ${color}; font-weight: bold; font-family: var(--text-mono); font-size: 14px;">#${idx+1}</span>
-                            <div class="avatar-container ${frameClass}" style="width: 32px; height: 32px; flex-shrink: 0; padding: 2px;">
-                                <img src="${avatarSrc}" class="avatar-img" onerror="this.src='/static/uploads/covers/default_cover.jpg'">
-                            </div>
-                            <div style="min-width: 0; overflow: hidden;">
-                                <div style="color: #fff; font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.username}</div>
-                                <div style="font-size: 9px; color: var(--neon-pink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">« ${titleText} »</div>
-                            </div>
-                        </div>
-                        <div style="color: var(--pixel-green); font-size: 13px; font-weight: bold; font-family: var(--text-pixel); flex-shrink: 0;">
-                            ${u.score} pts
-                        </div>
-                    </div>`;
-                });
-                container.innerHTML = html;
-            })
-            .catch(err => {
-                console.error("Lỗi tải Leaderboard:", err);
-                container.innerHTML = '<div style="color: #ef4444; font-size: 12px; text-align: center;">Không thể tải bảng xếp hạng lúc này.</div>';
-            });
     }
 
     function startMode(mode) {
@@ -360,12 +333,12 @@
                 return;
             }
 
-            currentVocabId = data.id;
-            maxTime = data.time_limit || 5.0;
+            currentVocabId = data.id || data.vocab_id;
+            maxTime = data.time_limit || data.timer || 5.0;
             timeLeft = maxTime;
 
             document.getElementById("target-word").innerText = data.word;
-            document.getElementById("game-status-left").innerText = currentMode === 'stage' ? `STAGE: ${data.stage}/10` : `COMBO INFINITY: ${infinityScore} 🔥`;
+            document.getElementById("game-status-left").innerText = currentMode === 'stage' ? `STAGE: ${data.stage || data.current_stage || 1}/10` : `COMBO INFINITY: ${infinityScore} 🔥`;
 
             const box = document.getElementById("options-box");
             box.innerHTML = "";
@@ -426,13 +399,18 @@
             body: JSON.stringify({
                 vocab_id: currentVocabId,
                 selected: chosen,
+                answer: chosen,
                 mode: currentMode,
                 response_time: parseFloat(responseTime)
             })
         })
         .then(res => res.json())
         .then(data => {
-            handleResult(data.is_correct, data.correct_meaning, data.msg, data.game_over, data.stage_completed);
+            const isCorrect = (data.is_correct !== undefined) ? data.is_correct : (data.correct || false);
+            const meaning = data.correct_meaning || (isCorrect ? chosen : "Không rõ");
+            const msg = data.msg || data.message || "";
+            const isGameOver = (data.game_over !== undefined) ? data.game_over : (data.is_game_over || false);
+            handleResult(isCorrect, meaning, msg, isGameOver, data.stage_completed);
             fetchUserData(); // Cập nhật xu
         })
         .catch(err => {
@@ -449,13 +427,17 @@
             body: JSON.stringify({
                 vocab_id: currentVocabId,
                 selected: "TIMEOUT_NO_ANSWER",
+                answer: "TIMEOUT_NO_ANSWER",
+                timeout: true,
                 mode: currentMode,
                 response_time: maxTime
             })
         })
         .then(res => res.json())
         .then(data => {
-            handleResult(false, data.correct_meaning, "HẾT THỜI GIAN!", data.game_over, false);
+            const meaning = data.correct_meaning || "Không rõ";
+            const isGameOver = (data.game_over !== undefined) ? data.game_over : (data.is_game_over || false);
+            handleResult(false, meaning, "HẾT THỜI GIAN!", isGameOver, false);
             fetchUserData();
         })
         .catch(err => {

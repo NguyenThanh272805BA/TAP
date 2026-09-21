@@ -3,9 +3,237 @@
 {% block title %}ACADEMIC ROADMAP{% endblock %}
 
 {% block content %}
+<style>
+    /* Styling cho phòng thi và bài thi học thuật */
+    .exam-tab-btn {
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000; /* Khung đã có viền đen */
+        color: #94a3b8;
+        padding: 10px 16px;
+        border-radius: 10px; /* Bo góc */
+        font-family: var(--text-pixel);
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        box-shadow: 0 3px 0 #000000;
+    }
+    .exam-tab-btn:hover {
+        border-color: #000000;
+        color: #ffffff;
+        background: rgba(6, 182, 212, 0.18);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 0 #000000;
+    }
+    .exam-tab-btn.active {
+        background: var(--neon-cyan);
+        border-color: #000000;
+        color: #000000;
+        box-shadow: 0 3px 0 #000000, 0 0 15px rgba(6, 182, 212, 0.4);
+        font-weight: 800;
+    }
+
+    .mcq-option-card {
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000; /* Viền đen rõ nét */
+        border-radius: 12px; /* Bo góc mềm mại */
+        padding: 14px 18px;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        color: #e2e8f0;
+        font-weight: 600;
+        box-shadow: 0 3px 0 #000000, 0 4px 10px rgba(0,0,0,0.25);
+    }
+    .mcq-option-card:hover {
+        border-color: #000000;
+        background: rgba(6, 182, 212, 0.18);
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 0 #000000, 0 8px 18px rgba(6, 182, 212, 0.3);
+    }
+    .mcq-option-card.selected {
+        border-color: #000000;
+        background: rgba(6, 182, 212, 0.32);
+        color: #ffffff;
+        box-shadow: 0 5px 0 #000000, 0 0 16px rgba(6, 182, 212, 0.4);
+    }
+    .mcq-option-letter {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px; /* Bo góc chữ */
+        background: #0f172a;
+        border: 2px solid #000000; /* Khung đã có viền đen */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--text-mono);
+        font-weight: 800;
+        font-size: 14px;
+        color: var(--neon-cyan);
+        box-shadow: 0 2px 0 #000000;
+        flex-shrink: 0;
+    }
+    .mcq-option-card.selected .mcq-option-letter {
+        background: var(--neon-cyan);
+        color: #000000;
+        -webkit-text-stroke: 0;
+        text-shadow: none;
+    }
+
+    .scramble-slot {
+        width: 48px;
+        height: 52px;
+        border: 2.5px solid #000000; /* Khung đã có viền đen */
+        border-bottom: 4px solid var(--neon-cyan);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: var(--text-mono);
+        font-size: 24px;
+        font-weight: 800;
+        color: #ffffff;
+        background: rgba(15, 23, 42, 0.85);
+        border-radius: 12px; /* Bo góc */
+        box-shadow: 0 4px 0 #000000, inset 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .letter-tile {
+        width: 48px;
+        height: 52px;
+        border-radius: 12px; /* Bo góc chữ */
+        background: #1e293b;
+        border: 2.5px solid #000000; /* Khung đã có viền đen */
+        color: #ffffff;
+        font-family: var(--text-mono);
+        font-size: 24px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 0 #000000, 0 6px 14px rgba(0, 0, 0, 0.35);
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        user-select: none;
+    }
+    .letter-tile:hover:not(.used) {
+        border-color: #000000;
+        background: #334155;
+        color: var(--neon-pink);
+        transform: translateY(-3px) scale(1.04);
+        box-shadow: 0 6px 0 #000000, 0 10px 20px rgba(236, 72, 153, 0.4);
+    }
+    .letter-tile:active:not(.used) {
+        transform: translateY(2px) scale(0.96);
+        box-shadow: 0 1px 0 #000000;
+    }
+    .letter-tile.used {
+        opacity: 0.35;
+        cursor: not-allowed;
+        background: #0f172a;
+        border: 2px dashed #475569;
+        box-shadow: none;
+    }
+
+    .syntax-tile {
+        background: #1e293b;
+        border: 2px solid #000000; /* Khung đã có viền đen */
+        padding: 10px 18px;
+        border-radius: 10px; /* Bo góc */
+        color: #ffffff;
+        font-family: var(--text-mono);
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 3px 0 #000000, 0 4px 10px rgba(0, 0, 0, 0.3);
+        transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        user-select: none;
+    }
+    .syntax-tile:hover:not(.used) {
+        border-color: #000000;
+        background: #334155;
+        color: var(--neon-amber);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 0 #000000, 0 8px 16px rgba(245, 158, 11, 0.3);
+    }
+    .syntax-tile:active:not(.used) {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 #000000;
+    }
+    .syntax-tile.used {
+        opacity: 0.3;
+        cursor: not-allowed;
+        background: #0f172a;
+        border-style: dashed;
+        box-shadow: none;
+    }
+
+    .micro-option-card {
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000;
+        border-radius: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #e2e8f0;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 2px 0 #000000;
+    }
+    .micro-option-card:hover {
+        background: rgba(236, 72, 153, 0.15);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 0 #000000;
+    }
+    .micro-option-card.selected {
+        background: rgba(236, 72, 153, 0.3);
+        border-color: #000000;
+        color: #ffffff;
+        box-shadow: 0 3px 0 #000000, 0 0 12px rgba(236, 72, 153, 0.4);
+    }
+    .micro-option-card .opt-letter {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background: #0f172a;
+        border: 1.5px solid #000000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--text-mono);
+        font-weight: 800;
+        font-size: 12px;
+        color: var(--neon-pink);
+        flex-shrink: 0;
+    }
+    .micro-option-card.selected .opt-letter {
+        background: var(--neon-pink);
+        color: #ffffff;
+    }
+
+    .score-badge {
+        padding: 4px 10px;
+        border-radius: 8px; /* Bo góc */
+        border: 1.5px solid #000000; /* Khung đã có viền đen */
+        font-family: var(--text-mono);
+        font-size: 12px;
+        font-weight: 800;
+        box-shadow: 0 2px 0 #000000;
+    }
+</style>
+
 <div class="bento-container" style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 25px;">
 
-    <!-- 1. BẢNG ĐIỀU KHIỂN TIẾN ĐỘ TARGET BAND -->
+    <!-- 1. BẢNG ĐIỀU KHIỂN TIẾN ĐỘ & RANK HỌC THUẬT -->
     <div class="bento-card card-wide" style="padding: 30px; position: relative; overflow: hidden;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
             <div>
@@ -13,28 +241,47 @@
                     ACADEMIC_ROADMAP // LỘ TRÌNH CHINH PHỤC TARGET BAND
                 </div>
                 <div style="font-size: 14px; color: #cbd5e1;">
-                    Lộ trình học tập thích ứng cá nhân hóa: Đi từ trình độ hiện tại <strong style="color: var(--pixel-green);" id="ui-current-band">A1</strong> tới mục tiêu mong muốn!
+                    Hệ thống sát hạch học thuật nghiêm ngặt: Rèn luyện 4 kỹ năng ngôn ngữ từ trình độ xuất phát <strong style="color: var(--pixel-green);" id="ui-current-band">A1</strong> đến mục tiêu mong muốn!
                 </div>
             </div>
 
-            <!-- CHỌN TARGET BAND -->
-            <div style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 10px; border: 1px solid var(--neon-cyan);">
-                <span style="font-size: 12px; color: #94a3b8; font-family: var(--text-pixel);">MỤC TIÊU BAND:</span>
-                <select id="targetBandSelect" onchange="changeTargetBand()" style="background: #0f172a; color: var(--neon-cyan); border: 1px solid var(--neon-cyan); padding: 6px 12px; border-radius: 6px; font-family: var(--text-mono); font-weight: bold; cursor: pointer;">
-                    <option value="A1">A1 (IELTS 3.0)</option>
-                    <option value="A2">A2 (IELTS 4.0)</option>
-                    <option value="B1">B1 (IELTS 5.0)</option>
-                    <option value="B2" selected>B2 (IELTS 6.5)</option>
-                    <option value="C1">C1 (IELTS 7.5)</option>
-                    <option value="C2">C2 (IELTS 8.5+)</option>
-                </select>
+            <!-- HUY HIỆU RANK & RP HỌC THUẬT -->
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div style="background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 10px; border: 1px solid var(--neon-amber); display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">⚔️</span>
+                    <div>
+                        <div style="font-size: 10px; color: #94a3b8; font-family: var(--text-mono);">RANK HỌC THUẬT</div>
+                        <strong style="color: var(--neon-amber); font-size: 13px; font-family: var(--text-pixel);" id="ui-current-rank">Tân Binh A1 (Bronze I)</strong>
+                    </div>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 10px; border: 1px solid var(--neon-cyan); display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">💎</span>
+                    <div>
+                        <div style="font-size: 10px; color: #94a3b8; font-family: var(--text-mono);">ĐIỂM UY TÍN (RP)</div>
+                        <strong style="color: var(--neon-cyan); font-size: 14px; font-family: var(--text-mono);"><span id="ui-academic-rp">500</span> RP</strong>
+                    </div>
+                </div>
+
+                <!-- CHỌN TARGET BAND -->
+                <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.5); padding: 8px 14px; border-radius: 10px; border: 1px solid var(--pixel-green);">
+                    <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-pixel);">MỤC TIÊU:</span>
+                    <select id="targetBandSelect" onchange="changeTargetBand()" style="background: #0f172a; color: var(--pixel-green); border: 1px solid var(--pixel-green); padding: 5px 10px; border-radius: 6px; font-family: var(--text-mono); font-weight: bold; cursor: pointer;">
+                        <option value="A1">A1 (IELTS 3.0)</option>
+                        <option value="A2">A2 (IELTS 4.0)</option>
+                        <option value="B1">B1 (IELTS 5.0)</option>
+                        <option value="B2" selected>B2 (IELTS 6.5)</option>
+                        <option value="C1">C1 (IELTS 7.5)</option>
+                        <option value="C2">C2 (IELTS 8.5+)</option>
+                    </select>
+                </div>
             </div>
         </div>
 
         <!-- PROGRESS BAR -->
         <div style="margin-top: 25px;">
             <div style="display: flex; justify-content: space-between; font-size: 13px; font-family: var(--text-mono); margin-bottom: 8px;">
-                <span style="color: #cbd5e1;">Tiến trình hoàn thành: <strong style="color: var(--neon-amber);" id="ui-milestone-count">0/8 Chặng</strong></span>
+                <span style="color: #cbd5e1;">Tiến trình hoàn thành lộ trình: <strong style="color: var(--neon-amber);" id="ui-milestone-count">0/8 Chặng</strong></span>
                 <span style="color: var(--pixel-green); font-weight: bold;" id="ui-progress-pct">0%</span>
             </div>
             <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
@@ -50,94 +297,289 @@
 
 </div>
 
-<!-- MODAL PHÒNG HỌC & VƯỢT ẢI CHẶNG -->
-<div id="milestone-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 999999; justify-content: center; align-items: center;">
-    <div style="background: rgba(15, 23, 42, 0.98); border: 2px solid var(--neon-cyan); border-radius: 14px; padding: 30px; max-width: 800px; width: 92%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 0 40px rgba(6, 182, 212, 0.3);">
+<!-- ========================================================================= -->
+<!-- MODAL PHÒNG HỌC & KHẢO THÍ CHẶNG (ACADEMIC EXAM CHAMBER) -->
+<!-- ========================================================================= -->
+<div id="milestone-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.88); z-index: 999999; justify-content: center; align-items: center;">
+    <div style="background: rgba(15, 23, 42, 0.98); border: 2px solid var(--neon-cyan); border-radius: 14px; padding: 25px 30px; max-width: 850px; width: 94%; max-height: 92vh; overflow-y: auto; position: relative; box-shadow: 0 0 50px rgba(6, 182, 212, 0.35);">
+        
         <button class="pixel-btn" onclick="closeMilestoneModal()" style="position: absolute; top: 15px; right: 15px; background: #ef4444; padding: 6px 12px; font-size: 10px;">[ ĐÓNG ]</button>
         
-        <div class="pixel-title" id="modal-milestone-title" style="color: var(--neon-cyan); font-size: 18px; margin-bottom: 5px;">TIÊU ĐỀ CHẶNG</div>
+        <div class="pixel-title" id="modal-milestone-title" style="color: var(--neon-cyan); font-size: 18px; margin-bottom: 4px;">TIÊU ĐỀ CHẶNG</div>
         <div id="modal-milestone-desc" style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">Mô tả chặng</div>
 
-        <!-- BẢNG ĐIỂM THỜI GIAN THỰC (LIVE EXAM SCORECARD) -->
-        <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div style="font-size: 13px; font-family: var(--text-mono);">
-                <span>ẢI 1 (TỪ VỰNG): <strong id="scorecard-word" style="color: #64748b;">0/5.0 ĐIỂM</strong></span>
-                <span style="margin: 0 10px; color: #475569;">|</span>
-                <span>ẢI 2 (CÚ PHÁP): <strong id="scorecard-syntax" style="color: #64748b;">0/5.0 ĐIỂM</strong></span>
+        <!-- ========================================== -->
+        <!-- VIEW 1: CHUẨN BỊ & LÝ THUYẾT (PREP VIEW) -->
+        <!-- ========================================== -->
+        <div id="view-prep" style="display: block;">
+            
+            <!-- QUY CHẾ THI KHẮC NGHIỆT BANNER -->
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid var(--neon-amber); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+                <div style="color: var(--neon-amber); font-family: var(--text-pixel); font-size: 12px; font-weight: bold; margin-bottom: 4px;">
+                    ⚠️ QUY CHẾ KHẢO THÍ CHUẨN HỌC THUẬT (HARSH ACADEMIC RULES):
+                </div>
+                <ul style="font-size: 12px; color: #cbd5e1; margin: 0; padding-left: 18px; line-height: 1.6;">
+                    <li><strong>Điểm Chuẩn Qua Ải:</strong> Đạt tối thiểu <strong>7.5 / 10.0</strong> để mở khóa chặng kế tiếp.</li>
+                    <li><strong>Quy Tắc Điểm Liệt:</strong> Bất kỳ phần nào trong 4 phần thi có điểm dưới <strong>5.0 / 10.0</strong> thì bài thi sẽ bị <strong>ĐÁNH TRƯỢT NGAY LẬP TỨC</strong>.</li>
+                    <li><strong>Cơ Chế Leo Rank Khắc Nghiệt:</strong> Đỗ được cộng <strong>+60 đến +100 RP</strong>. Trượt bị trừ <strong>-35 RP</strong>. Bỏ dở bài thi bị trừ <strong>-20 RP</strong>. Nếu RP tụt sâu sẽ bị <strong>GIÁNG HẠNG (Demoted)</strong>!</li>
+                    <li><strong>Bảo Mật Đề Thi:</strong> Đáp án được ẩn hoàn toàn trong lúc làm bài. Mỗi lần thi lại, ngân hàng AI sẽ sinh ra một <strong>bộ đề mới ngẫu nhiên</strong>.</li>
+                </ul>
             </div>
-            <div style="font-size: 14px; font-family: var(--text-mono); font-weight: bold;">
-                TỔNG ĐIỂM: <span id="scorecard-total" style="color: var(--neon-amber);">0.0 / 10.0</span>
-                <span id="scorecard-status" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.2); color: #ef4444; margin-left: 8px;">CHƯA ĐẠT (Cần >= 7.0)</span>
+
+            <!-- COOLDOWN CẢNH BÁO NẾU ĐANG TRONG THỜI GIAN CHỜ -->
+            <div id="prep-cooldown-box" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="color: #ef4444; font-size: 13px;">
+                    ⏳ <strong>Thời gian làm nguội ôn tập:</strong> Còn <strong id="prep-cooldown-timer" style="font-family: var(--text-mono); font-size: 15px;">45</strong> giây trước khi được làm đề mới.
+                </div>
+                <button class="pixel-btn" onclick="bypassExamCooldown()" style="background: var(--neon-amber); color: #000; font-size: 10px; padding: 6px 12px;">
+                    💰 DÙNG 20 XU THI LẠI NGAY
+                </button>
             </div>
-        </div>
 
-        <!-- TAB NAVIGATION TRONG MODAL -->
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px dashed var(--glass-border); padding-bottom: 12px;">
-            <button class="pixel-btn" id="m-tab-btn-learn" onclick="switchModalTab('learn')" style="background: rgba(103, 232, 249, 0.15); border-color: var(--neon-cyan); color: var(--neon-cyan); font-size: 11px;">📖 LÝ THUYẾT & TỪ VỰNG</button>
-            <button class="pixel-btn" id="m-tab-btn-scramble" onclick="switchModalTab('scramble')" style="background: transparent; border-color: var(--glass-border); color: #94a3b8; font-size: 11px;">🧩 ẢI 1: GHÉP CHỮ</button>
-            <button class="pixel-btn" id="m-tab-btn-syntax" onclick="switchModalTab('syntax')" style="background: transparent; border-color: var(--glass-border); color: #94a3b8; font-size: 11px;">⚙️ ẢI 2: GHÉP CÚ PHÁP</button>
-        </div>
-
-        <!-- NỘI DUNG 1: HỌC KIẾN THỨC -->
-        <div id="m-tab-learn" style="display: block;">
-            <!-- Ngữ pháp -->
-            <div id="modal-grammar-box" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid var(--neon-amber); margin-bottom: 15px;">
+            <!-- LÝ THUYẾT NGỮ PHÁP -->
+            <div id="modal-grammar-box" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid var(--neon-amber); margin-bottom: 18px;">
                 <div style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold; font-size: 15px;" id="modal-grammar-structure">Cấu trúc</div>
                 <div style="color: #cbd5e1; font-size: 13px; margin-top: 5px;" id="modal-grammar-exp">Giải thích</div>
                 <div style="color: #94a3b8; font-size: 12px; margin-top: 8px; font-style: italic;" id="modal-grammar-ex">Ví dụ: ...</div>
             </div>
 
-            <!-- Từ vựng -->
+            <!-- TỪ VỰNG CHẶNG -->
             <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 13px; margin-bottom: 10px;">> TỪ VỰNG MỤC TIÊU CỦA CHẶNG:</div>
-            <div id="modal-vocab-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px;">
+            <div id="modal-vocab-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 25px;">
                 <!-- Render từ vựng -->
             </div>
-            <button class="pixel-btn" onclick="switchModalTab('scramble')" style="background: var(--neon-purple); width: 100%; padding: 12px;">TIẾN VÀO THỬ THÁCH VƯỢT ẢI ▶</button>
+
+            <button class="pixel-btn pulse-neon" id="btn-start-exam" onclick="startAcademicExam()" style="background: var(--neon-purple); width: 100%; padding: 15px; font-size: 13px; font-weight: bold;">
+                ⚡ TIẾN VÀO PHÒNG THI CHẶNG (4 PHẦN THI - 7 PHÚT) ▶
+            </button>
         </div>
 
-        <!-- NỘI DUNG 2: MINIGAME GHÉP CHỮ -->
-        <div id="m-tab-scramble" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-                <div style="color: var(--neon-pink); font-family: var(--text-pixel); font-size: 14px;">
-                    ẢI 1: GỠ BOM TỪ VỰNG // GHÉP KÝ TỰ THEO THỨ TỰ
+        <!-- ========================================== -->
+        <!-- VIEW 2: PHÒNG THI CHÍNH (EXAM CHAMBER VIEW) -->
+        <!-- ========================================== -->
+        <div id="view-exam" style="display: none;">
+            
+            <!-- TOP EXAM BAR: ĐỒNG HỒ & TIẾN ĐỘ -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.6); padding: 12px 18px; border-radius: 10px; border: 1px solid var(--glass-border); margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 18px;">⏳</span>
+                    <div>
+                        <div style="font-size: 10px; color: #94a3b8; font-family: var(--text-mono);">THỜI GIAN LÀM BÀI:</div>
+                        <strong id="exam-timer-display" style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 18px; font-weight: bold;">07:00</strong>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 12px; color: var(--neon-cyan); font-family: var(--text-mono);" id="scramble-vocab-counter">Từ 1/4</span>
-                    <button class="pixel-btn" onclick="nextScrambleWord()" style="background: rgba(103, 232, 249, 0.2); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 4px 8px; font-size: 10px;">TỪ TIẾP ▶</button>
+
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="text-align: right;">
+                        <div style="font-size: 10px; color: #94a3b8; font-family: var(--text-mono);">TIẾN ĐỘ CÂU HỎI:</div>
+                        <strong id="exam-progress-counter" style="color: var(--pixel-green); font-family: var(--text-mono); font-size: 14px;">0/8 Câu</strong>
+                    </div>
+                    <button class="pixel-btn" onclick="confirmAbandonExam()" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; font-size: 10px; padding: 6px 12px;">
+                        ✕ BỎ THI (-20 RP)
+                    </button>
                 </div>
             </div>
-            <div id="scramble-meaning" style="color: #cbd5e1; font-size: 15px; text-align: center; margin-bottom: 15px; font-weight: bold;">Nghĩa của từ</div>
 
-            <div class="scramble-slots-row" id="scramble-slots"></div>
-            <div class="scramble-pool-row" id="scramble-pool"></div>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="pixel-btn" onclick="resetScrambleWord()" style="background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #94a3b8; padding: 10px 15px;">XÓA CHỌN LẠI</button>
-                <button class="pixel-btn" onclick="submitWordScramble()" style="background: var(--pixel-green); flex: 1; padding: 10px 15px;">KIỂM TRA TỪ NÀY</button>
+            <!-- TABS 4 PHẦN THI -->
+            <div style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 6px;">
+                <button class="exam-tab-btn active" id="tab-btn-sec1" onclick="switchExamSection('sec1')">
+                    <span>1. Nhận Diện Từ (3)</span>
+                </button>
+                <button class="exam-tab-btn" id="tab-btn-sec2" onclick="switchExamSection('sec2')">
+                    <span>2. Gỡ Bom Chữ (2)</span>
+                </button>
+                <button class="exam-tab-btn" id="tab-btn-sec3" onclick="switchExamSection('sec3')">
+                    <span>3. Lắp Ráp Cú Pháp (1)</span>
+                </button>
+                <button class="exam-tab-btn" id="tab-btn-sec4" onclick="switchExamSection('sec4')">
+                    <span>4. Vận Dụng Ngữ Pháp (2)</span>
+                </button>
             </div>
-            <div id="scramble-feedback" style="display: none; margin-top: 15px; font-size: 14px; padding: 10px; border-radius: 6px;"></div>
+
+            <!-- SECTION 1: VOCAB MCQ -->
+            <div id="exam-sec1" class="exam-section-panel" style="display: block;">
+                <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 13px; margin-bottom: 12px;">
+                    PHẦN 1: NHẬN DIỆN Ý NGHĨA TỪ VỰNG CHUẨN XÁC
+                </div>
+                <div id="sec1-questions-container" style="display: flex; flex-direction: column; gap: 20px;"></div>
+            </div>
+
+            <!-- SECTION 2: WORD SCRAMBLE -->
+            <div id="exam-sec2" class="exam-section-panel" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div style="color: var(--neon-pink); font-family: var(--text-pixel); font-size: 13px;">
+                        PHẦN 2: GỠ BOM KÝ TỰ & CHÍNH TẢ HỌC THUẬT
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="pixel-btn" id="btn-scramble-word-0" onclick="switchScrambleItem(0)" style="background: var(--neon-pink); color: #fff; font-size: 10px; padding: 4px 10px;">Từ 1/2</button>
+                        <button class="pixel-btn" id="btn-scramble-word-1" onclick="switchScrambleItem(1)" style="background: rgba(0,0,0,0.5); color: #94a3b8; font-size: 10px; padding: 4px 10px;">Từ 2/2</button>
+                    </div>
+                </div>
+
+                <div id="scramble-meaning-prompt" style="color: #cbd5e1; font-size: 14px; text-align: center; margin-bottom: 15px; font-weight: bold;">Nghĩa: ...</div>
+
+                <div class="scramble-slots-row" id="exam-scramble-slots" style="display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;"></div>
+                <div class="scramble-pool-row" id="exam-scramble-pool" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;"></div>
+
+                <div style="display: flex; justify-content: center; gap: 10px;">
+                    <button class="pixel-btn" onclick="resetCurrentScrambleWord()" style="background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #94a3b8; padding: 8px 16px; font-size: 11px;">
+                        ↺ XÓA CHỌN LẠI TỪ NÀY
+                    </button>
+                </div>
+            </div>
+
+            <!-- SECTION 3: SYNTAX ASSEMBLY -->
+            <div id="exam-sec3" class="exam-section-panel" style="display: none;">
+                <div style="color: var(--neon-amber); font-family: var(--text-pixel); font-size: 13px; margin-bottom: 10px; text-align: center;">
+                    PHẦN 3: LẮP RÁP TRẬT TỰ CÚ PHÁP CÂU CHUẨN
+                </div>
+                <div id="exam-syntax-explanation" style="color: #94a3b8; font-size: 13px; text-align: center; margin-bottom: 15px;">Điểm ngữ pháp...</div>
+
+                <div id="exam-syntax-slots" style="min-height: 52px; background: rgba(0,0,0,0.4); border: 1px dashed var(--glass-border); border-radius: 8px; padding: 12px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                    <span style="color: #64748b; font-size: 12px; font-style: italic;">Chọn các khối từ bên dưới để ghép thành câu hoàn chỉnh...</span>
+                </div>
+
+                <div id="exam-syntax-pool" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 20px;"></div>
+
+                <div style="display: flex; justify-content: center;">
+                    <button class="pixel-btn" onclick="resetExamSyntax()" style="background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #94a3b8; padding: 8px 16px; font-size: 11px;">
+                        ↺ XÓA CHỌN LẠI CÂU NÀY
+                    </button>
+                </div>
+            </div>
+
+            <!-- SECTION 4: GRAMMAR CLOZE -->
+            <div id="exam-sec4" class="exam-section-panel" style="display: none;">
+                <div style="color: var(--pixel-green); font-family: var(--text-pixel); font-size: 13px; margin-bottom: 12px;">
+                    PHẦN 4: VẬN DỤNG NGỮ PHÁP TRONG NGỮ CẢNH HỌC THUẬT
+                </div>
+                <div id="sec4-questions-container" style="display: flex; flex-direction: column; gap: 20px;"></div>
+            </div>
+
+            <!-- SUBMISSION ACTION BAR -->
+            <div style="margin-top: 30px; border-top: 1px dashed var(--glass-border); padding-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div style="color: #94a3b8; font-size: 12px;">
+                    Đã hoàn thành: <strong id="exam-answered-status" style="color: var(--neon-cyan);">0/8</strong> câu hỏi
+                </div>
+                <button class="pixel-btn pulse-neon" onclick="submitAcademicExam()" style="background: var(--pixel-green); color: #000; padding: 14px 28px; font-size: 13px; font-weight: bold;">
+                    🏁 NỘP BÀI THI CHẶNG NGAY
+                </button>
+            </div>
+
         </div>
 
-        <!-- NỘI DUNG 3: MINIGAME GHÉP CÚ PHÁP -->
-        <div id="m-tab-syntax" style="display: none;">
-            <div style="color: var(--neon-amber); font-family: var(--text-pixel); font-size: 14px; text-align: center; margin-bottom: 10px;">
-                ẢI 2: LẮP RÁP CÚ PHÁP // SẮP XẾP CÁC KHỐI TỪ THÀNH CÂU CHUẨN
+        <!-- ========================================== -->
+        <!-- VIEW 3: BÁO CÁO KẾT QUẢ & ĐÁP ÁN (REPORT VIEW) -->
+        <!-- ========================================== -->
+        <div id="view-report" style="display: none;">
+            
+            <!-- RESULT HERO BANNER -->
+            <div id="report-hero-banner" style="border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
+                <div id="report-hero-icon" style="font-size: 40px; margin-bottom: 8px;">🎉</div>
+                <div class="pixel-title" id="report-hero-title" style="font-size: 20px; margin-bottom: 6px;">KẾT QUẢ KHẢO THÍ</div>
+                <div id="report-hero-subtitle" style="font-size: 14px; font-weight: bold;">...</div>
             </div>
-            <div id="syntax-explanation" style="color: #cbd5e1; font-size: 14px; text-align: center; margin-bottom: 15px;">Điểm ngữ pháp</div>
 
-            <div class="scramble-slots-row" id="syntax-slots" style="min-height: 50px;"></div>
-            <div class="scramble-pool-row" id="syntax-pool"></div>
+            <!-- SCORECARD & RP VARIATION -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                
+                <div style="background: rgba(0,0,0,0.5); padding: 14px; border-radius: 8px; border: 1px solid var(--glass-border); text-align: center;">
+                    <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 4px;">TỔNG ĐIỂM BÀI THI</div>
+                    <div id="report-total-score" style="font-size: 26px; font-family: var(--text-mono); font-weight: bold; color: var(--neon-amber);">0.0 / 10</div>
+                    <div id="report-pass-status" style="font-size: 11px; margin-top: 4px;">...</div>
+                </div>
 
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="pixel-btn" onclick="resetSyntaxSentence()" style="background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #94a3b8; padding: 10px 15px;">XÓA CHỌN LẠI</button>
-                <button class="pixel-btn" onclick="submitSyntaxSentence()" style="background: var(--neon-cyan); flex: 1; padding: 10px 15px;">KIỂM TRA CÂU NÀY</button>
+                <div style="background: rgba(0,0,0,0.5); padding: 14px; border-radius: 8px; border: 1px solid var(--glass-border); text-align: center;">
+                    <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 4px;">BIẾN ĐỘNG RANK RP</div>
+                    <div id="report-rp-change" style="font-size: 26px; font-family: var(--text-mono); font-weight: bold;">+0 RP</div>
+                    <div id="report-current-rank" style="font-size: 11px; color: #cbd5e1; margin-top: 4px;">Rank: ...</div>
+                </div>
+
             </div>
-            <div id="syntax-feedback" style="display: none; margin-top: 15px; font-size: 14px; padding: 10px; border-radius: 6px;"></div>
 
-            <!-- NÚT HOÀN TẤT QUA ẢI CHẶNG -->
-            <div style="margin-top: 25px; border-top: 1px dashed var(--glass-border); padding-top: 15px;">
-                <button class="pixel-btn pulse-neon" onclick="finalizeMilestoneGateway()" style="background: var(--neon-pink); width: 100%; padding: 15px; font-size: 12px;">🏆 NỘP BÀI VƯỢT ẢI CHẶNG</button>
+            <!-- BẢNG ĐIỂM 4 PHẦN THI (SECTION SCORES) -->
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 14px 18px; margin-bottom: 25px;">
+                <div style="font-size: 12px; color: var(--neon-cyan); font-family: var(--text-mono); margin-bottom: 10px; font-weight: bold;">
+                    BẢNG ĐIỂM 4 PHẦN THI (QUY TẮC ĐIỂM LIỆT < 5.0):
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 12px; font-family: var(--text-mono);">
+                    <div>1. Từ vựng: <strong id="score-sec1" style="color: #fff;">0.0/10</strong></div>
+                    <div>2. Gỡ bom chữ: <strong id="score-sec2" style="color: #fff;">0.0/10</strong></div>
+                    <div>3. Cú pháp: <strong id="score-sec3" style="color: #fff;">0.0/10</strong></div>
+                    <div>4. Ngữ pháp: <strong id="score-sec4" style="color: #fff;">0.0/10</strong></div>
+                </div>
             </div>
+
+            <!-- ========================================== -->
+            <!-- TRẠM VI HỌC BÙ LỖ HỔNG (ADAPTIVE MICRO-LESSON & RESCUE DRILL) -->
+            <!-- ========================================== -->
+            <div id="report-micro-lesson-container" style="display: none; background: rgba(15, 23, 42, 0.95); border: 2px solid #000000; box-shadow: 0 4px 0 #000000; border-radius: 14px; padding: 20px; margin-bottom: 25px;">
+                
+                <!-- HEADER & WEAK SPOT -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid var(--glass-border); padding-bottom: 14px; margin-bottom: 16px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">⚡</span>
+                            <div class="pixel-title" id="micro-lesson-title" style="font-size: 14px; color: var(--neon-pink); margin: 0;">
+                                TRẠM VI HỌC BÙ LỖ HỔNG
+                            </div>
+                        </div>
+                        <div id="micro-weak-label" style="font-size: 12px; color: var(--neon-amber); margin-top: 4px; font-weight: bold; font-family: var(--text-mono);">
+                            Định vị lỗ hổng: ...
+                        </div>
+                    </div>
+                    <div style="background: rgba(103, 232, 249, 0.15); border: 1.5px solid var(--neon-cyan); border-radius: 8px; padding: 6px 12px; font-size: 11px; color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold;">
+                        +15 RP CỨU VIỆN & COOLDOWN 5S
+                    </div>
+                </div>
+
+                <!-- BÍ KÍP 30S & CẢNH BÁO BẪY ĐỀ THI -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 18px;">
+                    <div style="background: rgba(0,0,0,0.4); border: 2px solid #000; box-shadow: 0 2px 0 #000; border-radius: 10px; padding: 14px;">
+                        <div style="color: var(--neon-cyan); font-weight: bold; font-size: 12px; font-family: var(--text-mono); margin-bottom: 6px;">
+                            📖 BÍ KÍP 30 GIÂY CỐT LÕI:
+                        </div>
+                        <div id="micro-core-rule" style="color: #cbd5e1; font-size: 12px; line-height: 1.6; white-space: pre-line;">...</div>
+                    </div>
+                    <div style="background: rgba(239, 68, 68, 0.08); border: 2px solid #000; box-shadow: 0 2px 0 #000; border-radius: 10px; padding: 14px; border-left: 4px solid #ef4444;">
+                        <div style="color: #ef4444; font-weight: bold; font-size: 12px; font-family: var(--text-mono); margin-bottom: 6px;">
+                            ⚠️ CẢNH BÁO BẪY ĐỀ THI:
+                        </div>
+                        <div id="micro-trap-alert" style="color: #fca5a5; font-size: 12px; line-height: 1.6;">...</div>
+                    </div>
+                </div>
+
+                <!-- 3 CÂU BÀI TẬP BÙ LỖ HỔNG (FAST-FIX DRILL) -->
+                <div style="color: #fff; font-size: 13px; font-weight: bold; margin-bottom: 12px; font-family: var(--text-mono); display: flex; align-items: center; gap: 6px;">
+                    <span>🎯</span>
+                    <span>BÀI TẬP BÙ LỖ HỔNG (3 CÂU PHẢN XẠ NHANH):</span>
+                </div>
+                <div id="micro-drills-list" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px;">
+                    <!-- Drills injected via JS -->
+                </div>
+
+                <!-- SUBMIT ACTION & FEEDBACK -->
+                <div id="micro-drill-feedback" style="display: none; padding: 14px; border-radius: 10px; margin-bottom: 14px; font-size: 12px; line-height: 1.5;"></div>
+
+                <button id="btn-submit-micro-drill" class="pixel-btn" onclick="submitMicroDrill()" style="width: 100%; background: var(--neon-pink); color: #fff; padding: 13px; font-size: 12px; font-weight: bold; border: 2px solid #000; box-shadow: 0 3px 0 #000;">
+                    ⚡ NỘP BÀI BÙ LỖ HỔNG ĐỂ NHẬN CỨU TRỢ RP & MỞ KHÓA THI LẠI
+                </button>
+
+            </div>
+
+            <!-- CHI TIẾT TỪNG CÂU HỎI & GIẢI THÍCH (DETAILED REVIEW) -->
+            <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 13px; margin-bottom: 12px;">
+                > ĐỐI SOÁT CHI TIẾT & LỜI GIẢI HỌC THUẬT:
+            </div>
+            <div id="report-detailed-review" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; max-height: 380px; overflow-y: auto; padding-right: 6px;">
+                <!-- Review cards injected by JS -->
+            </div>
+
+            <!-- FOOTER ACTIONS -->
+            <div id="report-footer-actions" style="display: flex; gap: 12px;">
+                <!-- Action buttons injected by JS -->
+            </div>
+
         </div>
 
     </div>
@@ -148,13 +590,27 @@
 <script>
     let currentMilestoneId = null;
     let currentMilestoneData = null;
-    let scrambleSelectedLetters = [];
+    let currentExamData = null;
+    let examTimerInterval = null;
+    let examTimeLeft = 420; // 7 phút
+
+    let prepCooldownInterval = null;
+    let prepCooldownRemaining = 0;
+
+    // Bộ nhớ lưu câu trả lời bài thi
+    let examAnswers = {
+        vocab_mcq: {},
+        word_scramble: {},
+        syntax: {},
+        grammar_cloze: {}
+    };
+
+    // Scramble state
+    let currentScrambleIdx = 0;
+    let scrambleSelectedMap = {}; // { 0: [{tileIdx, letter}], 1: [...] }
+
+    // Syntax state
     let syntaxSelectedChunks = [];
-    let wordPassed = false;
-    let syntaxPassed = false;
-    let scrambleStartTime = 0;
-    let currentVocabIdx = 0;
-    let totalVocabsCount = 1;
 
     document.addEventListener("DOMContentLoaded", () => {
         loadRoadmap();
@@ -171,6 +627,13 @@
                 document.getElementById('ui-milestone-count').innerText = `${data.completed_milestones}/${data.total_milestones} Chặng`;
                 document.getElementById('ui-progress-pct').innerText = `${data.progress_pct}%`;
                 document.getElementById('roadmapProgressBar').style.width = `${data.progress_pct}%`;
+
+                if (document.getElementById('ui-current-rank')) {
+                    document.getElementById('ui-current-rank').innerText = data.current_level || 'Tân Binh A1';
+                }
+                if (document.getElementById('ui-academic-rp')) {
+                    document.getElementById('ui-academic-rp').innerText = data.academic_rp || 500;
+                }
 
                 renderMilestonesList(data.milestones);
             });
@@ -215,19 +678,19 @@
             html += `
             <div class="milestone-node ${statusClass}" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                 <div style="display: flex; align-items: flex-start; gap: 15px;">
-                    <div style="background: rgba(0,0,0,0.5); border: 2px solid ${badgeColor}; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-family: var(--text-mono); font-weight: bold; color: ${badgeColor}; font-size: 16px;">
+                    <div style="background: rgba(0,0,0,0.7); border: 2.5px solid #000000; box-shadow: 0 3px 0 #000000; width: 44px; height: 44px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-family: var(--text-mono); font-weight: 800; color: ${badgeColor}; font-size: 16px;">
                         ${idx + 1}
                     </div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
                             <strong style="color: #fff; font-size: 16px;">${m.title}</strong>
-                            <span style="font-size: 11px; font-family: var(--text-mono); padding: 2px 8px; border-radius: 4px; border: 1px solid ${badgeColor}; color: ${badgeColor};">${badgeText}</span>
+                            <span style="font-size: 11px; font-family: var(--text-mono); padding: 3px 10px; border-radius: 8px; border: 1.5px solid #000000; background: ${badgeColor}; color: #000000; font-weight: 800; box-shadow: 0 2px 0 #000000;">${badgeText}</span>
                         </div>
                         <div style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;">${m.description || ''}</div>
                         <div style="display: flex; gap: 8px; font-size: 11px; font-family: var(--text-mono);">
-                            <span style="background: rgba(245, 158, 11, 0.1); color: var(--neon-amber); padding: 2px 6px; border-radius: 4px;">Ngữ pháp lõi: Có</span>
-                            <span style="background: rgba(103, 232, 249, 0.1); color: var(--neon-cyan); padding: 2px 6px; border-radius: 4px;">${m.vocab_count} Từ vựng</span>
-                            <span style="background: rgba(110, 231, 183, 0.1); color: var(--pixel-green); padding: 2px 6px; border-radius: 4px;">+${m.reward_coins} Xu Thưởng</span>
+                            <span style="background: rgba(245, 158, 11, 0.15); color: var(--neon-amber); padding: 3px 8px; border-radius: 8px; border: 1.5px solid #000000; box-shadow: 0 2px 0 #000000; font-weight: 600;">Điểm chuẩn: >= 7.5</span>
+                            <span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 3px 8px; border-radius: 8px; border: 1.5px solid #000000; box-shadow: 0 2px 0 #000000; font-weight: 600;">Điểm liệt: < 5.0</span>
+                            <span style="background: rgba(110, 231, 183, 0.15); color: var(--pixel-green); padding: 3px 8px; border-radius: 8px; border: 1.5px solid #000000; box-shadow: 0 2px 0 #000000; font-weight: 600;">+${m.reward_coins} Xu Thưởng</span>
                         </div>
                     </div>
                 </div>
@@ -235,7 +698,7 @@
                 <div>
                     ${m.is_unlocked ? 
                         `<button class="pixel-btn" onclick="openMilestoneRoom(${m.id})" style="background: ${m.is_completed ? 'rgba(0,0,0,0.6)' : 'var(--neon-cyan)'}; color: ${m.is_completed ? 'var(--pixel-green)' : '#000'}; border: 1px solid ${m.is_completed ? 'var(--pixel-green)' : 'var(--neon-cyan)'};">
-                            ${m.is_completed ? 'ÔN LẠI ẢI' : 'VÀO HỌC & VƯỢT ẢI'}
+                            ${m.is_completed ? 'THI LẠI / ÔN TẬP' : 'VÀO HỌC & THI CHẶNG'}
                         </button>` 
                         : `<button class="pixel-btn" disabled style="background: transparent; border: 1px solid #475569; color: #64748b; cursor: not-allowed;">CHƯA MỞ KHÓA</button>`
                     }
@@ -246,49 +709,19 @@
         container.innerHTML = html;
     }
 
-    function updateExamScorecard() {
-        const wScore = wordPassed ? 5.0 : 0.0;
-        const sScore = syntaxPassed ? 5.0 : 0.0;
-        const total = wScore + sScore;
-
-        const wElem = document.getElementById('scorecard-word');
-        wElem.innerText = wordPassed ? "✓ 5.0/5.0 ĐIỂM" : "0/5.0 ĐIỂM";
-        wElem.style.color = wordPassed ? "var(--pixel-green)" : "#64748b";
-
-        const sElem = document.getElementById('scorecard-syntax');
-        sElem.innerText = syntaxPassed ? "✓ 5.0/5.0 ĐIỂM" : "0/5.0 ĐIỂM";
-        sElem.style.color = syntaxPassed ? "var(--pixel-green)" : "#64748b";
-
-        document.getElementById('scorecard-total').innerText = `${total.toFixed(1)} / 10.0`;
-        const stElem = document.getElementById('scorecard-status');
-        if (total >= 7.0) {
-            stElem.innerText = "✓ ĐỦ ĐIỀU KIỆN QUA ẢI";
-            stElem.style.background = "rgba(110, 231, 183, 0.2)";
-            stElem.style.color = "var(--pixel-green)";
-        } else {
-            stElem.innerText = "CHƯA ĐẠT (Cần >= 7.0)";
-            stElem.style.background = "rgba(239, 68, 68, 0.2)";
-            stElem.style.color = "#ef4444";
-        }
-    }
-
     function openMilestoneRoom(milestoneId) {
         currentMilestoneId = milestoneId;
-        wordPassed = false;
-        syntaxPassed = false;
-        currentVocabIdx = 0;
-        scrambleSelectedLetters = [];
-        syntaxSelectedChunks = [];
-        updateExamScorecard();
+        clearInterval(examTimerInterval);
+        clearInterval(prepCooldownInterval);
 
-        fetch(`/api/roadmap/milestone/${milestoneId}?vocab_idx=0`)
+        showModalView('prep');
+
+        fetch(`/api/roadmap/milestone/${milestoneId}`)
             .then(res => res.json())
             .then(data => {
                 currentMilestoneData = data;
-                currentVocabIdx = data.current_vocab_idx || 0;
-                totalVocabsCount = data.total_vocabs || 1;
                 
-                // Bind Modal Header
+                // Bind Header
                 document.getElementById('modal-milestone-title').innerText = data.milestone.title;
                 document.getElementById('modal-milestone-desc').innerText = data.milestone.description || '';
 
@@ -304,7 +737,7 @@
 
                 // Bind Vocabularies
                 let vHtml = '';
-                data.vocabularies.forEach(v => {
+                (data.vocabularies || []).forEach(v => {
                     vHtml += `
                     <div style="background: rgba(0,0,0,0.5); padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border);">
                         <strong style="color: var(--neon-cyan); font-size: 14px;">${v.word}</strong>
@@ -313,192 +746,707 @@
                 });
                 document.getElementById('modal-vocab-list').innerHTML = vHtml || '<div style="color:#64748b;">Chưa có từ vựng chỉ định.</div>';
 
-                // Setup Scramble Challenge
-                setupWordScramble(data.scramble_challenge);
+                // Check Cooldown
+                prepCooldownRemaining = data.user_status ? data.user_status.cooldown_remaining : 0;
+                handlePrepCooldownUI();
 
-                // Setup Syntax Challenge
-                setupSyntaxChallenge(data.syntax_challenge);
-
-                switchModalTab('learn');
                 document.getElementById('milestone-modal').style.display = 'flex';
             });
     }
 
-    function nextScrambleWord() {
-        if(!currentMilestoneId) return;
-        currentVocabIdx = (currentVocabIdx + 1) % totalVocabsCount;
-        fetch(`/api/roadmap/milestone/${currentMilestoneId}?vocab_idx=${currentVocabIdx}`)
-            .then(res => res.json())
-            .then(data => {
-                currentMilestoneData.scramble_challenge = data.scramble_challenge;
-                setupWordScramble(data.scramble_challenge);
-            });
-    }
+    function handlePrepCooldownUI() {
+        clearInterval(prepCooldownInterval);
+        const box = document.getElementById('prep-cooldown-box');
+        const timerEl = document.getElementById('prep-cooldown-timer');
+        const startBtn = document.getElementById('btn-start-exam');
 
-    function closeMilestoneModal() {
-        document.getElementById('milestone-modal').style.display = 'none';
-    }
+        if (prepCooldownRemaining > 0) {
+            box.style.display = 'flex';
+            timerEl.innerText = prepCooldownRemaining;
+            startBtn.disabled = true;
+            startBtn.style.opacity = '0.5';
+            startBtn.style.cursor = 'not-allowed';
 
-    function switchModalTab(tab) {
-        ['learn', 'scramble', 'syntax'].forEach(t => {
-            document.getElementById(`m-tab-${t}`).style.display = (t === tab) ? 'block' : 'none';
-            const btn = document.getElementById(`m-tab-btn-${t}`);
-            if(t === tab) {
-                btn.style.background = 'rgba(103, 232, 249, 0.15)';
-                btn.style.borderColor = 'var(--neon-cyan)';
-                btn.style.color = 'var(--neon-cyan)';
-            } else {
-                btn.style.background = 'transparent';
-                btn.style.borderColor = 'var(--glass-border)';
-                btn.style.color = '#94a3b8';
-            }
-        });
-
-        if(tab === 'scramble') {
-            scrambleStartTime = Date.now();
+            prepCooldownInterval = setInterval(() => {
+                prepCooldownRemaining--;
+                timerEl.innerText = prepCooldownRemaining;
+                if (prepCooldownRemaining <= 0) {
+                    clearInterval(prepCooldownInterval);
+                    box.style.display = 'none';
+                    startBtn.disabled = false;
+                    startBtn.style.opacity = '1';
+                    startBtn.style.cursor = 'pointer';
+                }
+            }, 1000);
+        } else {
+            box.style.display = 'none';
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
+            startBtn.style.cursor = 'pointer';
         }
     }
 
-    /* MINIGAME 1: GHÉP CHỮ */
-    function setupWordScramble(scrambleData) {
-        if(!scrambleData || scrambleData.status !== 'success') return;
-        document.getElementById('scramble-vocab-counter').innerText = `Từ ${currentVocabIdx + 1}/${totalVocabsCount}`;
-        document.getElementById('scramble-meaning').innerText = `Nghĩa: "${scrambleData.meaning}" (${scrambleData.cefr_level})`;
-        document.getElementById('scramble-feedback').style.display = 'none';
-
-        resetScrambleWord();
+    function bypassExamCooldown() {
+        if (!currentMilestoneId) return;
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}/bypass_cooldown`, {
+            method: 'POST'
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) {
+                alert(res.error);
+                return;
+            }
+            alert(res.message);
+            prepCooldownRemaining = 0;
+            handlePrepCooldownUI();
+            loadRoadmap();
+        });
     }
 
-    function resetScrambleWord() {
-        if(!currentMilestoneData || !currentMilestoneData.scramble_challenge) return;
-        scrambleSelectedLetters = [];
-        const letters = currentMilestoneData.scramble_challenge.shuffled_letters || [];
-        
-        // Slots
-        document.getElementById('scramble-slots').innerHTML = letters.map((_, i) => 
-            `<div id="slot-${i}" style="width: 44px; height: 48px; border-bottom: 3px solid var(--neon-cyan); display: flex; justify-content: center; align-items: center; font-family: var(--text-mono); font-size: 22px; font-weight: bold; color: #fff;"></div>`
-        ).join('');
-
-        // Pool
-        document.getElementById('scramble-pool').innerHTML = letters.map((ch, idx) => 
-            `<div class="letter-tile" id="tile-${idx}" onclick="pickLetter(${idx}, '${ch}')">${ch}</div>`
-        ).join('');
+    function showModalView(viewName) {
+        ['prep', 'exam', 'report'].forEach(v => {
+            const el = document.getElementById(`view-${v}`);
+            if (el) el.style.display = (v === viewName) ? 'block' : 'none';
+        });
     }
 
-    function pickLetter(tileIdx, letter) {
-        const tile = document.getElementById(`tile-${tileIdx}`);
-        if(tile.classList.contains('used')) return;
-
-        tile.classList.add('used');
-        const slotIdx = scrambleSelectedLetters.length;
-        scrambleSelectedLetters.push({ tileIdx: tileIdx, letter: letter });
-        document.getElementById(`slot-${slotIdx}`).innerText = letter;
+    function closeMilestoneModal() {
+        clearInterval(examTimerInterval);
+        clearInterval(prepCooldownInterval);
+        document.getElementById('milestone-modal').style.display = 'none';
     }
 
-    function submitWordScramble() {
-        if(!currentMilestoneData || !currentMilestoneData.scramble_challenge) return;
-        const answer = scrambleSelectedLetters.map(s => s.letter).join('');
-        const vocabId = currentMilestoneData.scramble_challenge.vocab_id;
-        const timeSpent = (Date.now() - scrambleStartTime) / 1000;
+    /* ========================================================================= */
+    /* PHÒNG THI CHUYÊN SÂU: SINH ĐỀ VÀ THI ĐẤU (EXAM ENGINE) */
+    /* ========================================================================= */
+    function startAcademicExam() {
+        if (!currentMilestoneId) return;
 
-        fetch('/api/game/scramble/verify', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ vocab_id: vocabId, answer: answer, response_time: timeSpent })
-        }).then(r => r.json()).then(res => {
-            const fb = document.getElementById('scramble-feedback');
-            fb.style.display = 'block';
-            fb.style.background = res.is_correct ? 'rgba(110, 231, 183, 0.15)' : 'rgba(239, 68, 68, 0.15)';
-            fb.style.color = res.is_correct ? 'var(--pixel-green)' : '#ef4444';
-            fb.style.border = `1px solid ${res.is_correct ? 'var(--pixel-green)' : '#ef4444'}`;
-            fb.innerText = res.message;
+        // Reset state
+        examAnswers = {
+            vocab_mcq: {},
+            word_scramble: {},
+            syntax: {},
+            grammar_cloze: {}
+        };
+        scrambleSelectedMap = {};
+        syntaxSelectedChunks = [];
+        currentScrambleIdx = 0;
 
-            if(res.is_correct) {
-                wordPassed = true;
-                updateExamScorecard();
-                setTimeout(() => switchModalTab('syntax'), 1200);
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}/exam`)
+            .then(res => {
+                if (res.status === 403) {
+                    return res.json().then(d => { throw new Error(d.message); });
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data.status !== 'success') {
+                    alert(data.message || "Không thể khởi tạo đề thi lúc này!");
+                    return;
+                }
+
+                currentExamData = data;
+                examTimeLeft = data.time_limit_sec || 420;
+
+                // Render 4 Sections
+                renderSection1MCQ(data.sections.vocab_mcq || []);
+                renderSection2Scramble(data.sections.word_scramble || []);
+                renderSection3Syntax(data.sections.syntax || {});
+                renderSection4Cloze(data.sections.grammar_cloze || []);
+
+                updateExamProgressUI();
+                switchExamSection('sec1');
+                showModalView('exam');
+                startExamTimer();
+            })
+            .catch(err => {
+                alert(err.message);
+            });
+    }
+
+    function startExamTimer() {
+        clearInterval(examTimerInterval);
+        const timerDisplay = document.getElementById('exam-timer-display');
+
+        examTimerInterval = setInterval(() => {
+            examTimeLeft--;
+            const mins = Math.floor(examTimeLeft / 60);
+            const secs = examTimeLeft % 60;
+            timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            if (examTimeLeft <= 60) {
+                timerDisplay.style.color = '#ef4444';
+            } else {
+                timerDisplay.style.color = 'var(--neon-amber)';
+            }
+
+            if (examTimeLeft <= 0) {
+                clearInterval(examTimerInterval);
+                alert("⏰ HẾT GIỜ LÀM BÀI! Hệ thống sẽ tự động nộp bài thi của bạn.");
+                submitAcademicExam(true);
+            }
+        }, 1000);
+    }
+
+    function switchExamSection(secKey) {
+        ['sec1', 'sec2', 'sec3', 'sec4'].forEach(s => {
+            const panel = document.getElementById(`exam-${s}`);
+            const btn = document.getElementById(`tab-btn-${s}`);
+            if (panel) panel.style.display = (s === secKey) ? 'block' : 'none';
+            if (btn) {
+                if (s === secKey) btn.classList.add('active');
+                else btn.classList.remove('active');
             }
         });
     }
 
-    /* MINIGAME 2: GHÉP CÚ PHÁP */
-    function setupSyntaxChallenge(syntaxData) {
-        if(!syntaxData || syntaxData.status !== 'success') return;
-        document.getElementById('syntax-explanation').innerText = `${syntaxData.structure}: ${syntaxData.explanation}`;
-        document.getElementById('syntax-feedback').style.display = 'none';
+    /* RENDER SECTION 1: VOCAB MCQ */
+    function renderSection1MCQ(questions) {
+        const container = document.getElementById('sec1-questions-container');
+        let html = '';
 
-        resetSyntaxSentence();
+        questions.forEach((q, qIdx) => {
+            html += `
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 16px;">
+                <div style="color: #fff; font-size: 14px; margin-bottom: 12px; font-weight: bold;">
+                    Câu ${qIdx + 1}: Chọn ý nghĩa chính xác nhất của từ vựng <strong style="color: var(--neon-cyan); font-size: 16px;">"${q.word}"</strong>
+                    <span style="font-size: 10px; color: var(--neon-cyan); margin-left: 6px; padding: 2px 6px; border-radius: 4px; background: rgba(6,182,212,0.15); font-family: var(--text-mono);">${q.cefr}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
+                    ${q.options.map((opt, oIdx) => {
+                        const letter = String.fromCharCode(65 + oIdx);
+                        const safeOpt = opt.replace(/'/g, "&#39;");
+                        return `
+                        <div class="mcq-option-card" id="mcq-opt-${q.id}-${oIdx}" onclick="selectMCQAnswer('${q.id}', '${safeOpt}', ${oIdx})">
+                            <div class="mcq-option-letter">${letter}</div>
+                            <div style="font-size: 13px; line-height: 1.4;">${opt}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
     }
 
-    function resetSyntaxSentence() {
-        if(!currentMilestoneData || !currentMilestoneData.syntax_challenge) return;
+    function selectMCQAnswer(qId, selectedText, optIdx) {
+        examAnswers.vocab_mcq[qId] = selectedText;
+
+        // Update UI highlight
+        for (let i = 0; i < 4; i++) {
+            const el = document.getElementById(`mcq-opt-${qId}-${i}`);
+            if (el) {
+                if (i === optIdx) el.classList.add('selected');
+                else el.classList.remove('selected');
+            }
+        }
+
+        updateExamProgressUI();
+    }
+
+    /* RENDER SECTION 2: WORD SCRAMBLE */
+    function renderSection2Scramble(questions) {
+        currentScrambleIdx = 0;
+        scrambleSelectedMap = { 0: [], 1: [] };
+        renderCurrentScrambleWord();
+    }
+
+    function switchScrambleItem(idx) {
+        currentScrambleIdx = idx;
+        document.getElementById('btn-scramble-word-0').style.background = (idx === 0) ? 'var(--neon-pink)' : 'rgba(0,0,0,0.5)';
+        document.getElementById('btn-scramble-word-0').style.color = (idx === 0) ? '#fff' : '#94a3b8';
+        document.getElementById('btn-scramble-word-1').style.background = (idx === 1) ? 'var(--neon-pink)' : 'rgba(0,0,0,0.5)';
+        document.getElementById('btn-scramble-word-1').style.color = (idx === 1) ? '#fff' : '#94a3b8';
+        renderCurrentScrambleWord();
+    }
+
+    function renderCurrentScrambleWord() {
+        if (!currentExamData || !currentExamData.sections || !currentExamData.sections.word_scramble) return;
+        const qList = currentExamData.sections.word_scramble;
+        const q = qList[currentScrambleIdx];
+        if (!q) return;
+
+        document.getElementById('scramble-meaning-prompt').innerText = `Từ ${currentScrambleIdx + 1}/2: Mang ý nghĩa "${q.meaning}" (${q.cefr})`;
+
+        const selected = scrambleSelectedMap[currentScrambleIdx] || [];
+        const letters = q.shuffled_letters || [];
+
+        // Slots
+        document.getElementById('exam-scramble-slots').innerHTML = letters.map((_, i) => {
+            const filled = selected[i] ? selected[i].letter : '';
+            return `<div class="scramble-slot">${filled}</div>`;
+        }).join('');
+
+        // Pool
+        document.getElementById('exam-scramble-pool').innerHTML = letters.map((ch, idx) => {
+            const isUsed = selected.some(s => s.tileIdx === idx);
+            return `<div class="letter-tile ${isUsed ? 'used' : ''}" id="scramble-tile-${currentScrambleIdx}-${idx}" onclick="pickExamLetter(${idx}, '${ch}')">${ch}</div>`;
+        }).join('');
+    }
+
+    function pickExamLetter(tileIdx, letter) {
+        if (!scrambleSelectedMap[currentScrambleIdx]) scrambleSelectedMap[currentScrambleIdx] = [];
+        const selected = scrambleSelectedMap[currentScrambleIdx];
+        const q = currentExamData.sections.word_scramble[currentScrambleIdx];
+
+        if (selected.some(s => s.tileIdx === tileIdx)) return;
+        if (selected.length >= q.shuffled_letters.length) return;
+
+        selected.push({ tileIdx: tileIdx, letter: letter });
+        examAnswers.word_scramble[q.id] = selected.map(s => s.letter).join('');
+
+        renderCurrentScrambleWord();
+        updateExamProgressUI();
+    }
+
+    function resetCurrentScrambleWord() {
+        scrambleSelectedMap[currentScrambleIdx] = [];
+        const q = currentExamData.sections.word_scramble[currentScrambleIdx];
+        if (q) delete examAnswers.word_scramble[q.id];
+        renderCurrentScrambleWord();
+        updateExamProgressUI();
+    }
+
+    /* RENDER SECTION 3: SYNTAX ASSEMBLY */
+    function renderSection3Syntax(syntaxQuestion) {
         syntaxSelectedChunks = [];
-        const chunks = currentMilestoneData.syntax_challenge.shuffled_chunks || [];
-
-        document.getElementById('syntax-slots').innerHTML = '<div style="color: #64748b; font-size: 13px; font-style: italic;">Bấm chọn các khối từ bên dưới để ghép câu hoàn chỉnh...</div>';
-
-        document.getElementById('syntax-pool').innerHTML = chunks.map((chunk, idx) => 
-            `<div class="syntax-tile" id="syn-tile-${idx}" onclick="pickSyntaxChunk(${idx}, '${chunk.replace(/'/g, "\\'")}')">${chunk}</div>`
-        ).join('');
+        document.getElementById('exam-syntax-explanation').innerText = `Ngữ pháp mục tiêu: ${syntaxQuestion.structure} - ${syntaxQuestion.explanation}`;
+        resetExamSyntax();
     }
 
-    function pickSyntaxChunk(tileIdx, chunk) {
+    function resetExamSyntax() {
+        syntaxSelectedChunks = [];
+        delete examAnswers.syntax['syntax_0'];
+
+        const container = document.getElementById('exam-syntax-slots');
+        container.innerHTML = '<span style="color: #64748b; font-size: 12px; font-style: italic;">Chọn các khối từ bên dưới để ghép thành câu hoàn chỉnh...</span>';
+
+        if (!currentExamData || !currentExamData.sections || !currentExamData.sections.syntax) return;
+        const chunks = currentExamData.sections.syntax.shuffled_chunks || [];
+
+        document.getElementById('exam-syntax-pool').innerHTML = chunks.map((chunk, idx) => {
+            const safeChunk = chunk.replace(/'/g, "\\'");
+            return `<div class="syntax-tile" id="syn-tile-${idx}" onclick="pickExamSyntaxChunk(${idx}, '${safeChunk}')">${chunk}</div>`;
+        }).join('');
+
+        updateExamProgressUI();
+    }
+
+    function pickExamSyntaxChunk(tileIdx, chunk) {
         const tile = document.getElementById(`syn-tile-${tileIdx}`);
-        if(tile.classList.contains('used')) return;
+        if (!tile || tile.classList.contains('used')) return;
 
         tile.classList.add('used');
         syntaxSelectedChunks.push({ tileIdx: tileIdx, text: chunk });
 
-        const slotContainer = document.getElementById('syntax-slots');
+        const slotContainer = document.getElementById('exam-syntax-slots');
         slotContainer.innerHTML = syntaxSelectedChunks.map(c => 
-            `<span style="background: rgba(103, 232, 249, 0.2); border: 1px solid var(--neon-cyan); padding: 4px 8px; border-radius: 4px; font-family: var(--text-mono); color: #fff; margin-right: 6px;">${c.text}</span>`
+            `<span style="background: rgba(103, 232, 249, 0.2); border: 2px solid #000000; padding: 6px 14px; border-radius: 8px; font-family: var(--text-mono); font-weight: 700; color: #fff; box-shadow: 0 2px 0 #000000;">${c.text}</span>`
         ).join('');
+
+        examAnswers.syntax['syntax_0'] = syntaxSelectedChunks.map(c => c.text);
+        updateExamProgressUI();
     }
 
-    function submitSyntaxSentence() {
-        if(!currentMilestoneData || !currentMilestoneData.syntax_challenge) return;
-        const original = currentMilestoneData.syntax_challenge.original_sentence;
-        const chunks = syntaxSelectedChunks.map(c => c.text);
+    /* RENDER SECTION 4: GRAMMAR CLOZE */
+    function renderSection4Cloze(questions) {
+        const container = document.getElementById('sec4-questions-container');
+        let html = '';
 
-        fetch('/api/game/syntax/verify', {
+        questions.forEach((q, qIdx) => {
+            html += `
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 16px;">
+                <div style="color: #fff; font-size: 14px; margin-bottom: 12px; font-weight: bold; line-height: 1.5;">
+                    Câu ${qIdx + 1}: ${q.prompt}
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+                    ${q.options.map((opt, oIdx) => {
+                        const letter = String.fromCharCode(65 + oIdx);
+                        const safeOpt = opt.replace(/'/g, "&#39;");
+                        return `
+                        <div class="mcq-option-card" id="cloze-opt-${q.id}-${oIdx}" onclick="selectClozeAnswer('${q.id}', '${safeOpt}', ${oIdx})">
+                            <div class="mcq-option-letter">${letter}</div>
+                            <div style="font-size: 13px;">${opt}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function selectClozeAnswer(qId, selectedText, optIdx) {
+        examAnswers.grammar_cloze[qId] = selectedText;
+
+        for (let i = 0; i < 4; i++) {
+            const el = document.getElementById(`cloze-opt-${qId}-${i}`);
+            if (el) {
+                if (i === optIdx) el.classList.add('selected');
+                else el.classList.remove('selected');
+            }
+        }
+
+        updateExamProgressUI();
+    }
+
+    /* TÍNH TOÁN TIẾN ĐỘ LÀM BÀI */
+    function getAnsweredCount() {
+        let count = 0;
+        count += Object.keys(examAnswers.vocab_mcq).length;
+        count += Object.keys(examAnswers.word_scramble).length;
+        if (examAnswers.syntax['syntax_0'] && examAnswers.syntax['syntax_0'].length > 0) count += 1;
+        count += Object.keys(examAnswers.grammar_cloze).length;
+        return count;
+    }
+
+    function updateExamProgressUI() {
+        const count = getAnsweredCount();
+        document.getElementById('exam-progress-counter').innerText = `${count}/8 Câu`;
+        document.getElementById('exam-answered-status').innerText = `${count}/8`;
+    }
+
+    /* BỎ THI GIỮA CHỪNG */
+    function confirmAbandonExam() {
+        const ok = confirm("⚠️ CẢNH BÁO QUY CHẾ THI:\n\nNếu bạn thoát ngang hoặc bỏ dở giữa chừng, hệ thống sẽ phạt TRỪ -20 RP và tính là 1 lần trượt bài thi.\n\nBạn có chắc chắn muốn bỏ thi không?");
+        if (!ok) return;
+
+        clearInterval(examTimerInterval);
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit_exam`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ original_sentence: original, user_chunks: chunks })
-        }).then(r => r.json()).then(res => {
-            const fb = document.getElementById('syntax-feedback');
-            fb.style.display = 'block';
-            fb.style.background = res.is_correct ? 'rgba(110, 231, 183, 0.15)' : 'rgba(239, 68, 68, 0.15)';
-            fb.style.color = res.is_correct ? 'var(--pixel-green)' : '#ef4444';
-            fb.style.border = `1px solid ${res.is_correct ? 'var(--pixel-green)' : '#ef4444'}`;
-            fb.innerText = res.message;
-
-            if(res.is_correct) {
-                syntaxPassed = true;
-                updateExamScorecard();
-            }
+            body: JSON.stringify({
+                exam_token: currentExamData ? currentExamData.exam_token : '',
+                is_abandoned: true
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            alert(`⚠️ Bạn đã bỏ thi! Bị phạt trừ ${data.result.rp_change} RP.`);
+            closeMilestoneModal();
+            loadRoadmap();
         });
     }
 
-    function finalizeMilestoneGateway() {
-        let totalScore = 0;
-        if(wordPassed) totalScore += 5.0;
-        if(syntaxPassed) totalScore += 5.0;
-
-        if(totalScore < 7.0) {
-            const ok = confirm(`⚠️ CẢNH BÁO: Điểm bài thi hiện tại của bạn là ${totalScore.toFixed(1)}/10.0 (Yêu cầu tối thiểu 7.0 điểm).\n\nBạn chưa hoàn thành đủ 2 ải! Nếu nộp bây giờ bạn sẽ bị tính là TRƯỢT CHẶNG. Bạn có chắc chắn muốn nộp không?`);
-            if(!ok) return;
+    /* NỘP BÀI THI */
+    function submitAcademicExam(forceTimeout = false) {
+        const answeredCount = getAnsweredCount();
+        if (!forceTimeout && answeredCount < 8) {
+            const ok = confirm(`⚠️ CẢNH BÁO: Bạn mới làm được ${answeredCount}/8 câu hỏi. Các câu bỏ trống sẽ bị tính 0 điểm và có nguy cơ cao DÍNH ĐIỂM LIỆT (< 5.0).\n\nBạn có chắc chắn muốn nộp bài thi lúc này không?`);
+            if (!ok) return;
         }
 
-        fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit`, {
+        clearInterval(examTimerInterval);
+
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit_exam`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ score: totalScore })
-        }).then(r => r.json()).then(res => {
-            alert(res.message);
-            if(res.passed) {
+            body: JSON.stringify({
+                exam_token: currentExamData.exam_token,
+                answers: examAnswers,
+                is_abandoned: false
+            })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Lỗi khi nộp bài thi! Vui lòng thử lại.");
+            return res.json();
+        })
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
                 closeMilestoneModal();
-                loadRoadmap();
+                return;
             }
+
+            renderExamReport(data.result, data.detailed_review);
+            showModalView('report');
+            loadRoadmap();
+        })
+        .catch(err => {
+            alert(err.message);
+        });
+    }
+
+    /* ========================================================================= */
+    /* BÁO CÁO KẾT QUẢ KHẢO THÍ & ĐỐI SOÁT ĐÁP ÁN (REPORT ENGINE) */
+    /* ========================================================================= */
+    function renderExamReport(result, detailedReview) {
+        const heroBanner = document.getElementById('report-hero-banner');
+        const heroIcon = document.getElementById('report-hero-icon');
+        const heroTitle = document.getElementById('report-hero-title');
+        const heroSubtitle = document.getElementById('report-hero-subtitle');
+
+        if (result.passed) {
+            heroBanner.style.background = 'rgba(110, 231, 183, 0.15)';
+            heroBanner.style.border = '2px solid var(--pixel-green)';
+            heroIcon.innerText = '🏆';
+            heroTitle.innerText = 'XUẤT SẮC QUA ẢI CHẶNG!';
+            heroTitle.style.color = 'var(--pixel-green)';
+            heroSubtitle.innerText = `Chúc mừng bạn đã chinh phục chặng thi thành công! Nhận ngay +${result.reward_coins} Xu Thưởng.`;
+            heroSubtitle.style.color = '#cbd5e1';
+        } else if (result.disqualified) {
+            heroBanner.style.background = 'rgba(239, 68, 68, 0.18)';
+            heroBanner.style.border = '2px solid #ef4444';
+            heroIcon.innerText = '⚠️';
+            heroTitle.innerText = 'BỊ ĐÁNH TRƯỢT DO DÍNH ĐIỂM LIỆT!';
+            heroTitle.style.color = '#ef4444';
+            heroSubtitle.innerText = result.disqualified_reason || 'Có ít nhất 1 phần thi dưới 5.0 điểm.';
+            heroSubtitle.style.color = '#fca5a5';
+        } else {
+            heroBanner.style.background = 'rgba(239, 68, 68, 0.15)';
+            heroBanner.style.border = '2px solid #ef4444';
+            heroIcon.innerText = '❌';
+            heroTitle.innerText = 'CHƯA ĐẠT ĐIỂM QUA ẢI (CẦN >= 7.5)';
+            heroTitle.style.color = '#ef4444';
+            heroSubtitle.innerText = result.disqualified_reason || 'Tổng điểm bài thi chưa đạt ngưỡng 7.5/10.';
+            heroSubtitle.style.color = '#fca5a5';
+        }
+
+        // Scorecard
+        document.getElementById('report-total-score').innerText = `${result.score.toFixed(1)} / 10`;
+        const passStatusEl = document.getElementById('report-pass-status');
+        if (result.passed) {
+            passStatusEl.innerText = '✓ ĐẠT CHUẨN QUA ẢI';
+            passStatusEl.style.color = 'var(--pixel-green)';
+        } else {
+            passStatusEl.innerText = '✗ KHÔNG ĐẠT';
+            passStatusEl.style.color = '#ef4444';
+        }
+
+        // RP Change
+        const rpChangeEl = document.getElementById('report-rp-change');
+        if (result.rp_change > 0) {
+            rpChangeEl.innerText = `+${result.rp_change} RP`;
+            rpChangeEl.style.color = 'var(--pixel-green)';
+        } else {
+            rpChangeEl.innerText = `${result.rp_change} RP`;
+            rpChangeEl.style.color = '#ef4444';
+        }
+
+        let rankText = `Rank hiện tại: ${result.current_rank} (${result.new_rp} RP)`;
+        if (result.demoted) {
+            rankText = `🚨 BỊ GIÁNG CẤP XUỐNG: ${result.current_rank}!`;
+        } else if (result.promoted) {
+            rankText = `🎉 THĂNG HẠNG: ${result.current_rank}!`;
+        }
+        document.getElementById('report-current-rank').innerText = rankText;
+
+        // Subscores
+        const secScores = result.section_scores || {};
+        const renderSubscore = (elId, val) => {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            const s = val !== undefined ? val : 0.0;
+            el.innerText = `${s.toFixed(1)}/10`;
+            el.style.color = s < 5.0 ? '#ef4444' : (s >= 7.5 ? 'var(--pixel-green)' : 'var(--neon-amber)');
+        };
+        renderSubscore('score-sec1', secScores.vocab_mcq);
+        renderSubscore('score-sec2', secScores.word_scramble);
+        renderSubscore('score-sec3', secScores.syntax);
+        renderSubscore('score-sec4', secScores.grammar_cloze);
+
+        // Detailed Review Cards
+        const reviewContainer = document.getElementById('report-detailed-review');
+        let rHtml = '';
+        (detailedReview || []).forEach((item, idx) => {
+            const statusBg = item.is_correct ? 'rgba(110, 231, 183, 0.08)' : 'rgba(239, 68, 68, 0.08)';
+            const statusBorder = item.is_correct ? 'var(--pixel-green)' : '#ef4444';
+            const statusBadge = item.is_correct ? '<span style="color: var(--pixel-green); font-weight: bold;">✓ CHÍNH XÁC</span>' : '<span style="color: #ef4444; font-weight: bold;">✗ CHƯA ĐÚNG</span>';
+
+            rHtml += `
+            <div style="background: ${statusBg}; border-left: 4px solid ${statusBorder}; border-top: 2px solid #000000; border-right: 2px solid #000000; border-bottom: 2px solid #000000; padding: 14px 18px; border-radius: 12px; box-shadow: 0 3px 0 #000000;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">${item.section}</span>
+                    <span style="font-size: 12px; font-family: var(--text-mono);">${statusBadge}</span>
+                </div>
+                <div style="color: #fff; font-size: 13px; font-weight: bold; margin-bottom: 6px;">${item.question}</div>
+                <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 3px;">
+                    Bạn đã chọn: <strong style="color: ${item.is_correct ? 'var(--pixel-green)' : '#ef4444'};">${item.user_answer}</strong>
+                </div>
+                <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 5px;">
+                    Đáp án chuẩn: <strong style="color: var(--pixel-green);">${item.correct_answer}</strong>
+                </div>
+                <div style="font-size: 11px; color: #94a3b8; font-style: italic; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 4px; margin-top: 4px;">
+                    💡 Lời giải: ${item.explanation}
+                </div>
+            </div>`;
+        });
+        reviewContainer.innerHTML = rHtml;
+
+        // XỬ LÝ TRẠM VI HỌC BÙ LỖ HỔNG (ADAPTIVE MICRO-LESSON) KHI TRƯỢT
+        const microContainer = document.getElementById('report-micro-lesson-container');
+        if (!result.passed) {
+            microContainer.style.display = 'block';
+            loadAdaptiveMicroLesson(result.weakest_section);
+        } else {
+            microContainer.style.display = 'none';
+        }
+
+        // Footer Actions
+        const footerContainer = document.getElementById('report-footer-actions');
+        if (result.passed) {
+            footerContainer.innerHTML = `
+            <button class="pixel-btn" onclick="closeMilestoneModal()" style="background: var(--pixel-green); color: #000; flex: 1; padding: 14px; font-size: 12px; font-weight: bold;">
+                TIẾP TỤC LỘ TRÌNH CHINH PHỤC ▶
+            </button>`;
+        } else {
+            footerContainer.innerHTML = `
+            <button class="pixel-btn" onclick="openMilestoneRoom(${currentMilestoneId})" style="background: var(--neon-cyan); color: #000; flex: 1; padding: 14px; font-size: 12px; font-weight: bold;">
+                🔄 LÀM LẠI ĐỀ THI MỚI (RANDOM MỚI 100%)
+            </button>
+            <button class="pixel-btn" onclick="closeMilestoneModal()" style="background: rgba(0,0,0,0.6); border: 1px solid #64748b; color: #94a3b8; padding: 14px 20px; font-size: 12px;">
+                VỀ BẢNG ĐIỀU KHIỂN
+            </button>`;
+        }
+    }
+
+    /* ========================================================================= */
+    /* LOGIC TRẠM VI HỌC BÙ LỖ HỔNG (ADAPTIVE MICRO-LESSON & RESCUE DRILL) */
+    /* ========================================================================= */
+    let currentDrillToken = null;
+    let microDrillAnswers = {};
+
+    function loadAdaptiveMicroLesson(weakest) {
+        const weakKey = weakest ? weakest.key : 'grammar_cloze';
+        const weakName = weakest ? weakest.name : 'Vận Dụng Ngữ Pháp';
+        const weakScore = (weakest && weakest.score !== undefined) ? weakest.score : 0;
+
+        microDrillAnswers = {};
+        currentDrillToken = null;
+        document.getElementById('micro-drill-feedback').style.display = 'none';
+        const submitBtn = document.getElementById('btn-submit-micro-drill');
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+        submitBtn.innerText = '⚡ NỘP BÀI BÙ LỖ HỔNG ĐỂ NHẬN CỨU TRỢ RP & MỞ KHÓA THI LẠI';
+
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}/micro_lesson?weak_section=${weakKey}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) return;
+
+                currentDrillToken = data.drill_token;
+                document.getElementById('micro-lesson-title').innerText = data.title;
+                document.getElementById('micro-weak-label').innerText = `🎯 Phát hiện lỗ hổng lớn nhất: ${data.weak_section_name} (${weakScore.toFixed(1)}/10 điểm)`;
+                document.getElementById('micro-core-rule').innerText = data.core_rule;
+                document.getElementById('micro-trap-alert').innerText = data.trap_alert;
+
+                // Render 3 questions
+                let dHtml = '';
+                (data.drills || []).forEach((q, qIdx) => {
+                    dHtml += `
+                    <div style="background: rgba(0,0,0,0.4); border: 1.5px solid var(--glass-border); border-radius: 10px; padding: 14px;">
+                        <div style="color: #fff; font-size: 13px; font-weight: bold; margin-bottom: 10px; line-height: 1.4;">
+                            Câu ${qIdx + 1}: ${q.prompt}
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+                            ${q.options.map((opt, oIdx) => {
+                                const letter = String.fromCharCode(65 + oIdx);
+                                const safeOpt = opt.replace(/'/g, "&#39;");
+                                return `
+                                <div class="micro-option-card" id="drill-opt-${q.id}-${oIdx}" onclick="selectMicroDrillOption('${q.id}', '${safeOpt}', ${oIdx})">
+                                    <div class="opt-letter">${letter}</div>
+                                    <div>${opt}</div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('micro-drills-list').innerHTML = dHtml;
+            })
+            .catch(err => console.error("Error loading micro lesson:", err));
+    }
+
+    function selectMicroDrillOption(qId, val, oIdx) {
+        microDrillAnswers[qId] = val;
+        for (let i = 0; i < 4; i++) {
+            const el = document.getElementById(`drill-opt-${qId}-${i}`);
+            if (el) {
+                if (i === oIdx) el.classList.add('selected');
+                else el.classList.remove('selected');
+            }
+        }
+    }
+
+    function submitMicroDrill() {
+        if (!currentDrillToken) return;
+        const ansCount = Object.keys(microDrillAnswers).length;
+        if (ansCount < 3) {
+            alert("⚠️ Vui lòng trả lời đủ cả 3 câu hỏi trắc nghiệm để hoàn tất gói cứu trợ!");
+            return;
+        }
+
+        const submitBtn = document.getElementById('btn-submit-micro-drill');
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Đang chấm điểm bài tập cứu viện...';
+
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit_micro_drill`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                drill_token: currentDrillToken,
+                answers: microDrillAnswers
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                submitBtn.disabled = false;
+                submitBtn.innerText = '⚡ NỘP BÀI BÙ LỖ HỔNG ĐỂ NHẬN CỨU TRỢ RP & MỞ KHÓA THI LẠI';
+                return;
+            }
+
+            const feedbackEl = document.getElementById('micro-drill-feedback');
+            feedbackEl.style.display = 'block';
+
+            if (data.passed) {
+                feedbackEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                feedbackEl.style.border = '2px solid var(--pixel-green)';
+                feedbackEl.innerHTML = `
+                    <div style="color: var(--pixel-green); font-weight: bold; font-size: 14px; margin-bottom: 6px;">
+                        ${data.message}
+                    </div>
+                    <div style="color: #cbd5e1; font-size: 12px;">
+                        Kết quả bài tập: <strong>${data.correct_count}/${data.total} câu đúng</strong> | Rank RP hiện tại: <strong style="color: var(--pixel-green);">${data.new_rp} RP</strong>
+                    </div>
+                    <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 11px; color: #94a3b8;">
+                        ${data.review.map((r, i) => `<div><strong>Câu ${i+1}:</strong> ${r.is_correct ? '<span style="color: var(--pixel-green);">✓ Đúng</span>' : '<span style="color: #ef4444;">✗ Sai</span>'} - ${r.explanation}</div>`).join('')}
+                    </div>
+                `;
+                submitBtn.innerText = `✓ ĐÃ NHẬN +${data.rescue_rp} RP CỨU VIỆN & RÚT COOLDOWN 5S`;
+                submitBtn.style.background = 'var(--pixel-green)';
+                submitBtn.style.color = '#000';
+
+                // Cập nhật thẻ RP trên Report
+                const rpEl = document.getElementById('report-rp-change');
+                if (rpEl) {
+                    rpEl.innerHTML += ` <span style="color: var(--pixel-green); font-size: 14px;">(+${data.rescue_rp} RP cứu viện)</span>`;
+                }
+
+                // Cập nhật thời gian Cooldown
+                prepCooldownRemaining = data.cooldown_remaining || 5;
+
+                // Tải lại lộ trình & Rank trên thanh điều hướng
+                loadRoadmap();
+            } else {
+                feedbackEl.style.background = 'rgba(239, 68, 68, 0.15)';
+                feedbackEl.style.border = '2px solid #ef4444';
+                feedbackEl.innerHTML = `
+                    <div style="color: #ef4444; font-weight: bold;">Chưa đạt câu nào đúng trong bài tập cứu viện!</div>
+                    <div style="color: #cbd5e1; font-size: 11px; margin-top: 4px;">
+                        ${data.review.map((r, i) => `<div><strong>Câu ${i+1}:</strong> Đáp án chuẩn: ${r.correct_answer}. Lời giải: ${r.explanation}</div>`).join('')}
+                    </div>
+                `;
+                submitBtn.innerText = '⚡ LÀM LẠI BÀI TẬP BÙ LỖ HỔNG';
+                submitBtn.disabled = false;
+            }
+        })
+        .catch(err => {
+            alert(err.message);
+            submitBtn.disabled = false;
         });
     }
 </script>

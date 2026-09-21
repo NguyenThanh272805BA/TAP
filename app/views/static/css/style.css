@@ -173,7 +173,7 @@ body::before {
     line-height: 1.5;
     letter-spacing: 1px;
     color: var(--neon-cyan);
-    text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.75);
     margin-top: 0;
     margin-bottom: 12px;
     text-transform: uppercase;
@@ -188,7 +188,7 @@ body::before {
     margin: 0;
 }
 
-/* Nút Bấm Game Retro Phát Sáng */
+/* Nút Bấm Game Retro Phát Sáng - Bo góc & Viền Đen Rõ Nét */
 .pixel-btn {
     font-family: var(--text-pixel);
     font-size: 13px;
@@ -196,33 +196,34 @@ body::before {
     letter-spacing: 0.5px;
     color: #ffffff;
     background: #3b82f6;
-    border: none;
+    border: 2px solid #000000; /* Viền đen rõ nét của nút */
     padding: 12px 24px;
-    border-radius: 8px; /* Bo góc nút nhẹ nhàng */
+    border-radius: 12px; /* Bo góc mềm mại */
     cursor: pointer;
     position: relative;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3), inset 0 2px 2px rgba(255,255,255,0.4);
-    transition: all 0.2s ease;
+    box-shadow: 0 4px 0 #000000, 0 8px 18px rgba(0, 0, 0, 0.35), inset 0 2px 2px rgba(255,255,255,0.3);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
 }
 
 .pixel-btn:hover {
-    filter: brightness(1.2);
+    filter: brightness(1.15);
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.5), inset 0 2px 2px rgba(255,255,255,0.5);
+    box-shadow: 0 6px 0 #000000, 0 12px 24px rgba(0, 0, 0, 0.45), inset 0 2px 2px rgba(255,255,255,0.4);
 }
 
 .pixel-btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 4px 4px rgba(0,0,0,0.3);
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #000000, inset 0 2px 3px rgba(0,0,0,0.4);
 }
 
 .pixel-btn:disabled {
     background: #475569 !important;
     cursor: not-allowed;
-    opacity: 0.7;
-    box-shadow: none;
-    transform: none;
+    opacity: 0.65;
+    border-color: #1e293b !important;
+    box-shadow: none !important;
+    transform: none !important;
 }
 
 /* Các Input Field */
@@ -1091,57 +1092,166 @@ body.clean-mode .pixel-btn:hover {
 .letter-tile {
     width: 48px;
     height: 52px;
-    background: rgba(15, 23, 42, 0.9);
-    border: 2px solid var(--neon-purple);
-    color: #fff;
+    background: #1e293b;
+    border: 2.5px solid #000000; /* Khung đã có viền đen */
+    color: #ffffff;
     font-family: var(--text-mono);
-    font-size: 22px;
-    font-weight: bold;
+    font-size: 24px;
+    font-weight: 800;
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 8px;
+    border-radius: 12px; /* Bo góc chữ */
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 0 #000000, 0 6px 14px rgba(0, 0, 0, 0.35);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
 }
 .letter-tile:hover {
-    transform: translateY(-4px) scale(1.05);
-    border-color: var(--neon-cyan);
-    box-shadow: 0 8px 20px rgba(103, 232, 249, 0.5);
+    transform: translateY(-3px) scale(1.04);
+    background: #334155;
+    color: var(--neon-cyan);
+    box-shadow: 0 6px 0 #000000, 0 10px 20px rgba(103, 232, 249, 0.4);
 }
 .letter-tile:active {
-    transform: translateY(0) scale(0.95);
+    transform: translateY(2px) scale(0.96);
+    box-shadow: 0 1px 0 #000000;
 }
 .letter-tile.used {
-    opacity: 0.3;
+    opacity: 0.35;
     pointer-events: none;
-    border-style: dashed;
+    background: #0f172a;
+    border: 2px dashed #475569;
+    box-shadow: none;
+}
+
+/* Scramble Slot: Ô đáp án gỡ bom chữ */
+.scramble-slot {
+    width: 48px;
+    height: 52px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 2.5px solid #000000; /* Khung đã có viền đen */
+    border-bottom: 4px solid var(--neon-cyan);
+    border-radius: 12px; /* Bo góc */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: var(--text-mono);
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
+    box-shadow: 0 4px 0 #000000, inset 0 2px 4px rgba(0,0,0,0.5);
+    transition: all 0.2s ease;
 }
 
 /* Syntax Chunk Tile */
 .syntax-tile {
-    padding: 10px 16px;
-    background: rgba(15, 23, 42, 0.9);
-    border: 2px solid var(--neon-amber);
-    color: #fff;
+    padding: 10px 18px;
+    background: #1e293b;
+    border: 2px solid #000000; /* Khung đã có viền đen */
+    border-radius: 10px; /* Bo góc */
+    color: #ffffff;
     font-family: var(--text-mono);
     font-size: 15px;
-    border-radius: 8px;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-    transition: all 0.2s;
+    box-shadow: 0 3px 0 #000000, 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
 }
 .syntax-tile:hover {
     transform: translateY(-2px);
-    border-color: var(--neon-cyan);
-    box-shadow: 0 6px 16px rgba(103, 232, 249, 0.4);
+    background: #334155;
+    color: var(--neon-amber);
+    box-shadow: 0 5px 0 #000000, 0 8px 16px rgba(245, 158, 11, 0.3);
+}
+.syntax-tile:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #000000;
 }
 .syntax-tile.used {
-    opacity: 0.25;
+    opacity: 0.3;
     pointer-events: none;
+    background: #0f172a;
+    border-style: dashed;
+    box-shadow: none;
+}
+
+/* CEFR Badges Toàn Hệ Thống - Bo tròn viền đen */
+.cefr-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 9999px; /* Bo tròn hoàn toàn dạng pill */
+    border: 1.5px solid #000000; /* Khung đã có viền đen rõ nét */
+    font-size: 10.5px;
+    font-family: var(--text-mono);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: var(--neon-purple);
+    color: #ffffff;
+    box-shadow: 0 2px 0 #000000, 0 2px 6px rgba(0, 0, 0, 0.3);
+    vertical-align: middle;
+    line-height: 1;
+    user-select: none;
+}
+.cefr-badge.a1 { background: #059669; }
+.cefr-badge.a2 { background: #0284c7; }
+.cefr-badge.b1 { background: #d97706; }
+.cefr-badge.b2 { background: #7c3aed; }
+.cefr-badge.c1 { background: #db2777; }
+.cefr-badge.c2 { background: #e11d48; }
+
+/* Option Letter Box: Ô chữ A B C D bo góc viền đen */
+.option-letter-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px; /* Bo góc chữ */
+    border: 2px solid #000000; /* Khung đã có viền đen */
+    background: #0f172a;
+    color: var(--neon-cyan);
+    font-family: var(--text-mono);
+    font-weight: 800;
+    font-size: 13px;
+    box-shadow: 0 2px 0 #000000;
+    flex-shrink: 0;
+}
+
+/* Các Class Tiện Ích Viền Chữ Đen & Bo Góc */
+.text-stroke-black {
+    -webkit-text-stroke: 0.6px #000000;
+    text-shadow: 2px 2px 0 #000000, -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000;
+    paint-order: stroke fill;
+}
+.text-stroke-black-bold {
+    -webkit-text-stroke: 1.2px #000000;
+    text-shadow: 3px 3px 0 #000000, -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000;
+    paint-order: stroke fill;
+}
+.box-rounded-black {
+    border: 2px solid #000000;
+    border-radius: 12px;
+    box-shadow: 0 4px 0 #000000;
+}
+
+/* Đối với những chữ/nút/thẻ đã có khung viền đen rồi thì chữ bên trong không dùng viền đen để tránh bị dày cộm */
+.box-rounded-black,
+.box-rounded-black *,
+.letter-tile,
+.letter-tile *,
+.syntax-tile,
+.syntax-tile *,
+.option-letter-box,
+.cefr-badge,
+.arena-option-btn,
+.exam-option-btn,
+.pixel-btn,
+.scramble-slot {
+    -webkit-text-stroke: 0 !important;
 }
 
 /* =========================================================

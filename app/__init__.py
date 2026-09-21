@@ -30,6 +30,7 @@ def create_app():
     # Cấu hình chuỗi kết nối MySQL thông qua driver pymysql
     app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_recycle': 280,
         'pool_pre_ping': True,
@@ -113,17 +114,24 @@ def create_app():
     def roadmap_page():
         return render_template('roadmap.html')
 
+    # 10. Bảng Xếp Hạng Thành Tích Toàn Diện (Đa Chiều)
+    @app.route('/leaderboard')
+    def leaderboard_page():
+        return render_template('leaderboard.html')
+
     # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
     from app.controllers.game_controller import game_bp
     from app.controllers.ai_controller import ai_bp
     from app.controllers.admin_controller import admin_bp
     from app.controllers.roadmap_controller import roadmap_bp
+    from app.controllers.leaderboard_controller import leaderboard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(game_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(roadmap_bp)
+    app.register_blueprint(leaderboard_bp)
 
     return app

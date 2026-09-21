@@ -33,16 +33,18 @@
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        background: rgba(0, 0, 0, 0.35);
-        border: 1px solid var(--glass-border);
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000;
         padding: 10px 18px;
         border-radius: 12px;
         font-family: var(--text-mono);
+        box-shadow: 0 3px 0 #000000;
         transition: transform 0.2s, border-color 0.2s;
     }
     .hero-stat-pill:hover {
         transform: translateY(-2px);
-        border-color: var(--neon-cyan);
+        border-color: #000000;
+        box-shadow: 0 5px 0 #000000;
     }
 
     /* Quick Launch Grid */
@@ -60,8 +62,8 @@
     }
 
     .launch-card {
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid var(--glass-border);
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000;
         border-radius: 14px;
         padding: 18px;
         display: flex;
@@ -72,6 +74,7 @@
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+        box-shadow: 0 4px 0 #000000;
     }
     .launch-card::before {
         content: "";
@@ -82,9 +85,9 @@
     }
     .launch-card:hover {
         transform: translateY(-3px);
-        border-color: var(--accent-color, var(--neon-cyan));
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        background: rgba(30, 41, 75, 0.7);
+        border-color: #000000;
+        box-shadow: 0 7px 0 #000000, 0 8px 20px rgba(0,0,0,0.3);
+        background: rgba(30, 41, 75, 0.9);
     }
     .launch-icon {
         width: 44px;
@@ -265,14 +268,88 @@
         </div>
     </div>
 
-    <!-- BẢNG XẾP HẠNG (LEADERBOARD NHỎ) -->
+    <!-- BẢNG VINH DANH THÀNH TÍCH (PORTAL LEADERBOARD) -->
     <div class="bento-card" style="align-self: start; position: sticky; top: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 12px;">
-            <div class="pixel-title" style="font-size: 13px; color: var(--neon-pink);">TOP RANKING (INFINITY)</div>
-            <span style="font-size: 16px;">🏆</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 14px;">
+            <div class="pixel-title" style="font-size: 13px; color: var(--neon-amber);">🏆 BẢNG XẾP HẠNG THÀNH TÍCH</div>
+            <span style="font-size: 10px; color: var(--neon-cyan); font-family: var(--text-mono);">TOP CAO THỦ</span>
         </div>
-        <div id="dashboard-leaderboard" style="font-size: 14px; line-height: 2;">
+        <div id="dashboard-leaderboard" style="font-size: 14px;">
             <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang tải dữ liệu mạng...</div>
+        </div>
+        <div style="margin-top: 15px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1);">
+            <button class="pixel-btn" onclick="window.location.href='/leaderboard'" style="width: 100%; background: rgba(103, 232, 249, 0.15); border: 2px solid #000; box-shadow: 0 4px 0 #000; color: var(--neon-cyan); font-size: 11px; padding: 11px;">
+                XEM BẢNG XẾP HẠNG TOÀN DIỆN ➔
+            </button>
+        </div>
+    </div>
+
+    <!-- MA TRẬN NĂNG LỰC 6 CHIỀU (HEXAGONAL COMPETENCY RADAR) -->
+    <div class="bento-card card-wide" style="padding: 26px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">🕸️</span>
+                <div>
+                    <div class="pixel-title" style="color: var(--neon-cyan); font-size: 14px; margin: 0;">
+                        COMPETENCY_MATRIX // MA TRẬN NĂNG LỰC 6 CHIỀU
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">
+                        Đo lường & phân tích hình thái năng lực ngôn ngữ theo thời gian thực (Real-time Analytics)
+                    </div>
+                </div>
+            </div>
+            <div id="dash-radar-grade-pill" style="font-family: var(--text-mono); font-size: 12px; font-weight: 800; padding: 6px 14px; border-radius: 10px; border: 2px solid #000; box-shadow: 0 3px 0 #000; background: rgba(0,0,0,0.6); color: #fff;">
+                ĐANG QUÉT NĂNG LỰC...
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: minmax(280px, 1.1fr) minmax(260px, 1.1fr) minmax(280px, 1.2fr); gap: 24px; align-items: center;" class="dash-radar-grid">
+            
+            <!-- CỘT 1: BIỂU ĐỒ RADAR SVG TƯƠNG TÁC THUẦN -->
+            <div id="dash-radar-svg-container" style="display: flex; justify-content: center; align-items: center; min-height: 280px;">
+                <div class="typing-effect" style="color: #94a3b8; font-size: 13px;">Đang vẽ đồ thị Radar...</div>
+            </div>
+
+            <!-- CỘT 2: THANH CHỈ SỐ 6 TRỤC NĂNG LỰC -->
+            <div id="dash-radar-metrics-col" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- CỘT 3: BÌNH LUẬN CHIẾN LƯỢC & HÀNH ĐỘNG MASTER G -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 2px solid #000000; box-shadow: 0 3px 0 #000000; border-radius: 10px; padding: 10px 12px;">
+                        <div style="font-size: 10px; color: var(--pixel-green); font-weight: bold; font-family: var(--text-mono);">🚀 ĐIỂM MẠNH NHẤT</div>
+                        <div id="dash-strongest-label" style="font-size: 13px; color: #fff; font-weight: bold; margin-top: 3px;">...</div>
+                    </div>
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 2px solid #000000; box-shadow: 0 3px 0 #000000; border-radius: 10px; padding: 10px 12px;">
+                        <div style="font-size: 10px; color: #ef4444; font-weight: bold; font-family: var(--text-mono);">⚠️ LỖ HỔNG SÂU NHẤT</div>
+                        <div id="dash-weakest-label" style="font-size: 13px; color: #fff; font-weight: bold; margin-top: 3px;">...</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid #000000; box-shadow: 0 4px 0 #000000; border-left: 4px solid var(--neon-cyan); border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                        <span style="font-size: 16px;">💡</span>
+                        <strong style="font-size: 12px; color: var(--neon-cyan); font-family: var(--text-mono);">CHỈ DẪN SƯ PHẠM MASTER G:</strong>
+                    </div>
+                    <div id="dash-pedagogical-advice" style="font-size: 12px; color: #cbd5e1; line-height: 1.55;">
+                        Đang đồng bộ dữ liệu chặng học...
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button class="pixel-btn" onclick="window.location.href='/roadmap'" style="flex: 1; background: var(--neon-cyan); color: #000; padding: 11px 14px; font-size: 11px; font-weight: bold; border: 2px solid #000; box-shadow: 0 3px 0 #000;">
+                        VÀO LỘ TRÌNH KHẮC PHỤC ➔
+                    </button>
+                    <button class="pixel-btn" onclick="window.location.href='/profile'" style="background: rgba(0,0,0,0.6); color: #94a3b8; border: 2px solid #000; box-shadow: 0 3px 0 #000; padding: 11px 14px; font-size: 11px;">
+                        XEM HỒ SƠ ↗
+                    </button>
+                </div>
+
+            </div>
+
         </div>
     </div>
 </div>
@@ -302,6 +379,157 @@
                 }
             })
             .catch(() => {});
+
+        loadDashboardCompetencyRadar();
     });
+
+    function generateRadarSVG(dimensions, options = {}) {
+        const width = options.width || 380;
+        const height = options.height || 320;
+        const cx = options.cx || width / 2;
+        const cy = options.cy || height / 2;
+        const R = options.radius || 100;
+        const isCompact = options.isCompact || false;
+
+        const angleStep = Math.PI / 3;
+        const startAngle = -Math.PI / 2;
+
+        const rings = [0.2, 0.4, 0.6, 0.8, 1.0];
+        let ringPolygonsHtml = '';
+        rings.forEach((rRatio, rIdx) => {
+            const ringR = R * rRatio;
+            const pts = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = startAngle + i * angleStep;
+                const x = (cx + ringR * Math.cos(angle)).toFixed(1);
+                const y = (cy + ringR * Math.sin(angle)).toFixed(1);
+                pts.push(`${x},${y}`);
+            }
+            const strokeColor = rIdx === 4 ? 'rgba(103, 232, 249, 0.45)' : 'rgba(255, 255, 255, 0.08)';
+            const strokeWidth = rIdx === 4 ? '1.5' : '1';
+            ringPolygonsHtml += `<polygon points="${pts.join(' ')}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-dasharray="${rIdx < 4 ? '3,3' : 'none'}" />`;
+        });
+
+        let spokesHtml = '';
+        for (let i = 0; i < 6; i++) {
+            const angle = startAngle + i * angleStep;
+            const x = (cx + R * Math.cos(angle)).toFixed(1);
+            const y = (cy + R * Math.sin(angle)).toFixed(1);
+            spokesHtml += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1" />`;
+        }
+
+        const dataPts = [];
+        const markerCircles = [];
+        const labelsHtml = [];
+
+        dimensions.forEach((dim, i) => {
+            const angle = startAngle + i * angleStep;
+            const val = Math.max(10, Math.min(100, dim.score || 0));
+            const dataR = R * (val / 100);
+            const dx = cx + dataR * Math.cos(angle);
+            const dy = cy + dataR * Math.sin(angle);
+            dataPts.push(`${dx.toFixed(1)},${dy.toFixed(1)}`);
+
+            markerCircles.push(`<circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="${isCompact ? 3.5 : 4.5}" fill="var(--neon-cyan)" stroke="#000" stroke-width="2" />`);
+
+            const labelR = R + (isCompact ? 16 : 24);
+            const lx = cx + labelR * Math.cos(angle);
+            const ly = cy + labelR * Math.sin(angle);
+
+            let textAnchor = 'middle';
+            if (Math.abs(Math.cos(angle)) > 0.3) {
+                textAnchor = Math.cos(angle) > 0 ? 'start' : 'end';
+            }
+
+            const fontSize = isCompact ? '10px' : '11px';
+            const labelText = isCompact ? `${dim.name} (${dim.score})` : `${dim.name}`;
+            const scoreSubtext = isCompact ? '' : `<tspan x="${lx.toFixed(1)}" dy="13" font-size="10px" fill="var(--neon-cyan)" font-weight="800">${dim.score}đ</tspan>`;
+
+            labelsHtml.push(`
+                <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${textAnchor}" fill="#e2e8f0" font-size="${fontSize}" font-family="var(--text-mono)" font-weight="700">
+                    ${labelText}
+                    ${scoreSubtext}
+                </text>
+            `);
+        });
+
+        return `
+        <svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: ${width}px; height: auto; overflow: visible;">
+            <defs>
+                <radialGradient id="dashRadarFillGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="rgba(103, 232, 249, 0.45)" />
+                    <stop offset="70%" stop-color="rgba(103, 232, 249, 0.25)" />
+                    <stop offset="100%" stop-color="rgba(236, 72, 153, 0.2)" />
+                </radialGradient>
+                <filter id="dashRadarGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+            </defs>
+            ${ringPolygonsHtml}
+            ${spokesHtml}
+            <polygon points="${dataPts.join(' ')}" fill="url(#dashRadarFillGrad)" stroke="var(--neon-cyan)" stroke-width="${isCompact ? 2 : 2.5}" filter="url(#dashRadarGlow)" />
+            ${markerCircles.join('')}
+            ${labelsHtml.join('')}
+        </svg>`;
+    }
+
+    function loadDashboardCompetencyRadar() {
+        fetch('/api/auth/profile/competency_radar')
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) return;
+
+                // Grade Pill
+                const pill = document.getElementById('dash-radar-grade-pill');
+                if (pill) {
+                    pill.innerHTML = `[ HẠNG ${data.overall_grade}: ${data.grade_title} ] - ${data.overall_score.toFixed(1)}/100`;
+                    pill.style.borderColor = data.grade_color || 'var(--neon-cyan)';
+                    pill.style.color = data.grade_color || 'var(--neon-cyan)';
+                }
+
+                // Strengths & Advice
+                const sEl = document.getElementById('dash-strongest-label');
+                const wEl = document.getElementById('dash-weakest-label');
+                const aEl = document.getElementById('dash-pedagogical-advice');
+                if (sEl) sEl.innerText = `${data.strongest.name} (${data.strongest.score}đ)`;
+                if (wEl) wEl.innerText = `${data.weakest.name} (${data.weakest.score}đ)`;
+                if (aEl) aEl.innerText = data.pedagogical_advice;
+
+                // Render SVG
+                const svgContainer = document.getElementById('dash-radar-svg-container');
+                if (svgContainer) {
+                    svgContainer.innerHTML = generateRadarSVG(data.dimensions, {
+                        width: 360,
+                        height: 300,
+                        cx: 180,
+                        cy: 150,
+                        radius: 95,
+                        isCompact: true
+                    });
+                }
+
+                // Render Metric Progress Bars
+                const col = document.getElementById('dash-radar-metrics-col');
+                if (col) {
+                    let html = '';
+                    data.dimensions.forEach(dim => {
+                        const barColor = dim.score >= 75 ? 'var(--pixel-green)' : (dim.score >= 50 ? 'var(--neon-cyan)' : 'var(--neon-amber)');
+                        html += `
+                        <div style="background: rgba(0,0,0,0.35); border: 2px solid #000; box-shadow: 0 2px 0 #000; border-radius: 10px; padding: 8px 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-size: 12px; color: #fff; font-weight: 600;">${dim.name}</span>
+                                <span style="font-family: var(--text-mono); font-size: 11px; font-weight: 800; color: ${barColor};">${dim.score}đ</span>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.08); height: 5px; border-radius: 3px; overflow: hidden;">
+                                <div style="width: ${dim.score}%; height: 100%; background: ${barColor}; transition: width 0.8s ease;"></div>
+                            </div>
+                        </div>`;
+                    });
+                    col.innerHTML = html;
+                }
+            })
+            .catch(err => console.error("Error loading dashboard radar:", err));
+    }
 </script>
 {% endblock %}

@@ -146,7 +146,7 @@ def evaluate():
                     yield f"data: {json.dumps({'type': 'error', 'message': 'Không tìm thấy Active Run!'})}\n\n"
                     return
 
-                topic = StoryTopic.query.get(active_run.topic_id)
+                topic = StoryTopic.query.get(active_run.topic_id) if (active_run and active_run.topic_id) else None
                 theme_context = topic.system_prompt if topic else "Bối cảnh sinh tồn hậu tận thế."
                 history_context = manage_sliding_window(active_run)
                 story_turn = active_run.turn + 1
@@ -377,7 +377,7 @@ def init_story():
     db.session.add(new_run)
     db.session.commit()
 
-    topic = StoryTopic.query.get(topic_id)
+    topic = StoryTopic.query.get(topic_id) if topic_id else None
     theme_context = topic.system_prompt if topic else "Bối cảnh sinh tồn hậu tận thế."
 
     if story_mode == 'choose':

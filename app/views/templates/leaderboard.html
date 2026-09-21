@@ -1,0 +1,721 @@
+{% extends "base.html" %}
+
+{% block title %}BẢNG XẾP HẠNG THÀNH TÍCH TOÀN DIỆN{% endblock %}
+
+{% block content %}
+<style>
+    /* Leaderboard Page Specific Cyberpunk Arcade Theme */
+    .lb-container {
+        max-width: 1200px;
+        margin: 10px auto 40px auto;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    /* Category Navigation Tabs */
+    .lb-tabs {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scrollbar-width: thin;
+    }
+    .lb-tab-btn {
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000;
+        border-radius: 12px;
+        box-shadow: 0 4px 0 #000000;
+        padding: 12px 18px;
+        color: #94a3b8;
+        font-family: var(--text-pixel);
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .lb-tab-btn:hover {
+        color: #ffffff;
+        background: rgba(30, 41, 59, 0.95);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 0 #000000;
+    }
+    .lb-tab-btn.active {
+        color: #000000;
+        font-weight: bold;
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #000000;
+    }
+    .lb-tab-btn.active.tab-overall { background: var(--neon-amber); }
+    .lb-tab-btn.active.tab-game { background: var(--neon-pink); }
+    .lb-tab-btn.active.tab-academic { background: var(--neon-cyan); }
+    .lb-tab-btn.active.tab-vocabulary { background: var(--neon-purple); color: #ffffff; }
+    .lb-tab-btn.active.tab-time { background: var(--pixel-green); }
+
+    /* Category Info Banner */
+    .lb-info-card {
+        background: rgba(15, 23, 42, 0.7);
+        border: 2px solid #000000;
+        border-radius: 14px;
+        box-shadow: 0 4px 0 #000000;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    /* Podium Section */
+    .podium-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 1fr;
+        gap: 20px;
+        align-items: flex-end;
+        margin: 20px 0 10px 0;
+    }
+    @media (max-width: 768px) {
+        .podium-wrapper {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+    }
+
+    .podium-step {
+        background: rgba(15, 23, 42, 0.85);
+        border: 2.5px solid #000000;
+        border-radius: 16px;
+        box-shadow: 0 6px 0 #000000;
+        padding: 24px 16px;
+        text-align: center;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.2s;
+    }
+    .podium-step:hover {
+        transform: translateY(-4px);
+    }
+    .podium-step.rank-1 {
+        border-color: #000000;
+        background: linear-gradient(180deg, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%);
+        padding-top: 32px;
+        padding-bottom: 30px;
+        box-shadow: 0 8px 0 #000000, 0 0 25px rgba(245, 158, 11, 0.25);
+    }
+    .podium-step.rank-2 {
+        border-color: #000000;
+        background: linear-gradient(180deg, rgba(148, 163, 184, 0.12) 0%, rgba(15, 23, 42, 0.95) 100%);
+        box-shadow: 0 6px 0 #000000, 0 0 20px rgba(148, 163, 184, 0.15);
+    }
+    .podium-step.rank-3 {
+        border-color: #000000;
+        background: linear-gradient(180deg, rgba(217, 119, 6, 0.12) 0%, rgba(15, 23, 42, 0.95) 100%);
+        box-shadow: 0 6px 0 #000000, 0 0 20px rgba(217, 119, 6, 0.15);
+    }
+
+    .crown-badge {
+        position: absolute;
+        top: -16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 14px;
+        border-radius: 9999px;
+        border: 2px solid #000000;
+        box-shadow: 0 3px 0 #000000;
+        font-family: var(--text-pixel);
+        font-size: 11px;
+        font-weight: bold;
+    }
+    .crown-badge.gold { background: var(--neon-amber); color: #000; }
+    .crown-badge.silver { background: #cbd5e1; color: #000; }
+    .crown-badge.bronze { background: #d97706; color: #fff; }
+
+    /* Ranking Table & Rows */
+    .lb-card {
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid #000000;
+        border-radius: 16px;
+        box-shadow: 0 5px 0 #000000;
+        padding: 20px;
+    }
+
+    .lb-row {
+        display: grid;
+        grid-template-columns: 60px 2.5fr 1.5fr 1.5fr 1fr;
+        align-items: center;
+        padding: 14px 18px;
+        border-radius: 12px;
+        border: 2px solid #000000;
+        box-shadow: 0 3px 0 #000000;
+        background: rgba(30, 41, 59, 0.45);
+        margin-bottom: 10px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        gap: 12px;
+    }
+    .lb-row:hover {
+        background: rgba(30, 41, 59, 0.85);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 0 #000000;
+    }
+    .lb-row.my-row {
+        background: rgba(103, 232, 249, 0.12);
+        border-color: var(--neon-cyan);
+        box-shadow: 0 3px 0 #000000, 0 0 15px rgba(103, 232, 249, 0.25);
+    }
+    @media (max-width: 768px) {
+        .lb-row {
+            grid-template-columns: 45px 2fr 1fr;
+            padding: 10px 12px;
+        }
+        .lb-col-hide-mobile {
+            display: none !important;
+        }
+    }
+
+    /* Rank Number Pill */
+    .rank-num-box {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        border: 2px solid #000000;
+        box-shadow: 0 2px 0 #000000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--text-mono);
+        font-size: 15px;
+        font-weight: 800;
+        background: #0f172a;
+        color: #94a3b8;
+    }
+    .rank-num-box.top1 { background: var(--neon-amber); color: #000; }
+    .rank-num-box.top2 { background: #cbd5e1; color: #000; }
+    .rank-num-box.top3 { background: #d97706; color: #fff; }
+
+    /* Sticky Bottom My Rank Bar */
+    .sticky-my-rank {
+        position: sticky;
+        bottom: 20px;
+        background: rgba(15, 23, 42, 0.95);
+        border: 2.5px solid #000000;
+        border-radius: 16px;
+        box-shadow: 0 6px 0 #000000, 0 10px 30px rgba(0, 0, 0, 0.8);
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        backdrop-filter: blur(15px);
+        z-index: 100;
+    }
+</style>
+
+<div class="lb-container">
+
+    <!-- HERO HEADER: TIÊU ĐỀ & MÔ TẢ -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <div class="pixel-title" style="font-size: 26px; color: var(--neon-amber); margin: 0;">
+                🏆 BẢNG XẾP HẠNG THÀNH TÍCH
+            </div>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 6px;">
+                Vinh danh chiến binh ngôn ngữ: Cân bằng giữa Thao tác Game, Tri thức Học thuật, Vốn từ & Thời gian rèn luyện
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="pixel-btn" onclick="refreshCurrentLeaderboard()" style="background: rgba(0,0,0,0.4); border: 2px solid #000; box-shadow: 0 3px 0 #000; font-size: 11px; padding: 10px 16px; color: #cbd5e1;">
+                🔄 LÀM MỚI BXH
+            </button>
+        </div>
+    </div>
+
+    <!-- 5 CATEGORY TABS -->
+    <div class="lb-tabs" id="category-tabs">
+        <button class="lb-tab-btn active tab-overall" onclick="switchCategory('overall')">
+            <span>🌟</span>
+            <span>TỔNG HỢP TOÀN DIỆN</span>
+        </button>
+        <button class="lb-tab-btn tab-game" onclick="switchCategory('game')">
+            <span>🎮</span>
+            <span>CHIẾN TÍCH ĐẤU TRƯỜNG</span>
+        </button>
+        <button class="lb-tab-btn tab-academic" onclick="switchCategory('academic')">
+            <span>🎓</span>
+            <span>HỌC THUẬT & LỘ TRÌNH</span>
+        </button>
+        <button class="lb-tab-btn tab-vocabulary" onclick="switchCategory('vocabulary')">
+            <span>📚</span>
+            <span>KHO TỪ VỰNG LÀM CHỦ</span>
+        </button>
+        <button class="lb-tab-btn tab-time" onclick="switchCategory('time')">
+            <span>⏱️</span>
+            <span>THỜI GIAN & CHUYÊN CẦN</span>
+        </button>
+    </div>
+
+    <!-- CATEGORY INFO & CRITERIA BANNER -->
+    <div class="lb-info-card">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span id="cat-icon" style="font-size: 24px;">🌟</span>
+            <div>
+                <div id="cat-title" style="font-size: 15px; font-weight: bold; color: #fff; font-family: var(--text-pixel);">
+                    ĐIỂM THÀNH TÍCH TOÀN NĂNG (COMPOSITE SCORE)
+                </div>
+                <div id="cat-desc" style="font-size: 12px; color: #94a3b8; margin-top: 2px;">
+                    Tổng hợp toàn diện từ Rank Points Học Thuật (1x), Từ vựng thuộc (15x), Điểm Game (10x), Chặng Lộ Trình (40x), Giờ học (20x) và Chuỗi Streak (15x).
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px; font-family: var(--text-mono); font-size: 12px;">
+            <div style="color: #cbd5e1;">Tổng số tuyển thủ: <span id="total-players-count" style="color: var(--neon-cyan); font-weight: bold;">--</span></div>
+            <div class="cefr-badge" id="primary-metric-badge" style="background: var(--neon-purple);">TIÊU CHÍ: EXP</div>
+        </div>
+    </div>
+
+    <!-- BỤC VINH QUANG PODIUM (TOP 1, 2, 3) -->
+    <div class="podium-wrapper" id="podium-container">
+        <!-- RANK 2 (BẠC) -->
+        <div class="podium-step rank-2" id="podium-rank-2">
+            <div class="crown-badge silver">🥈 HẠNG 2</div>
+            <div class="avatar-container frame-default" id="podium-avatar-2" style="width: 72px; height: 72px; margin-bottom: 12px;">
+                <img src="/static/uploads/avatars/default_avatar.png" id="podium-img-2" class="avatar-img">
+            </div>
+            <div id="podium-name-2" style="font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px;">--</div>
+            <div id="podium-title-2" style="font-size: 10px; color: var(--neon-pink); margin-bottom: 8px;">« Tân Binh »</div>
+            <div id="podium-score-2" style="font-size: 18px; font-family: var(--text-mono); font-weight: 800; color: #cbd5e1; margin-bottom: 6px;">--</div>
+            <span class="cefr-badge a2" id="podium-band-2">BAND --</span>
+        </div>
+
+        <!-- RANK 1 (VÀNG - CAO NHẤT Ở GIỮA) -->
+        <div class="podium-step rank-1" id="podium-rank-1">
+            <div class="crown-badge gold">👑 QUÁN QUÂN #1</div>
+            <div class="avatar-container frame-cyberpunk" id="podium-avatar-1" style="width: 88px; height: 88px; margin-bottom: 14px;">
+                <img src="/static/uploads/avatars/default_avatar.png" id="podium-img-1" class="avatar-img">
+            </div>
+            <div id="podium-name-1" style="font-size: 18px; font-weight: 800; color: var(--neon-amber); margin-bottom: 4px;">--</div>
+            <div id="podium-title-1" style="font-size: 11px; color: var(--neon-cyan); margin-bottom: 10px;">« Huyền Thoại Ngôn Ngữ »</div>
+            <div id="podium-score-1" style="font-size: 24px; font-family: var(--text-mono); font-weight: 800; color: var(--pixel-green); margin-bottom: 8px;">--</div>
+            <span class="cefr-badge c2" id="podium-band-1">BAND --</span>
+        </div>
+
+        <!-- RANK 3 (ĐỒNG) -->
+        <div class="podium-step rank-3" id="podium-rank-3">
+            <div class="crown-badge bronze">🥉 HẠNG 3</div>
+            <div class="avatar-container frame-default" id="podium-avatar-3" style="width: 68px; height: 68px; margin-bottom: 12px;">
+                <img src="/static/uploads/avatars/default_avatar.png" id="podium-img-3" class="avatar-img">
+            </div>
+            <div id="podium-name-3" style="font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 4px;">--</div>
+            <div id="podium-title-3" style="font-size: 10px; color: var(--neon-pink); margin-bottom: 8px;">« Tân Binh »</div>
+            <div id="podium-score-3" style="font-size: 17px; font-family: var(--text-mono); font-weight: 800; color: #d97706; margin-bottom: 6px;">--</div>
+            <span class="cefr-badge a1" id="podium-band-3">BAND --</span>
+        </div>
+    </div>
+
+    <!-- DANH SÁCH CHI TIẾT BẢNG XẾP HẠNG (RANK 4 TRỞ ĐI) -->
+    <div class="lb-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 14px; margin-bottom: 16px;">
+            <div class="pixel-title" style="font-size: 15px; color: var(--neon-cyan); margin: 0;">
+                📋 DANH SÁCH XẾP HẠNG CHI TIẾT
+            </div>
+            <span style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">CẬP NHẬT THEO THỜI GIAN THỰC</span>
+        </div>
+
+        <!-- Table Header -->
+        <div style="display: grid; grid-template-columns: 60px 2.5fr 1.5fr 1.5fr 1fr; padding: 10px 18px; font-size: 11px; color: #94a3b8; font-family: var(--text-pixel); text-transform: uppercase; margin-bottom: 8px; gap: 12px;">
+            <div>HẠNG</div>
+            <div>NGƯỜI CHƠI</div>
+            <div id="th-stat-1">TRÌNH ĐỘ / BAND</div>
+            <div id="th-stat-2" class="lb-col-hide-mobile">HOẠT ĐỘNG CHÍNH</div>
+            <div style="text-align: right;" id="th-primary">ĐIỂM SỐ</div>
+        </div>
+
+        <!-- List container -->
+        <div id="leaderboard-list">
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                <div class="typing-effect">Đang tính toán ma trận thứ hạng thành tích...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STICKY MY RANK BAR -->
+    <div class="sticky-my-rank" id="sticky-my-rank" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="rank-num-box" id="my-rank-num" style="background: var(--neon-cyan); color: #000; font-size: 16px;">
+                #--
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="color: #fff; font-weight: 800; font-size: 15px;" id="my-rank-name">Bạn</span>
+                    <span class="cefr-badge a1" id="my-rank-band">BAND --</span>
+                </div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;" id="my-rank-title">
+                    Danh hiệu: Tân Binh
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="text-align: right;">
+                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;" id="my-metric-label">Thành tích của bạn:</div>
+                <div style="font-size: 18px; font-family: var(--text-mono); font-weight: 800; color: var(--pixel-green);" id="my-primary-val">
+                    --
+                </div>
+            </div>
+
+            <button class="pixel-btn" id="btn-boost-rank" onclick="boostRankAction()" style="background: var(--neon-amber); color: #000; font-size: 11px; padding: 12px 20px; font-weight: bold; box-shadow: 0 4px 0 #000;">
+                ⚡ CÀY ĐIỂM LEO RANK
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentCategory = 'overall';
+    let currentData = null;
+
+    const CATEGORY_META = {
+        'overall': {
+            title: 'ĐIỂM THÀNH TÍCH TOÀN NĂNG (COMPOSITE EXP)',
+            desc: 'Tổng hợp toàn diện từ Rank Points Học Thuật (1x), Từ vựng thuộc (15x), Điểm Game (10x), Chặng Lộ Trình (40x), Giờ học (20x) và Chuỗi Streak (15x).',
+            icon: '🌟',
+            thStat1: 'BAND & CẤP ĐỘ',
+            thStat2: 'CHẶNG / TỪ VỰNG',
+            unit: 'EXP',
+            actionUrl: '/roadmap',
+            actionText: '🚀 CHINH PHỤC LỘ TRÌNH'
+        },
+        'game': {
+            title: 'CHIẾN TÍCH ĐẤU TRƯỜNG PHẢN XẠ (GAME RECORD)',
+            desc: 'Xếp hạng dựa trên Kỷ lục Điểm Vô Cực (Infinity Score) và Cấp ải Gacha Arena đã chinh phục thành công.',
+            icon: '🎮',
+            thStat1: 'CẤP ẢI ARENA',
+            thStat2: 'KHO XU SỞ HỮU',
+            unit: 'pts',
+            actionUrl: '/arena',
+            actionText: '⚔️ VÀO ĐẤU TRƯỜNG'
+        },
+        'academic': {
+            title: 'TIẾN ĐỘ HỌC THUẬT & TARGET BAND (ACADEMIC RP)',
+            desc: 'Xếp hạng theo Điểm Rank Uy Tín Học Thuật (Academic RP) và Số chặng Lộ Trình Milestone đã vượt qua kỳ thi nghiêm ngặt.',
+            icon: '🎓',
+            thStat1: 'TARGET BAND',
+            thStat2: 'CHẶNG ĐÃ ĐỖ',
+            unit: 'RP',
+            actionUrl: '/roadmap',
+            actionText: '📜 THI CHẶNG LỘ TRÌNH'
+        },
+        'vocabulary': {
+            title: 'KHO TỪ VỰNG LÀM CHỦ (VOCABULARY MASTERY)',
+            desc: 'Xếp hạng dựa trên Số lượng từ vựng học thuật Oxford CEFR đã ghi nhớ bền vững (ĐÃ THUỘC) qua thuật toán Spaced Repetition.',
+            icon: '📚',
+            thStat1: 'TRÌNH ĐỘ CEFR',
+            thStat2: 'TRẠNG THÁI ÔN TẬP',
+            unit: 'từ',
+            actionUrl: '/learn',
+            actionText: '📖 LUYỆN TỪ VỰNG SM-2'
+        },
+        'time': {
+            title: 'THỜI GIAN HỌC & CHUỖI KIÊN TRÌ (STUDY TIME & STREAK)',
+            desc: 'Vinh danh sự chuyên cần bền bỉ: Tổng số giờ học tập tích lũy thực tế và chuỗi ngày rèn luyện liên tục không ngắt quãng.',
+            icon: '⏱️',
+            thStat1: 'CHUỖI STREAK',
+            thStat2: 'MỨC ĐỘ CHUYÊN CẦN',
+            unit: 'giờ',
+            actionUrl: '/test/room',
+            actionText: '⏱️ PHÒNG THI TẬP TRUNG'
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Đọc query param category nếu có (ví dụ từ trang arena chuyển sang ?category=game)
+        const urlParams = new URLSearchParams(window.location.search);
+        const catParam = urlParams.get('category');
+        if (catParam && CATEGORY_META[catParam]) {
+            currentCategory = catParam;
+        }
+
+        updateTabButtonsUI();
+        loadLeaderboardData();
+    });
+
+    function switchCategory(cat) {
+        if (currentCategory === cat) return;
+        currentCategory = cat;
+
+        // Cập nhật URL mà không reload trang
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('category', cat);
+        window.history.pushState({}, '', newUrl);
+
+        updateTabButtonsUI();
+        loadLeaderboardData();
+    }
+
+    function refreshCurrentLeaderboard() {
+        loadLeaderboardData();
+    }
+
+    function updateTabButtonsUI() {
+        const tabs = document.querySelectorAll('.lb-tab-btn');
+        tabs.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.classList.contains(`tab-${currentCategory}`)) {
+                btn.classList.add('active');
+            }
+        });
+
+        const meta = CATEGORY_META[currentCategory] || CATEGORY_META['overall'];
+        document.getElementById('cat-icon').innerText = meta.icon;
+        document.getElementById('cat-title').innerText = meta.title;
+        document.getElementById('cat-desc').innerText = meta.desc;
+        document.getElementById('th-stat-1').innerText = meta.thStat1;
+        document.getElementById('th-stat-2').innerText = meta.thStat2;
+        document.getElementById('btn-boost-rank').innerText = meta.actionText;
+    }
+
+    function boostRankAction() {
+        const meta = CATEGORY_META[currentCategory] || CATEGORY_META['overall'];
+        window.location.href = meta.actionUrl;
+    }
+
+    function loadLeaderboardData() {
+        const listEl = document.getElementById('leaderboard-list');
+        listEl.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                <div class="typing-effect">Đang đồng bộ dữ liệu xếp hạng ${currentCategory.toUpperCase()}...</div>
+            </div>`;
+
+        fetch(`/api/leaderboard?category=${currentCategory}&limit=50`)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP error " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                currentData = data;
+                renderLeaderboardUI(data);
+            })
+            .catch(err => {
+                console.error("Lỗi nạp Leaderboard:", err);
+                listEl.innerHTML = `<div style="text-align: center; padding: 30px; color: #ef4444;">Không thể tải bảng xếp hạng lúc này. Vui lòng thử lại!</div>`;
+            });
+    }
+
+    function renderLeaderboardUI(data) {
+        document.getElementById('total-players-count').innerText = data.total_players || 0;
+        document.getElementById('primary-metric-badge').innerText = `TIÊU CHÍ: ${data.metric_label.toUpperCase()}`;
+
+        // 1. RENDER PODIUM (TOP 1, 2, 3)
+        renderPodium(data.podium || [], data.unit);
+
+        // 2. RENDER LIST (RANK 4 TRỞ ĐI)
+        renderList(data.leaderboard || [], data.unit);
+
+        // 3. RENDER MY RANK BAR
+        renderMyRank(data.my_rank, data.unit);
+    }
+
+    function renderPodium(podium, unit) {
+        // Rank 1
+        const p1 = podium[0];
+        if (p1) {
+            document.getElementById('podium-name-1').innerText = p1.username;
+            document.getElementById('podium-title-1').innerText = `« ${p1.equipped_title} »`;
+            document.getElementById('podium-score-1').innerText = `${p1.primary_value} ${unit}`;
+            document.getElementById('podium-band-1').innerText = `BAND ${p1.current_band}`;
+            document.getElementById('podium-band-1').className = `cefr-badge ${(p1.current_band || 'a1').toLowerCase()}`;
+            document.getElementById('podium-avatar-1').className = `avatar-container ${p1.equipped_frame || 'frame-cyberpunk'}`;
+            document.getElementById('podium-img-1').src = p1.avatar ? `/static/uploads/avatars/${p1.avatar}` : '/static/uploads/avatars/default_avatar.png';
+            document.getElementById('podium-rank-1').style.opacity = '1';
+        } else {
+            document.getElementById('podium-name-1').innerText = '--';
+            document.getElementById('podium-score-1').innerText = '--';
+            document.getElementById('podium-rank-1').style.opacity = '0.5';
+        }
+
+        // Rank 2
+        const p2 = podium[1];
+        if (p2) {
+            document.getElementById('podium-name-2').innerText = p2.username;
+            document.getElementById('podium-title-2').innerText = `« ${p2.equipped_title} »`;
+            document.getElementById('podium-score-2').innerText = `${p2.primary_value} ${unit}`;
+            document.getElementById('podium-band-2').innerText = `BAND ${p2.current_band}`;
+            document.getElementById('podium-band-2').className = `cefr-badge ${(p2.current_band || 'a1').toLowerCase()}`;
+            document.getElementById('podium-avatar-2').className = `avatar-container ${p2.equipped_frame || 'frame-default'}`;
+            document.getElementById('podium-img-2').src = p2.avatar ? `/static/uploads/avatars/${p2.avatar}` : '/static/uploads/avatars/default_avatar.png';
+            document.getElementById('podium-rank-2').style.opacity = '1';
+        } else {
+            document.getElementById('podium-name-2').innerText = '--';
+            document.getElementById('podium-score-2').innerText = '--';
+            document.getElementById('podium-rank-2').style.opacity = '0.5';
+        }
+
+        // Rank 3
+        const p3 = podium[2];
+        if (p3) {
+            document.getElementById('podium-name-3').innerText = p3.username;
+            document.getElementById('podium-title-3').innerText = `« ${p3.equipped_title} »`;
+            document.getElementById('podium-score-3').innerText = `${p3.primary_value} ${unit}`;
+            document.getElementById('podium-band-3').innerText = `BAND ${p3.current_band}`;
+            document.getElementById('podium-band-3').className = `cefr-badge ${(p3.current_band || 'a1').toLowerCase()}`;
+            document.getElementById('podium-avatar-3').className = `avatar-container ${p3.equipped_frame || 'frame-default'}`;
+            document.getElementById('podium-img-3').src = p3.avatar ? `/static/uploads/avatars/${p3.avatar}` : '/static/uploads/avatars/default_avatar.png';
+            document.getElementById('podium-rank-3').style.opacity = '1';
+        } else {
+            document.getElementById('podium-name-3').innerText = '--';
+            document.getElementById('podium-score-3').innerText = '--';
+            document.getElementById('podium-rank-3').style.opacity = '0.5';
+        }
+    }
+
+    function renderList(list, unit) {
+        const container = document.getElementById('leaderboard-list');
+        if (list.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 30px; color: #94a3b8;">Chưa có tuyển thủ nào ghi danh trong hạng mục này.</div>';
+            return;
+        }
+
+        let html = '';
+        list.forEach(item => {
+            const isTop1 = item.rank === 1;
+            const isTop2 = item.rank === 2;
+            const isTop3 = item.rank === 3;
+            let rankClass = isTop1 ? 'top1' : (isTop2 ? 'top2' : (isTop3 ? 'top3' : ''));
+            const avatarSrc = item.avatar ? `/static/uploads/avatars/${item.avatar}` : '/static/uploads/avatars/default_avatar.png';
+            const frameClass = item.equipped_frame || 'frame-default';
+            const bandClass = (item.current_band || 'a1').toLowerCase();
+
+            // Format cột 1 & 2 tùy theo danh mục hiện tại
+            let col1 = '';
+            let col2 = '';
+
+            if (currentCategory === 'overall') {
+                col1 = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="cefr-badge ${bandClass}">BAND ${item.current_band}</span>
+                        <span style="font-size: 11px; color: #cbd5e1;">${item.current_level}</span>
+                    </div>`;
+                col2 = `
+                    <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
+                        <span style="color: var(--neon-cyan);">${item.academic_rp} RP</span> • 
+                        <span style="color: var(--neon-purple);">${item.vocab_count} từ</span> • 
+                        <span style="color: var(--pixel-green);">${item.study_hours}h</span>
+                    </div>`;
+            } else if (currentCategory === 'game') {
+                col1 = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="cefr-badge" style="background: var(--neon-pink); border-color: #000;">ẢI ${item.arena_stage}/10</span>
+                        <span style="font-size: 11px; color: #cbd5e1;">Đấu Sĩ Phản Xạ</span>
+                    </div>`;
+                col2 = `
+                    <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
+                        <span style="color: var(--pixel-green); font-weight: bold;">🪙 ${item.coins} Xu</span>
+                    </div>`;
+            } else if (currentCategory === 'academic') {
+                col1 = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="cefr-badge ${bandClass}">HIỆN TẠI: ${item.current_band}</span>
+                        <span style="font-size: 11px; color: var(--neon-amber);">MỤC TIÊU: ${item.target_band}</span>
+                    </div>`;
+                col2 = `
+                    <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
+                        <span style="color: var(--neon-cyan); font-weight: bold;">${item.milestone_count} Chặng Đỗ</span>
+                    </div>`;
+            } else if (currentCategory === 'vocabulary') {
+                col1 = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="cefr-badge ${bandClass}">BAND ${item.current_band}</span>
+                        <span style="font-size: 11px; color: #cbd5e1;">Kho Oxford CEFR</span>
+                    </div>`;
+                col2 = `
+                    <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
+                        <span style="color: var(--pixel-green);">Đã thuộc: ${item.vocab_count}</span>
+                    </div>`;
+            } else if (currentCategory === 'time') {
+                col1 = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: var(--neon-amber); font-weight: bold; font-family: var(--text-mono); font-size: 13px;">🔥 ${item.streak_count} NGÀY LIÊN TIẾP</span>
+                    </div>`;
+                col2 = `
+                    <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
+                        <span>Tương đương: ${Math.round(item.study_time_minutes)} phút</span>
+                    </div>`;
+            }
+
+            html += `
+            <div class="lb-row">
+                <!-- Rank -->
+                <div class="rank-num-box ${rankClass}">
+                    #${item.rank}
+                </div>
+
+                <!-- Player Info -->
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                    <div class="avatar-container ${frameClass}" style="width: 42px; height: 42px; flex-shrink: 0; padding: 2px;">
+                        <img src="${avatarSrc}" class="avatar-img" onerror="this.src='/static/uploads/covers/default_cover.jpg'">
+                    </div>
+                    <div style="min-width: 0; overflow: hidden;">
+                        <div style="color: #fff; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${item.username}
+                        </div>
+                        <div style="font-size: 10px; color: var(--neon-pink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">
+                            « ${item.equipped_title} »
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Col 1 -->
+                <div>
+                    ${col1}
+                </div>
+
+                <!-- Col 2 (Hide on mobile) -->
+                <div class="lb-col-hide-mobile">
+                    ${col2}
+                </div>
+
+                <!-- Primary Value -->
+                <div style="text-align: right;">
+                    <div style="color: var(--pixel-green); font-family: var(--text-mono); font-weight: 800; font-size: 16px;">
+                        ${item.primary_value}
+                    </div>
+                    <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">
+                        ${unit}
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function renderMyRank(myRank, unit) {
+        const bar = document.getElementById('sticky-my-rank');
+        if (!myRank) {
+            bar.style.display = 'none';
+            return;
+        }
+
+        bar.style.display = 'flex';
+        document.getElementById('my-rank-num').innerText = `#${myRank.rank}`;
+        document.getElementById('my-rank-name').innerText = `${myRank.username} (Bạn)`;
+        document.getElementById('my-rank-band').innerText = `BAND ${myRank.current_band}`;
+        document.getElementById('my-rank-band').className = `cefr-badge ${(myRank.current_band || 'a1').toLowerCase()}`;
+        document.getElementById('my-rank-title').innerText = `Danh hiệu: « ${myRank.equipped_title} »`;
+        document.getElementById('my-metric-label').innerText = `${myRank.metric_label}:`;
+        document.getElementById('my-primary-val').innerText = `${myRank.primary_value} ${unit}`;
+    }
+</script>
+{% endblock %}
