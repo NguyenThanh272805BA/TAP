@@ -7,13 +7,14 @@ class CosmeticItem(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(30), nullable=False, default='AVATAR_FRAME') # AVATAR_FRAME, PLAYER_TITLE, BADGE
+    type = db.Column(db.String(30), nullable=False, default='AVATAR_FRAME') # AVATAR_FRAME, PLAYER_TITLE, BADGE, CONSUMABLE
     css_class = db.Column(db.String(50), nullable=False, default='frame-default')
     description = db.Column(db.String(255), nullable=True)
     price_coins = db.Column(db.Integer, default=0) # 0 = Độc quyền qua thành tựu/chặng, > 0 = Bán trong Shop
     required_achievement_id = db.Column(db.Integer, db.ForeignKey('achievements.id', ondelete='SET NULL'), nullable=True)
     required_band = db.Column(db.String(20), nullable=True) # Yêu cầu đạt Band tối thiểu để mở khóa
     icon_preview = db.Column(db.String(255), default='default_item.png')
+    item_effect = db.Column(db.String(100), nullable=True) # STREAK_SHIELD, DOUBLE_COINS, AI_HINT, EXAM_REVIVE, TIME_FREEZE, LUCKY_CHEST
     created_at = db.Column(db.DateTime, default=func.now())
 
     achievement = db.relationship('Achievement', backref=db.backref('cosmetic_rewards', lazy=True))
@@ -29,10 +30,12 @@ class UserCosmetic(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     cosmetic_id = db.Column(db.Integer, db.ForeignKey('cosmetic_items.id', ondelete='CASCADE'), nullable=False)
     is_equipped = db.Column(db.Boolean, default=False)
+    quantity = db.Column(db.Integer, default=1) # Số lượng tồn kho cho vật phẩm tiêu hao
     acquired_at = db.Column(db.DateTime, default=func.now())
 
     cosmetic = db.relationship('CosmeticItem', backref=db.backref('owners', lazy=True, cascade='all, delete-orphan'))
     user = db.relationship('User', backref=db.backref('owned_cosmetics', lazy=True, cascade='all, delete-orphan'))
 
     def __repr__(self):
-        return f"<UserCosmetic User:{self.user_id} Item:{self.cosmetic_id} Equipped:{self.is_equipped}>"
+        return f"<UserCosmetic User:{self.user_id} Item:{self.cosmetic_id} Equipped:{self.is_equipped} Qty:{self.quantity}>"
+

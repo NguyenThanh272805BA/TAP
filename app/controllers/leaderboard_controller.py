@@ -35,6 +35,98 @@ def get_precomputed_user_metrics():
     return vocab_counts, milestone_counts
 
 
+def evaluate_strict_rank_tier(rp, vocab_count=0, streak_count=0):
+    """
+    Hệ thống phân tầng Rank khắt khe chuẩn thi đấu Esports & Học thuật:
+    Yêu cầu kép cả về Rank Points (RP), số lượng từ vựng đã thuộc và chuỗi rèn luyện Streak.
+    """
+    if rp >= 5500 and vocab_count >= 1000 and streak_count >= 25:
+        return {
+            "tier_name": "Thách Đấu Huyền Thoại",
+            "division": "Challenger",
+            "tier_code": "CHALLENGER",
+            "badge_color": "linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6)",
+            "border_color": "#ec4899",
+            "glow": "0 0 20px rgba(236, 72, 153, 0.8)",
+            "tier_icon": "👑"
+        }
+    elif rp >= 4500 and vocab_count >= 700 and streak_count >= 18:
+        return {
+            "tier_name": "Đại Cao Thủ",
+            "division": "Grandmaster",
+            "tier_code": "GRANDMASTER",
+            "badge_color": "linear-gradient(135deg, #ef4444, #f97316)",
+            "border_color": "#ef4444",
+            "glow": "0 0 15px rgba(239, 68, 68, 0.7)",
+            "tier_icon": "🔥"
+        }
+    elif rp >= 3500 and vocab_count >= 400 and streak_count >= 12:
+        return {
+            "tier_name": "Cao Thủ",
+            "division": "Master",
+            "tier_code": "MASTER",
+            "badge_color": "linear-gradient(135deg, #a855f7, #6366f1)",
+            "border_color": "#a855f7",
+            "glow": "0 0 15px rgba(168, 85, 247, 0.6)",
+            "tier_icon": "⚡"
+        }
+    elif rp >= 2600 and vocab_count >= 200 and streak_count >= 6:
+        div = "I" if rp >= 3200 else ("II" if rp >= 2900 else "III")
+        return {
+            "tier_name": f"Kim Cương {div}",
+            "division": f"Diamond {div}",
+            "tier_code": "DIAMOND",
+            "badge_color": "linear-gradient(135deg, #06b6d4, #3b82f6)",
+            "border_color": "#06b6d4",
+            "glow": "0 0 12px rgba(6, 182, 212, 0.6)",
+            "tier_icon": "💎"
+        }
+    elif rp >= 1800 and vocab_count >= 80:
+        div = "I" if rp >= 2300 else ("II" if rp >= 2050 else "III")
+        return {
+            "tier_name": f"Bạch Kim {div}",
+            "division": f"Platinum {div}",
+            "tier_code": "PLATINUM",
+            "badge_color": "linear-gradient(135deg, #10b981, #06b6d4)",
+            "border_color": "#10b981",
+            "glow": "0 0 10px rgba(16, 185, 129, 0.5)",
+            "tier_icon": "🛡️"
+        }
+    elif rp >= 1000 and vocab_count >= 30:
+        div = "I" if rp >= 1500 else ("II" if rp >= 1250 else "III")
+        return {
+            "tier_name": f"Vàng {div}",
+            "division": f"Gold {div}",
+            "tier_code": "GOLD",
+            "badge_color": "linear-gradient(135deg, #f59e0b, #eab308)",
+            "border_color": "#f59e0b",
+            "glow": "0 0 8px rgba(245, 158, 11, 0.5)",
+            "tier_icon": "⭐"
+        }
+    elif rp >= 500:
+        div = "I" if rp >= 800 else ("II" if rp >= 650 else "III")
+        return {
+            "tier_name": f"Bạc {div}",
+            "division": f"Silver {div}",
+            "tier_code": "SILVER",
+            "badge_color": "linear-gradient(135deg, #94a3b8, #cbd5e1)",
+            "border_color": "#94a3b8",
+            "glow": "0 0 5px rgba(148, 163, 184, 0.4)",
+            "tier_icon": "🗡️"
+        }
+    else:
+        div = "I" if rp >= 300 else ("II" if rp >= 150 else "III")
+        return {
+            "tier_name": f"Đồng {div}",
+            "division": f"Bronze {div}",
+            "tier_code": "BRONZE",
+            "badge_color": "linear-gradient(135deg, #b45309, #78350f)",
+            "border_color": "#b45309",
+            "glow": "none",
+            "tier_icon": "🥉"
+        }
+
+
 @leaderboard_bp.route('', methods=['GET'])
 @leaderboard_bp.route('/', methods=['GET'])
 def get_leaderboard():
@@ -58,8 +150,10 @@ def get_leaderboard():
         rp = getattr(u, 'academic_rp', 500) or 500
         streak = getattr(u, 'streak_count', 0) or 0
 
+        # Đánh giá phân tầng Rank khắt khe đa chiều
+        tier_info = evaluate_strict_rank_tier(rp, v_count, streak)
+
         # Công thức tính Điểm Thành Tích Toàn Diện (Composite Achievement Score)
-        # RP (1.0x) + Từ vựng đã thuộc (15x) + Điểm game vô cực (10x) + Ải arena (25x) + Chặng lộ trình (40x) + Giờ học (20x) + Streak (15x)
         composite_score = int(
             (rp * 1.0) +
             (v_count * 15) +
@@ -76,7 +170,8 @@ def get_leaderboard():
             "avatar": getattr(u, 'avatar', 'default_avatar.png') or 'default_avatar.png',
             "equipped_frame": getattr(u, 'equipped_frame', 'frame-default') or 'frame-default',
             "equipped_title": getattr(u, 'equipped_title', 'Tân Binh Ngơ Ngác') or 'Tân Binh Ngơ Ngác',
-            "current_level": getattr(u, 'current_level', 'Tân Binh A1 (Bronze I)') or 'Tân Binh A1 (Bronze I)',
+            "current_level": tier_info["tier_name"],
+            "rank_tier": tier_info,
             "current_band": getattr(u, 'current_band', 'A1') or 'A1',
             "target_band": getattr(u, 'target_band', 'B2') or 'B2',
             "coins": getattr(u, 'coins', 0) or 0,
@@ -91,6 +186,7 @@ def get_leaderboard():
             "study_hours": study_hours,
             "streak_count": streak
         })
+
 
     # Sắp xếp danh sách theo Category được yêu cầu
     if category == 'game':

@@ -124,6 +124,9 @@
             <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Hệ thống phân cấp ngữ pháp CEFR & Kho từ vựng Bento thông minh 100% Local AI</div>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="pixel-btn" onclick="openVocab50ExamModal()" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.25)); border: 2px solid var(--pixel-green); color: #fff; font-size: 11px; padding: 10px 18px; letter-spacing: 0.5px;">
+                📝 BÀI THI DỊCH 50 TỪ & SRS
+            </button>
             <button class="pixel-btn pulse-neon" onclick="window.location.href='/test'" style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.2)); border: 2px solid var(--neon-pink); color: #fff; font-size: 11px; padding: 10px 18px; letter-spacing: 0.5px;">
                 🎯 PHÒNG THI THỬ CEFR (MOCK EXAM)
             </button>
@@ -162,11 +165,13 @@
                 <div style="flex: 2; min-width: 260px; position: relative;">
                     <input type="text" id="vocabSearchInput" oninput="handleVocabSearch()" placeholder="🔍 Tìm kiếm từ vựng hoặc chủ đề (VD: cat, school, technology)..." class="auth-input" style="margin-bottom: 0; padding-left: 15px; width: 100%;">
                 </div>
-                <div style="display: flex; gap: 8px; flex: 1; min-width: 250px;">
+                <div style="display: flex; gap: 8px; flex: 1.2; min-width: 320px;">
                     <input type="text" id="newTopicInput" placeholder="Đúc chủ đề mới..." class="auth-input" style="flex: 1; margin-bottom: 0;">
                     <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); font-size: 10px; padding: 10px 14px; white-space: nowrap;">TẠO UNIT</button>
+                    <button id="btn-random-unit" onclick="generateRandomUnit()" class="pixel-btn" style="background: linear-gradient(135deg, #10b981, #06b6d4); font-size: 10px; padding: 10px 14px; white-space: nowrap;">🎲 RANDOM UNIT</button>
                 </div>
             </div>
+
 
             <!-- Hàng 2: Bộ lọc CEFR Pills & Chế độ xem -->
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
@@ -321,6 +326,60 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL BÀI THI CẤU TRÚC NGỮ PHÁP (5 CÂU HỎI TRẮC NGHIỆM) -->
+<div id="grammar-quiz-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.88); z-index: 99999; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;">
+    <div style="background: rgba(15, 23, 42, 0.98); border: 2px solid var(--neon-cyan); border-radius: 16px; box-shadow: 0 0 35px rgba(6, 182, 212, 0.4); padding: 25px; max-width: 750px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 14px; margin-bottom: 16px;">
+            <div>
+                <div class="pixel-title" id="grammar-quiz-title" style="color: var(--neon-cyan); font-size: 17px; margin: 0;">BÀI KIỂM TRA CẤU TRÚC NGỮ PHÁP</div>
+                <div id="grammar-quiz-subtitle" style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-top: 4px;">5 câu hỏi thực hành chuyên sâu</div>
+            </div>
+            <button class="pixel-btn" onclick="closeGrammarQuizModal()" style="background: #ef4444; padding: 6px 12px; font-size: 10px;">[ ĐÓNG ]</button>
+        </div>
+        
+        <div id="grammar-quiz-body" style="overflow-y: auto; flex-grow: 1; padding-right: 8px;">
+            <!-- Render questions / loading / results -->
+        </div>
+
+        <div id="grammar-quiz-footer" style="margin-top: 15px; padding-top: 12px; border-top: 1px dashed var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+            <div id="grammar-quiz-score-hint" style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);"></div>
+            <button id="btn-submit-grammar-quiz" class="pixel-btn" onclick="submitGrammarQuiz()" style="background: var(--pixel-green); color: #000; font-weight: bold; padding: 10px 20px; font-size: 11px;">
+                NỘP BÀI THI
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL BÀI THI DỊCH 50 TỪ & LẬP LỘ TRÌNH SRS 3 GIAI ĐOẠN -->
+<div id="vocab-50-exam-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); z-index: 99999; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box;">
+    <div style="background: rgba(15, 23, 42, 0.98); border: 2px solid var(--pixel-green); border-radius: 16px; box-shadow: 0 0 40px rgba(16, 185, 129, 0.35); padding: 25px; max-width: 880px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; position: relative;">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 14px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="tap-icon" style="color: var(--pixel-green); width: 28px; height: 28px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </div>
+                <div>
+                    <div class="pixel-title" id="vocab-exam-title" style="color: var(--pixel-green); font-size: 17px; margin: 0;">BÀI THI DỊCH TỪ VỰNG & ĐÁNH GIÁ SRS</div>
+                    <div id="vocab-exam-step-badge" style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-top: 3px;">GIAI ĐOẠN 1: BÀI TEST 50 TỪ ĐA CẤP ĐỘ</div>
+                </div>
+            </div>
+            <button class="pixel-btn" onclick="closeVocab50ExamModal()" style="background: #ef4444; padding: 6px 12px; font-size: 10px;">[ ĐÓNG ]</button>
+        </div>
+
+        <!-- Body with 3 Views (Test -> Review/Self-Assess -> SRS Roadmap) -->
+        <div id="vocab-exam-body" style="overflow-y: auto; flex-grow: 1; padding-right: 8px;">
+            <!-- Injected via JS -->
+        </div>
+
+        <!-- Footer -->
+        <div id="vocab-exam-footer" style="margin-top: 15px; padding-top: 12px; border-top: 1px dashed var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+            <div id="vocab-exam-status-info" style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);"></div>
+            <div id="vocab-exam-actions"></div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -357,12 +416,19 @@
     // =========================================================================
 
     function loadVocabOverview() {
+        const grid = document.getElementById('topics-bento-grid');
+        grid.innerHTML = '<div class="typing-effect" style="color: #cbd5e1; font-size: 14px; grid-column: 1/-1;">Đang nạp các chủ đề từ vựng...</div>';
+
         // Tải tổng quan Topics
         fetch('/api/game/vocabularies/overview')
             .then(res => res.json())
             .then(data => {
                 globalTopicsOverview = data.topics || [];
-                renderTopicBentoCards(globalTopicsOverview);
+                renderTopicBentoCards(globalTopicsOverview, data.is_new_user);
+            })
+            .catch(err => {
+                console.error("Error loading vocab overview:", err);
+                grid.innerHTML = '<div style="color: #ef4444; font-size: 14px; grid-column: 1/-1;">Lỗi kết nối máy chủ khi nạp chủ đề. Vui lòng thử lại.</div>';
             });
 
         // Tải toàn bộ từ vựng phục vụ tìm kiếm tức thì
@@ -370,19 +436,40 @@
             .then(res => res.json())
             .then(data => {
                 globalVocabList = data.vocabularies || [];
-            });
+            })
+            .catch(err => console.error("Error loading vocabularies:", err));
     }
 
-    function renderTopicBentoCards(topics) {
+    function renderTopicBentoCards(topics, isNewUser) {
         const container = document.getElementById('topics-bento-grid');
         const countBadge = document.getElementById('topics-count-badge');
         const statsText = document.getElementById('topics-stats-text');
 
-        countBadge.innerText = topics.length;
+        countBadge.innerText = (topics && topics.length) ? topics.length : 0;
 
-        if (!topics || topics.length === 0) {
-            container.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1;">Không tìm thấy chủ đề phù hợp với bộ lọc.</div>';
-            statsText.innerText = "";
+        if (!topics || topics.length === 0 || isNewUser) {
+            statsText.innerText = "Chưa có từ vựng cá nhân trong lò đúc";
+            const sparkleSvg = window.TAPIcons ? window.TAPIcons.get('sparkles') : '✨';
+            container.innerHTML = `
+                <div class="forge-starter-hero" style="grid-column: 1/-1;">
+                    <div style="width: 56px; height: 56px; margin: 0 auto 16px auto; color: var(--neon-cyan); display: flex; align-items: center; justify-content: center;">
+                        <span class="tap-icon" style="width: 48px; height: 48px;">${sparkleSvg}</span>
+                    </div>
+                    <div style="font-family: var(--text-pixel); font-size: 18px; color: var(--neon-cyan); margin-bottom: 10px;">
+                        LÒ ĐÚC CHƯA CÓ DỮ LIỆU TỪ VỰNG RIÊNG CỦA BẠN
+                    </div>
+                    <div style="color: #94a3b8; font-size: 13px; max-width: 580px; margin: 0 auto 20px auto; line-height: 1.6;">
+                        Hệ thống đã cách ly tài khoản 100%. Bạn có thể nhấn <strong>RANDOM UNIT</strong> để AI đúc ngay chủ đề mới không trùng lặp, hoặc làm bài <strong>THI DỊCH 50 TỪ</strong> để lập lộ trình SRS thông minh!
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                        <button class="pixel-btn" onclick="generateRandomUnit()" style="background: linear-gradient(135deg, #10b981, #06b6d4); font-size: 11px; padding: 12px 20px;">
+                            🎲 TẠO NGAY UNIT NGẪU NHIÊN
+                        </button>
+                        <button class="pixel-btn" onclick="openVocab50ExamModal()" style="background: rgba(236, 72, 153, 0.2); border: 2px solid var(--neon-pink); color: #fff; font-size: 11px; padding: 12px 20px;">
+                            📝 THI DỊCH 50 TỪ & SRS
+                        </button>
+                    </div>
+                </div>`;
             return;
         }
 
@@ -394,7 +481,7 @@
             totalWords += t.total_words;
             totalMastered += t.memorized_words;
 
-            const icon = getTopicIcon(t.theme);
+            const iconSvg = window.TAPIcons ? window.TAPIcons.getTopicIcon(t.theme) : getTopicIcon(t.theme);
             const cefrClass = (t.representative_cefr || 'A1').toLowerCase();
             const pct = t.progress_percent;
             const progressColor = pct >= 80 ? 'var(--pixel-green)' : (pct >= 40 ? 'var(--neon-cyan)' : 'var(--neon-amber)');
@@ -406,7 +493,7 @@
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 26px;">${icon}</span>
+                            <span class="tap-icon" style="width: 28px; height: 28px; color: var(--neon-cyan);">${iconSvg}</span>
                             <div>
                                 <strong style="color: #fff; font-size: 16px; letter-spacing: 0.5px;">${t.theme.toUpperCase()}</strong>
                                 <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">${t.total_words} từ vựng</div>
@@ -449,15 +536,9 @@
     }
 
     function getTopicIcon(theme) {
-        const t = (theme || '').toUpperCase();
-        if (t.includes('ANIMAL') || t.includes('ĐỘNG VẬT')) return '🐾';
-        if (t.includes('TECH') || t.includes('CÔNG NGHỆ') || t.includes('INTERNET')) return '💻';
-        if (t.includes('FOOD') || t.includes('DINH DƯỠNG') || t.includes('ẨM THỰC')) return '🥗';
-        if (t.includes('SCHOOL') || t.includes('TRƯỜNG HỌC') || t.includes('GIÁO DỤC')) return '🎓';
-        if (t.includes('SCIENCE') || t.includes('KHOA HỌC')) return '🔬';
-        if (t.includes('BUSINESS') || t.includes('KINH DOANH')) return '💼';
-        if (t.includes('TRADITION') || t.includes('TRUYỀN THỐNG')) return '🏮';
-        if (t.includes('SKIN') || t.includes('BỆNH') || t.includes('Y TẾ')) return '🩹';
+        if (window.TAPIcons && window.TAPIcons.getTopicIcon) {
+            return window.TAPIcons.getTopicIcon(theme);
+        }
         return '📚';
     }
 
@@ -529,7 +610,7 @@
     function renderFlatWordsList(words) {
         const container = document.getElementById('words-flat-grid');
         const countBadge = document.getElementById('words-count-badge');
-        countBadge.innerText = words.length;
+        countBadge.innerText = words ? words.length : 0;
 
         if (!words || words.length === 0) {
             container.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1;">Không tìm thấy từ vựng nào khớp với tìm kiếm.</div>';
@@ -637,31 +718,42 @@
             // Cập nhật trạng thái trong bộ nhớ
             const item = globalVocabList.find(w => w.id === vocabId);
             if (item) item.is_memorized = isMemorized;
+        }).catch(err => {
+            console.error(err);
+            btnElement.innerText = "[ _ ] LỖI";
         });
     }
 
     function loadMLRecommendations() {
-        fetch('/api/game/recommend').then(r => r.json()).then(data => {
-            const rDiv = document.getElementById('ml-recommendations');
-            if (data.recommendations && data.recommendations.length > 0) {
-                let rHtml = '';
-                data.recommendations.forEach(r => {
-                    const scoreText = (r.score > 0) ? `Độ phù hợp: ${(r.score * 100).toFixed(0)}%` : `Nên học từ này`;
-                    rHtml += `
-                        <div style="background: rgba(0,0,0,0.5); padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--neon-amber); display: flex; justify-content: space-between; align-items: center;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <strong style="color:#fff; font-size: 14px;">${r.word}</strong>
-                                <button class="btn-speak-audio" data-speak="${r.word.replace(/"/g, '&quot;')}" title="Nghe phát âm" style="padding: 2px 6px; font-size: 10px;">
-                                    <span class="speaker-icon">🔊</span>
-                                    <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
-                                </button>
-                            </div>
-                            <span style="font-size:10px; color:var(--neon-amber); background: rgba(245, 158, 11, 0.1); padding: 3px 6px; border-radius: 4px;">${scoreText}</span>
-                        </div>`;
-                });
-                rDiv.innerHTML = rHtml;
-            }
-        });
+        const rDiv = document.getElementById('ml-recommendations');
+        fetch('/api/game/recommend')
+            .then(r => r.json())
+            .then(data => {
+                if (data.recommendations && data.recommendations.length > 0) {
+                    let rHtml = '';
+                    data.recommendations.forEach(r => {
+                        const scoreText = (r.score > 0) ? `Độ phù hợp: ${(r.score * 100).toFixed(0)}%` : `Nên học từ này`;
+                        rHtml += `
+                            <div style="background: rgba(0,0,0,0.5); padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--neon-amber); display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <strong style="color:#fff; font-size: 14px;">${r.word}</strong>
+                                    <button class="btn-speak-audio" data-speak="${r.word.replace(/"/g, '&quot;')}" title="Nghe phát âm" style="padding: 2px 6px; font-size: 10px;">
+                                        <span class="speaker-icon">🔊</span>
+                                        <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                                    </button>
+                                </div>
+                                <span style="font-size:10px; color:var(--neon-amber); background: rgba(245, 158, 11, 0.1); padding: 3px 6px; border-radius: 4px;">${scoreText}</span>
+                            </div>`;
+                    });
+                    rDiv.innerHTML = rHtml;
+                } else {
+                    rDiv.innerHTML = '<div style="color: #94a3b8; font-size: 12px; padding: 6px 0;">Không có từ vựng cần ưu tiên ôn tập tại thời điểm này.</div>';
+                }
+            })
+            .catch(err => {
+                console.error("Error loading recommendations:", err);
+                rDiv.innerHTML = '<div style="color: #94a3b8; font-size: 12px; padding: 6px 0;">Hệ thống AI đề xuất đang sẵn sàng.</div>';
+            });
     }
 
     function generateCustomUnit() {
@@ -670,13 +762,53 @@
         const topic = topicInput.value.trim();
         if (!topic) return alert("Bạn chưa nhập chủ đề!");
 
-        btnGenerate.disabled = true; btnGenerate.innerText = "ĐANG ĐÚC...";
+        btnGenerate.disabled = true; 
+        btnGenerate.innerText = "ĐANG ĐÚC...";
         fetch('/api/ai/generate_unit', {
             method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ topic: topic })
         }).then(res => res.json()).then(data => {
             if (data.error) alert(data.error);
-            else { alert(data.message); loadVocabOverview(); }
-        }).finally(() => { btnGenerate.disabled = false; btnGenerate.innerText = "TẠO UNIT"; topicInput.value = ""; });
+            else { alert(data.message || "Tạo Unit thành công!"); loadVocabOverview(); }
+        }).catch(err => {
+            console.error(err);
+            alert("Lỗi khi kết nối AI để tạo Unit.");
+        }).finally(() => { 
+            btnGenerate.disabled = false; 
+            btnGenerate.innerText = "TẠO UNIT"; 
+            topicInput.value = ""; 
+        });
+    }
+
+    function generateRandomUnit() {
+        const btnRandom = document.getElementById("btn-random-unit");
+        if (btnRandom) {
+            btnRandom.disabled = true;
+            btnRandom.innerText = "ĐANG ĐÚC...";
+        }
+
+        fetch('/api/ai/generate_random_unit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(`✨ Tuyệt vời! Đã đúc thành công Unit: "${data.topic.toUpperCase()}" gồm ${data.words_count} từ vựng mới độc quyền.`);
+                loadVocabOverview();
+            } else {
+                alert(data.message || data.error || "Không thể tạo Random Unit lúc này.");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối máy chủ khi tạo Random Unit.");
+        })
+        .finally(() => {
+            if (btnRandom) {
+                btnRandom.disabled = false;
+                btnRandom.innerText = "🎲 RANDOM UNIT";
+            }
+        });
     }
 
     // =========================================================================
@@ -684,6 +816,9 @@
     // =========================================================================
 
     function loadPersonalizedGrammar() {
+        const container = document.getElementById('grammar-cards-container');
+        container.innerHTML = '<div class="typing-effect" style="color: var(--neon-amber); font-size: 14px; grid-column: 1/-1;">Đang tải danh mục ngữ pháp phân cấp...</div>';
+
         fetch('/api/game/grammar/personalized')
             .then(res => res.json())
             .then(data => {
@@ -691,6 +826,10 @@
                 document.getElementById('user-current-band-badge').innerText = `${data.user_band} (Cấp Độ Của Bạn)`;
                 renderGrammarMasteryBars(data.mastery_stats, data.user_band);
                 renderGrammarCards(data.grammars_by_band, currentGrammarBand);
+            })
+            .catch(err => {
+                console.error("Error loading grammar:", err);
+                container.innerHTML = '<div style="color: #ef4444; font-size: 14px; grid-column: 1/-1;">Lỗi nạp ngữ pháp. Vui lòng thử lại.</div>';
             });
     }
 
@@ -698,7 +837,7 @@
         const container = document.getElementById('grammar-mastery-progress-bars');
         let html = '';
         ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].forEach(b => {
-            const st = stats[b] || { total: 0, mastered: 0 };
+            const st = (stats && stats[b]) ? stats[b] : { total: 0, mastered: 0 };
             const pct = st.total > 0 ? Math.round((st.mastered / st.total) * 100) : 0;
             const isUserBand = (b === userBand);
             const borderCol = isUserBand ? 'var(--neon-pink)' : 'var(--glass-border)';
@@ -732,14 +871,14 @@
 
         if (selectedBand === 'ALL') {
             ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].forEach(b => {
-                if (grammarsByBand[b]) items.push(...grammarsByBand[b]);
+                if (grammarsByBand && grammarsByBand[b]) items.push(...grammarsByBand[b]);
             });
         } else {
-            items = grammarsByBand[selectedBand] || [];
+            items = (grammarsByBand && grammarsByBand[selectedBand]) ? grammarsByBand[selectedBand] : [];
         }
 
         if (items.length === 0) {
-            container.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1;">Chưa có cấu trúc ngữ pháp cho cấp độ này.</div>';
+            container.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1; padding: 20px 0;">Chưa có cấu trúc ngữ pháp nào cho cấp độ này.</div>';
             return;
         }
 
@@ -752,6 +891,26 @@
             let statusText = 'CHƯA HỌC';
             if (g.mastery_status === 'DANG_LUYEN') { statusClass = 'mastery-luyen'; statusText = 'ĐANG LUYỆN'; }
             else if (g.mastery_status === 'DA_NAM_VUNG') { statusClass = 'mastery-vung'; statusText = '✓ ĐÃ NẮM VỮNG'; }
+
+            // Render collocations chips
+            let collocationsHtml = '';
+            if (g.collocations && g.collocations.length > 0) {
+                const colls = g.collocations.map(c => `
+                    <span style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); color: #e2e8f0; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;" title="${c.meaning}">
+                        <strong>${c.collocation}</strong>
+                        <span style="color: var(--neon-amber); font-size: 10px;">(${c.meaning})</span>
+                    </span>
+                `).join('');
+                collocationsHtml = `
+                    <div style="margin-top: 10px; margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 8px; border: 1px dashed rgba(6, 182, 212, 0.2);">
+                        <div style="font-size: 10.5px; color: var(--neon-cyan); font-family: var(--text-mono); margin-bottom: 6px; font-weight: bold;">
+                            🔗 CỤM TỪ ĐI KÈM (COLLOCATIONS):
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                            ${colls}
+                        </div>
+                    </div>`;
+            }
 
             html += `
             <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--glass-border); border-left: 4px solid var(--neon-amber); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
@@ -767,6 +926,9 @@
                     <strong style="color: #fff; font-family: var(--text-mono); font-size: 16px; margin-bottom: 6px; display: block;">${g.structure}</strong>
                     <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">${g.explanation}</div>
 
+                    <!-- Collocations -->
+                    ${collocationsHtml}
+
                     <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; font-family: var(--text-mono); font-size: 12px; color: #94a3b8; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                         <div><span style="color: var(--neon-cyan);">VD:</span> ${g.example}</div>
                         <button class="btn-speak-audio" data-speak="${g.example.replace(/"/g, '&quot;')}" title="Nghe câu ví dụ" style="flex-shrink: 0; padding: 3px 7px;">
@@ -777,8 +939,11 @@
                 </div>
 
                 <div style="display: flex; gap: 8px;">
-                    <button class="pixel-btn" onclick="openBattleZone('grammar', '${g.structure.replace(/'/g, "\\'")}')" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--neon-amber); color: var(--neon-amber); width: 100%; font-size: 10px; padding: 10px;">
-                        LUYỆN ĐẶT CÂU CẤU TRÚC NÀY
+                    <button class="pixel-btn" onclick="openGrammarQuizModal(${g.id}, '${g.structure.replace(/'/g, "\\'")}')" style="background: rgba(6, 182, 212, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); flex: 1; font-size: 10px; padding: 10px;">
+                        🎯 THI CẤU TRÚC NÀY
+                    </button>
+                    <button class="pixel-btn" onclick="openBattleZone('grammar', '${g.structure.replace(/'/g, "\\'")}')" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--neon-amber); color: var(--neon-amber); flex: 1; font-size: 10px; padding: 10px;">
+                        LUYỆN ĐẶT CÂU
                     </button>
                 </div>
             </div>`;
@@ -808,6 +973,518 @@
                 }
             }
         });
+    }
+
+    // =========================================================================
+    // MODAL PHÂN HỆ: BÀI KIỂM TRA CẤU TRÚC NGỮ PHÁP (5 CÂU HỎI TRẮC NGHIỆM)
+    // =========================================================================
+
+    let currentGrammarQuizId = null;
+    let currentGrammarQuizQuestions = [];
+
+    function openGrammarQuizModal(grammarId, structureName) {
+        currentGrammarQuizId = grammarId;
+        const modal = document.getElementById('grammar-quiz-modal');
+        const title = document.getElementById('grammar-quiz-title');
+        const subtitle = document.getElementById('grammar-quiz-subtitle');
+        const body = document.getElementById('grammar-quiz-body');
+        const submitBtn = document.getElementById('btn-submit-grammar-quiz');
+        const scoreHint = document.getElementById('grammar-quiz-score-hint');
+
+        title.innerText = `BÀI THI CẤU TRÚC // ${structureName.toUpperCase()}`;
+        subtitle.innerText = "5 câu hỏi trắc nghiệm kiểm tra độ hiểu & phản xạ";
+        scoreHint.innerText = "";
+        submitBtn.style.display = "inline-block";
+        submitBtn.disabled = false;
+        submitBtn.innerText = "NỘP BÀI THI";
+
+        body.innerHTML = '<div class="typing-effect" style="padding: 25px; text-align: center; color: var(--neon-cyan); font-size: 14px;">Đang chuẩn bị đề thi cho cấu trúc ngữ pháp này...</div>';
+        modal.style.display = 'flex';
+
+        fetch(`/api/game/grammar/${grammarId}/quiz`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    currentGrammarQuizQuestions = data.questions || [];
+                    renderGrammarQuizQuestions(currentGrammarQuizQuestions);
+                } else {
+                    body.innerHTML = `<div style="color: #ef4444; padding: 20px; text-align: center;">${data.message || 'Không thể tạo đề thi lúc này.'}</div>`;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                body.innerHTML = '<div style="color: #ef4444; padding: 20px; text-align: center;">Lỗi kết nối khi tải đề thi.</div>';
+            });
+    }
+
+    function renderGrammarQuizQuestions(questions) {
+        const body = document.getElementById('grammar-quiz-body');
+        if (!questions || questions.length === 0) {
+            body.innerHTML = '<div style="color: #94a3b8; padding: 20px; text-align: center;">Không có câu hỏi nào.</div>';
+            return;
+        }
+
+        let html = '';
+        questions.forEach((q, idx) => {
+            let optionsHtml = '';
+            (q.options || []).forEach((opt, oIdx) => {
+                const key = (typeof opt === 'object' && opt.key) ? opt.key : (['A', 'B', 'C', 'D'][oIdx] || oIdx);
+                const text = (typeof opt === 'object' && opt.text) ? opt.text : opt;
+                optionsHtml += `
+                    <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer; transition: 0.2s;">
+                        <input type="radio" name="quiz_q_${q.id}" value="${key}" style="accent-color: var(--neon-cyan);">
+                        <span style="font-family: var(--text-mono); font-weight: bold; color: var(--neon-cyan);">${key}.</span>
+                        <span style="color: #e2e8f0; font-size: 13.5px;">${text}</span>
+                    </label>
+                `;
+            });
+
+            const qText = q.prompt || q.question || 'Chọn đáp án chính xác:';
+            const sentenceHtml = q.sentence ? `<div style="font-size: 13px; color: var(--neon-cyan); font-family: var(--text-mono); margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px;">${q.sentence}</div>` : '';
+
+            html += `
+                <div class="grammar-quiz-q-card" id="q_card_${q.id}" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-family: var(--text-pixel); color: var(--neon-amber); font-size: 12px;">CÂU ${idx + 1}/5</span>
+                    </div>
+                    <div style="font-size: 14px; color: #fff; font-weight: bold; margin-bottom: 8px; line-height: 1.5;">${qText}</div>
+                    ${sentenceHtml}
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        ${optionsHtml}
+                    </div>
+                    <div id="q_feedback_${q.id}" style="display: none; margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 12.5px; line-height: 1.4;"></div>
+                </div>
+            `;
+        });
+        body.innerHTML = html;
+    }
+
+    function submitGrammarQuiz() {
+        const answers = {};
+        let answeredCount = 0;
+
+        currentGrammarQuizQuestions.forEach(q => {
+            const selected = document.querySelector(`input[name="quiz_q_${q.id}"]:checked`);
+            if (selected) {
+                answers[q.id] = selected.value;
+                answeredCount++;
+            }
+        });
+
+        if (answeredCount < currentGrammarQuizQuestions.length) {
+            if (!confirm(`Bạn mới trả lời ${answeredCount}/${currentGrammarQuizQuestions.length} câu. Bạn có chắc muốn nộp bài?`)) {
+                return;
+            }
+        }
+
+        const submitBtn = document.getElementById('btn-submit-grammar-quiz');
+        submitBtn.disabled = true;
+        submitBtn.innerText = "ĐANG CHẤM BÀI...";
+
+        fetch(`/api/game/grammar/${currentGrammarQuizId}/quiz/submit`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ answers: answers })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                displayGrammarQuizResult(data);
+            } else {
+                alert(data.message || 'Lỗi khi nộp bài.');
+                submitBtn.disabled = false;
+                submitBtn.innerText = "NỘP BÀI THI";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối khi nộp bài thi.");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "NỘP BÀI THI";
+        });
+    }
+
+    function displayGrammarQuizResult(res) {
+        const submitBtn = document.getElementById('btn-submit-grammar-quiz');
+        submitBtn.innerText = "✓ ĐÃ HOÀN THÀNH";
+        submitBtn.onclick = closeGrammarQuizModal;
+
+        const scoreHint = document.getElementById('grammar-quiz-score-hint');
+        const passText = res.passed ? '<span style="color: var(--pixel-green); font-weight: bold;">ĐẠT CHUẨN (+NÂNG CẤP TIẾN ĐỘ)</span>' : '<span style="color: var(--neon-amber);">CẦN ÔN TẬP THÊM</span>';
+        scoreHint.innerHTML = `Kết quả: <strong>${res.score}/${res.total}</strong> (${res.percentage}%) - ${passText} | +${res.xp_earned} XP, +${res.coins_earned} Xu`;
+
+        // Render explanation on each question card
+        (res.details || []).forEach(d => {
+            const feedbackBox = document.getElementById(`q_feedback_${d.question_id}`);
+            const qCard = document.getElementById(`q_card_${d.question_id}`);
+            if (feedbackBox && qCard) {
+                feedbackBox.style.display = "block";
+                if (d.is_correct) {
+                    qCard.style.borderColor = "var(--pixel-green)";
+                    feedbackBox.style.background = "rgba(34, 197, 94, 0.15)";
+                    feedbackBox.style.borderLeft = "3px solid var(--pixel-green)";
+                    feedbackBox.style.color = "#86efac";
+                    feedbackBox.innerHTML = `<strong>✓ CHÍNH XÁC!</strong> Đáp án: ${d.correct_answer}. <br><span style="color: #cbd5e1;">${d.explanation}</span>`;
+                } else {
+                    qCard.style.borderColor = "#ef4444";
+                    feedbackBox.style.background = "rgba(239, 68, 68, 0.15)";
+                    feedbackBox.style.borderLeft = "3px solid #ef4444";
+                    feedbackBox.style.color = "#fca5a5";
+                    feedbackBox.innerHTML = `<strong>✗ CHƯA ĐÚNG!</strong> Bạn chọn: ${d.user_answer || 'Chưa chọn'} | Đáp án đúng: <strong>${d.correct_answer}</strong>. <br><span style="color: #cbd5e1;">${d.explanation}</span>`;
+                }
+            }
+        });
+
+        // Tự động load lại phân cấp ngữ pháp để cập nhật tiến độ
+        loadPersonalizedGrammar();
+    }
+
+    function closeGrammarQuizModal() {
+        document.getElementById('grammar-quiz-modal').style.display = 'none';
+        currentGrammarQuizId = null;
+        currentGrammarQuizQuestions = [];
+    }
+
+    // =========================================================================
+    // MODAL PHÂN HỆ: BÀI THI DỊCH 50 TỪ & LẬP LỘ TRÌNH SRS 3 GIAI ĐOẠN
+    // =========================================================================
+
+    let vocab50Questions = [];
+    let vocab50Answers = {};
+    let vocab50ExamResult = null;
+    let vocab50SelfAssessments = {};
+
+    function openVocab50ExamModal() {
+        const modal = document.getElementById('vocab-50-exam-modal');
+        const body = document.getElementById('vocab-exam-body');
+        const badge = document.getElementById('vocab-exam-step-badge');
+        const actions = document.getElementById('vocab-exam-actions');
+        const statusInfo = document.getElementById('vocab-exam-status-info');
+
+        badge.innerText = "GIAI ĐOẠN 1: BÀI THI DỊCH 50 TỪ VỰNG ĐA CẤP ĐỘ";
+        statusInfo.innerText = "";
+        actions.innerHTML = "";
+        body.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center;">
+                <div class="typing-effect" style="color: var(--pixel-green); font-size: 15px; margin-bottom: 12px;">Đang khởi tạo bài thi dịch 50 câu trắc nghiệm thích ứng...</div>
+                <div style="color: #94a3b8; font-size: 12px; font-family: var(--text-mono);">Độ khó phủ từ A1 đến C2</div>
+            </div>`;
+        modal.style.display = 'flex';
+
+        fetch('/api/game/vocab/exam/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ count: 50 })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                vocab50Questions = data.questions || [];
+                vocab50Answers = {};
+                renderVocab50Step1(vocab50Questions);
+            } else {
+                body.innerHTML = `<div style="color: #ef4444; padding: 25px; text-align: center;">${data.message || 'Không thể tạo đề thi lúc này.'}</div>`;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            body.innerHTML = '<div style="color: #ef4444; padding: 25px; text-align: center;">Lỗi kết nối khi nạp bài thi từ vựng.</div>';
+        });
+    }
+
+    function renderVocab50Step1(questions) {
+        const body = document.getElementById('vocab-exam-body');
+        const actions = document.getElementById('vocab-exam-actions');
+        const statusInfo = document.getElementById('vocab-exam-status-info');
+
+        statusInfo.innerHTML = `<span id="v50-counter">0</span>/50 câu đã trả lời`;
+        actions.innerHTML = `
+            <button id="btn-submit-v50" class="pixel-btn" onclick="submitVocab50Exam()" style="background: var(--pixel-green); color: #000; font-weight: bold; padding: 10px 22px; font-size: 11px;">
+                NỘP BÀI THI (50 CÂU)
+            </button>
+        `;
+
+        let html = '';
+        questions.forEach((q, idx) => {
+            const cefrClass = (q.cefr_level || 'A1').toLowerCase();
+            let optionsHtml = '';
+            (q.options || []).forEach(opt => {
+                optionsHtml += `
+                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer; transition: 0.2s;">
+                        <input type="radio" name="v50_q_${q.id}" value="${opt.key}" onchange="updateVocab50Answer(${q.id}, '${opt.key}')" style="accent-color: var(--pixel-green);">
+                        <span style="font-family: var(--text-mono); font-weight: bold; color: var(--neon-cyan);">${opt.key}.</span>
+                        <span style="color: #e2e8f0; font-size: 13px;">${opt.text}</span>
+                    </label>
+                `;
+            });
+
+            html += `
+                <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-family: var(--text-pixel); color: var(--neon-cyan); font-size: 11px;">CÂU ${idx + 1}/50</span>
+                        <span class="cefr-badge ${cefrClass}">${q.cefr_level || 'A1'}</span>
+                    </div>
+                    <div style="font-size: 14px; color: #fff; font-weight: bold; margin-bottom: 10px;">
+                        ${q.question}
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px;">
+                        ${optionsHtml}
+                    </div>
+                </div>
+            `;
+        });
+        body.innerHTML = html;
+    }
+
+    function updateVocab50Answer(qId, val) {
+        vocab50Answers[qId] = val;
+        const count = Object.keys(vocab50Answers).length;
+        const counter = document.getElementById('v50-counter');
+        if (counter) counter.innerText = count;
+    }
+
+    function submitVocab50Exam() {
+        const count = Object.keys(vocab50Answers).length;
+        if (count < 50) {
+            if (!confirm(`Bạn mới trả lời ${count}/50 câu. Nộp bài ngay có thể làm giảm độ chuẩn xác của ước lượng CEFR. Bạn có chắc muốn nộp?`)) {
+                return;
+            }
+        }
+
+        const btn = document.getElementById('btn-submit-v50');
+        btn.disabled = true;
+        btn.innerText = "ĐANG CHẤM ĐIỂM...";
+
+        fetch('/api/game/vocab/exam/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ answers: vocab50Answers })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                vocab50ExamResult = data;
+                renderVocab50Step2(data);
+            } else {
+                alert(data.message || 'Lỗi khi nộp bài thi.');
+                btn.disabled = false;
+                btn.innerText = "NỘP BÀI THI (50 CÂU)";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối khi nộp bài thi.");
+            btn.disabled = false;
+            btn.innerText = "NỘP BÀI THI (50 CÂU)";
+        });
+    }
+
+    function renderVocab50Step2(data) {
+        const body = document.getElementById('vocab-exam-body');
+        const badge = document.getElementById('vocab-exam-step-badge');
+        const actions = document.getElementById('vocab-exam-actions');
+        const statusInfo = document.getElementById('vocab-exam-status-info');
+
+        badge.innerText = "GIAI ĐOẠN 2: TỰ ĐÁNH GIÁ MỨC ĐỘ GHI NHỚ (SRS SELF-ASSESSMENT)";
+        statusInfo.innerHTML = `Điểm: <strong style="color: var(--pixel-green);">${data.score}/50 (${data.percentage}%)</strong> | Band ước tính: <strong style="color: var(--neon-cyan);">${data.cefr_estimate}</strong>`;
+        actions.innerHTML = `
+            <button id="btn-submit-srs" class="pixel-btn" onclick="submitVocab50SelfAssess()" style="background: linear-gradient(135deg, #a855f7, #06b6d4); color: #fff; font-weight: bold; padding: 10px 22px; font-size: 11px;">
+                🚀 LẬP LỘ TRÌNH SRS 3 GIAI ĐOẠN
+            </button>
+        `;
+
+        vocab50SelfAssessments = {};
+
+        let html = `
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <div style="font-size: 14px; color: #fff; font-weight: bold; margin-bottom: 6px;">
+                    🎯 HÃY XÁC NHẬN MỨC ĐỘ GHI NHỚ THỰC TẾ
+                </div>
+                <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">
+                    Hệ thống đã tự động phân loại ban đầu dựa trên bài test của bạn. Bạn hãy chỉnh lại theo cảm giác thực tế để AI lập lộ trình giãn cách ngắt quãng (SRS) tối ưu nhất!
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+        `;
+
+        (data.review_list || []).forEach(item => {
+            // Mặc định: đúng -> DA_THUOC, sai -> CHUA_THUOC
+            const defaultStatus = item.is_correct ? 'DA_THUOC' : 'CHUA_THUOC';
+            vocab50SelfAssessments[item.vocab_id] = {
+                vocab_id: item.vocab_id,
+                word: item.word,
+                status: defaultStatus
+            };
+
+            const cefrClass = (item.cefr_level || 'A1').toLowerCase();
+            const correctBadge = item.is_correct ? '<span style="color: var(--pixel-green); font-size: 11px; font-weight: bold;">[✓ Đúng]</span>' : '<span style="color: #ef4444; font-size: 11px; font-weight: bold;">[✗ Sai]</span>';
+
+            html += `
+                <div class="srs-card-row" id="srs_row_${item.vocab_id}" style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div style="min-width: 220px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <strong style="color: #fff; font-size: 15px;">${item.word}</strong>
+                            <span class="cefr-badge ${cefrClass}">${item.cefr_level}</span>
+                            ${correctBadge}
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">${item.meaning}</div>
+                    </div>
+
+                    <!-- 3 Nút Self-Assess -->
+                    <div style="display: flex; gap: 6px;" id="srs_btn_group_${item.vocab_id}">
+                        <button class="pixel-btn ${defaultStatus === 'DA_THUOC' ? 'srs-active-green' : ''}" onclick="setSRSAssessment(${item.vocab_id}, '${item.word.replace(/'/g, "\\'")}', 'DA_THUOC', this)" style="padding: 6px 12px; font-size: 10px; border-radius: 6px; border: 1px solid #10b981; background: ${defaultStatus === 'DA_THUOC' ? '#10b981' : 'transparent'}; color: ${defaultStatus === 'DA_THUOC' ? '#000' : '#10b981'}; font-weight: bold;">
+                            ✓ ĐÃ THUỘC
+                        </button>
+                        <button class="pixel-btn" onclick="setSRSAssessment(${item.vocab_id}, '${item.word.replace(/'/g, "\\'")}', 'HOI_THUOC', this)" style="padding: 6px 12px; font-size: 10px; border-radius: 6px; border: 1px solid #f59e0b; background: transparent; color: #f59e0b; font-weight: bold;">
+                            ~ HƠI THUỘC
+                        </button>
+                        <button class="pixel-btn ${defaultStatus === 'CHUA_THUOC' ? 'srs-active-red' : ''}" onclick="setSRSAssessment(${item.vocab_id}, '${item.word.replace(/'/g, "\\'")}', 'CHUA_THUOC', this)" style="padding: 6px 12px; font-size: 10px; border-radius: 6px; border: 1px solid #ef4444; background: ${defaultStatus === 'CHUA_THUOC' ? '#ef4444' : 'transparent'}; color: ${defaultStatus === 'CHUA_THUOC' ? '#fff' : '#ef4444'}; font-weight: bold;">
+                            ✗ CHƯA THUỘC
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        body.innerHTML = html;
+    }
+
+    function setSRSAssessment(vocabId, word, status, clickedBtn) {
+        vocab50SelfAssessments[vocabId] = { vocab_id: vocabId, word: word, status: status };
+
+        // Reset button colors in the group
+        const group = document.getElementById(`srs_btn_group_${vocabId}`);
+        if (group) {
+            const btns = group.querySelectorAll('button');
+            btns[0].style.background = 'transparent'; btns[0].style.color = '#10b981';
+            btns[1].style.background = 'transparent'; btns[1].style.color = '#f59e0b';
+            btns[2].style.background = 'transparent'; btns[2].style.color = '#ef4444';
+
+            if (status === 'DA_THUOC') {
+                clickedBtn.style.background = '#10b981';
+                clickedBtn.style.color = '#000';
+            } else if (status === 'HOI_THUOC') {
+                clickedBtn.style.background = '#f59e0b';
+                clickedBtn.style.color = '#000';
+            } else {
+                clickedBtn.style.background = '#ef4444';
+                clickedBtn.style.color = '#fff';
+            }
+        }
+    }
+
+    function submitVocab50SelfAssess() {
+        const btn = document.getElementById('btn-submit-srs');
+        btn.disabled = true;
+        btn.innerText = "ĐANG TỔNG HỢP LỘ TRÌNH...";
+
+        const list = Object.values(vocab50SelfAssessments);
+
+        fetch('/api/game/vocab/exam/self_assess', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ assessments: list })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                renderVocab50Step3(data.roadmap);
+            } else {
+                alert(data.message || 'Lỗi khi lập lộ trình.');
+                btn.disabled = false;
+                btn.innerText = "🚀 LẬP LỘ TRÌNH SRS 3 GIAI ĐOẠN";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối khi gửi đánh giá SRS.");
+            btn.disabled = false;
+            btn.innerText = "🚀 LẬP LỘ TRÌNH SRS 3 GIAI ĐOẠN";
+        });
+    }
+
+    function renderVocab50Step3(roadmap) {
+        const body = document.getElementById('vocab-exam-body');
+        const badge = document.getElementById('vocab-exam-step-badge');
+        const actions = document.getElementById('vocab-exam-actions');
+        const statusInfo = document.getElementById('vocab-exam-status-info');
+
+        badge.innerText = "GIAI ĐOẠN 3: LỘ TRÌNH ÔN TẬP SRS CÁ NHÂN HÓA";
+        statusInfo.innerText = "Đã hoàn thành phân tích 3 chu kỳ học tập";
+        actions.innerHTML = `
+            <button class="pixel-btn" onclick="closeVocab50ExamModal()" style="background: var(--pixel-green); color: #000; font-weight: bold; padding: 10px 25px; font-size: 11px;">
+                ✓ BẮT ĐẦU ÔN TẬP THEO LỘ TRÌNH
+            </button>
+        `;
+
+        const p1 = roadmap.phase_1 || {};
+        const p2 = roadmap.phase_2 || {};
+        const p3 = roadmap.phase_3 || {};
+
+        const p1Words = (p1.words || []).map(w => `<span style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 3px 8px; border-radius: 4px; font-size: 11px;">${w}</span>`).join(' ');
+        const p2Words = (p2.words || []).map(w => `<span style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fde68a; padding: 3px 8px; border-radius: 4px; font-size: 11px;">${w}</span>`).join(' ');
+        const p3Words = (p3.words || []).map(w => `<span style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #a7f3d0; padding: 3px 8px; border-radius: 4px; font-size: 11px;">${w}</span>`).join(' ');
+
+        body.innerHTML = `
+            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15)); border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-family: var(--text-pixel); color: var(--neon-cyan); font-size: 16px;">CHIẾN LƯỢC ÔN TẬP SRS THEO ĐƯỜNG CONG QUÊN LÃNG</div>
+                        <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">Tổng cộng 50 từ vựng đã được phân bố vào 3 chu kỳ ghi nhớ</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Phase 1 Card -->
+                <div style="background: rgba(0,0,0,0.5); border: 1.5px solid #ef4444; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong style="color: #ef4444; font-size: 14px; font-family: var(--text-mono);">⚡ GIAI ĐOẠN 1: CẤP TỐC & KHÔI PHỤC TRÍ NHỚ (${p1.count || 0} từ)</strong>
+                        <span style="font-size: 11px; background: rgba(239, 68, 68, 0.2); color: #ef4444; padding: 2px 8px; border-radius: 4px; font-family: var(--text-mono);">${p1.interval || '1-3 ngày'}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
+                        Tập trung vào những từ chưa thuộc hoặc trả lời sai. Luyện tập hàng ngày để xây dựng dấu vết trí nhớ ban đầu.
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${p1Words || '<span style="color: #94a3b8; font-size: 12px;">Không có từ nào</span>'}
+                    </div>
+                </div>
+
+                <!-- Phase 2 Card -->
+                <div style="background: rgba(0,0,0,0.5); border: 1.5px solid #f59e0b; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong style="color: #f59e0b; font-size: 14px; font-family: var(--text-mono);">🔥 GIAI ĐOẠN 2: CỦNG CỐ & VẬN DỤNG (${p2.count || 0} từ)</strong>
+                        <span style="font-size: 11px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 2px 8px; border-radius: 4px; font-family: var(--text-mono);">${p2.interval || '4-7 ngày'}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
+                        Những từ bạn hơi thuộc hoặc đã nhận biết được. Luyện đặt câu trong Battle Zone để biến thành từ vựng chủ động.
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${p2Words || '<span style="color: #94a3b8; font-size: 12px;">Không có từ nào</span>'}
+                    </div>
+                </div>
+
+                <!-- Phase 3 Card -->
+                <div style="background: rgba(0,0,0,0.5); border: 1.5px solid #10b981; border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong style="color: #10b981; font-size: 14px; font-family: var(--text-mono);">🛡️ GIAI ĐOẠN 3: THÀNH THẠO LÂU DÀI (${p3.count || 0} từ)</strong>
+                        <span style="font-size: 11px; background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 2px 8px; border-radius: 4px; font-family: var(--text-mono);">${p3.interval || '14-30 ngày'}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
+                        Những từ đã thuộc vững vàng. Giãn cách chu kỳ ôn dài để củng cố vào bộ nhớ dài hạn vĩnh viễn.
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${p3Words || '<span style="color: #94a3b8; font-size: 12px;">Không có từ nào</span>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function closeVocab50ExamModal() {
+        document.getElementById('vocab-50-exam-modal').style.display = 'none';
+        loadVocabOverview();
     }
 
     // =========================================================================
@@ -848,7 +1525,9 @@
         hintBox.style.display = "block";
         hintBox.innerHTML = "<span class='typing-effect'>Master G đang suy nghĩ gợi ý...</span>";
         fetch('/api/ai/hint', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ mode: mode }) })
-            .then(res => res.json()).then(data => { hintBox.innerHTML = data.hint; });
+            .then(res => res.json())
+            .then(data => { hintBox.innerHTML = data.hint; })
+            .catch(err => { hintBox.innerHTML = "Không thể lấy gợi ý lúc này."; });
     }
 </script>
 {% endblock %}

@@ -38,10 +38,62 @@ function typeEffectSSE(elementId, text, speed = 15, callback = null) {
             callback();
         }
     }
-    type();
-}
+// [ TAPIcons ] BỘ VẼ ICON BẰNG CODE (SVG VECTOR) THAY THẾ EMOJI THÔ SƠ
+window.TAPIcons = {
+    icons: {
+        tech: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>',
+        science: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><line x1="7.5" y1="15" x2="16.5" y2="15"/></svg>',
+        business: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+        animal: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg>',
+        food: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
+        health: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+        travel: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+        arts: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',
+        education: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
+        mind: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"/></svg>',
+        dice: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8" cy="8" r="1.5"/><circle cx="16" cy="8" r="1.5"/><circle cx="8" cy="16" r="1.5"/><circle cx="16" cy="16" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg>',
+        shield: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        potion: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>',
+        hourglass: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>',
+        chest: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+        quest: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+        book: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
+        star: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+    },
+
+    get(name, size = 22, className = "") {
+        const svgContent = this.icons[name] || this.icons.book;
+        return `<span class="tap-icon ${className}" style="width: ${size}px; height: ${size}px;">${svgContent}</span>`;
+    },
+
+    getTopicIcon(theme, size = 26) {
+        const t = (theme || '').toUpperCase();
+        if (t.includes('TECH') || t.includes('AI') || t.includes('CÔNG NGHỆ') || t.includes('ROBOT') || t.includes('QUANTUM') || t.includes('CYBER'))
+            return this.get('tech', size, 'tap-icon-glow-cyan');
+        if (t.includes('SCIENCE') || t.includes('KHOA HỌC') || t.includes('ASTRONOMY') || t.includes('PHYSIC') || t.includes('BIO'))
+            return this.get('science', size, 'tap-icon-glow-cyan');
+        if (t.includes('BUSINESS') || t.includes('KINH DOANH') || t.includes('MARKETING') || t.includes('FINANCE') || t.includes('LOGISTICS'))
+            return this.get('business', size, 'tap-icon-glow-amber');
+        if (t.includes('ANIMAL') || t.includes('ĐỘNG VẬT') || t.includes('MARINE') || t.includes('WILD'))
+            return this.get('animal', size, 'tap-icon-glow-green');
+        if (t.includes('FOOD') || t.includes('CULINARY') || t.includes('ẨM THỰC') || t.includes('DINH DƯỠNG'))
+            return this.get('food', size, 'tap-icon-glow-amber');
+        if (t.includes('HEALTH') || t.includes('Y TẾ') || t.includes('NEURO') || t.includes('MEDIC') || t.includes('EPIDEMI'))
+            return this.get('health', size, 'tap-icon-glow-pink');
+        if (t.includes('TRAVEL') || t.includes('DU LỊCH') || t.includes('DIPLOMACY') || t.includes('GLOBAL') || t.includes('CLIMATE'))
+            return this.get('travel', size, 'tap-icon-glow-cyan');
+        if (t.includes('ART') || t.includes('CINEMA') || t.includes('MUSIC') || t.includes('NGHỆ THUẬT') || t.includes('WRITING'))
+            return this.get('arts', size, 'tap-icon-glow-pink');
+        if (t.includes('MIND') || t.includes('PSYCHOLOGY') || t.includes('PHILOSOPHY') || t.includes('TÂM LÝ'))
+            return this.get('mind', size, 'tap-icon-glow-pink');
+        if (t.includes('SCHOOL') || t.includes('TRƯỜNG') || t.includes('GIÁO DỤC') || t.includes('EDUCATION'))
+            return this.get('education', size, 'tap-icon-glow-cyan');
+        return this.get('book', size, 'tap-icon-glow-cyan');
+    }
+};
 
 document.addEventListener("DOMContentLoaded", () => {
+
     // Khôi phục trạng thái Clean Mode
     if (localStorage.getItem('clean_mode') === 'true') {
         document.body.classList.add('clean-mode');

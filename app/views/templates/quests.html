@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}MEGA QUEST HUB - 500 NHIỆM VỤ CÀY XU{% endblock %}
+
+{% block content %}
+<style>
+    .quest-tab-btn {
+        flex: 1;
+        min-width: 140px;
+        padding: 14px 16px;
+        font-size: 13px;
+        background: rgba(0,0,0,0.5);
+        border: 2px solid var(--glass-border);
+        color: #94a3b8;
+        border-radius: 12px;
+        font-family: var(--text-pixel);
+        cursor: pointer;
+        transition: 0.25s;
+        text-align: center;
+    }
+    .quest-tab-btn:hover {
+        border-color: var(--neon-cyan);
+        color: #fff;
+    }
+    .quest-tab-btn.active {
+        background: rgba(6, 182, 212, 0.15);
+        border-color: var(--neon-cyan);
+        color: var(--neon-cyan);
+        box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+    }
+</style>
+
+<div class="bento-container" style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+
+    <!-- TOP HEADER -->
+    <div class="bento-card card-wide" style="padding: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 30px;">⭐</span>
+                <div>
+                    <div class="pixel-title" style="color: var(--neon-amber); font-size: 22px; margin: 0;">
+                        MEGA_QUEST_HUB // TRUNG TÂM 500 NHIỆM VỤ CÀY XU
+                    </div>
+                    <div style="color: #94a3b8; font-size: 13px; margin-top: 4px;">
+                        Kho tàng 500 thử thách rèn luyện phân cấp — Chinh phục kiến thức & tích lũy Xu mua sắm không giới hạn!
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: rgba(0,0,0,0.6); border: 1.5px solid var(--pixel-green); padding: 8px 16px; border-radius: 8px; font-family: var(--text-mono); font-size: 15px; color: var(--pixel-green); font-weight: bold;">
+                SỐ DƯ: <span id="user-current-coins">0</span> 💰
+            </div>
+            <button class="pixel-btn" onclick="window.location.href='/shop'" style="background: rgba(245, 158, 11, 0.15); border-color: var(--neon-amber); color: var(--neon-amber); font-size: 11px; padding: 10px 16px;">
+                🛍️ VÀO SHOP TIÊU XU
+            </button>
+        </div>
+    </div>
+
+    <!-- TIẾN ĐỘ TỔNG QUAN 500 NHIỆM VỤ -->
+    <div class="bento-card card-wide" style="padding: 20px; background: rgba(15, 23, 42, 0.75);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-family: var(--text-mono); font-size: 13px;">
+            <span style="color: #cbd5e1;">Tiến trình hoàn thành đại lộ nhiệm vụ: <strong style="color: var(--neon-cyan);" id="progress-summary-text">0 / 500</strong></span>
+            <span style="color: var(--pixel-green); font-weight: bold;" id="progress-summary-pct">0%</span>
+        </div>
+        <div style="width: 100%; height: 12px; background: rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 12px;">
+            <div id="overall-quest-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--pixel-green)); transition: width 0.5s ease; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px; color: #94a3b8;">
+            <div>
+                Có <strong style="color: var(--pixel-green);" id="claimable-badge-count">0</strong> nhiệm vụ đang chờ nhận thưởng!
+            </div>
+            <div style="font-family: var(--text-mono);">
+                Phần thưởng tích lũy tối đa: <strong style="color: var(--neon-amber);">+35,000 Xu</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- MENU TABS PHÂN LOẠI NHIỆM VỤ -->
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="quest-tab-btn active" id="tab-ALL" onclick="switchQuestTab('ALL')">🌐 TẤT CẢ (500)</button>
+        <button class="quest-tab-btn" id="tab-NEWBIE" onclick="switchQuestTab('NEWBIE')">🌱 TÂN THỦ (50)</button>
+        <button class="quest-tab-btn" id="tab-VOCAB" onclick="switchQuestTab('VOCAB')">📚 TỪ VỰNG (150)</button>
+        <button class="quest-tab-btn" id="tab-GRAMMAR" onclick="switchQuestTab('GRAMMAR')">⚙️ NGỮ PHÁP (150)</button>
+        <button class="quest-tab-btn" id="tab-ARENA" onclick="switchQuestTab('ARENA')">⚔️ ĐẤU TRƯỜNG (100)</button>
+        <button class="quest-tab-btn" id="tab-LEGEND" onclick="switchQuestTab('LEGEND')">👑 HUYỀN THOẠI (50)</button>
+    </div>
+
+    <!-- BỘ LỌC TRẠNG THÁI -->
+    <div style="display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.4); padding: 12px 18px; border-radius: 12px; border: 1px solid var(--glass-border); flex-wrap: wrap;">
+        <span style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-right: 5px;">BỘ LỌC TRẠNG THÁI:</span>
+        <button class="filter-pill active" onclick="filterQuestStatus('ALL', this)">TẤT CẢ</button>
+        <button class="filter-pill" onclick="filterQuestStatus('CLAIMABLE', this)">✨ CÓ THỂ NHẬN THƯỞNG</button>
+        <button class="filter-pill" onclick="filterQuestStatus('PROGRESS', this)">⏳ ĐANG THỰC HIỆN</button>
+        <button class="filter-pill" onclick="filterQuestStatus('CLAIMED', this)">✓ ĐÃ HOÀN TẤT</button>
+    </div>
+
+    <!-- DANH SÁCH NHIỆM VỤ (LIST) -->
+    <div id="quests-container" style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="typing-effect" style="color: var(--neon-cyan); font-size: 14px; text-align: center; padding: 40px;">
+            Đang đồng bộ ma trận 500 nhiệm vụ từ máy chủ...
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let allQuestsList = [];
+    let currentCategory = 'ALL';
+    let currentStatusFilter = 'ALL';
+    let currentUserCoins = 0;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchUserCoins();
+        loadQuests(currentCategory);
+    });
+
+    function fetchUserCoins() {
+        fetch('/api/auth/user/me')
+            .then(res => res.json())
+            .then(data => {
+                currentUserCoins = data.coins || 0;
+                document.getElementById('user-current-coins').innerText = currentUserCoins;
+            })
+            .catch(() => {});
+    }
+
+    function loadQuests(cat = 'ALL') {
+        const container = document.getElementById('quests-container');
+        container.innerHTML = `<div class="typing-effect" style="color: var(--neon-cyan); font-size: 14px; text-align: center; padding: 40px;">Đang tải danh sách nhiệm vụ ${cat}...</div>`;
+
+        fetch(`/api/game/quests/all?category=${cat}`)
+            .then(res => {
+                if(!res.ok) throw new Error("HTTP " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                allQuestsList = data.quests || [];
+                document.getElementById('claimable-badge-count').innerText = data.total_claimable || 0;
+                renderQuestsList();
+                updateProgressSummary();
+            })
+            .catch(err => {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #ef4444;">
+                        <p>[LỖI TẢI NHIỆM VỤ]: ${err.message || 'Không thể đồng bộ'}</p>
+                        <button class="pixel-btn" onclick="loadQuests('${currentCategory}')" style="background: var(--neon-cyan); color: #000; padding: 8px 16px;">THỬ LẠI</button>
+                    </div>
+                `;
+            });
+    }
+
+    function switchQuestTab(cat) {
+        currentCategory = cat;
+        document.querySelectorAll('.quest-tab-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById(`tab-${cat}`);
+        if(activeBtn) activeBtn.classList.add('active');
+
+        loadQuests(cat);
+    }
+
+    function filterQuestStatus(status, btn) {
+        currentStatusFilter = status;
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        renderQuestsList();
+    }
+
+    function updateProgressSummary() {
+        if (!allQuestsList || allQuestsList.length === 0) return;
+        const completedCount = allQuestsList.filter(q => q.is_claimed || q.is_completed).length;
+        const total = allQuestsList.length;
+        const pct = Math.round((completedCount / total) * 100);
+
+        document.getElementById('progress-summary-text').innerText = `${completedCount} / ${total}`;
+        document.getElementById('progress-summary-pct').innerText = `${pct}%`;
+        document.getElementById('overall-quest-bar').style.width = `${pct}%`;
+    }
+
+    function renderQuestsList() {
+        const container = document.getElementById('quests-container');
+        let list = allQuestsList;
+
+        if (currentStatusFilter === 'CLAIMABLE') {
+            list = list.filter(q => q.is_completed && !q.is_claimed);
+        } else if (currentStatusFilter === 'PROGRESS') {
+            list = list.filter(q => !q.is_completed && !q.is_claimed);
+        } else if (currentStatusFilter === 'CLAIMED') {
+            list = list.filter(q => q.is_claimed);
+        }
+
+        if (list.length === 0) {
+            container.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 40px; background: rgba(0,0,0,0.3); border-radius: 12px;">Không có nhiệm vụ nào khớp với bộ lọc này.</div>';
+            return;
+        }
+
+        let html = '';
+        list.forEach(q => {
+            const isClaimed = q.is_claimed;
+            const isCompleted = q.is_completed;
+            const cardClass = isClaimed ? 'claimed' : (isCompleted ? 'completed' : '');
+
+            let actionBtn = '';
+            if (isClaimed) {
+                actionBtn = `<span style="color: var(--pixel-green); font-family: var(--text-mono); font-size: 11px; font-weight: bold;">✓ ĐÃ NHẬN THƯỞNG</span>`;
+            } else if (isCompleted) {
+                actionBtn = `<button class="btn-claim-quest pulse-ready" onclick="claimQuest(${q.id}, this)">NHẬN +${q.reward_coins} XU</button>`;
+            } else {
+                actionBtn = `<button class="pixel-btn" onclick="window.location.href='/learn'" style="background: rgba(255,255,255,0.08); border-color: var(--glass-border); color: #cbd5e1; font-size: 10px; padding: 6px 12px;">LÀM NGAY ➔</button>`;
+            }
+
+            const categoryColor = q.category === 'NEWBIE' ? 'var(--pixel-green)' :
+                                  (q.category === 'VOCAB' ? 'var(--neon-cyan)' :
+                                  (q.category === 'GRAMMAR' ? 'var(--neon-amber)' :
+                                  (q.category === 'ARENA' ? 'var(--neon-pink)' : '#f59e0b')));
+
+            html += `
+            <div class="quest-card-item ${cardClass}">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap;">
+                        <span style="font-family: var(--text-mono); font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(255,255,255,0.08); color: ${categoryColor}; border: 1px solid ${categoryColor}; font-weight: bold;">
+                            ${q.quest_code}
+                        </span>
+                        <strong style="color: #fff; font-size: 15px;">${q.title}</strong>
+                        <span style="font-family: var(--text-mono); font-size: 11px; color: var(--neon-amber); margin-left: 5px;">
+                            +${q.reward_coins} Xu • +${q.reward_exp} EXP
+                        </span>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 12.5px; line-height: 1.4; margin-bottom: 10px;">${q.description}</div>
+
+                    <!-- Thanh tiến trình nhiệm vụ -->
+                    <div style="display: flex; align-items: center; gap: 10px; max-width: 320px;">
+                        <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${q.progress_percent}%; height: 100%; background: ${categoryColor}; transition: width 0.4s ease;"></div>
+                        </div>
+                        <span style="font-family: var(--text-mono); font-size: 11px; color: #cbd5e1; flex-shrink: 0;">
+                            ${q.current_count} / ${q.target_count} (${q.progress_percent}%)
+                        </span>
+                    </div>
+                </div>
+
+                <div style="flex-shrink: 0; text-align: right;">
+                    ${actionBtn}
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function claimQuest(questId, btnElement) {
+        btnElement.disabled = true;
+        btnElement.innerText = "ĐANG NHẬN...";
+
+        fetch('/api/game/quests/claim', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ quest_id: questId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                btnElement.disabled = false;
+                btnElement.innerText = "THỬ LẠI";
+            } else {
+                currentUserCoins = data.new_coins;
+                document.getElementById('user-current-coins').innerText = currentUserCoins;
+
+                // Kích hoạt pháo hoa lộng lẫy nếu có
+                if (typeof triggerFireworksEffect === 'function') {
+                    triggerFireworksEffect();
+                }
+
+                // Cập nhật trạng thái quest trong mảng bộ nhớ
+                const q = allQuestsList.find(item => item.id === questId);
+                if (q) {
+                    q.is_claimed = true;
+                }
+
+                renderQuestsList();
+                updateProgressSummary();
+            }
+        })
+        .catch(() => {
+            btnElement.disabled = false;
+            btnElement.innerText = "LỖI";
+        });
+    }
+</script>
+{% endblock %}

@@ -363,6 +363,129 @@ def generate_unit():
         return jsonify({"error": f"Lò đúc AI gặp sự cố: {str(e)}"}), 500
 
 
+@ai_bp.route('/generate_random_unit', methods=['POST'])
+def generate_random_unit():
+    """Tạo Unit ngẫu nhiên thông minh, tránh trùng lặp 100% với dữ liệu tài khoản cá nhân"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    user = User.query.get(user_id)
+    target_band = getattr(user, 'current_band', 'A1') if user else 'A1'
+
+    # 1. Tìm các chủ đề mà người dùng này ĐÃ CÓ trong UserVocabulary
+    user_themes = db.session.query(Vocabulary.theme).join(
+        UserVocabulary, Vocabulary.id == UserVocabulary.vocab_id
+    ).filter(UserVocabulary.user_id == user_id).distinct().all()
+    existing_theme_set = {t[0].upper().strip() for t in user_themes if t[0]}
+
+    THEME_BANK = [
+        "AI & ROBOTICS", "NEUROSCIENCE", "DIGITAL MARKETING", "GLOBAL LOGISTICS",
+        "QUANTUM COMPUTING", "ENVIRONMENTAL SCIENCE", "BEHAVIORAL ECONOMICS",
+        "MODERN ARCHITECTURE", "CULINARY ARTS", "ASTRONOMY & COSMOLOGY",
+        "BIOTECHNOLOGY", "FINANCIAL TECHNOLOGY", "RENEWABLE ENERGY",
+        "CYBERSECURITY", "COGNITIVE PSYCHOLOGY", "GLOBAL DIPLOMACY",
+        "DATA SCIENCE", "SPORTS SCIENCE", "GENETICS & EVOLUTION",
+        "CINEMATOGRAPHY", "AEROSPACE ENGINEERING", "PHILOSOPHY OF MIND",
+        "URBAN PLANNING", "MARINE BIOLOGY", "CLIMATE DYNAMICS",
+        "ANCIENT CIVILIZATIONS", "CREATIVE WRITING", "CROSS-CULTURAL COMMUNICATION",
+        "EPIDEMIOLOGY", "GAME DESIGN & THEORY", "MICROBIOLOGY", "MUSICOLOGY"
+    ]
+
+    import random
+    available_themes = [t for t in THEME_BANK if t not in existing_theme_set]
+    if not available_themes:
+        available_themes = THEME_BANK
+
+    selected_theme = random.choice(available_themes)
+
+    # 2. Tìm các từ vựng đã có trong bảng Vocabulary thuộc chủ đề này nhưng User CHƯA CÓ
+    user_vocab_ids = db.session.query(UserVocabulary.vocab_id).filter_by(user_id=user_id).all()
+    user_vocab_id_set = {r[0] for r in user_vocab_ids}
+
+    candidate_vocabs = Vocabulary.query.filter(
+        Vocabulary.theme == selected_theme,
+        ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
+    ).limit(15).all()
+
+    added = 0
+    if len(candidate_vocabs) >= 8:
+        for v in candidate_vocabs:
+            db.session.add(UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True))
+            added += 1
+        db.session.commit()
+        return jsonify({
+            "status": "success",
+            "message": f"🎲 Đã đúc thành công Unit ngẫu nhiên '{selected_theme}' với {added} từ mới!",
+            "theme": selected_theme,
+            "added": added
+        }), 200
+
+    # 3. Nếu chưa có sẵn trong DB, gọi Gemini AI
+    prompt = f"""
+    Tạo 12-15 từ vựng tiếng Anh học thuật hấp dẫn chủ đề '{selected_theme}', phù hợp trình độ CEFR {target_band}.
+    BẮT BUỘC TRẢ VỀ ĐÚNG 1 MẢNG JSON, TUYỆT ĐỐI KHÔNG CÓ KÝ TỰ MARKDOWN, KHÔNG GIẢI THÍCH.
+    [
+        {{"word": "word_example", "meaning": "nghĩa_tiếng_việt", "theme": "{selected_theme}"}}
+    ]
+    """
+    try:
+        clean_json = call_gemini_with_retry(prompt)
+        start_idx = clean_json.find('[')
+        end_idx = clean_json.rfind(']')
+        if start_idx != -1 and end_idx != -1:
+            clean_json = clean_json[start_idx:end_idx + 1]
+            items = json.loads(clean_json)
+        else:
+            items = []
+
+        if isinstance(items, list) and len(items) > 0:
+            for item in items:
+                w_str = item.get('word', '').strip().lower()
+                m_str = item.get('meaning', '').strip()
+                if not w_str: continue
+
+                v = Vocabulary.query.filter_by(word=w_str).first()
+                if not v:
+                    predicted_level = cefr_engine.predict_cefr(w_str)
+                    v = Vocabulary(word=w_str, meaning=m_str, theme=selected_theme,
+                                   cefr_level=predicted_level, image_url="default.png", is_unlocked=True)
+                    db.session.add(v)
+                    db.session.flush()
+
+                if not UserVocabulary.query.filter_by(user_id=user_id, vocab_id=v.id).first():
+                    db.session.add(UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True))
+                    added += 1
+
+            db.session.commit()
+            return jsonify({
+                "status": "success",
+                "message": f"🎲 Lò đúc AI đã tạo thành công Unit ngẫu nhiên '{selected_theme}' với {added} từ mới!",
+                "theme": selected_theme,
+                "added": added
+            }), 200
+    except Exception:
+        pass
+
+    # Fallback an toàn nếu AI bận: Lấy 12 từ trong kho từ vựng mà user chưa có
+    fallback_vocabs = Vocabulary.query.filter(
+        ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
+    ).limit(12).all()
+
+    for fv in fallback_vocabs:
+        db.session.add(UserVocabulary(user_id=user_id, vocab_id=fv.id, is_unlocked=True))
+        added += 1
+
+    db.session.commit()
+    return jsonify({
+        "status": "success",
+        "message": f"🎲 Đã khởi tạo thành công Unit ngẫu nhiên '{selected_theme}' ({added} từ mới) cho bạn!",
+        "theme": selected_theme,
+        "added": added
+    }), 200
+
+
+
 @ai_bp.route('/story/init', methods=['POST'])
 def init_story():
     data = request.get_json(silent=True) or {}

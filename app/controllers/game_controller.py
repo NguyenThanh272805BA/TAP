@@ -19,14 +19,19 @@ from app.utils.achievement_manager import check_and_unlock_achievements
 from app.models.cosmetic import CosmeticItem, UserCosmetic
 from app.models.test import TestLog
 from app.models.user_grammar import UserGrammar
+from app.models.quest import Quest, UserQuestProgress
 from app.ml_models.scramble_engine import LocalScrambleEngine
 from app.ml_models.exam_engine import LocalExamEngine
+from app.utils.grammar_quiz_generator import generate_grammar_collocations, generate_grammar_quiz
+from app.utils.vocab_exam_service import generate_50_vocab_exam, evaluate_50_vocab_exam, apply_self_assessment_and_generate_srs_roadmap
+
 
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
 recommender_engine = VocabRecommender()
 srs_engine = SmartSRS()
 scramble_engine = LocalScrambleEngine()
 exam_engine = LocalExamEngine()
+_VOCAB_50_CACHE = {}
 
 
 @game_bp.route('/story/topics', methods=['GET'])
@@ -865,12 +870,17 @@ def get_cosmetics():
     if user_id:
         user_cos = UserCosmetic.query.filter_by(user_id=user_id).all()
         for uc in user_cos:
-            user_owned_map[uc.cosmetic_id] = uc.is_equipped
+            user_owned_map[uc.cosmetic_id] = {
+                "is_equipped": uc.is_equipped,
+                "quantity": uc.quantity or 0
+            }
 
     result = []
     for item in items:
+        uc_info = user_owned_map.get(item.id, {})
+        is_equipped = uc_info.get("is_equipped", False)
+        quantity = uc_info.get("quantity", 0)
         is_owned = (item.id in user_owned_map) or (item.price_coins == 0)
-        is_equipped = user_owned_map.get(item.id, False)
 
         result.append({
             "id": item.id,
@@ -879,8 +889,10 @@ def get_cosmetics():
             "css_class": item.css_class,
             "description": item.description,
             "price_coins": item.price_coins,
+            "item_effect": getattr(item, 'item_effect', None),
             "is_owned": is_owned,
-            "is_equipped": is_equipped
+            "is_equipped": is_equipped,
+            "quantity": quantity
         })
 
     return jsonify({"cosmetics": result}), 200
@@ -907,13 +919,30 @@ def buy_cosmetic():
 
     user = User.query.get(user_id)
 
-    # Kiểm tra xem đã sở hữu chưa
-    existing = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=item_id).first()
-    if existing:
-        return jsonify({"error": "Bạn đã sở hữu vật phẩm này rồi!"}), 400
-
     if user.coins < item.price_coins:
         return jsonify({"error": f"Không đủ Xu! Bạn cần {item.price_coins} Xu (Hiện có: {user.coins} Xu)."}), 400
+
+    # Kiểm tra xem đã sở hữu chưa (đối với vật phẩm không phải tiêu hao)
+    existing = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=item_id).first()
+
+    if item.type == 'CONSUMABLE':
+        user.coins -= item.price_coins
+        if not existing:
+            new_owned = UserCosmetic(user_id=user_id, cosmetic_id=item.id, is_equipped=False, quantity=1)
+            db.session.add(new_owned)
+            current_qty = 1
+        else:
+            existing.quantity = (existing.quantity or 0) + 1
+            current_qty = existing.quantity
+
+        db.session.commit()
+        return jsonify({
+            "message": f"🎉 Mua thành công '{item.name}'! (Số lượng trong túi: {current_qty})",
+            "new_coins": user.coins
+        }), 200
+
+    if existing:
+        return jsonify({"error": "Bạn đã sở hữu vật phẩm này rồi!"}), 400
 
     user.coins -= item.price_coins
     new_owned = UserCosmetic(user_id=user_id, cosmetic_id=item.id, is_equipped=False)
@@ -1026,20 +1055,38 @@ def get_my_inventory():
 
 @game_bp.route('/vocabularies/overview', methods=['GET'])
 def get_vocabularies_overview():
-    """Lấy dữ liệu thống kê tổng quan theo từng Topic để hiển thị Bento Grid trực quan"""
+    """Lấy dữ liệu thống kê tổng quan theo từng Topic của RIÊNG người dùng đang đăng nhập"""
     user_id = session.get('user_id')
     from collections import defaultdict
-    all_vocab = Vocabulary.query.all()
 
-    memorized_set = set()
-    if user_id:
-        uvs = UserVocabulary.query.filter_by(user_id=user_id, memorization_level='DA_THUOC').all()
-        memorized_set = {uv.vocab_id for uv in uvs}
+    if not user_id:
+        return jsonify({"topics": [], "is_new_user": True}), 200
+
+    # Chỉ lấy các từ vựng mà tài khoản này đã mở khóa / sở hữu trong UserVocabulary
+    user_vocab_records = db.session.query(
+        Vocabulary.id, Vocabulary.word, Vocabulary.meaning, Vocabulary.theme,
+        Vocabulary.cefr_level, UserVocabulary.memorization_level
+    ).join(
+        UserVocabulary, Vocabulary.id == UserVocabulary.vocab_id
+    ).filter(
+        UserVocabulary.user_id == user_id
+    ).all()
+
+    if not user_vocab_records:
+        suggested = [
+            {"theme": "GIAO TIẾP HÀNG NGÀY", "level": "A1", "desc": "Các mẫu câu và từ vựng chào hỏi, giới thiệu bản thân."},
+            {"theme": "CÔNG NGHỆ & TRÍ TUỆ NHÂN TẠO", "level": "B1", "desc": "Thuật ngữ kỷ nguyên số, máy tính và AI hiện đại."},
+            {"theme": "KINH DOANH & KHỞI NGHIỆP", "level": "B2", "desc": "Đàm phán, tài chính doanh nghiệp và quản trị."},
+            {"theme": "DU LỊCH & KHÁM PHÁ THẾ GIỚI", "level": "A2", "desc": "Sân bay, đặt phòng khách sạn và ẩm thực địa phương."}
+        ]
+        return jsonify({"topics": [], "is_new_user": True, "suggested_topics": suggested}), 200
+
+    memorized_set = {r.id for r in user_vocab_records if r.memorization_level == 'DA_THUOC'}
 
     themes_map = defaultdict(list)
-    for v in all_vocab:
-        t_name = v.theme or "General"
-        themes_map[t_name].append(v)
+    for r in user_vocab_records:
+        t_name = r.theme or "General"
+        themes_map[t_name].append(r)
 
     overview = []
     for t_name, words in themes_map.items():
@@ -1064,12 +1111,12 @@ def get_vocabularies_overview():
         })
 
     overview.sort(key=lambda x: x["theme"])
-    return jsonify({"topics": overview}), 200
+    return jsonify({"topics": overview, "is_new_user": False}), 200
 
 
 @game_bp.route('/grammar/personalized', methods=['GET'])
 def get_personalized_grammar():
-    """Lấy danh sách ngữ pháp phân cấp CEFR kèm trạng thái làm chủ cá nhân của người dùng"""
+    """Lấy danh sách ngữ pháp phân cấp CEFR kèm trạng thái làm chủ cá nhân và gợi ý collocations"""
     user_id = session.get('user_id')
     user = User.query.get(user_id) if user_id else None
     user_band = getattr(user, 'current_band', 'A1') if user else 'A1'
@@ -1097,6 +1144,8 @@ def get_personalized_grammar():
         if status == 'DA_NAM_VUNG':
             mastery_stats[band]["mastered"] += 1
 
+        collocations = generate_grammar_collocations(g.structure, g.explanation, g.example)
+
         grouped[band].append({
             "id": g.id,
             "structure": g.structure,
@@ -1108,7 +1157,8 @@ def get_personalized_grammar():
             "mastery_status": status,
             "practice_count": practice_count,
             "best_score": best_score,
-            "is_recommended": is_recommended
+            "is_recommended": is_recommended,
+            "collocations": collocations
         })
 
     return jsonify({
@@ -1116,6 +1166,7 @@ def get_personalized_grammar():
         "mastery_stats": mastery_stats,
         "grammars_by_band": grouped
     }), 200
+
 
 
 @game_bp.route('/grammar/toggle_mastery', methods=['POST'])
@@ -1170,9 +1221,10 @@ def generate_mock_exam():
 
 @game_bp.route('/exam/mock/submit', methods=['POST'])
 def submit_mock_exam():
-    """Chấm điểm bài thi thử tự động, tính subscores CEFR và lưu kết quả vào TestLog"""
+    """Chấm điểm bài thi thử tự động, tính subscores CEFR, áp dụng cơ chế Leo Rank khắt khe và vật phẩm hồi sinh"""
     data = request.get_json() or {}
     answers = data.get('answers', {})
+    use_revive = data.get('use_revive', False)
 
     user_id = session.get('user_id')
     if not user_id:
@@ -1192,7 +1244,41 @@ def submit_mock_exam():
         coins = eval_result.get('coins_reward', 10)
         user.coins = (user.coins or 0) + coins
 
-        log_feedback = f"[{eval_result['band_title']}] Điểm: {eval_result['final_score']}/10 ({eval_result['percentage']}%). {eval_result['diagnostic_advice']}"
+        # CƠ CHẾ LEO RANK KHẮT KHE (STRICT COMPETITIVE RANKING)
+        final_score = eval_result.get('final_score', 0.0)
+        rp_change = 0
+        revive_applied = False
+
+        if final_score < 5.0: # THI TRƯỢT
+            if use_revive:
+                # Kiểm tra người dùng có Bình Hồi Sinh Thần Tốc không
+                revive_item = CosmeticItem.query.filter_by(item_effect='EXAM_REVIVE').first()
+                if revive_item:
+                    uc = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=revive_item.id).first()
+                    if uc and (uc.quantity or 0) > 0:
+                        uc.quantity -= 1
+                        revive_applied = True
+                        rp_change = 0
+            if not revive_applied:
+                penalty = 35 + ((user.consecutive_fails or 0) * 10) # Trượt liên tiếp bị trừ thêm điểm
+                user.academic_rp = max(0, (user.academic_rp or 500) - penalty)
+                rp_change = -penalty
+                user.consecutive_fails = (user.consecutive_fails or 0) + 1
+        elif final_score >= 8.0: # XUẤT SẮC
+            bonus = 35
+            user.academic_rp = (user.academic_rp or 500) + bonus
+            rp_change = bonus
+            user.consecutive_fails = 0
+        else: # QUA MÔN
+            user.academic_rp = (user.academic_rp or 500) + 15
+            rp_change = 15
+            user.consecutive_fails = 0
+
+        eval_result['rp_change'] = rp_change
+        eval_result['revive_applied'] = revive_applied
+        eval_result['academic_rp'] = user.academic_rp
+
+        log_feedback = f"[{eval_result['band_title']}] Điểm: {eval_result['final_score']}/10 ({eval_result['percentage']}%). RP: {('+' if rp_change >= 0 else '')}{rp_change}. {eval_result['diagnostic_advice']}"
         test_log = TestLog(
             user_id=user_id,
             score=eval_result['final_score'],
@@ -1229,4 +1315,458 @@ def get_exam_history():
             "created_at": l.created_at.strftime("%Y-%m-%d %H:%M") if l.created_at else ""
         })
     return jsonify({"history": history}), 200
+
+
+# =====================================================================
+# [ PHÂN HỆ: BÀI THI CẤU TRÚC NGỮ PHÁP RIÊNG BIỆT (GRAMMAR QUIZ) ]
+# =====================================================================
+
+@game_bp.route('/grammar/<int:grammar_id>/quiz', methods=['GET'])
+def get_grammar_quiz(grammar_id):
+    """Sinh 5 câu hỏi trắc nghiệm chuyên biệt theo cấu trúc ngữ pháp"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    g = Grammar.query.get_or_404(grammar_id)
+    questions = generate_grammar_quiz(g)
+
+    # Ẩn đáp án đúng gửi về client
+    client_questions = []
+    answer_keys = {}
+    for q in questions:
+        answer_keys[str(q["id"])] = q["correct_idx"]
+        client_q = dict(q)
+        client_q.pop("correct_idx", None)
+        client_questions.append(client_q)
+
+    session[f'grammar_quiz_{grammar_id}'] = answer_keys
+
+    return jsonify({
+        "status": "success",
+        "grammar_id": grammar_id,
+        "structure": g.structure,
+        "explanation": g.explanation,
+        "questions": client_questions
+    }), 200
+
+
+@game_bp.route('/grammar/<int:grammar_id>/quiz/submit', methods=['POST'])
+def submit_grammar_quiz(grammar_id):
+    """Chấm điểm bài thi cấu trúc ngữ pháp và cập nhật trạng thái làm chủ"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    data = request.get_json() or {}
+    user_answers = data.get('answers', {})
+
+    answer_keys = session.get(f'grammar_quiz_{grammar_id}')
+    if not answer_keys:
+        # Nếu session mất, sinh lại chuẩn từ object
+        g = Grammar.query.get_or_404(grammar_id)
+        original_q = generate_grammar_quiz(g)
+        answer_keys = {str(q["id"]): q["correct_idx"] for q in original_q}
+
+    correct_count = 0
+    total = len(answer_keys)
+    details = []
+
+    opt_map = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
+    for q_id, correct_idx in answer_keys.items():
+        ans = user_answers.get(q_id)
+        if isinstance(ans, str) and ans.strip().upper() in opt_map:
+            ans_idx = opt_map[ans.strip().upper()]
+        elif ans is not None:
+            try:
+                ans_idx = int(ans)
+            except (ValueError, TypeError):
+                ans_idx = None
+        else:
+            ans_idx = None
+
+        is_correct = (ans_idx is not None and ans_idx == int(correct_idx))
+        if is_correct:
+            correct_count += 1
+        details.append({
+            "question_id": q_id,
+            "id": q_id,
+            "user_answer": ans,
+            "correct_answer": ['A', 'B', 'C', 'D'][int(correct_idx)] if int(correct_idx) < 4 else correct_idx,
+            "correct_idx": correct_idx,
+            "is_correct": is_correct
+        })
+
+    pct = round((correct_count / total) * 100, 1) if total > 0 else 0
+    user = User.query.get(user_id)
+    ug = UserGrammar.query.filter_by(user_id=user_id, grammar_id=grammar_id).first()
+    if not ug:
+        ug = UserGrammar(user_id=user_id, grammar_id=grammar_id)
+        db.session.add(ug)
+
+    ug.practice_count = (ug.practice_count or 0) + 1
+    ug.best_score = max(ug.best_score or 0.0, pct)
+
+    new_mastery = ug.mastery_status
+    coins_earned = 10
+    if pct >= 80:
+        new_mastery = 'DA_NAM_VUNG'
+        coins_earned = 30
+    elif pct >= 50:
+        new_mastery = 'DANG_LUYEN'
+
+    ug.mastery_status = new_mastery
+    if user:
+        user.coins = (user.coins or 0) + coins_earned
+
+    db.session.commit()
+
+    return jsonify({
+        "status": "success",
+        "grammar_id": grammar_id,
+        "score": correct_count,
+        "correct_count": correct_count,
+        "total": total,
+        "percentage": pct,
+        "passed": (pct >= 80),
+        "xp_earned": 30 if pct >= 80 else 10,
+        "mastery_status": new_mastery,
+        "coins_earned": coins_earned,
+        "details": details
+    }), 200
+
+
+# =====================================================================
+# [ PHÂN HỆ: BÀI THI DỊCH 50 TỪ VỰNG & LỘ TRÌNH HỌC SRS CÁ NHÂN HÓA ]
+# =====================================================================
+
+@game_bp.route('/vocab/exam/generate', methods=['POST'])
+def generate_vocab_50_exam():
+    """Sinh bài thi trắc nghiệm 50 từ vựng kèm 4 phương án dịch nghĩa"""
+    user_id = session.get('user_id')
+    exam = generate_50_vocab_exam(user_id=user_id)
+    if "error" in exam:
+        return jsonify(exam), 400
+
+    # Lưu bài thi vào bộ nhớ tạm server (tránh vượt giới hạn kích thước cookie 4KB của session)
+    _VOCAB_50_CACHE[user_id] = exam["questions"]
+
+    # Ẩn correct_idx khi gửi cho client
+    safe_questions = []
+    for q in exam["questions"]:
+        safe_q = dict(q)
+        safe_q.pop("correct_idx", None)
+        safe_questions.append(safe_q)
+
+    return jsonify({
+        "status": "success",
+        "exam_title": exam["exam_title"],
+        "total_questions": exam["total_questions"],
+        "questions": safe_questions
+    }), 200
+
+
+@game_bp.route('/vocab/exam/submit', methods=['POST'])
+def submit_vocab_50_exam():
+    """Chấm điểm bài thi 50 từ vựng và trả về danh sách chi tiết phục vụ màn hình Review"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    data = request.get_json() or {}
+    user_answers = data.get('answers', {})
+
+    full_questions = _VOCAB_50_CACHE.get(user_id) or session.get('vocab_50_exam_full')
+    if not full_questions:
+        return jsonify({"error": "Phiên làm bài thi 50 từ đã hết hạn. Vui lòng tạo bài thi mới!"}), 400
+
+    eval_result = evaluate_50_vocab_exam(full_questions, user_answers)
+
+    # Thưởng Xu dựa trên điểm số
+    user = User.query.get(user_id)
+    coins_reward = eval_result["correct_count"] * 2 # Mỗi câu đúng +2 Xu
+    if user:
+        user.coins = (user.coins or 0) + coins_reward
+        db.session.commit()
+
+    eval_result["status"] = "success"
+    eval_result["score"] = eval_result["correct_count"]
+    eval_result["cefr_estimate"] = eval_result.get("estimated_cefr", "A2")
+    eval_result["coins_reward"] = coins_reward
+    eval_result["user_coins"] = user.coins if user else 0
+
+    return jsonify(eval_result), 200
+
+
+@game_bp.route('/vocab/exam/self_assess', methods=['POST'])
+def self_assess_vocab_exam():
+    """Nhận tích chọn [ĐÃ THUỘC - HƠI THUỘC - CHƯA THUỘC] và sinh Lộ trình SRS cá nhân hóa"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    data = request.get_json() or {}
+    assessments = data.get('assessments', [])
+    if not assessments:
+        return jsonify({"error": "Dữ liệu đánh giá rỗng!"}), 400
+
+    roadmap = apply_self_assessment_and_generate_srs_roadmap(user_id, assessments)
+    return jsonify({
+        "status": "success",
+        "message": "Đã lưu thành công đánh giá mức độ ghi nhớ và thiết lập lộ trình ôn tập cá nhân hóa!",
+        "roadmap": roadmap
+    }), 200
+
+
+# =====================================================================
+# [ PHÂN HỆ: CỬA HÀNG VẬT PHẨM TIÊU HAO & KHO ĐỒ INVENTORY ]
+# =====================================================================
+
+@game_bp.route('/consumables/my', methods=['GET'])
+def get_my_consumables():
+    """Lấy danh sách vật phẩm tiêu hao người dùng đang sở hữu"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    owned = db.session.query(UserCosmetic, CosmeticItem).join(
+        CosmeticItem, UserCosmetic.cosmetic_id == CosmeticItem.id
+    ).filter(
+        UserCosmetic.user_id == user_id,
+        CosmeticItem.type == 'CONSUMABLE',
+        UserCosmetic.quantity > 0
+    ).all()
+
+    items = []
+    for uc, ci in owned:
+        items.append({
+            "id": ci.id,
+            "name": ci.name,
+            "css_class": ci.css_class,
+            "description": ci.description,
+            "item_effect": ci.item_effect,
+            "quantity": uc.quantity,
+            "icon_preview": ci.icon_preview
+        })
+
+    return jsonify({"consumables": items}), 200
+
+
+@game_bp.route('/consumables/buy', methods=['POST'])
+def buy_consumable():
+    """Mua vật phẩm tiêu hao bằng Xu"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    data = request.get_json() or {}
+    item_id = data.get('item_id')
+    quantity = int(data.get('quantity', 1))
+
+    item = CosmeticItem.query.get(item_id)
+    if not item or item.type != 'CONSUMABLE':
+        return jsonify({"error": "Vật phẩm không hợp lệ!"}), 404
+
+    user = User.query.get(user_id)
+    total_cost = (item.price_coins or 0) * quantity
+    if user.coins < total_cost:
+        return jsonify({"error": f"Không đủ Xu! Cần {total_cost} Xu nhưng bạn chỉ có {user.coins} Xu."}), 400
+
+    user.coins -= total_cost
+    uc = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=item_id).first()
+    if not uc:
+        uc = UserCosmetic(user_id=user_id, cosmetic_id=item_id, quantity=quantity)
+        db.session.add(uc)
+    else:
+        uc.quantity = (uc.quantity or 0) + quantity
+
+    db.session.commit()
+    return jsonify({
+        "status": "success",
+        "message": f"✨ Đã mua thành công {quantity}x '{item.name}'!",
+        "new_coins": user.coins,
+        "quantity": uc.quantity
+    }), 200
+
+
+@game_bp.route('/consumables/use', methods=['POST'])
+def use_consumable():
+    """Kích hoạt sử dụng một vật phẩm tiêu hao trong kho đồ"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    data = request.get_json() or {}
+    item_id = data.get('item_id')
+
+    item = CosmeticItem.query.get(item_id)
+    if not item or item.type != 'CONSUMABLE':
+        return jsonify({"error": "Vật phẩm không hợp lệ!"}), 404
+
+    uc = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=item_id).first()
+    if not uc or (uc.quantity or 0) <= 0:
+        return jsonify({"error": "Bạn không có vật phẩm này trong kho đồ!"}), 400
+
+    uc.quantity -= 1
+    user = User.query.get(user_id)
+    effect_msg = ""
+
+    if item.item_effect == 'LUCKY_CHEST':
+        import random
+        rolled_coins = random.randint(250, 800)
+        user.coins = (user.coins or 0) + rolled_coins
+        effect_msg = f"🎁 Mở Rương Báu thành công! Bạn nhận được {rolled_coins} Xu thưởng lấp lánh!"
+    elif item.item_effect == 'DOUBLE_COINS':
+        user.coins = (user.coins or 0) + 150
+        effect_msg = "⚡ Đã kích hoạt 2x EXP & Xu Booster (+150 Xu tức thì)!"
+    elif item.item_effect == 'STREAK_SHIELD':
+        effect_msg = "🛡️ Khiên Bảo Vệ Chuỗi đã được kích hoạt! Bạn được bảo hiểm 1 ngày không rớt streak."
+    elif item.item_effect == 'EXAM_REVIVE':
+        effect_msg = "💖 Bình Hồi Sinh đã sẵn sàng! Bạn sẽ được cứu mạng không bị trừ điểm Rank nếu rớt bài thi."
+    elif item.item_effect == 'TIME_FREEZE':
+        effect_msg = "⏳ Đồng Hồ Cát đã được kích hoạt! Tăng thêm 90 giây trong phòng thi kế tiếp."
+    else:
+        effect_msg = f"✨ Đã sử dụng thành công {item.name}!"
+
+    db.session.commit()
+    return jsonify({
+        "status": "success",
+        "message": effect_msg,
+        "remaining_quantity": uc.quantity,
+        "coins": user.coins
+    }), 200
+
+
+# =====================================================================
+# [ PHÂN HỆ: TRUNG TÂM 500 NHIỆM VỤ CÀY XU (MEGA QUEST HUB) ]
+# =====================================================================
+
+@game_bp.route('/quests/all', methods=['GET'])
+def get_all_quests():
+    """Lấy danh sách 500 nhiệm vụ phân cấp kèm tiến trình cá nhân của người dùng"""
+    user_id = session.get('user_id')
+    category = request.args.get('category', 'ALL').upper()
+
+    user = User.query.get(user_id) if user_id else None
+
+    # Lấy các chỉ số động của user để kiểm tra tiến trình
+    vocab_count = 0
+    grammar_count = 0
+    if user_id:
+        vocab_count = UserVocabulary.query.filter_by(user_id=user_id, memorization_level='DA_THUOC').count()
+        grammar_count = UserGrammar.query.filter_by(user_id=user_id, mastery_status='DA_NAM_VUNG').count()
+
+    streak = getattr(user, 'streak_count', 0) or 0
+    arena_wins = getattr(user, 'arena_stage', 1) or 1
+    coins = getattr(user, 'coins', 0) or 0
+    rp = getattr(user, 'academic_rp', 500) or 500
+
+    # Lấy danh sách nhiệm vụ đã lưu tiến trình trong DB
+    user_progress_map = {}
+    if user_id:
+        records = UserQuestProgress.query.filter_by(user_id=user_id).all()
+        for r in records:
+            user_progress_map[r.quest_id] = r
+
+    query = Quest.query
+    if category != 'ALL':
+        query = query.filter_by(category=category)
+
+    quests = query.order_by(Quest.order_index.asc()).all()
+
+    output = []
+    total_claimable = 0
+
+    for q in quests:
+        prog = user_progress_map.get(q.id)
+        is_claimed = prog.is_claimed if prog else False
+
+        # Tính toán tiến trình hiện tại dựa trên loại target
+        if q.target_type == 'VOCAB_COUNT':
+            cur_val = vocab_count
+        elif q.target_type == 'GRAMMAR_COUNT':
+            cur_val = grammar_count
+        elif q.target_type == 'STREAK_DAYS':
+            cur_val = streak
+        elif q.target_type in ['ARENA_WINS', 'ARENA_STREAK']:
+            cur_val = arena_wins
+        elif q.target_type in ['EXAM_SCORE', 'RANK_CHALLENGER']:
+            cur_val = rp
+        elif q.target_type == 'COINS_EARNED':
+            cur_val = coins
+        else:
+            cur_val = prog.current_count if prog else 0
+
+        is_completed = (cur_val >= q.target_count) if not is_claimed else True
+        if prog and prog.is_completed:
+            is_completed = True
+
+        if is_completed and not is_claimed:
+            total_claimable += 1
+
+        pct = min(100, round((cur_val / q.target_count) * 100, 1)) if q.target_count > 0 else 0
+
+        output.append({
+            "id": q.id,
+            "quest_code": q.quest_code,
+            "category": q.category,
+            "title": q.title,
+            "description": q.description,
+            "target_type": q.target_type,
+            "target_count": q.target_count,
+            "current_count": min(cur_val, q.target_count),
+            "progress_percent": pct,
+            "reward_coins": q.reward_coins,
+            "reward_exp": q.reward_exp,
+            "is_completed": is_completed,
+            "is_claimed": is_claimed
+        })
+
+    return jsonify({
+        "status": "success",
+        "category": category,
+        "total_quests": len(output),
+        "total_claimable": total_claimable,
+        "quests": output
+    }), 200
+
+
+@game_bp.route('/quests/claim', methods=['POST'])
+def claim_quest_reward():
+    """Nhận thưởng Xu & EXP cho nhiệm vụ đã hoàn thành"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    data = request.get_json() or {}
+    quest_id = data.get('quest_id')
+    quest = Quest.query.get_or_404(quest_id)
+
+    user = User.query.get(user_id)
+
+    prog = UserQuestProgress.query.filter_by(user_id=user_id, quest_id=quest_id).first()
+    if prog and prog.is_claimed:
+        return jsonify({"error": "Nhiệm vụ này đã được nhận thưởng rồi!"}), 400
+
+    if not prog:
+        prog = UserQuestProgress(user_id=user_id, quest_id=quest_id, is_completed=True, is_claimed=True, claimed_at=datetime.now())
+        db.session.add(prog)
+    else:
+        prog.is_completed = True
+        prog.is_claimed = True
+        prog.claimed_at = datetime.now()
+
+    reward = quest.reward_coins or 20
+    user.coins = (user.coins or 0) + reward
+
+    db.session.commit()
+
+    return jsonify({
+        "status": "success",
+        "message": f"🎉 Chúc mừng! Bạn nhận được +{reward} Xu từ nhiệm vụ '{quest.title}'!",
+        "reward_coins": reward,
+        "new_coins": user.coins,
+        "quest_id": quest_id
+    }), 200
+
 

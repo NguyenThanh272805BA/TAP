@@ -119,6 +119,12 @@ def create_app():
     def leaderboard_page():
         return render_template('leaderboard.html')
 
+    # 11. Trung Tâm 500 Nhiệm Vụ Cày Xu
+    @app.route('/quests')
+    def quests_page():
+        return render_template('quests.html')
+
+
     # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
     from app.controllers.game_controller import game_bp

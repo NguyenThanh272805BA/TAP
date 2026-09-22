@@ -528,11 +528,17 @@
     }
 
     function renderPodium(podium, unit) {
+        // Helper to format tier badge
+        const getTierBadge = (t) => {
+            if (!t) return '';
+            return `<div style="margin-top: 5px;"><span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-family: var(--text-mono); font-weight: bold; border: 1px solid ${t.border_color}; background: ${t.badge_color}; color: #fff; box-shadow: ${t.glow};">${t.tier_icon} ${t.division}</span></div>`;
+        };
+
         // Rank 1
         const p1 = podium[0];
         if (p1) {
             document.getElementById('podium-name-1').innerText = p1.username;
-            document.getElementById('podium-title-1').innerText = `« ${p1.equipped_title} »`;
+            document.getElementById('podium-title-1').innerHTML = `« ${p1.equipped_title} » ${getTierBadge(p1.rank_tier)}`;
             document.getElementById('podium-score-1').innerText = `${p1.primary_value} ${unit}`;
             document.getElementById('podium-band-1').innerText = `BAND ${p1.current_band}`;
             document.getElementById('podium-band-1').className = `cefr-badge ${(p1.current_band || 'a1').toLowerCase()}`;
@@ -549,7 +555,7 @@
         const p2 = podium[1];
         if (p2) {
             document.getElementById('podium-name-2').innerText = p2.username;
-            document.getElementById('podium-title-2').innerText = `« ${p2.equipped_title} »`;
+            document.getElementById('podium-title-2').innerHTML = `« ${p2.equipped_title} » ${getTierBadge(p2.rank_tier)}`;
             document.getElementById('podium-score-2').innerText = `${p2.primary_value} ${unit}`;
             document.getElementById('podium-band-2').innerText = `BAND ${p2.current_band}`;
             document.getElementById('podium-band-2').className = `cefr-badge ${(p2.current_band || 'a1').toLowerCase()}`;
@@ -566,7 +572,7 @@
         const p3 = podium[2];
         if (p3) {
             document.getElementById('podium-name-3').innerText = p3.username;
-            document.getElementById('podium-title-3').innerText = `« ${p3.equipped_title} »`;
+            document.getElementById('podium-title-3').innerHTML = `« ${p3.equipped_title} » ${getTierBadge(p3.rank_tier)}`;
             document.getElementById('podium-score-3').innerText = `${p3.primary_value} ${unit}`;
             document.getElementById('podium-band-3').innerText = `BAND ${p3.current_band}`;
             document.getElementById('podium-band-3').className = `cefr-badge ${(p3.current_band || 'a1').toLowerCase()}`;
@@ -596,6 +602,8 @@
             const avatarSrc = item.avatar ? `/static/uploads/avatars/${item.avatar}` : '/static/uploads/avatars/default_avatar.png';
             const frameClass = item.equipped_frame || 'frame-default';
             const bandClass = (item.current_band || 'a1').toLowerCase();
+            const t = item.rank_tier;
+            const tierBadge = t ? `<span style="display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border-radius: 4px; font-size: 9.5px; font-family: var(--text-mono); font-weight: bold; border: 1px solid ${t.border_color}; background: ${t.badge_color}; color: #fff; box-shadow: ${t.glow};">${t.tier_icon} ${t.division}</span>` : '';
 
             // Format cột 1 & 2 tùy theo danh mục hiện tại
             let col1 = '';
@@ -603,9 +611,9 @@
 
             if (currentCategory === 'overall') {
                 col1 = `
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span class="cefr-badge ${bandClass}">BAND ${item.current_band}</span>
-                        <span style="font-size: 11px; color: #cbd5e1;">${item.current_level}</span>
+                        ${tierBadge}
                     </div>`;
                 col2 = `
                     <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
@@ -617,7 +625,7 @@
                 col1 = `
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="cefr-badge" style="background: var(--neon-pink); border-color: #000;">ẢI ${item.arena_stage}/10</span>
-                        <span style="font-size: 11px; color: #cbd5e1;">Đấu Sĩ Phản Xạ</span>
+                        ${tierBadge}
                     </div>`;
                 col2 = `
                     <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
@@ -625,9 +633,9 @@
                     </div>`;
             } else if (currentCategory === 'academic') {
                 col1 = `
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span class="cefr-badge ${bandClass}">HIỆN TẠI: ${item.current_band}</span>
-                        <span style="font-size: 11px; color: var(--neon-amber);">MỤC TIÊU: ${item.target_band}</span>
+                        ${tierBadge}
                     </div>`;
                 col2 = `
                     <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
@@ -635,9 +643,9 @@
                     </div>`;
             } else if (currentCategory === 'vocabulary') {
                 col1 = `
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span class="cefr-badge ${bandClass}">BAND ${item.current_band}</span>
-                        <span style="font-size: 11px; color: #cbd5e1;">Kho Oxford CEFR</span>
+                        ${tierBadge}
                     </div>`;
                 col2 = `
                     <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
@@ -645,8 +653,9 @@
                     </div>`;
             } else if (currentCategory === 'time') {
                 col1 = `
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span style="color: var(--neon-amber); font-weight: bold; font-family: var(--text-mono); font-size: 13px;">🔥 ${item.streak_count} NGÀY LIÊN TIẾP</span>
+                        ${tierBadge}
                     </div>`;
                 col2 = `
                     <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
@@ -713,7 +722,10 @@
         document.getElementById('my-rank-name').innerText = `${myRank.username} (Bạn)`;
         document.getElementById('my-rank-band').innerText = `BAND ${myRank.current_band}`;
         document.getElementById('my-rank-band').className = `cefr-badge ${(myRank.current_band || 'a1').toLowerCase()}`;
-        document.getElementById('my-rank-title').innerText = `Danh hiệu: « ${myRank.equipped_title} »`;
+        
+        const t = myRank.rank_tier;
+        const tierText = t ? ` • ${t.tier_icon} ${t.division}` : '';
+        document.getElementById('my-rank-title').innerText = `Danh hiệu: « ${myRank.equipped_title} »${tierText}`;
         document.getElementById('my-metric-label').innerText = `${myRank.metric_label}:`;
         document.getElementById('my-primary-val').innerText = `${myRank.primary_value} ${unit}`;
     }

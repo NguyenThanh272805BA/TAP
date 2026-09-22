@@ -42,8 +42,8 @@
         <button class="pixel-btn" id="tab-btn-titles" onclick="switchShopTab('PLAYER_TITLE')" style="background: transparent; border-color: var(--glass-border); color: #94a3b8; flex: 1;">
             🎖️ DANH HIỆU CHIẾN BINH
         </button>
-        <button class="pixel-btn" id="tab-btn-items" onclick="switchShopTab('ITEMS')" style="background: transparent; border-color: var(--glass-border); color: #94a3b8; flex: 1;">
-            🛡️ VẬT PHẨM HỖ TRỢ
+        <button class="pixel-btn" id="tab-btn-items" onclick="switchShopTab('CONSUMABLE')" style="background: transparent; border-color: var(--glass-border); color: #94a3b8; flex: 1;">
+            🛡️ VẬT PHẨM HỖ TRỢ & TIÊU HAO
         </button>
     </div>
 
@@ -81,15 +81,23 @@
                     document.getElementById('shop-preview-avatar').className = `avatar-container ${data.equipped_frame}`;
                 }
                 renderShopGrid();
-            });
+            })
+            .catch(err => console.error("Error fetching user data:", err));
     }
 
     function loadShopData() {
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = '<div class="typing-effect" style="color: var(--neon-cyan); font-size: 14px; grid-column: 1/-1;">Đang nạp kho báu vũ trụ...</div>';
+
         fetch('/api/game/cosmetics')
             .then(res => res.json())
             .then(data => {
                 allCosmetics = data.cosmetics || [];
                 renderShopGrid();
+            })
+            .catch(err => {
+                console.error("Error loading shop:", err);
+                grid.innerHTML = '<div style="color: #ef4444; font-size: 14px; grid-column: 1/-1; padding: 20px;">Lỗi tải dữ liệu cửa hàng. Vui lòng thử lại.</div>';
             });
     }
 
@@ -99,7 +107,7 @@
             const btn = document.getElementById(`tab-btn-${k}`);
             const match = (k === 'frames' && tabType === 'AVATAR_FRAME') || 
                           (k === 'titles' && tabType === 'PLAYER_TITLE') || 
-                          (k === 'items' && tabType === 'ITEMS');
+                          (k === 'items' && tabType === 'CONSUMABLE');
             if(match) {
                 btn.style.background = 'rgba(103, 232, 249, 0.15)';
                 btn.style.borderColor = 'var(--neon-cyan)';
@@ -114,30 +122,76 @@
         renderShopGrid();
     }
 
+    function getConsumableIconSvg(item) {
+        const name = (item.name || '').toLowerCase();
+        let iconKey = 'sparkles';
+        if (name.includes('streak') || name.includes('khiên')) iconKey = 'shield';
+        else if (name.includes('nhân đôi') || name.includes('booster')) iconKey = 'zap';
+        else if (name.includes('la bàn') || name.includes('radar')) iconKey = 'sparkles';
+        else if (name.includes('hồi sinh') || name.includes('revive')) iconKey = 'award';
+        else if (name.includes('đồng hồ') || name.includes('thời gian') || name.includes('freeze')) iconKey = 'clock';
+        else if (name.includes('rương') || name.includes('chest')) iconKey = 'box';
+
+        return window.TAPIcons ? window.TAPIcons.get(iconKey) : '✨';
+    }
+
     function renderShopGrid() {
         const grid = document.getElementById('shop-grid');
 
-        if(currentFilterType === 'ITEMS') {
-            // Danh mục vật phẩm hỗ trợ cũ
-            grid.innerHTML = `
-            <div class="bento-card" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                    <strong style="color: #fff; font-size: 16px;">Khiên Bảo Vệ Streak</strong>
-                    <div style="font-size: 13px; color: #94a3b8; margin: 8px 0 15px;">Bảo hiểm chống vỡ chuỗi nếu lỡ quên điểm danh 1 ngày.</div>
-                </div>
-                <button class="pixel-btn" style="background: var(--pixel-green); width: 100%;" onclick="buyLegacyItem('streak_shield', 150)">150 XU</button>
-            </div>
-            <div class="bento-card" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                    <strong style="color: #fff; font-size: 16px;">Mở Khóa Kho Từ Cấp S</strong>
-                    <div style="font-size: 13px; color: #94a3b8; margin: 8px 0 15px;">Mở khóa ngay 5 từ vựng học thuật hiếm gặp (CEFR C1/C2).</div>
-                </div>
-                <button class="pixel-btn" style="background: var(--pixel-green); width: 100%;" onclick="buyLegacyItem('vocab_s', 300)">300 XU</button>
-            </div>`;
+        if(currentFilterType === 'CONSUMABLE') {
+            const consumables = allCosmetics.filter(c => c.type === 'CONSUMABLE');
+            if(consumables.length === 0) {
+                grid.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1; padding: 20px;">Chưa có vật phẩm tiêu hao nào trong kho.</div>';
+                return;
+            }
+
+            let html = '';
+            consumables.forEach(item => {
+                const iconSvg = getConsumableIconSvg(item);
+                const qty = item.quantity || 0;
+                const canUse = qty > 0;
+
+                html += `
+                <div class="bento-card" style="padding: 18px; display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(16, 185, 129, 0.4); background: rgba(15, 23, 42, 0.85);">
+                    <div>
+                        <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 12px;">
+                            <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); border: 1.5px solid var(--pixel-green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--pixel-green);">
+                                <span class="tap-icon" style="width: 26px; height: 26px;">${iconSvg}</span>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <strong style="color: #fff; font-size: 14.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.name}">${item.name}</strong>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                                    <span style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 12px; font-weight: bold;">${item.price_coins} XU</span>
+                                    <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid var(--pixel-green); color: var(--pixel-green); font-size: 10.5px; padding: 2px 7px; border-radius: 4px; font-family: var(--text-mono);">Túi: ${qty}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin-bottom: 15px;">
+                            ${item.description || ''}
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button class="pixel-btn" onclick="buyCosmetic(${item.id})" style="flex: 1; background: var(--pixel-green); color: #000; font-weight: bold; padding: 8px; font-size: 10px;">
+                            MUA (+1)
+                        </button>
+                        <button class="pixel-btn" onclick="useConsumable(${item.id})" ${canUse ? '' : 'disabled'} style="flex: 1; background: ${canUse ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${canUse ? 'var(--neon-cyan)' : 'var(--glass-border)'}; color: ${canUse ? 'var(--neon-cyan)' : '#64748b'}; padding: 8px; font-size: 10px; cursor: ${canUse ? 'pointer' : 'not-allowed'};">
+                            SỬ DỤNG
+                        </button>
+                    </div>
+                </div>`;
+            });
+
+            grid.innerHTML = html;
             return;
         }
 
         const filtered = allCosmetics.filter(c => c.type === currentFilterType);
+        if (filtered.length === 0) {
+            grid.innerHTML = '<div style="color: #94a3b8; font-size: 14px; grid-column: 1/-1; padding: 20px;">Chưa có vật phẩm trong danh mục này.</div>';
+            return;
+        }
+
         let html = '';
 
         filtered.forEach(item => {
@@ -214,7 +268,9 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ item_id: itemId })
-        }).then(r => r.json()).then(res => {
+        })
+        .then(r => r.json())
+        .then(res => {
             if(res.error) {
                 alert(res.error);
             } else {
@@ -222,6 +278,34 @@
                 fetchUserData();
                 loadShopData();
             }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối khi mua vật phẩm.");
+        });
+    }
+
+    function useConsumable(itemId) {
+        if(!confirm("Bạn có chắc muốn kích hoạt sử dụng vật phẩm này?")) return;
+
+        fetch('/api/game/consumables/use', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ item_id: itemId })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if(res.error) {
+                alert(res.error);
+            } else {
+                alert(res.message);
+                fetchUserData();
+                loadShopData();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối khi sử dụng vật phẩm.");
         });
     }
 
@@ -230,7 +314,9 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ item_id: itemId })
-        }).then(r => r.json()).then(res => {
+        })
+        .then(r => r.json())
+        .then(res => {
             if(res.error) {
                 alert(res.error);
             } else {
@@ -238,20 +324,10 @@
                 fetchUserData();
                 loadShopData();
             }
-        });
-    }
-
-    function buyLegacyItem(code, price) {
-        fetch('/api/game/shop/buy', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ item_id: code, price: price })
-        }).then(r => r.json()).then(res => {
-            if(res.error) alert(res.error);
-            else {
-                alert(res.message);
-                fetchUserData();
-            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối khi trang bị vật phẩm.");
         });
     }
 </script>
