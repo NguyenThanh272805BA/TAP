@@ -150,13 +150,19 @@
                 const iconSvg = getConsumableIconSvg(item);
                 const qty = item.quantity || 0;
                 const canUse = qty > 0;
+                const iconImgUrl = (item.icon_preview && item.icon_preview.endsWith('.png') && item.icon_preview !== 'default_item.png') 
+                    ? `/static/uploads/consumables/${item.icon_preview}` 
+                    : null;
 
                 html += `
-                <div class="bento-card" style="padding: 18px; display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(16, 185, 129, 0.4); background: rgba(15, 23, 42, 0.85);">
+                <div class="bento-card" style="padding: 18px; display: flex; flex-direction: column; justify-content: space-between; border-color: rgba(16, 185, 129, 0.4); background: rgba(15, 23, 42, 0.85); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="previewCosmetic('${item.name}', '', '${item.description}', ${item.id}, ${item.is_owned}, false, '${iconImgUrl || ''}')">
                     <div>
                         <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 12px;">
-                            <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); border: 1.5px solid var(--pixel-green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--pixel-green);">
-                                <span class="tap-icon" style="width: 26px; height: 26px;">${iconSvg}</span>
+                            <div style="width: 54px; height: 54px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); border: 1.5px solid var(--pixel-green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);">
+                                ${iconImgUrl ? 
+                                    `<img src="${iconImgUrl}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover;">` : 
+                                    `<span class="tap-icon" style="width: 28px; height: 28px; color: var(--pixel-green);">${iconSvg}</span>`
+                                }
                             </div>
                             <div style="flex: 1; min-width: 0;">
                                 <strong style="color: #fff; font-size: 14.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.name}">${item.name}</strong>
@@ -255,11 +261,21 @@
         grid.innerHTML = html;
     }
 
-    function previewCosmetic(name, cssClass, desc, id, isOwned, isEquipped) {
+    function previewCosmetic(name, cssClass, desc, id, isOwned, isEquipped, iconUrl = null) {
         document.getElementById('preview-item-name').innerText = name;
         document.getElementById('preview-item-desc').innerText = desc;
-        if(currentFilterType === 'AVATAR_FRAME') {
-            document.getElementById('shop-preview-avatar').className = `avatar-container ${cssClass}`;
+        const previewAvatar = document.getElementById('shop-preview-avatar');
+        const previewAvatarImg = document.getElementById('shop-avatar-img');
+
+        if(iconUrl) {
+            previewAvatar.className = 'avatar-container frame-default';
+            previewAvatarImg.src = iconUrl;
+        } else if(currentFilterType === 'AVATAR_FRAME') {
+            previewAvatar.className = `avatar-container ${cssClass}`;
+            previewAvatarImg.src = userAvatarUrl;
+        } else {
+            previewAvatar.className = 'avatar-container frame-default';
+            previewAvatarImg.src = userAvatarUrl;
         }
     }
 

@@ -17,26 +17,26 @@
             <!-- USER INFO -->
             <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid var(--glass-border); margin-bottom: 25px;">
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-                    <div class="avatar-container frame-default" id="sidebar-avatar-container" style="width: 44px; height: 44px; flex-shrink: 0;">
-                        <img src="/static/uploads/avatars/default_avatar.png" id="sidebar-avatar-img" class="avatar-img" onerror="this.src='/static/uploads/covers/default_cover.jpg'">
+                    <div class="avatar-container {{ current_user.equipped_frame if current_user and current_user.equipped_frame else 'frame-default' }}" id="sidebar-avatar-container" style="width: 44px; height: 44px; flex-shrink: 0;">
+                        <img src="/static/uploads/avatars/{{ current_user.avatar if current_user and current_user.avatar else 'default_avatar.png' }}" id="sidebar-avatar-img" class="avatar-img" onerror="this.src='/static/uploads/covers/default_cover.jpg'">
                     </div>
                     <div style="overflow: hidden;">
-                        <div style="color: var(--neon-cyan); font-weight: bold; font-size: 15px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" id="sidebar-user">Khách</div>
-                        <div style="font-size: 11px; color: var(--neon-pink); font-family: var(--text-mono); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" id="sidebar-title">Tân Binh Ngơ Ngác</div>
+                        <div style="color: var(--neon-cyan); font-weight: bold; font-size: 15px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" id="sidebar-user">{{ current_user.username if current_user else 'Khách' }}</div>
+                        <div style="font-size: 11px; color: var(--neon-pink); font-family: var(--text-mono); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" id="sidebar-title">{{ current_user.equipped_title if current_user and current_user.equipped_title else 'Tân Binh Ngơ Ngác' }}</div>
                     </div>
                 </div>
-                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;" id="sidebar-rank">Level 1</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;" id="sidebar-rank">{{ current_user.current_level if current_user else 'Level 1' }}</div>
 
                 <div style="display: flex; justify-content: space-between; font-size: 12px; align-items: center;">
                     <!-- Streak Icon (Fire) -->
                     <span style="color: var(--neon-amber); display: flex; align-items: center; gap: 5px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-                        <span id="sidebar-streak">0</span>
+                        <span id="sidebar-streak">{{ current_user.streak_count if current_user else 0 }}</span>
                     </span>
                     <!-- Coins Icon (Coin) -->
                     <span style="color: var(--pixel-green); display: flex; align-items: center; gap: 5px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
-                        <span id="sidebar-coins">0</span> Xu
+                        <span id="sidebar-coins">{{ current_user.coins if current_user else 0 }}</span> Xu
                     </span>
                 </div>
             </div>
@@ -83,7 +83,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     Hồ Sơ Cá Nhân
                 </a>
-                <a href="/admin" class="nav-item" id="nav-admin" style="display: none; color: var(--neon-pink); border-top: 1px dashed var(--neon-pink); margin-top: 10px; border-radius: 0;">
+                <a href="/admin" class="nav-item" id="nav-admin" style="{{ 'display: flex;' if current_user and current_user.role == 'admin' else 'display: none;' }} color: var(--neon-pink); border-top: 1px dashed var(--neon-pink); margin-top: 10px; border-radius: 0;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     QUẢN TRỊ HỆ THỐNG
                 </a>

@@ -44,6 +44,14 @@ def create_app():
     # Gắn kết cấu cấu hình Database vào Flask Application instance (CHỈ GỌI 1 LẦN Ở ĐÂY)
     db.init_app(app)
 
+    @app.context_processor
+    def inject_current_user():
+        from flask import session
+        from app.models.user import User
+        user_id = session.get('user_id')
+        current_user = User.query.get(user_id) if user_id else None
+        return dict(current_user=current_user)
+
     # --- HỆ THỐNG ROUTE ĐIỀU HƯỚNG GIAO DIỆN CHÍNH ---
 
     # 1. Trang giới thiệu sản phẩm cô đọng (Landing Page)

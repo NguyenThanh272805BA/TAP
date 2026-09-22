@@ -38,6 +38,9 @@ function typeEffectSSE(elementId, text, speed = 15, callback = null) {
             callback();
         }
     }
+    type();
+}
+
 // [ TAPIcons ] BỘ VẼ ICON BẰNG CODE (SVG VECTOR) THAY THẾ EMOJI THÔ SƠ
 window.TAPIcons = {
     icons: {

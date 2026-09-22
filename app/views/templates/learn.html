@@ -793,14 +793,16 @@
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                alert(`✨ Tuyệt vời! Đã đúc thành công Unit: "${data.topic.toUpperCase()}" gồm ${data.words_count} từ vựng mới độc quyền.`);
+                const topicName = data.topic || data.theme || "NGẪU NHIÊN";
+                const count = data.words_count !== undefined ? data.words_count : (data.added || 0);
+                alert(`✨ Tuyệt vời! Đã đúc thành công Unit: "${topicName.toUpperCase()}" gồm ${count} từ vựng mới độc quyền.`);
                 loadVocabOverview();
             } else {
                 alert(data.message || data.error || "Không thể tạo Random Unit lúc này.");
             }
         })
         .catch(err => {
-            console.error(err);
+            console.error("Lỗi khi tạo Random Unit:", err);
             alert("Lỗi kết nối máy chủ khi tạo Random Unit.");
         })
         .finally(() => {

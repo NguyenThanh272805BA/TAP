@@ -317,10 +317,13 @@ def generate_unit():
                                "error": f"Đừng ăn tham! Ngươi đã mở khóa sạch bóng từ vựng của chủ đề '{topic}' rồi, hãy đổi chủ đề khác!"}), 400
 
         return jsonify({"message": f"[CACHE HIT] Lò đúc đã nạp nhanh {added} từ vựng Unit '{topic}' từ Bộ nhớ Đệm!",
-                        "added": added}), 200
+                        "added": added,
+                        "words_count": added,
+                        "topic": topic,
+                        "theme": topic}), 200
 
     prompt = f"""
-    Tạo 50-150 từ vựng tiếng Anh chủ đề '{topic}'. 
+    Tạo 15-20 từ vựng tiếng Anh chủ đề '{topic}'. 
     BẮT BUỘC TRẢ VỀ ĐÚNG 1 MẢNG JSON, TUYỆT ĐỐI KHÔNG CÓ KÝ TỰ MARKDOWN, KHÔNG GIẢI THÍCH.
     [
         {{"word": "từ_vựng_1", "meaning": "nghĩa_tiếng_việt_1", "theme": "{topic}"}}
@@ -356,16 +359,41 @@ def generate_unit():
                 added += 1
 
         db.session.commit()
-        return jsonify(
-            {"message": f"[AI MINTED] Lò đúc đã thêm {added} từ vựng vào Unit '{topic}' của bạn!", "added": added}), 200
+        return jsonify({
+            "message": f"[AI MINTED] Lò đúc đã thêm {added} từ vựng vào Unit '{topic}' của bạn!",
+            "added": added,
+            "words_count": added,
+            "topic": topic,
+            "theme": topic
+        }), 200
 
     except Exception as e:
-        return jsonify({"error": f"Lò đúc AI gặp sự cố: {str(e)}"}), 500
+        # Fallback an toàn nếu LLM quá tải: Lấy từ có sẵn chưa gán
+        user_vocab_ids = db.session.query(UserVocabulary.vocab_id).filter_by(user_id=user_id).all()
+        user_vocab_id_set = {r[0] for r in user_vocab_ids}
+        fallback_vocabs = Vocabulary.query.filter(
+            ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
+        ).limit(10).all()
+        added = 0
+        for fv in fallback_vocabs:
+            db.session.add(UserVocabulary(user_id=user_id, vocab_id=fv.id, is_unlocked=True))
+            added += 1
+        db.session.commit()
+        return jsonify({
+            "message": f"[DỰ PHÒNG] Lò đúc đã khởi tạo Unit '{topic}' với {added} từ vựng từ kho lưu trữ!",
+            "added": added,
+            "words_count": added,
+            "topic": topic,
+            "theme": topic
+        }), 200
 
 
 @ai_bp.route('/generate_random_unit', methods=['POST'])
 def generate_random_unit():
-    """Tạo Unit ngẫu nhiên thông minh, tránh trùng lặp 100% với dữ liệu tài khoản cá nhân"""
+    """Tạo Unit ngẫu nhiên thông minh, tránh trùng lặp 100% với dữ liệu tài khoản cá nhân (Phản hồi siêu tốc)"""
+    import random
+    from sqlalchemy import func
+
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
@@ -373,12 +401,42 @@ def generate_random_unit():
     user = User.query.get(user_id)
     target_band = getattr(user, 'current_band', 'A1') if user else 'A1'
 
-    # 1. Tìm các chủ đề mà người dùng này ĐÃ CÓ trong UserVocabulary
-    user_themes = db.session.query(Vocabulary.theme).join(
-        UserVocabulary, Vocabulary.id == UserVocabulary.vocab_id
-    ).filter(UserVocabulary.user_id == user_id).distinct().all()
-    existing_theme_set = {t[0].upper().strip() for t in user_themes if t[0]}
+    # 1. Tìm tập ID từ vựng mà user ĐÃ CÓ trong kho
+    user_vocab_ids = db.session.query(UserVocabulary.vocab_id).filter_by(user_id=user_id).all()
+    user_vocab_id_set = {r[0] for r in user_vocab_ids}
 
+    # 2. ƯU TIÊN 1 (SIÊU TỐC 50ms): Tìm các Theme có sẵn trong CSDL mà user còn >= 6 từ chưa mở
+    db_themes = db.session.query(Vocabulary.theme).filter(
+        ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True,
+        Vocabulary.theme != None,
+        Vocabulary.theme != ''
+    ).group_by(Vocabulary.theme).having(func.count(Vocabulary.id) >= 6).all()
+
+    available_db_themes = [t[0] for t in db_themes if t[0]]
+
+    if available_db_themes:
+        selected_theme = random.choice(available_db_themes)
+        candidate_vocabs = Vocabulary.query.filter(
+            Vocabulary.theme == selected_theme,
+            ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
+        ).limit(12).all()
+
+        added = 0
+        for v in candidate_vocabs:
+            db.session.add(UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True))
+            added += 1
+        db.session.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": f"🎲 Đã đúc thành công Unit ngẫu nhiên '{selected_theme}' với {added} từ mới!",
+            "theme": selected_theme,
+            "topic": selected_theme,
+            "words_count": added,
+            "added": added
+        }), 200
+
+    # 3. ƯU TIÊN 2: Nếu đã thuộc hết các chủ đề có sẵn, mở rộng từ THEME_BANK qua AI
     THEME_BANK = [
         "AI & ROBOTICS", "NEUROSCIENCE", "DIGITAL MARKETING", "GLOBAL LOGISTICS",
         "QUANTUM COMPUTING", "ENVIRONMENTAL SCIENCE", "BEHAVIORAL ECONOMICS",
@@ -392,36 +450,14 @@ def generate_random_unit():
         "EPIDEMIOLOGY", "GAME DESIGN & THEORY", "MICROBIOLOGY", "MUSICOLOGY"
     ]
 
-    import random
+    # Tìm các chủ đề user đã có
+    user_themes = db.session.query(Vocabulary.theme).join(
+        UserVocabulary, Vocabulary.id == UserVocabulary.vocab_id
+    ).filter(UserVocabulary.user_id == user_id).distinct().all()
+    existing_theme_set = {t[0].upper().strip() for t in user_themes if t[0]}
+
     available_themes = [t for t in THEME_BANK if t not in existing_theme_set]
-    if not available_themes:
-        available_themes = THEME_BANK
-
-    selected_theme = random.choice(available_themes)
-
-    # 2. Tìm các từ vựng đã có trong bảng Vocabulary thuộc chủ đề này nhưng User CHƯA CÓ
-    user_vocab_ids = db.session.query(UserVocabulary.vocab_id).filter_by(user_id=user_id).all()
-    user_vocab_id_set = {r[0] for r in user_vocab_ids}
-
-    candidate_vocabs = Vocabulary.query.filter(
-        Vocabulary.theme == selected_theme,
-        ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
-    ).limit(15).all()
-
-    added = 0
-    if len(candidate_vocabs) >= 8:
-        for v in candidate_vocabs:
-            db.session.add(UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True))
-            added += 1
-        db.session.commit()
-        return jsonify({
-            "status": "success",
-            "message": f"🎲 Đã đúc thành công Unit ngẫu nhiên '{selected_theme}' với {added} từ mới!",
-            "theme": selected_theme,
-            "added": added
-        }), 200
-
-    # 3. Nếu chưa có sẵn trong DB, gọi Gemini AI
+    selected_theme = random.choice(available_themes) if available_themes else random.choice(THEME_BANK)
     prompt = f"""
     Tạo 12-15 từ vựng tiếng Anh học thuật hấp dẫn chủ đề '{selected_theme}', phù hợp trình độ CEFR {target_band}.
     BẮT BUỘC TRẢ VỀ ĐÚNG 1 MẢNG JSON, TUYỆT ĐỐI KHÔNG CÓ KÝ TỰ MARKDOWN, KHÔNG GIẢI THÍCH.
@@ -462,6 +498,8 @@ def generate_random_unit():
                 "status": "success",
                 "message": f"🎲 Lò đúc AI đã tạo thành công Unit ngẫu nhiên '{selected_theme}' với {added} từ mới!",
                 "theme": selected_theme,
+                "topic": selected_theme,
+                "words_count": added,
                 "added": added
             }), 200
     except Exception:
@@ -481,6 +519,8 @@ def generate_random_unit():
         "status": "success",
         "message": f"🎲 Đã khởi tạo thành công Unit ngẫu nhiên '{selected_theme}' ({added} từ mới) cho bạn!",
         "theme": selected_theme,
+        "topic": selected_theme,
+        "words_count": added,
         "added": added
     }), 200
 

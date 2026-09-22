@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}ADMIN CONTROL CENTER{% endblock %}
+{% block title %}ADMIN COMMAND CENTER // GOD_MODE{% endblock %}
 
 {% block content %}
 <style>
@@ -50,7 +50,7 @@
     /* Tabs Navigation */
     .admin-tabs {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
         margin-bottom: 25px;
     }
@@ -58,10 +58,10 @@
         background: rgba(15, 23, 42, 0.6);
         border: 1px solid var(--glass-border);
         color: #94a3b8;
-        padding: 12px 20px;
+        padding: 10px 18px;
         border-radius: 10px;
         font-family: var(--text-pixel);
-        font-size: 12px;
+        font-size: 11.5px;
         font-weight: 600;
         letter-spacing: 0.5px;
         cursor: pointer;
@@ -102,7 +102,7 @@
         backdrop-filter: blur(12px);
         border: 1px solid var(--glass-border);
         border-radius: 14px;
-        padding: 22px;
+        padding: 20px;
         position: relative;
         overflow: hidden;
         transition: all 0.3s ease;
@@ -135,7 +135,7 @@
     }
     .modern-table th {
         background: rgba(15, 23, 42, 0.85);
-        padding: 14px 16px;
+        padding: 13px 15px;
         font-family: var(--text-pixel);
         font-size: 11px;
         letter-spacing: 0.8px;
@@ -144,7 +144,7 @@
         white-space: nowrap;
     }
     .modern-table td {
-        padding: 14px 16px;
+        padding: 13px 15px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         color: #cbd5e1;
         vertical-align: middle;
@@ -208,11 +208,11 @@
         border: 1px solid var(--glass-border);
         border-radius: 8px;
         color: #fff;
-        padding: 10px 14px;
+        padding: 9px 13px;
         font-size: 13px;
         outline: none;
         flex-grow: 1;
-        min-width: 220px;
+        min-width: 200px;
         transition: border-color 0.2s;
     }
     .search-input:focus {
@@ -224,7 +224,7 @@
         border: 1px solid var(--glass-border);
         border-radius: 8px;
         color: #fff;
-        padding: 10px 14px;
+        padding: 9px 13px;
         font-size: 13px;
         outline: none;
         cursor: pointer;
@@ -235,12 +235,13 @@
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(3, 7, 18, 0.75);
+        background: rgba(3, 7, 18, 0.8);
         backdrop-filter: blur(8px);
         z-index: 10000;
         align-items: center;
         justify-content: center;
         padding: 20px;
+        overflow-y: auto;
     }
     .admin-modal.show {
         display: flex;
@@ -250,9 +251,11 @@
         border: 1px solid var(--glass-border);
         border-radius: 16px;
         width: 100%;
-        max-width: 520px;
-        padding: 30px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        max-width: 560px;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 28px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
         position: relative;
         animation: modalPop 0.25s ease forwards;
     }
@@ -266,7 +269,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 14px 18px;
+        padding: 12px 18px;
         background: rgba(15, 23, 42, 0.5);
         border-top: 1px solid var(--glass-border);
         font-size: 12px;
@@ -308,13 +311,13 @@
             <span>[ GOD_MODE ]</span>
             <span style="color: #fff; font-size: 20px;">COMMAND CENTER</span>
         </div>
-        <div style="color: #94a3b8; font-size: 14px;">
-            Bảng điều phối toàn diện máy chủ, dữ liệu tri thức và quản trị người chơi.
+        <div style="color: #94a3b8; font-size: 13.5px;">
+            Bảng điều phối toàn diện máy chủ: Shop & Vật phẩm, Danh mục, Ngữ pháp, Text-RPG, Nhiệm vụ và Người chơi.
         </div>
     </div>
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <span class="admin-badge badge-live">SERVER ONLINE</span>
-        <button class="pixel-btn" onclick="refreshCurrentTab()" style="background: var(--neon-purple); font-size: 11px; padding: 10px 16px;">
+        <button class="pixel-btn" onclick="refreshCurrentTab()" style="background: var(--neon-purple); font-size: 11px; padding: 9px 16px;">
             🔄 LÀM MỚI DỮ LIỆU
         </button>
     </div>
@@ -326,13 +329,22 @@
         📊 TỔNG QUAN
     </button>
     <button class="tab-btn" onclick="switchAdminTab('users')">
-        👥 QUẢN LÝ NGƯỜI CHƠI
+        👥 NGƯỜI CHƠI
+    </button>
+    <button class="tab-btn" onclick="switchAdminTab('shop')">
+        🛍️ VẬT PHẨM & SHOP
+    </button>
+    <button class="tab-btn" onclick="switchAdminTab('categories')">
+        📑 DANH MỤC & NGỮ PHÁP
     </button>
     <button class="tab-btn" onclick="switchAdminTab('vocab')">
         📖 TỪ ĐIỂN TỪ VỰNG
     </button>
     <button class="tab-btn" onclick="switchAdminTab('topics')">
-        ⚔️ BỐI CẢNH RPG
+        ⚔️ BỐI CẢNH RPG & SESSIONS
+    </button>
+    <button class="tab-btn" onclick="switchAdminTab('quests')">
+        🎯 NHIỆM VỤ CÀY XU
     </button>
     <button class="tab-btn" onclick="switchAdminTab('danger')" style="color: #f87171; border-color: rgba(239,68,68,0.3);">
         ⚠️ VÙNG NGUY HIỂM
@@ -343,41 +355,59 @@
      TAB 1: TỔNG QUAN
      ========================================================= -->
 <div id="pane-overview" class="tab-pane active">
-    <div class="bento-container" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 25px;">
+    <div class="bento-container" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
         <div class="admin-stat-card" style="--card-glow: var(--neon-cyan);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div class="pixel-title" style="color: var(--neon-cyan); font-size: 11px;">TỔNG NGƯỜI CHƠI</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="pixel-title" style="color: var(--neon-cyan); font-size: 11px;">NGƯỜI CHƠI</div>
                 <span style="font-size: 20px;">👥</span>
             </div>
-            <div id="stat-users" style="font-family: var(--text-mono); font-size: 34px; font-weight: 700; color: #fff;">0</div>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Tài khoản đăng ký thực tế</div>
+            <div id="stat-users" style="font-family: var(--text-mono); font-size: 30px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Tài khoản trong hệ thống</div>
         </div>
 
         <div class="admin-stat-card" style="--card-glow: var(--pixel-green);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <div class="pixel-title" style="color: var(--pixel-green); font-size: 11px;">KHO TỪ VỰNG</div>
                 <span style="font-size: 20px;">📚</span>
             </div>
-            <div id="stat-vocab" style="font-family: var(--text-mono); font-size: 34px; font-weight: 700; color: #fff;">0</div>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Đơn vị từ CEFR trong database</div>
+            <div id="stat-vocab" style="font-family: var(--text-mono); font-size: 30px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Đơn vị từ CEFR trong DB</div>
         </div>
 
         <div class="admin-stat-card" style="--card-glow: var(--neon-amber);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <div class="pixel-title" style="color: var(--neon-amber); font-size: 11px;">CHUYÊN ĐỀ NGỮ PHÁP</div>
                 <span style="font-size: 20px;">🧠</span>
             </div>
-            <div id="stat-grammar" style="font-family: var(--text-mono); font-size: 34px; font-weight: 700; color: #fff;">0</div>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Quy tắc cú pháp & AI Diagnostics</div>
+            <div id="stat-grammar" style="font-family: var(--text-mono); font-size: 30px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Quy tắc cú pháp CEFR</div>
+        </div>
+
+        <div class="admin-stat-card" style="--card-glow: #ec4899;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="pixel-title" style="color: #ec4899; font-size: 11px;">VẬT PHẨM & KHUNG</div>
+                <span style="font-size: 20px;">🛍️</span>
+            </div>
+            <div id="stat-cosmetics" style="font-family: var(--text-mono); font-size: 30px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Khung Transformer & Tiêu hao</div>
+        </div>
+
+        <div class="admin-stat-card" style="--card-glow: #06b6d4;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="pixel-title" style="color: #06b6d4; font-size: 11px;">NHIỆM VỤ CÀY XU</div>
+                <span style="font-size: 20px;">🎯</span>
+            </div>
+            <div id="stat-quests" style="font-family: var(--text-mono); font-size: 30px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Quests thử thách tích cực</div>
         </div>
 
         <div class="admin-stat-card" style="--card-glow: var(--neon-purple);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div class="pixel-title" style="color: var(--neon-purple); font-size: 11px;">LƯỢT KHẢO THÍ (TESTS)</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="pixel-title" style="color: var(--neon-purple); font-size: 11px;">LƯỢT KHẢO THÍ</div>
                 <span style="font-size: 20px;">📝</span>
             </div>
-            <div id="stat-tests" style="font-family: var(--text-mono); font-size: 34px; font-weight: 700; color: #fff;">0</div>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 5px;">Số lần hoàn thành bài thi CEFR</div>
+            <div id="stat-tests" style="font-family: var(--text-mono); font-size: 30px; font-weight: 700; color: #fff;">0</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Bài thi hoàn thành</div>
         </div>
     </div>
 
@@ -391,9 +421,9 @@
                 <p style="margin-top: 0;">Hệ thống TAP đang vận hành mô hình <strong>Multi-Brain Hybrid Edge-Cloud AI</strong>:</p>
                 <ul style="padding-left: 20px; color: #94a3b8;">
                     <li><strong>Phân loại ý định & ngữ pháp:</strong> DistilBERT INT8 + Multilayer Perceptron (MLP).</li>
-                    <li><strong>Thuật toán ghi nhớ ngắt quãng:</strong> Ebbinghaus Non-linear Fit & Smart SRS.</li>
-                    <li><strong>Gợi ý từ vựng không gian vector:</strong> Cosine Similarity Content-Based Filtering.</li>
-                    <li><strong>Chấm điểm & sinh bối cảnh:</strong> Google Gemini 2.5 Flash kết hợp Rule-based Fallback.</li>
+                    <li><strong>Khung Avatar Động:</strong> CSS Kinetic Animation & Transformer Mechanical Gear Engine.</li>
+                    <li><strong>Kho Vật Phẩm Tiêu Hao:</strong> Khiên chuỗi, Thuốc 2x, La bàn AI, Hồi sinh, Đồng hồ cát, Rương báu.</li>
+                    <li><strong>Hệ thống Quản trị Module:</strong> Thêm, Sửa, Xóa vật phẩm, danh mục, ngữ pháp, kịch bản RPG và nhiệm vụ.</li>
                 </ul>
             </div>
         </div>
@@ -401,17 +431,20 @@
         <div class="bento-card" style="padding: 25px; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div class="pixel-title" style="color: var(--neon-pink); font-size: 14px; margin-bottom: 15px;">
-                    LỐI TẮT QUẢN TRỊ
+                    LỐI TẮT QUẢN TRỊ NHANH
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn-action btn-action-primary" onclick="switchAdminTab('shop'); openShopItemModal();" style="padding: 10px; justify-content: center;">
+                        🛍️ Thêm vật phẩm Shop mới
+                    </button>
                     <button class="btn-action btn-action-primary" onclick="switchAdminTab('vocab'); openAddVocabModal();" style="padding: 10px; justify-content: center;">
-                        ➕ Thêm từ vựng mới
+                        📖 Thêm từ vựng CEFR
                     </button>
                     <button class="btn-action btn-action-warning" onclick="switchAdminTab('topics')" style="padding: 10px; justify-content: center;">
-                        ⚔️ Tạo chủ đề RPG mới
+                        ⚔️ Tạo chủ đề Text-RPG mới
                     </button>
-                    <button class="btn-action btn-action-danger" onclick="switchAdminTab('danger')" style="padding: 10px; justify-content: center;">
-                        ⚠️ Truy cập Vùng Nguy Hiểm
+                    <button class="btn-action btn-action-primary" onclick="switchAdminTab('quests'); openQuestModal();" style="padding: 10px; justify-content: center;">
+                        🎯 Tạo nhiệm vụ cày xu mới
                     </button>
                 </div>
             </div>
@@ -457,7 +490,142 @@
 </div>
 
 <!-- =========================================================
-     TAB 3: QUẢN LÝ TỪ VỰNG
+     TAB 3: VẬT PHẨM & SHOP (COSMETICS & CONSUMABLES)
+     ========================================================= -->
+<div id="pane-shop" class="tab-pane">
+    <div class="filter-bar">
+        <input type="text" id="shop-search" class="search-input" placeholder="🔍 Tìm kiếm theo tên vật phẩm, mô tả, CSS..." oninput="filterShopItems()">
+        <select id="shop-type-filter" class="select-filter" onchange="filterShopItems()">
+            <option value="ALL">Tất cả loại vật phẩm</option>
+            <option value="AVATAR_FRAME">Khung Avatar Động</option>
+            <option value="PLAYER_TITLE">Danh Hiệu Chiến Binh</option>
+            <option value="CONSUMABLE">Vật Phẩm Tiêu Hao</option>
+        </select>
+        <button class="pixel-btn" onclick="openShopItemModal()" style="background: var(--pixel-green); color: #000; font-size: 11px; padding: 9px 16px;">
+            ➕ THÊM VẬT PHẨM
+        </button>
+        <span id="shop-count-badge" class="admin-badge" style="background: rgba(255,255,255,0.06);">0 Items</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th style="width: 70px;">PREVIEW</th>
+                    <th>TÊN VẬT PHẨM</th>
+                    <th>PHÂN LOẠI</th>
+                    <th>CSS CLASS</th>
+                    <th>GIÁ BÁN</th>
+                    <th>HIỆU ỨNG</th>
+                    <th style="text-align: right; width: 140px;">THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody id="shop-table-body">
+                <tr><td colspan="8" style="text-align: center; padding: 25px; color: #94a3b8;">Đang tải danh mục vật phẩm...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =========================================================
+     TAB 4: DANH MỤC & NGỮ PHÁP (CATEGORIES & GRAMMAR)
+     ========================================================= -->
+<div id="pane-categories" class="tab-pane">
+    <!-- DANH MỤC THEMES & NHÓM NGỮ PHÁP -->
+    <div class="bento-container" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+        <div class="bento-card" style="padding: 22px;">
+            <div class="pixel-title" style="color: var(--neon-cyan); font-size: 13px; margin-bottom: 12px;">
+                📊 DANH MỤC CHỦ ĐỀ TỪ VỰNG (THEMES)
+            </div>
+            <div id="vocab-themes-list" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow-y: auto;">
+                <div style="color: #94a3b8; font-size: 12px;">Đang tải thống kê...</div>
+            </div>
+        </div>
+
+        <div class="bento-card" style="padding: 22px;">
+            <div class="pixel-title" style="color: var(--neon-purple); font-size: 13px; margin-bottom: 12px;">
+                🧠 NHÓM QUY TẮC NGỮ PHÁP (CATEGORIES)
+            </div>
+            <div id="grammar-cats-list" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow-y: auto;">
+                <div style="color: #94a3b8; font-size: 12px;">Đang tải thống kê...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CÔNG CỤ ĐỔI TÊN ĐỒNG BỘ DANH MỤC -->
+    <div class="bento-card" style="padding: 20px; margin-bottom: 25px; background: rgba(15, 23, 42, 0.75);">
+        <div class="pixel-title" style="color: var(--neon-amber); font-size: 13px; margin-bottom: 10px;">
+            🏷️ ĐỔI TÊN ĐỒNG BỘ DANH MỤC TRÊN TOÀN HỆ THỐNG
+        </div>
+        <form id="form-rename-cat" onsubmit="submitRenameCategory(event)" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <select id="rename-source-type" class="select-filter">
+                <option value="both">Đổi cả Từ vựng & Ngữ pháp</option>
+                <option value="vocab">Chỉ từ vựng (Theme)</option>
+                <option value="grammar">Chỉ ngữ pháp (Category)</option>
+            </select>
+            <input type="text" id="rename-old-name" class="search-input" placeholder="Tên danh mục cũ (VD: General)" required style="max-width: 220px;">
+            <input type="text" id="rename-new-name" class="search-input" placeholder="Tên danh mục mới (VD: Daily Life)" required style="max-width: 220px;">
+            <button type="submit" class="pixel-btn" style="background: var(--neon-amber); color: #000; padding: 9px 18px;">
+                CẬP NHẬT TÊN
+            </button>
+        </form>
+    </div>
+
+    <!-- BẢNG QUẢN TRỊ NGỮ PHÁP (GRAMMAR CRUD) -->
+    <div class="filter-bar">
+        <input type="text" id="grammar-search" class="search-input" placeholder="🔍 Tìm cấu trúc, giải thích, ví dụ..." onkeydown="if(event.key==='Enter') fetchGrammarData(1)">
+        <select id="grammar-level-filter" class="select-filter" onchange="fetchGrammarData(1)">
+            <option value="ALL">Tất cả Level CEFR</option>
+            <option value="A1">Band A1</option>
+            <option value="A2">Band A2</option>
+            <option value="B1">Band B1</option>
+            <option value="B2">Band B2</option>
+            <option value="C1">Band C1</option>
+            <option value="C2">Band C2</option>
+        </select>
+        <button class="pixel-btn" onclick="fetchGrammarData(1)" style="background: var(--neon-cyan); color: #000; font-size: 11px; padding: 9px 16px;">
+            LỌC
+        </button>
+        <button class="pixel-btn" onclick="openGrammarModal()" style="background: var(--pixel-green); color: #000; font-size: 11px; padding: 9px 16px;">
+            ➕ THÊM NGỮ PHÁP
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>CẤU TRÚC NGỮ PHÁP</th>
+                    <th>GIẢI THÍCH</th>
+                    <th>VÍ DỤ TIÊU BIỂU</th>
+                    <th>CEFR</th>
+                    <th>DANH MỤC</th>
+                    <th style="text-align: right; width: 140px;">THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody id="grammar-table-body">
+                <tr><td colspan="7" style="text-align: center; padding: 25px; color: #94a3b8;">Đang tải danh mục ngữ pháp...</td></tr>
+            </tbody>
+        </table>
+
+        <!-- PAGINATION BAR -->
+        <div class="pagination-bar">
+            <div>
+                Hiển thị <span id="grammar-showing">0</span> trên tổng số <span id="grammar-total">0</span> cấu trúc
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button id="btn-grammar-prev" class="page-btn" onclick="changeGrammarPage(-1)">← Trước</button>
+                <span style="color: #fff; font-family: var(--text-mono); margin: 0 4px;" id="grammar-page-indicator">Trang 1 / 1</span>
+                <button id="btn-grammar-next" class="page-btn" onclick="changeGrammarPage(1)">Sau →</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     TAB 5: QUẢN LÝ TỪ VỰNG (VOCABULARY)
      ========================================================= -->
 <div id="pane-vocab" class="tab-pane">
     <div class="filter-bar">
@@ -471,10 +639,10 @@
             <option value="C1">Band C1 (Cao cấp)</option>
             <option value="C2">Band C2 (Bậc thầy)</option>
         </select>
-        <button class="pixel-btn" onclick="fetchVocabData(1)" style="background: var(--neon-cyan); color: #000; font-size: 11px; padding: 10px 16px;">
+        <button class="pixel-btn" onclick="fetchVocabData(1)" style="background: var(--neon-cyan); color: #000; font-size: 11px; padding: 9px 16px;">
             LỌC
         </button>
-        <button class="pixel-btn" onclick="openAddVocabModal()" style="background: var(--pixel-green); color: #000; font-size: 11px; padding: 10px 16px;">
+        <button class="pixel-btn" onclick="openAddVocabModal()" style="background: var(--pixel-green); color: #000; font-size: 11px; padding: 9px 16px;">
             ➕ THÊM TỪ MỚI
         </button>
     </div>
@@ -488,7 +656,7 @@
                     <th>NGHĨA TIẾNG VIỆT</th>
                     <th>CHỦ ĐỀ</th>
                     <th>CEFR LEVEL</th>
-                    <th style="text-align: right; width: 120px;">THAO TÁC</th>
+                    <th style="text-align: right; width: 140px;">THAO TÁC</th>
                 </tr>
             </thead>
             <tbody id="vocab-table-body">
@@ -511,10 +679,10 @@
 </div>
 
 <!-- =========================================================
-     TAB 4: BỐI CẢNH RPG (STORY TOPICS)
+     TAB 6: BỐI CẢNH RPG & SESSIONS
      ========================================================= -->
 <div id="pane-topics" class="tab-pane">
-    <div class="bento-container" style="grid-template-columns: 1fr 1.2fr; gap: 25px;">
+    <div class="bento-container" style="grid-template-columns: 1fr 1.2fr; gap: 25px; margin-bottom: 30px;">
         <!-- FORM THÊM CHỦ ĐỀ -->
         <div class="bento-card" style="padding: 25px;">
             <div class="pixel-title" style="color: var(--neon-purple); font-size: 15px; margin-bottom: 18px;">
@@ -524,7 +692,7 @@
             <form id="form-topic" onsubmit="submitNewTopic(event)" enctype="multipart/form-data">
                 <div style="margin-bottom: 12px;">
                     <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">TÊN CHỦ ĐỀ:</label>
-                    <input type="text" id="topic_title" name="title" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Bệnh viện ma ám, Thám hiểm sao Hỏa...">
+                    <input type="text" id="topic_title" name="title" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Cyberpunk Neo Saigon, Bệnh viện ma ám...">
                 </div>
 
                 <div style="margin-bottom: 12px;">
@@ -547,7 +715,7 @@
                 </div>
 
                 <div style="margin-bottom: 18px;">
-                    <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">SYSTEM PROMPT (Định hình ngữ cảnh AI):</label>
+                    <label style="color: #94a3b8; font-size: 12px; margin-bottom: 5px; display: block;">SYSTEM PROMPT (Định hình bối cảnh AI Master):</label>
                     <textarea id="topic_prompt" name="system_prompt" rows="5" class="search-input" style="width: 100%; box-sizing: border-box; resize: vertical;" required placeholder="Bạn là AI Game Master dẫn dắt người chơi khám phá..."></textarea>
                 </div>
 
@@ -571,10 +739,84 @@
             </div>
         </div>
     </div>
+
+    <!-- PHẦN QUẢN LÝ PHIÊN TRUYỆN CỦA NGƯỜI CHƠI (STORY SESSIONS) -->
+    <div class="bento-card" style="padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div class="pixel-title" style="color: var(--neon-pink); font-size: 14px;">
+                📜 NHẬT KÝ PHIÊN TRUYỆN NGƯỜI CHƠI (STORY SESSIONS)
+            </div>
+            <select id="session-status-filter" class="select-filter" onchange="fetchStorySessions(1)">
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="Survived">Sống sót (Survived)</option>
+                <option value="Dead">Tử trận (Dead)</option>
+            </select>
+        </div>
+
+        <div class="table-responsive">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th>NGƯỜI CHƠI</th>
+                        <th>CHỦ ĐỀ</th>
+                        <th>TRẠNG THÁI</th>
+                        <th>TÓM TẮT CÂU CHUYỆN</th>
+                        <th>THỜI GIAN</th>
+                        <th style="text-align: right; width: 80px;">XÓA</th>
+                    </tr>
+                </thead>
+                <tbody id="session-table-body">
+                    <tr><td colspan="7" style="text-align: center; padding: 20px; color: #94a3b8;">Đang nạp phiên truyện...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <!-- =========================================================
-     TAB 5: VÙNG NGUY HIỂM & DỌN DẸP
+     TAB 7: NHIỆM VỤ CÀY XU (QUESTS)
+     ========================================================= -->
+<div id="pane-quests" class="tab-pane">
+    <div class="filter-bar">
+        <input type="text" id="quest-search" class="search-input" placeholder="🔍 Tìm kiếm mã, tiêu đề, mô tả nhiệm vụ..." oninput="filterQuests()">
+        <select id="quest-category-filter" class="select-filter" onchange="filterQuests()">
+            <option value="ALL">Tất cả danh mục nhiệm vụ</option>
+            <option value="NEWBIE">Tân Thủ (NEWBIE)</option>
+            <option value="VOCAB">Từ Vựng (VOCAB)</option>
+            <option value="GRAMMAR">Ngữ Pháp (GRAMMAR)</option>
+            <option value="ARENA">Đấu Trường (ARENA)</option>
+            <option value="LEGEND">Huyền Thoại (LEGEND)</option>
+        </select>
+        <button class="pixel-btn" onclick="openQuestModal()" style="background: var(--pixel-green); color: #000; font-size: 11px; padding: 9px 16px;">
+            ➕ TẠO NHIỆM VỤ MỚI
+        </button>
+        <span id="quest-count-badge" class="admin-badge" style="background: rgba(255,255,255,0.06);">0 Quests</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>MÃ NV</th>
+                    <th>DANH MỤC</th>
+                    <th>TIÊU ĐỀ & MÔ TẢ</th>
+                    <th>CHỈ TIÊU YÊU CẦU</th>
+                    <th>PHẦN THƯỞNG</th>
+                    <th>THỨ TỰ</th>
+                    <th style="text-align: right; width: 140px;">THAO TÁC</th>
+                </tr>
+            </thead>
+            <tbody id="quest-table-body">
+                <tr><td colspan="8" style="text-align: center; padding: 25px; color: #94a3b8;">Đang tải danh sách nhiệm vụ cày xu...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- =========================================================
+     TAB 8: VÙNG NGUY HIỂM & DỌN DẸP
      ========================================================= -->
 <div id="pane-danger" class="tab-pane">
     <div class="danger-box">
@@ -588,63 +830,46 @@
     </div>
 
     <div class="bento-container" style="grid-template-columns: 1fr 1fr; gap: 20px;">
-        <!-- DỌN DẸP TOÀN BỘ DATA USER (CLEAN ALL DATA) -->
         <div class="bento-card" style="padding: 25px; border-color: rgba(239, 68, 68, 0.4);">
             <div class="pixel-title" style="color: #ef4444; font-size: 14px; margin-bottom: 12px;">
                 [ RESET DATABASE ] DỌN DẸP DỮ LIỆU HỆ THỐNG
             </div>
             <div style="font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 18px;">
-                Thực thi tương đương script <code>clean_data.py</code>:
+                Thực thi dọn dẹp hệ thống:
                 <ul style="padding-left: 18px; margin: 10px 0; color: #cbd5e1;">
                     <li>Xóa <strong>toàn bộ tài khoản user thường</strong></li>
-                    <li>Xóa toàn bộ tiến độ học từ vựng, ngữ pháp, thành tựu</li>
-                    <li>Xóa toàn bộ lịch sử thi cử (TestLog) và RPG Sessions</li>
-                    <li><strong>Giữ nguyên:</strong> Tất cả tài khoản Quản trị viên (Admin)</li>
-                    <li><strong>Giữ nguyên:</strong> Dữ liệu từ điển Vocabulary & Grammar cốt lõi</li>
+                    <li>Xóa toàn bộ tiến độ học từ vựng, ngữ pháp, thành tựu, cosmetic sở hữu</li>
+                    <li>Giữ lại an toàn các tài khoản Quản trị viên (Admin) và dữ liệu gốc</li>
                 </ul>
             </div>
-            <button class="pixel-btn" onclick="openResetDataModal()" style="background: #ef4444; width: 100%; padding: 14px; font-size: 12px;">
-                🔥 KHỞI CHẠY RESET TOÀN BỘ DỮ LIỆU
+            <button onclick="openResetDataModal()" class="pixel-btn" style="background: #ef4444; width: 100%; padding: 11px;">
+                XÁC NHẬN DỌN DẸP TOÀN DIỆN
             </button>
-        </div>
-
-        <!-- THÔNG TIN SCRIPT PYTHON ĐỘC LẬP -->
-        <div class="bento-card" style="padding: 25px;">
-            <div class="pixel-title" style="color: var(--neon-amber); font-size: 14px; margin-bottom: 12px;">
-                [ TERMINAL ] SCRIPT CLEAN_DATA.PY ĐỘC LẬP
-            </div>
-            <div style="font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 15px;">
-                Ngoài giao diện web, quản trị viên có thể chạy trực tiếp bằng dòng lệnh từ terminal:
-            </div>
-            <div style="background: rgba(0,0,0,0.6); padding: 14px; border-radius: 8px; font-family: var(--text-mono); font-size: 12px; color: var(--neon-cyan); border: 1px solid var(--glass-border); margin-bottom: 15px;">
-                python clean_data.py
-            </div>
-            <div style="font-size: 12px; color: #64748b;">
-                Script có lớp bảo vệ bằng văn bản xác nhận nhập tay (Type Confirmation) để đảm bảo không bị bấm nhầm.
-            </div>
         </div>
     </div>
 </div>
 
 <!-- =========================================================
-     MODAL: THÊM TỪ VỰNG MỚI
+     MODALS
      ========================================================= -->
+
+<!-- MODAL: THÊM TỪ VỰNG -->
 <div id="modal-add-vocab" class="admin-modal">
     <div class="admin-modal-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div class="pixel-title" style="color: var(--pixel-green); font-size: 16px;">➕ THÊM TỪ VỰNG VÀO TỪ ĐIỂN</div>
+            <div class="pixel-title" style="color: var(--pixel-green); font-size: 16px;">THÊM TỪ VỰNG MỚI</div>
             <button onclick="closeAddVocabModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
         </div>
 
         <form id="form-add-vocab" onsubmit="submitNewVocab(event)">
             <div style="margin-bottom: 14px;">
                 <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">TỪ TIẾNG ANH (WORD):</label>
-                <input type="text" id="add-vocab-word" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: ephemeral, resilience...">
+                <input type="text" id="add-vocab-word" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Ubiquitous">
             </div>
 
             <div style="margin-bottom: 14px;">
                 <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">NGHĨA TIẾNG VIỆT (MEANING):</label>
-                <input type="text" id="add-vocab-meaning" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Phù du, chóng tàn; Khả năng phục hồi...">
+                <input type="text" id="add-vocab-meaning" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Có mặt ở khắp nơi">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
@@ -673,9 +898,311 @@
     </div>
 </div>
 
-<!-- =========================================================
-     MODAL: XÁC NHẬN RESET TOÀN BỘ DỮ LIỆU
-     ========================================================= -->
+<!-- MODAL: SỬA TỪ VỰNG -->
+<div id="modal-edit-vocab" class="admin-modal">
+    <div class="admin-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="pixel-title" style="color: var(--neon-cyan); font-size: 16px;">CHỈNH SỬA TỪ VỰNG</div>
+            <button onclick="closeEditVocabModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="form-edit-vocab" onsubmit="submitEditVocab(event)">
+            <input type="hidden" id="edit-vocab-id">
+            <div style="margin-bottom: 14px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">TỪ TIẾNG ANH:</label>
+                <input type="text" id="edit-vocab-word" class="search-input" style="width: 100%; box-sizing: border-box;" required>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">NGHĨA TIẾNG VIỆT:</label>
+                <input type="text" id="edit-vocab-meaning" class="search-input" style="width: 100%; box-sizing: border-box;" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">LEVEL CEFR:</label>
+                    <select id="edit-vocab-level" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="B1">B1</option>
+                        <option value="B2">B2</option>
+                        <option value="C1">C1</option>
+                        <option value="C2">C2</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">CHỦ ĐỀ (THEME):</label>
+                    <input type="text" id="edit-vocab-theme" class="search-input" style="width: 100%; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeEditVocabModal()" class="btn-action" style="padding: 10px 18px; color: #94a3b8;">HỦY</button>
+                <button type="submit" class="pixel-btn" style="background: var(--neon-cyan); color: #000; padding: 10px 20px;">LƯU THAY ĐỔI</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: THÊM / SỬA VẬT PHẨM SHOP -->
+<div id="modal-shop-item" class="admin-modal">
+    <div class="admin-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="pixel-title" id="shop-modal-title" style="color: var(--neon-cyan); font-size: 16px;">THÊM VẬT PHẨM MỚI</div>
+            <button onclick="closeShopItemModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="form-shop-item" onsubmit="submitShopItem(event)">
+            <input type="hidden" id="shop-item-id">
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">TÊN VẬT PHẨM:</label>
+                <input type="text" id="shop-item-name" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Khung Lõi Cơ Khí Transformer Autobot">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">PHÂN LOẠI:</label>
+                    <select id="shop-item-type" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                        <option value="AVATAR_FRAME">Khung Avatar Động</option>
+                        <option value="PLAYER_TITLE">Danh Hiệu Chiến Binh</option>
+                        <option value="CONSUMABLE">Vật Phẩm Tiêu Hao</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">GIÁ BÁN (XU):</label>
+                    <input type="number" id="shop-item-price" class="search-input" style="width: 100%; box-sizing: border-box;" min="0" value="100" required>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">CSS CLASS IDENTIFIER:</label>
+                <input type="text" id="shop-item-css" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: frame-transformer-matrix, item-streak-shield">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">ICON / PREVIEW FILE:</label>
+                    <input type="text" id="shop-item-icon" class="search-input" style="width: 100%; box-sizing: border-box;" value="default_item.png" placeholder="streak_shield.png, booster_2x.png...">
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">ITEM EFFECT (NẾU CÓ):</label>
+                    <select id="shop-item-effect" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                        <option value="">Không có hiệu ứng đặc biệt</option>
+                        <option value="TRANSFORMER_AUTOBOT">TRANSFORMER_AUTOBOT</option>
+                        <option value="QUANTUM_DECEPTICON">QUANTUM_DECEPTICON</option>
+                        <option value="CYBER_ALLSPARK">CYBER_ALLSPARK</option>
+                        <option value="KINETIC_REACTOR">KINETIC_REACTOR</option>
+                        <option value="STREAK_SHIELD">STREAK_SHIELD (Bảo vệ chuỗi)</option>
+                        <option value="DOUBLE_COINS">DOUBLE_COINS (Nhân 2 Xu & EXP)</option>
+                        <option value="AI_HINT">AI_HINT (Gợi ý phân tích)</option>
+                        <option value="EXAM_REVIVE">EXAM_REVIVE (Hồi sinh bài thi)</option>
+                        <option value="TIME_FREEZE">TIME_FREEZE (Đóng băng thời gian)</option>
+                        <option value="LUCKY_CHEST">LUCKY_CHEST (Rương may mắn)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">MÔ TẢ VẬT PHẨM:</label>
+                <textarea id="shop-item-desc" rows="3" class="search-input" style="width: 100%; box-sizing: border-box; resize: vertical;" placeholder="Mô tả công dụng hoặc vẻ đẹp của trang bị..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeShopItemModal()" class="btn-action" style="padding: 10px 18px; color: #94a3b8;">HỦY</button>
+                <button type="submit" class="pixel-btn" style="background: var(--neon-cyan); color: #000; padding: 10px 20px;">LƯU VẬT PHẨM</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: SỬA CHỦ ĐỀ RPG -->
+<div id="modal-edit-topic" class="admin-modal">
+    <div class="admin-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="pixel-title" style="color: var(--neon-purple); font-size: 16px;">CHỈNH SỬA CHỦ ĐỀ RPG</div>
+            <button onclick="closeEditTopicModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="form-edit-topic" onsubmit="submitEditTopic(event)" enctype="multipart/form-data">
+            <input type="hidden" id="edit-topic-id">
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">TÊN CHỦ ĐỀ:</label>
+                <input type="text" id="edit-topic-title" name="title" class="search-input" style="width: 100%; box-sizing: border-box;" required>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">THỂ LOẠI (GENRE):</label>
+                <input type="text" id="edit-topic-genre" name="genre" class="search-input" style="width: 100%; box-sizing: border-box;" required>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">CHẾ ĐỘ CHƠI (PLAY MODE):</label>
+                <select id="edit-topic-mode" name="play_mode" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                    <option value="both">Cho người chơi tự do lựa chọn (Both)</option>
+                    <option value="write">Chỉ được tự gõ tiếng Anh (Writing Only)</option>
+                    <option value="choose">Chỉ được chọn phương án (Choosing Only)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">ĐỔI ẢNH BÌA (TÙY CHỌN):</label>
+                <input type="file" id="edit-topic-cover" name="cover_image" class="search-input" accept="image/*" style="width: 100%; box-sizing: border-box; padding: 7px 10px;">
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">SYSTEM PROMPT:</label>
+                <textarea id="edit-topic-prompt" name="system_prompt" rows="5" class="search-input" style="width: 100%; box-sizing: border-box; resize: vertical;" required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeEditTopicModal()" class="btn-action" style="padding: 10px 18px; color: #94a3b8;">HỦY</button>
+                <button type="submit" class="pixel-btn" style="background: var(--neon-purple); padding: 10px 20px;">LƯU THAY ĐỔI</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: THÊM / SỬA NGỮ PHÁP -->
+<div id="modal-grammar" class="admin-modal">
+    <div class="admin-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="pixel-title" id="grammar-modal-title" style="color: var(--neon-amber); font-size: 16px;">THÊM CẤU TRÚC NGỮ PHÁP</div>
+            <button onclick="closeGrammarModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="form-grammar" onsubmit="submitGrammar(event)">
+            <input type="hidden" id="grammar-id">
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">CẤU TRÚC (STRUCTURE):</label>
+                <input type="text" id="grammar-structure" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: S + have/has + V3/ed">
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">GIẢI THÍCH (EXPLANATION):</label>
+                <textarea id="grammar-explanation" rows="3" class="search-input" style="width: 100%; box-sizing: border-box; resize: vertical;" required placeholder="Giải thích cách dùng, dấu hiệu nhận biết..."></textarea>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">VÍ DỤ TIÊU BIỂU:</label>
+                <input type="text" id="grammar-example" class="search-input" style="width: 100%; box-sizing: border-box;" placeholder="VD: I have visited Tokyo three times.">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">LEVEL CEFR:</label>
+                    <select id="grammar-level" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                        <option value="A1">A1</option>
+                        <option value="A2">A2</option>
+                        <option value="B1" selected>B1</option>
+                        <option value="B2">B2</option>
+                        <option value="C1">C1</option>
+                        <option value="C2">C2</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">DANH MỤC / CHUYÊN ĐỀ:</label>
+                    <input type="text" id="grammar-cat" class="search-input" style="width: 100%; box-sizing: border-box;" value="General" placeholder="Tenses, Conditionals...">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">ĐỘ KHÓ (1-5):</label>
+                    <input type="number" id="grammar-diff" class="search-input" style="width: 100%; box-sizing: border-box;" min="1" max="5" value="1">
+                </div>
+                <div style="display: flex; align-items: center; margin-top: 18px;">
+                    <label style="color: #cbd5e1; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="grammar-slang"> Cú pháp tiếng lóng / Slang
+                    </label>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeGrammarModal()" class="btn-action" style="padding: 10px 18px; color: #94a3b8;">HỦY</button>
+                <button type="submit" class="pixel-btn" style="background: var(--neon-amber); color: #000; padding: 10px 20px;">LƯU NGỮ PHÁP</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: THÊM / SỬA NHIỆM VỤ CÀY XU -->
+<div id="modal-quest" class="admin-modal">
+    <div class="admin-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="pixel-title" id="quest-modal-title" style="color: var(--pixel-green); font-size: 16px;">TẠO NHIỆM VỤ CÀY XU</div>
+            <button onclick="closeQuestModal()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="form-quest" onsubmit="submitQuest(event)">
+            <input type="hidden" id="quest-id">
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">MÃ NHIỆM VỤ (CODE):</label>
+                    <input type="text" id="quest-code" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: QUEST_VOCAB_100">
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">DANH MỤC:</label>
+                    <select id="quest-category" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                        <option value="NEWBIE">NEWBIE (Tân thủ)</option>
+                        <option value="VOCAB">VOCAB (Từ vựng)</option>
+                        <option value="GRAMMAR">GRAMMAR (Ngữ pháp)</option>
+                        <option value="ARENA">ARENA (Đấu trường)</option>
+                        <option value="LEGEND">LEGEND (Huyền thoại)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">TIÊU ĐỀ NHIỆM VỤ:</label>
+                <input type="text" id="quest-title" class="search-input" style="width: 100%; box-sizing: border-box;" required placeholder="VD: Thợ săn từ vựng B2">
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">MÔ TẢ CHI TIẾT:</label>
+                <textarea id="quest-desc" rows="2" class="search-input" style="width: 100%; box-sizing: border-box; resize: vertical;" required placeholder="Mô tả điều kiện để hoàn thành..."></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">LOẠI CHỈ TIÊU (TARGET):</label>
+                    <select id="quest-target-type" class="select-filter" style="width: 100%; box-sizing: border-box;">
+                        <option value="VOCAB_COUNT">Thuộc Từ vựng (VOCAB_COUNT)</option>
+                        <option value="STREAK_DAYS">Chuỗi ngày học (STREAK_DAYS)</option>
+                        <option value="ARENA_WINS">Thắng Đấu trường (ARENA_WINS)</option>
+                        <option value="EXAM_SCORE">Điểm Khảo thí (EXAM_SCORE)</option>
+                        <option value="GRAMMAR_COUNT">Thuộc Ngữ pháp (GRAMMAR_COUNT)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">CHỈ TIÊU CẦN ĐẠT:</label>
+                    <input type="number" id="quest-target-count" class="search-input" style="width: 100%; box-sizing: border-box;" min="1" value="10" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">THƯỞNG XU:</label>
+                    <input type="number" id="quest-reward-coins" class="search-input" style="width: 100%; box-sizing: border-box;" min="0" value="50" required>
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">THƯỞNG EXP:</label>
+                    <input type="number" id="quest-reward-exp" class="search-input" style="width: 100%; box-sizing: border-box;" min="0" value="100" required>
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 5px;">THỨ TỰ:</label>
+                    <input type="number" id="quest-order-index" class="search-input" style="width: 100%; box-sizing: border-box;" min="1" value="1">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeQuestModal()" class="btn-action" style="padding: 10px 18px; color: #94a3b8;">HỦY</button>
+                <button type="submit" class="pixel-btn" style="background: var(--pixel-green); color: #000; padding: 10px 20px;">LƯU NHIỆM VỤ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: XÁC NHẬN RESET TOÀN BỘ DỮ LIỆU -->
 <div id="modal-reset-data" class="admin-modal">
     <div class="admin-modal-content" style="border-color: rgba(239, 68, 68, 0.6);">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
@@ -710,8 +1237,12 @@
 <script>
     let currentAdminTab = 'overview';
     let cachedUsers = [];
+    let cachedShopItems = [];
+    let cachedQuests = [];
     let vocabCurrentPage = 1;
     let vocabTotalPages = 1;
+    let grammarCurrentPage = 1;
+    let grammarTotalPages = 1;
 
     document.addEventListener("DOMContentLoaded", () => {
         fetchAdminStats();
@@ -727,28 +1258,32 @@
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
 
-        const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabName));
+        const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => {
+            const attr = b.getAttribute('onclick') || '';
+            return attr.includes(`'${tabName}'`);
+        });
         if (targetBtn) targetBtn.classList.add('active');
 
         const targetPane = document.getElementById(`pane-${tabName}`);
         if (targetPane) targetPane.classList.add('active');
 
-        if (tabName === 'vocab') {
-            fetchVocabData(vocabCurrentPage);
-        } else if (tabName === 'users') {
-            fetchAdminUsers();
-        } else if (tabName === 'topics') {
-            fetchAdminTopics();
-        } else if (tabName === 'overview') {
-            fetchAdminStats();
-        }
+        if (tabName === 'overview') fetchAdminStats();
+        else if (tabName === 'users') fetchAdminUsers();
+        else if (tabName === 'shop') fetchShopItems();
+        else if (tabName === 'categories') { fetchCategoriesData(); fetchGrammarData(grammarCurrentPage); }
+        else if (tabName === 'vocab') fetchVocabData(vocabCurrentPage);
+        else if (tabName === 'topics') { fetchAdminTopics(); fetchStorySessions(1); }
+        else if (tabName === 'quests') fetchQuestsData();
     }
 
     function refreshCurrentTab() {
         fetchAdminStats();
         if (currentAdminTab === 'users') fetchAdminUsers();
-        if (currentAdminTab === 'vocab') fetchVocabData(vocabCurrentPage);
-        if (currentAdminTab === 'topics') fetchAdminTopics();
+        else if (currentAdminTab === 'shop') fetchShopItems();
+        else if (currentAdminTab === 'categories') { fetchCategoriesData(); fetchGrammarData(grammarCurrentPage); }
+        else if (currentAdminTab === 'vocab') fetchVocabData(vocabCurrentPage);
+        else if (currentAdminTab === 'topics') { fetchAdminTopics(); fetchStorySessions(1); }
+        else if (currentAdminTab === 'quests') fetchQuestsData();
     }
 
     // ==========================================
@@ -763,10 +1298,12 @@
                     window.location.href = '/dashboard';
                     return;
                 }
-                document.getElementById('stat-users').innerText = data.users;
-                document.getElementById('stat-vocab').innerText = data.vocab;
-                document.getElementById('stat-grammar').innerText = data.grammar;
-                document.getElementById('stat-tests').innerText = data.tests;
+                document.getElementById('stat-users').innerText = data.users || 0;
+                document.getElementById('stat-vocab').innerText = data.vocab || 0;
+                document.getElementById('stat-grammar').innerText = data.grammar || 0;
+                document.getElementById('stat-tests').innerText = data.tests || 0;
+                if(document.getElementById('stat-cosmetics')) document.getElementById('stat-cosmetics').innerText = data.cosmetics || 0;
+                if(document.getElementById('stat-quests')) document.getElementById('stat-quests').innerText = data.quests || 0;
             })
             .catch(err => console.error("Admin Auth/Stats Error:", err));
     }
@@ -803,29 +1340,21 @@
             tbody.innerHTML += `
                 <tr>
                     <td style="font-family: var(--text-mono); color: #94a3b8;">#${u.id}</td>
-                    <td>
-                        <div style="font-weight: 600; color: #fff;">${u.username}</div>
-                    </td>
+                    <td><div style="font-weight: 600; color: #fff;">${u.username}</div></td>
                     <td>${roleBadge}</td>
-                    <td>
-                        <span style="color: var(--neon-purple);">${u.level || 'Tân Binh'}</span>
-                    </td>
-                    <td>
-                        <span style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">🪙 ${u.coins}</span>
-                    </td>
+                    <td><span style="color: var(--neon-purple);">${u.level || 'Tân Binh'}</span></td>
+                    <td><span style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">🪙 ${u.coins}</span></td>
                     <td style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">${u.created_at}</td>
                     <td style="text-align: right;">
                         <div style="display: inline-flex; gap: 8px;">
-                            <button onclick="resetUserProgress(${u.id}, '${u.username}')" class="btn-action btn-action-warning" title="Reset toàn bộ tiến độ, điểm số về 0">
+                            <button onclick="resetUserProgress(${u.id}, '${u.username}')" class="btn-action btn-action-warning" title="Reset toàn bộ tiến độ">
                                 🔄 Reset
                             </button>
                             ${!isAdmin ? `
                                 <button onclick="deleteUser(${u.id}, '${u.username}')" class="btn-action btn-action-danger" title="Xóa tài khoản vĩnh viễn">
                                     🗑️ Xóa
                                 </button>
-                            ` : `
-                                <span style="font-size: 11px; color: #64748b; padding: 6px;">Bảo vệ</span>
-                            `}
+                            ` : `<span style="font-size: 11px; color: #64748b; padding: 6px;">Bảo vệ</span>`}
                         </div>
                     </td>
                 </tr>
@@ -846,18 +1375,13 @@
     }
 
     function resetUserProgress(userId, username) {
-        if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn RESET toàn bộ tiến độ học tập và điểm số của @${username} về mặc định? (Tài khoản vẫn được giữ nguyên)`)) {
-            return;
-        }
+        if (!confirm(`CẢNH BÁO: Bạn có chắc chắn muốn RESET toàn bộ tiến độ học tập và điểm số của @${username} về mặc định?`)) return;
 
         fetch(`/api/admin/users/${userId}/reset`, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
                 if (data.error) alert(`LỖI: ${data.error}`);
-                else {
-                    alert(data.message);
-                    fetchAdminUsers();
-                }
+                else { alert(data.message); fetchAdminUsers(); }
             })
             .catch(err => alert("Lỗi kết nối máy chủ!"));
     }
@@ -869,18 +1393,366 @@
             .then(res => res.json())
             .then(data => {
                 if (data.error) alert(`LỖI: ${data.error}`);
-                else {
-                    alert(data.message);
-                    fetchAdminUsers();
-                    fetchAdminStats();
-                }
+                else { alert(data.message); fetchAdminUsers(); fetchAdminStats(); }
             })
             .catch(err => alert("Lỗi kết nối máy chủ!"));
     }
 
     // ==========================================
+    // SHOP & COSMETICS CRUD
+    // ==========================================
+    function fetchShopItems() {
+        fetch('/api/admin/shop/items')
+            .then(res => res.json())
+            .then(items => {
+                cachedShopItems = items;
+                renderShopTable(items);
+                document.getElementById('shop-count-badge').textContent = `${items.length} Items`;
+            })
+            .catch(err => console.error("Fetch Shop Items Error:", err));
+    }
+
+    function renderShopTable(items) {
+        const tbody = document.getElementById('shop-table-body');
+        tbody.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 25px; color: #94a3b8;">Không có vật phẩm nào phù hợp.</td></tr>`;
+            return;
+        }
+
+        items.forEach(it => {
+            const typeBadge = {
+                'AVATAR_FRAME': `<span class="admin-badge" style="background: rgba(103,232,249,0.15); color: var(--neon-cyan); font-size: 10px;">KHUNG ĐỘNG</span>`,
+                'PLAYER_TITLE': `<span class="admin-badge" style="background: rgba(249,168,212,0.15); color: var(--neon-pink); font-size: 10px;">DANH HIỆU</span>`,
+                'CONSUMABLE': `<span class="admin-badge" style="background: rgba(16,185,129,0.15); color: var(--pixel-green); font-size: 10px;">TIÊU HAO</span>`
+            }[it.type] || it.type;
+
+            let previewHtml = '';
+            if (it.type === 'AVATAR_FRAME') {
+                previewHtml = `<div class="avatar-container ${it.css_class}" style="width: 38px; height: 38px; margin: 0 auto;"><img src="/static/uploads/avatars/default_avatar.png" class="avatar-img"></div>`;
+            } else if (it.icon_preview && it.icon_preview.endsWith('.png') && it.icon_preview !== 'default_item.png') {
+                previewHtml = `<img src="/static/uploads/consumables/${it.icon_preview}" onerror="this.src='/static/uploads/avatars/default_avatar.png'" style="width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(16,185,129,0.4);">`;
+            } else {
+                previewHtml = `<span style="font-size: 20px;">✨</span>`;
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-family: var(--text-mono); color: #94a3b8;">#${it.id}</td>
+                    <td style="text-align: center;">${previewHtml}</td>
+                    <td>
+                        <strong style="color: #fff; font-size: 13.5px;">${it.name}</strong>
+                        <div style="font-size: 11px; color: #94a3b8; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.description || ''}</div>
+                    </td>
+                    <td>${typeBadge}</td>
+                    <td><code style="font-size: 11px; color: var(--neon-cyan); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">${it.css_class}</code></td>
+                    <td><span style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">🪙 ${it.price_coins}</span></td>
+                    <td><span style="font-size: 11px; color: #a78bfa;">${it.item_effect || 'None'}</span></td>
+                    <td style="text-align: right;">
+                        <div style="display: inline-flex; gap: 6px;">
+                            <button onclick="editShopItem(${it.id})" class="btn-action btn-action-primary">✏️ Sửa</button>
+                            <button onclick="deleteShopItem(${it.id}, '${it.name}')" class="btn-action btn-action-danger">🗑️ Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function filterShopItems() {
+        const search = document.getElementById('shop-search').value.toLowerCase().trim();
+        const type = document.getElementById('shop-type-filter').value;
+
+        const filtered = cachedShopItems.filter(it => {
+            const matchSearch = it.name.toLowerCase().includes(search) || (it.css_class || '').toLowerCase().includes(search);
+            const matchType = type === 'ALL' || it.type === type;
+            return matchSearch && matchType;
+        });
+        renderShopTable(filtered);
+    }
+
+    function openShopItemModal(item = null) {
+        document.getElementById('modal-shop-item').classList.add('show');
+        if (item) {
+            document.getElementById('shop-modal-title').innerText = 'CHỈNH SỬA VẬT PHẨM';
+            document.getElementById('shop-item-id').value = item.id;
+            document.getElementById('shop-item-name').value = item.name;
+            document.getElementById('shop-item-type').value = item.type;
+            document.getElementById('shop-item-price').value = item.price_coins;
+            document.getElementById('shop-item-css').value = item.css_class;
+            document.getElementById('shop-item-icon').value = item.icon_preview || 'default_item.png';
+            document.getElementById('shop-item-effect').value = item.item_effect || '';
+            document.getElementById('shop-item-desc').value = item.description || '';
+        } else {
+            document.getElementById('shop-modal-title').innerText = 'THÊM VẬT PHẨM MỚI';
+            document.getElementById('form-shop-item').reset();
+            document.getElementById('shop-item-id').value = '';
+            document.getElementById('shop-item-icon').value = 'default_item.png';
+        }
+    }
+
+    function editShopItem(id) {
+        const item = cachedShopItems.find(i => i.id === id);
+        if (item) openShopItemModal(item);
+    }
+
+    function closeShopItemModal() {
+        document.getElementById('modal-shop-item').classList.remove('show');
+    }
+
+    function submitShopItem(e) {
+        e.preventDefault();
+        const id = document.getElementById('shop-item-id').value;
+        const payload = {
+            name: document.getElementById('shop-item-name').value.trim(),
+            type: document.getElementById('shop-item-type').value,
+            price_coins: parseInt(document.getElementById('shop-item-price').value) || 0,
+            css_class: document.getElementById('shop-item-css').value.trim(),
+            icon_preview: document.getElementById('shop-item-icon').value.trim(),
+            item_effect: document.getElementById('shop-item-effect').value.trim() || null,
+            description: document.getElementById('shop-item-desc').value.trim()
+        };
+
+        const url = id ? `/api/admin/shop/items/${id}` : '/api/admin/shop/items';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) alert(res.error);
+            else {
+                alert(res.message);
+                closeShopItemModal();
+                fetchShopItems();
+                fetchAdminStats();
+            }
+        })
+        .catch(err => alert("Lỗi khi kết nối với máy chủ!"));
+    }
+
+    function deleteShopItem(id, name) {
+        if (!confirm(`Bạn có chắc muốn xóa vĩnh viễn vật phẩm '${name}' khỏi Cửa hàng?`)) return;
+
+        fetch(`/api/admin/shop/items/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(res => {
+                if (res.error) alert(res.error);
+                else {
+                    alert(res.message);
+                    fetchShopItems();
+                    fetchAdminStats();
+                }
+            })
+            .catch(err => alert("Lỗi khi xóa vật phẩm!"));
+    }
+
+    // ==========================================
+    // CATEGORIES & GRAMMAR CRUD
+    // ==========================================
+    function fetchCategoriesData() {
+        fetch('/api/admin/categories')
+            .then(r => r.json())
+            .then(data => {
+                const vocabContainer = document.getElementById('vocab-themes-list');
+                const grammarContainer = document.getElementById('grammar-cats-list');
+
+                vocabContainer.innerHTML = (data.vocabulary_themes || []).map(t => 
+                    `<span class="admin-badge" style="background: rgba(103,232,249,0.1); color: var(--neon-cyan); border-color: rgba(103,232,249,0.3); font-size: 11px;">
+                        ${t.name} <strong style="color: #fff; margin-left: 4px;">(${t.count})</strong>
+                    </span>`
+                ).join('') || '<span style="color:#94a3b8; font-size:12px;">Chưa có chủ đề</span>';
+
+                grammarContainer.innerHTML = (data.grammar_categories || []).map(c => 
+                    `<span class="admin-badge" style="background: rgba(216,180,254,0.1); color: var(--neon-purple); border-color: rgba(216,180,254,0.3); font-size: 11px;">
+                        ${c.name} <strong style="color: #fff; margin-left: 4px;">(${c.count})</strong>
+                    </span>`
+                ).join('') || '<span style="color:#94a3b8; font-size:12px;">Chưa có danh mục</span>';
+            })
+            .catch(err => console.error("Error fetching categories:", err));
+    }
+
+    function submitRenameCategory(e) {
+        e.preventDefault();
+        const source_type = document.getElementById('rename-source-type').value;
+        const old_name = document.getElementById('rename-old-name').value.trim();
+        const new_name = document.getElementById('rename-new-name').value.trim();
+
+        if (!confirm(`Đổi tên toàn bộ mục từ '${old_name}' thành '${new_name}'?`)) return;
+
+        fetch('/api/admin/categories/rename', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ source_type, old_name, new_name })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) alert(res.error);
+            else {
+                alert(`${res.message}\n- Từ vựng cập nhật: ${res.vocab_updated}\n- Ngữ pháp cập nhật: ${res.grammar_updated}`);
+                document.getElementById('rename-old-name').value = '';
+                document.getElementById('rename-new-name').value = '';
+                fetchCategoriesData();
+                fetchGrammarData(grammarCurrentPage);
+            }
+        })
+        .catch(err => alert("Lỗi khi cập nhật danh mục!"));
+    }
+
+    function fetchGrammarData(page = 1) {
+        grammarCurrentPage = page;
+        const search = document.getElementById('grammar-search').value.trim();
+        const level = document.getElementById('grammar-level-filter').value;
+
+        const url = `/api/admin/grammars?page=${page}&per_page=12&search=${encodeURIComponent(search)}&level=${encodeURIComponent(level)}`;
+
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                grammarTotalPages = data.total_pages || 1;
+                document.getElementById('grammar-showing').textContent = data.grammars.length;
+                document.getElementById('grammar-total').textContent = data.total;
+                document.getElementById('grammar-page-indicator').textContent = `Trang ${data.page} / ${grammarTotalPages}`;
+
+                document.getElementById('btn-grammar-prev').disabled = data.page <= 1;
+                document.getElementById('btn-grammar-next').disabled = data.page >= grammarTotalPages;
+
+                renderGrammarTable(data.grammars);
+            })
+            .catch(err => console.error("Error fetching grammar:", err));
+    }
+
+    let cachedGrammars = [];
+    function renderGrammarTable(items) {
+        cachedGrammars = items;
+        const tbody = document.getElementById('grammar-table-body');
+        tbody.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 25px; color: #94a3b8;">Không tìm thấy cấu trúc ngữ pháp nào.</td></tr>`;
+            return;
+        }
+
+        items.forEach(g => {
+            const levelColor = {
+                'A1': 'var(--pixel-green)', 'A2': 'var(--neon-cyan)',
+                'B1': 'var(--neon-amber)', 'B2': 'var(--neon-purple)',
+                'C1': 'var(--neon-pink)', 'C2': '#f43f5e'
+            }[g.cefr_level] || '#fff';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-family: var(--text-mono); color: #94a3b8;">#${g.id}</td>
+                    <td><strong style="color: var(--neon-cyan); font-size: 13.5px;">${g.structure}</strong></td>
+                    <td style="color: #cbd5e1; max-width: 250px; line-height: 1.4; font-size: 12px;">${g.explanation}</td>
+                    <td style="color: #94a3b8; font-style: italic; font-size: 12px;">${g.example || '—'}</td>
+                    <td><span class="admin-badge" style="color: ${levelColor}; border-color: ${levelColor}; font-size: 10px;">${g.cefr_level}</span></td>
+                    <td><span class="admin-badge" style="background: rgba(255,255,255,0.06); font-size: 10px;">${g.category}</span></td>
+                    <td style="text-align: right;">
+                        <div style="display: inline-flex; gap: 6px;">
+                            <button onclick="editGrammarItem(${g.id})" class="btn-action btn-action-primary">✏️ Sửa</button>
+                            <button onclick="deleteGrammarItem(${g.id}, '${g.structure}')" class="btn-action btn-action-danger">🗑️ Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function changeGrammarPage(delta) {
+        const next = grammarCurrentPage + delta;
+        if (next >= 1 && next <= grammarTotalPages) fetchGrammarData(next);
+    }
+
+    function openGrammarModal(g = null) {
+        document.getElementById('modal-grammar').classList.add('show');
+        if (g) {
+            document.getElementById('grammar-modal-title').innerText = 'CHỈNH SỬA NGỮ PHÁP';
+            document.getElementById('grammar-id').value = g.id;
+            document.getElementById('grammar-structure').value = g.structure;
+            document.getElementById('grammar-explanation').value = g.explanation;
+            document.getElementById('grammar-example').value = g.example || '';
+            document.getElementById('grammar-level').value = g.cefr_level || 'A1';
+            document.getElementById('grammar-cat').value = g.category || 'General';
+            document.getElementById('grammar-diff').value = g.difficulty_score || 1;
+            document.getElementById('grammar-slang').checked = !!g.is_slang;
+        } else {
+            document.getElementById('grammar-modal-title').innerText = 'THÊM CẤU TRÚC NGỮ PHÁP';
+            document.getElementById('form-grammar').reset();
+            document.getElementById('grammar-id').value = '';
+            document.getElementById('grammar-diff').value = 1;
+        }
+    }
+
+    function editGrammarItem(id) {
+        const g = cachedGrammars.find(item => item.id === id);
+        if (g) openGrammarModal(g);
+    }
+
+    function closeGrammarModal() {
+        document.getElementById('modal-grammar').classList.remove('show');
+    }
+
+    function submitGrammar(e) {
+        e.preventDefault();
+        const id = document.getElementById('grammar-id').value;
+        const payload = {
+            structure: document.getElementById('grammar-structure').value.trim(),
+            explanation: document.getElementById('grammar-explanation').value.trim(),
+            example: document.getElementById('grammar-example').value.trim(),
+            cefr_level: document.getElementById('grammar-level').value,
+            category: document.getElementById('grammar-cat').value.trim() || 'General',
+            difficulty_score: parseInt(document.getElementById('grammar-diff').value) || 1,
+            is_slang: document.getElementById('grammar-slang').checked
+        };
+
+        const url = id ? `/api/admin/grammars/${id}` : '/api/admin/grammars';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) alert(res.error);
+            else {
+                alert(res.message);
+                closeGrammarModal();
+                fetchGrammarData(grammarCurrentPage);
+                fetchCategoriesData();
+                fetchAdminStats();
+            }
+        })
+        .catch(err => alert("Lỗi khi lưu ngữ pháp!"));
+    }
+
+    function deleteGrammarItem(id, structure) {
+        if (!confirm(`Xóa vĩnh viễn cấu trúc ngữ pháp '${structure}'?`)) return;
+
+        fetch(`/api/admin/grammars/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(res => {
+                if (res.error) alert(res.error);
+                else {
+                    alert(res.message);
+                    fetchGrammarData(grammarCurrentPage);
+                    fetchCategoriesData();
+                    fetchAdminStats();
+                }
+            })
+            .catch(err => alert("Lỗi khi xóa ngữ pháp!"));
+    }
+
+    // ==========================================
     // VOCABULARY MANAGEMENT
     // ==========================================
+    let cachedVocab = [];
     function fetchVocabData(page = 1) {
         vocabCurrentPage = page;
         const search = document.getElementById('vocab-search').value.trim();
@@ -905,6 +1777,7 @@
     }
 
     function renderVocabTable(items) {
+        cachedVocab = items;
         const tbody = document.getElementById('vocab-table-body');
         tbody.innerHTML = '';
 
@@ -926,15 +1799,12 @@
                     <td style="font-weight: bold; color: var(--neon-cyan); font-size: 14px;">${v.word}</td>
                     <td style="color: #e2e8f0;">${v.meaning}</td>
                     <td><span class="admin-badge" style="background: rgba(255,255,255,0.06); font-size: 10px;">${v.theme}</span></td>
-                    <td>
-                        <span class="admin-badge" style="color: ${levelColor}; border-color: ${levelColor}; font-size: 10px;">
-                            ${v.cefr_level}
-                        </span>
-                    </td>
+                    <td><span class="admin-badge" style="color: ${levelColor}; border-color: ${levelColor}; font-size: 10px;">${v.cefr_level}</span></td>
                     <td style="text-align: right;">
-                        <button onclick="deleteVocabItem(${v.id}, '${v.word}')" class="btn-action btn-action-danger" title="Xóa từ vựng">
-                            🗑️ Xóa
-                        </button>
+                        <div style="display: inline-flex; gap: 6px;">
+                            <button onclick="openEditVocabModal(${v.id})" class="btn-action btn-action-primary">✏️ Sửa</button>
+                            <button onclick="deleteVocabItem(${v.id}, '${v.word}')" class="btn-action btn-action-danger">🗑️ Xóa</button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -943,9 +1813,7 @@
 
     function changeVocabPage(delta) {
         const newPage = vocabCurrentPage + delta;
-        if (newPage >= 1 && newPage <= vocabTotalPages) {
-            fetchVocabData(newPage);
-        }
+        if (newPage >= 1 && newPage <= vocabTotalPages) fetchVocabData(newPage);
     }
 
     function openAddVocabModal() {
@@ -993,6 +1861,48 @@
         });
     }
 
+    function openEditVocabModal(id) {
+        const v = cachedVocab.find(item => item.id === id);
+        if (!v) return;
+        document.getElementById('edit-vocab-id').value = v.id;
+        document.getElementById('edit-vocab-word').value = v.word;
+        document.getElementById('edit-vocab-meaning').value = v.meaning;
+        document.getElementById('edit-vocab-level').value = v.cefr_level;
+        document.getElementById('edit-vocab-theme').value = v.theme;
+        document.getElementById('modal-edit-vocab').classList.add('show');
+    }
+
+    function closeEditVocabModal() {
+        document.getElementById('modal-edit-vocab').classList.remove('show');
+    }
+
+    function submitEditVocab(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-vocab-id').value;
+        const payload = {
+            word: document.getElementById('edit-vocab-word').value.trim(),
+            meaning: document.getElementById('edit-vocab-meaning').value.trim(),
+            cefr_level: document.getElementById('edit-vocab-level').value,
+            theme: document.getElementById('edit-vocab-theme').value.trim()
+        };
+
+        fetch(`/api/admin/vocabulary/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) alert(res.error);
+            else {
+                alert(res.message);
+                closeEditVocabModal();
+                fetchVocabData(vocabCurrentPage);
+            }
+        })
+        .catch(err => alert("Lỗi khi cập nhật từ vựng!"));
+    }
+
     function deleteVocabItem(id, word) {
         if (!confirm(`Bạn có chắc muốn xóa vĩnh viễn từ vựng '${word}' khỏi từ điển?`)) return;
 
@@ -1010,12 +1920,14 @@
     }
 
     // ==========================================
-    // RPG TOPICS MANAGEMENT
+    // RPG TOPICS & SESSIONS MANAGEMENT
     // ==========================================
+    let cachedTopics = [];
     function fetchAdminTopics() {
         fetch('/api/admin/topics')
             .then(res => res.json())
             .then(topics => {
+                cachedTopics = topics;
                 document.getElementById('topic-count-badge').textContent = `${topics.length} Topics`;
                 renderTopicsList(topics);
             })
@@ -1045,9 +1957,10 @@
                             </div>
                         </div>
                     </div>
-                    <button onclick="deleteTopic(${t.id}, '${t.title}')" class="btn-action btn-action-danger" style="flex-shrink: 0;">
-                        🗑️ Xóa
-                    </button>
+                    <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                        <button onclick="openEditTopicModal(${t.id})" class="btn-action btn-action-primary">✏️ Sửa</button>
+                        <button onclick="deleteTopic(${t.id}, '${t.title}')" class="btn-action btn-action-danger">🗑️ Xóa</button>
+                    </div>
                 </div>
             `;
         });
@@ -1074,6 +1987,7 @@
                 alert(data.message);
                 form.reset();
                 fetchAdminTopics();
+                fetchAdminStats();
             }
         })
         .catch(err => alert("Lỗi khi kết nối với máy chủ!"))
@@ -1081,6 +1995,45 @@
             btnSubmit.disabled = false;
             btnSubmit.innerText = oldText;
         });
+    }
+
+    function openEditTopicModal(id) {
+        const topic = cachedTopics.find(t => t.id === id);
+        if (!topic) return;
+
+        document.getElementById('edit-topic-id').value = topic.id;
+        document.getElementById('edit-topic-title').value = topic.title;
+        document.getElementById('edit-topic-genre').value = topic.genre;
+        document.getElementById('edit-topic-mode').value = topic.play_mode || 'both';
+        document.getElementById('edit-topic-prompt').value = topic.system_prompt;
+        document.getElementById('modal-edit-topic').classList.add('show');
+    }
+
+    function closeEditTopicModal() {
+        document.getElementById('modal-edit-topic').classList.remove('show');
+        document.getElementById('form-edit-topic').reset();
+    }
+
+    function submitEditTopic(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-topic-id').value;
+        const form = document.getElementById('form-edit-topic');
+        const formData = new FormData(form);
+
+        fetch(`/api/admin/topics/${id}`, {
+            method: 'PUT',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) alert(res.error);
+            else {
+                alert(res.message);
+                closeEditTopicModal();
+                fetchAdminTopics();
+            }
+        })
+        .catch(err => alert("Lỗi khi cập nhật chủ đề!"));
     }
 
     function deleteTopic(topicId, title) {
@@ -1093,9 +2046,218 @@
                 else {
                     alert(data.message);
                     fetchAdminTopics();
+                    fetchAdminStats();
                 }
             })
             .catch(err => alert("Lỗi kết nối máy chủ!"));
+    }
+
+    function fetchStorySessions(page = 1) {
+        const status = document.getElementById('session-status-filter').value;
+        const url = `/api/admin/story-sessions?page=${page}&per_page=10&status=${encodeURIComponent(status)}`;
+
+        fetch(url)
+            .then(r => r.json())
+            .then(data => renderStorySessions(data.sessions))
+            .catch(err => console.error("Error fetching sessions:", err));
+    }
+
+    function renderStorySessions(sessions) {
+        const tbody = document.getElementById('session-table-body');
+        tbody.innerHTML = '';
+
+        if (!sessions || sessions.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #94a3b8;">Không có phiên truyện nào.</td></tr>`;
+            return;
+        }
+
+        sessions.forEach(s => {
+            const statusBadge = s.status === 'Survived'
+                ? `<span class="admin-badge" style="background: rgba(16,185,129,0.15); color: var(--pixel-green); font-size: 10px;">SỐNG SÓT</span>`
+                : `<span class="admin-badge" style="background: rgba(239,68,68,0.15); color: #f87171; font-size: 10px;">TỬ TRẬN</span>`;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-family: var(--text-mono); color: #94a3b8;">#${s.id}</td>
+                    <td><strong style="color: #fff;">@${s.username}</strong></td>
+                    <td><span style="color: var(--neon-cyan);">${s.topic_title}</span></td>
+                    <td>${statusBadge}</td>
+                    <td style="font-size: 11.5px; color: #94a3b8; max-width: 320px; line-height: 1.4;">${s.summary_vn || s.summary_en || '—'}</td>
+                    <td style="font-size: 11px; color: #64748b; font-family: var(--text-mono);">${s.created_at}</td>
+                    <td style="text-align: right;">
+                        <button onclick="deleteStorySession(${s.id})" class="btn-action btn-action-danger">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function deleteStorySession(id) {
+        if (!confirm(`Xóa phiên truyện #${id}?`)) return;
+
+        fetch(`/api/admin/story-sessions/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(res => {
+                if (res.error) alert(res.error);
+                else { alert(res.message); fetchStorySessions(1); }
+            })
+            .catch(err => alert("Lỗi khi xóa phiên truyện!"));
+    }
+
+    // ==========================================
+    // QUESTS MANAGEMENT CRUD
+    // ==========================================
+    function fetchQuestsData() {
+        fetch('/api/admin/quests')
+            .then(r => r.json())
+            .then(quests => {
+                cachedQuests = quests;
+                renderQuestsTable(quests);
+                document.getElementById('quest-count-badge').textContent = `${quests.length} Quests`;
+            })
+            .catch(err => console.error("Error fetching quests:", err));
+    }
+
+    function renderQuestsTable(quests) {
+        const tbody = document.getElementById('quest-table-body');
+        tbody.innerHTML = '';
+
+        if (!quests || quests.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 25px; color: #94a3b8;">Không tìm thấy nhiệm vụ nào.</td></tr>`;
+            return;
+        }
+
+        quests.forEach(q => {
+            const catBadge = {
+                'NEWBIE': `<span class="admin-badge" style="background: rgba(16,185,129,0.15); color: var(--pixel-green); font-size: 10px;">TÂN THỦ</span>`,
+                'VOCAB': `<span class="admin-badge" style="background: rgba(103,232,249,0.15); color: var(--neon-cyan); font-size: 10px;">TỪ VỰNG</span>`,
+                'GRAMMAR': `<span class="admin-badge" style="background: rgba(216,180,254,0.15); color: var(--neon-purple); font-size: 10px;">NGỮ PHÁP</span>`,
+                'ARENA': `<span class="admin-badge" style="background: rgba(245,158,11,0.15); color: var(--neon-amber); font-size: 10px;">ĐẤU TRƯỜNG</span>`,
+                'LEGEND': `<span class="admin-badge" style="background: rgba(244,63,94,0.15); color: #f43f5e; font-size: 10px;">HUYỀN THOẠI</span>`
+            }[q.category] || q.category;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-family: var(--text-mono); color: #94a3b8;">#${q.id}</td>
+                    <td><code style="color: var(--neon-cyan); font-size: 11px;">${q.quest_code}</code></td>
+                    <td>${catBadge}</td>
+                    <td>
+                        <strong style="color: #fff; font-size: 13.5px;">${q.title}</strong>
+                        <div style="font-size: 11px; color: #94a3b8;">${q.description}</div>
+                    </td>
+                    <td><span style="color: #cbd5e1; font-size: 12px;">${q.target_type}: <strong style="color: var(--neon-cyan);">${q.target_count}</strong></span></td>
+                    <td>
+                        <span style="color: var(--neon-amber); font-family: var(--text-mono); font-size: 12px; font-weight: bold;">🪙 +${q.reward_coins}</span>
+                        <span style="color: var(--neon-purple); font-family: var(--text-mono); font-size: 11px; margin-left: 6px;">⚡ +${q.reward_exp} EXP</span>
+                    </td>
+                    <td style="font-family: var(--text-mono);">${q.order_index}</td>
+                    <td style="text-align: right;">
+                        <div style="display: inline-flex; gap: 6px;">
+                            <button onclick="editQuestItem(${q.id})" class="btn-action btn-action-primary">✏️ Sửa</button>
+                            <button onclick="deleteQuestItem(${q.id}, '${q.title}')" class="btn-action btn-action-danger">🗑️ Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function filterQuests() {
+        const search = document.getElementById('quest-search').value.toLowerCase().trim();
+        const category = document.getElementById('quest-category-filter').value;
+
+        const filtered = cachedQuests.filter(q => {
+            const matchSearch = q.title.toLowerCase().includes(search) || q.quest_code.toLowerCase().includes(search) || q.description.toLowerCase().includes(search);
+            const matchCat = category === 'ALL' || q.category === category;
+            return matchSearch && matchCat;
+        });
+        renderQuestsTable(filtered);
+    }
+
+    function openQuestModal(q = null) {
+        document.getElementById('modal-quest').classList.add('show');
+        if (q) {
+            document.getElementById('quest-modal-title').innerText = 'CHỈNH SỬA NHIỆM VỤ';
+            document.getElementById('quest-id').value = q.id;
+            document.getElementById('quest-code').value = q.quest_code;
+            document.getElementById('quest-category').value = q.category;
+            document.getElementById('quest-title').value = q.title;
+            document.getElementById('quest-desc').value = q.description;
+            document.getElementById('quest-target-type').value = q.target_type;
+            document.getElementById('quest-target-count').value = q.target_count;
+            document.getElementById('quest-reward-coins').value = q.reward_coins;
+            document.getElementById('quest-reward-exp').value = q.reward_exp;
+            document.getElementById('quest-order-index').value = q.order_index;
+        } else {
+            document.getElementById('quest-modal-title').innerText = 'TẠO NHIỆM VỤ CÀY XU';
+            document.getElementById('form-quest').reset();
+            document.getElementById('quest-id').value = '';
+            document.getElementById('quest-target-count').value = 10;
+            document.getElementById('quest-reward-coins').value = 50;
+            document.getElementById('quest-reward-exp').value = 100;
+            document.getElementById('quest-order-index').value = 1;
+        }
+    }
+
+    function editQuestItem(id) {
+        const q = cachedQuests.find(item => item.id === id);
+        if (q) openQuestModal(q);
+    }
+
+    function closeQuestModal() {
+        document.getElementById('modal-quest').classList.remove('show');
+    }
+
+    function submitQuest(e) {
+        e.preventDefault();
+        const id = document.getElementById('quest-id').value;
+        const payload = {
+            quest_code: document.getElementById('quest-code').value.trim(),
+            category: document.getElementById('quest-category').value,
+            title: document.getElementById('quest-title').value.trim(),
+            description: document.getElementById('quest-desc').value.trim(),
+            target_type: document.getElementById('quest-target-type').value,
+            target_count: parseInt(document.getElementById('quest-target-count').value) || 1,
+            reward_coins: parseInt(document.getElementById('quest-reward-coins').value) || 0,
+            reward_exp: parseInt(document.getElementById('quest-reward-exp').value) || 0,
+            order_index: parseInt(document.getElementById('quest-order-index').value) || 1
+        };
+
+        const url = id ? `/api/admin/quests/${id}` : '/api/admin/quests';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) alert(res.error);
+            else {
+                alert(res.message);
+                closeQuestModal();
+                fetchQuestsData();
+                fetchAdminStats();
+            }
+        })
+        .catch(err => alert("Lỗi khi lưu nhiệm vụ!"));
+    }
+
+    function deleteQuestItem(id, title) {
+        if (!confirm(`Xóa vĩnh viễn nhiệm vụ '${title}'?`)) return;
+
+        fetch(`/api/admin/quests/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(res => {
+                if (res.error) alert(res.error);
+                else {
+                    alert(res.message);
+                    fetchQuestsData();
+                    fetchAdminStats();
+                }
+            })
+            .catch(err => alert("Lỗi khi xóa nhiệm vụ!"));
     }
 
     // ==========================================

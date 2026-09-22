@@ -102,20 +102,28 @@ def call_gemini_with_retry(prompt, system_instruction=None, model='gemini-3.6-fl
             return raw_text.replace('```json', '').replace('```', '').strip()
 
         except errors.APIError as e:
-            if e.code == 429:
+            if e.code in [429, 503] or '503' in str(e) or 'high demand' in str(e).lower():
+                print(f"[API RETRY] Gặp mã lỗi {getattr(e, 'code', '503')} ({e}). Luân chuyển sang lõi AI dự phòng...")
                 key_manager.switch_key()
+                # Thử đổi sang model dự phòng nếu model chính bị quá tải
+                if model == 'gemini-3.6-flash':
+                    model = 'gemini-2.5-flash'
+                elif model == 'gemini-2.5-flash':
+                    model = 'gemini-3.6-flash'
                 attempt += 1
                 time.sleep(0.5)
                 continue
             else:
                 print(f"[API ERROR] Lỗi hệ thống Google: {e}")
+                key_manager.switch_key()
                 attempt += 1
-                time.sleep(2)
+                time.sleep(0.5)
 
         except Exception as e:
             print(f"[NETWORK ERROR] Lỗi kết nối: {e}")
+            key_manager.switch_key()
             attempt += 1
-            time.sleep(2)
+            time.sleep(0.5)
 
     raise Exception("Mạng lưới AI sụp đổ hoàn toàn do cạn kiệt tài nguyên!")
 

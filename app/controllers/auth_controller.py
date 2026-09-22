@@ -138,6 +138,8 @@ def get_profile_stats():
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Không tìm thấy người dùng!"}), 404
 
     # Tính tổng từ vựng ĐÃ THUỘC
     learned_count = UserVocabulary.query.filter_by(user_id=user_id, memorization_level='DA_THUOC').count()
@@ -193,6 +195,8 @@ def update_profile():
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
     user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Không tìm thấy người dùng!"}), 404
 
     # 1. Cập nhật Bio (Châm ngôn)
     bio = request.form.get('bio')

@@ -847,14 +847,41 @@ def ensure_default_cosmetics():
         # DANH HIỆU CHIẾN BINH
         {"name": "Chiến Binh Cú Pháp", "type": "PLAYER_TITLE", "css": "title-syntax", "price": 80, "desc": "Danh hiệu cho người yêu thích cấu trúc ngữ pháp"},
         {"name": "Đại Đội Trưởng Chính Tả", "type": "PLAYER_TITLE", "css": "title-spelling", "price": 120, "desc": "Danh hiệu cho tay gỡ bom từ vựng siêu cấp"},
-        {"name": "Kẻ Hủy Diệt Ngữ Pháp", "type": "PLAYER_TITLE", "css": "title-destroyer", "price": 200, "desc": "Danh xưng huyền thoại của bậc thầy ngôn ngữ"}
+        {"name": "Kẻ Hủy Diệt Ngữ Pháp", "type": "PLAYER_TITLE", "css": "title-destroyer", "price": 200, "desc": "Danh xưng huyền thoại của bậc thầy ngôn ngữ"},
+
+        # KHUNG ĐỘNG CÔNG NGHỆ CAO / TRANSFORMER SCI-FI
+        {"name": "Khung Lõi Cơ Khí Transformer Autobot", "type": "AVATAR_FRAME", "css": "frame-transformer-matrix", "price": 2500, "desc": "Công nghệ biến hình Autobot huyền thoại với hệ thống bánh răng cơ khí xoay kép và tia quét laser đa chiều.", "icon": "transformer_matrix.png", "effect": "TRANSFORMER_AUTOBOT"},
+        {"name": "Khung Chiến Hạm Quantum Decepticon", "type": "AVATAR_FRAME", "css": "frame-quantum-decepticon", "price": 3200, "desc": "Cánh quạt phản lực siêu âm Decepticon cùng lõi hạt nhân Dark Energon tím rực uy lực tối thượng.", "icon": "quantum_decepticon.png", "effect": "QUANTUM_DECEPTICON"},
+        {"name": "Khung Năng Lượng Cyber Allspark", "type": "AVATAR_FRAME", "css": "frame-cyber-allspark", "price": 3800, "desc": "Sở hữu sức mạnh khối lập phương khởi nguyên Allspark, vòng kẹp năng lượng xoay phản hồi cùng tia điện plasma.", "icon": "cyber_allspark.png", "effect": "CYBER_ALLSPARK"},
+        {"name": "Khung Lò Phản Ứng Kinetic Vô Cực", "type": "AVATAR_FRAME", "css": "frame-kinetic-reactor", "price": 5000, "desc": "Đỉnh cao công nghệ Cybertron - Con quay hồi chuyển vi sai 3 trục Gimbal tự cân bằng không gian vĩnh cửu.", "icon": "kinetic_reactor.png", "effect": "KINETIC_REACTOR"},
+
+        # VẬT PHẨM TIÊU HAO HỖ TRỢ
+        {"name": "Khiên Bảo Vệ Chuỗi (Streak Shield)", "type": "CONSUMABLE", "css": "item-streak-shield", "price": 120, "desc": "Bảo vệ chuỗi ngày học Streak không bị reset về 0 nếu bỏ lỡ 1 ngày.", "icon": "streak_shield.png", "effect": "STREAK_SHIELD"},
+        {"name": "Thuốc Nhân Đôi Xu & EXP (2x Booster)", "type": "CONSUMABLE", "css": "item-booster-2x", "price": 180, "desc": "Nhân 2 toàn bộ Xu và EXP kiếm được trong 30 phút kế tiếp.", "icon": "booster_2x.png", "effect": "DOUBLE_COINS"},
+        {"name": "La Bàn Gợi Ý AI (Radar Hint)", "type": "CONSUMABLE", "css": "item-radar-hint", "price": 80, "desc": "Khai phá gợi ý thông minh từ AI giải thích chi tiết đáp án câu hỏi.", "icon": "radar_hint.png", "effect": "AI_HINT"},
+        {"name": "Bình Hồi Sinh Thần Tốc (Exam Revive)", "type": "CONSUMABLE", "css": "item-exam-revive", "price": 150, "desc": "Hồi sinh ngay lập tức trong bài thi hoặc trận đấu khi hết lượt làm sai.", "icon": "exam_revive.png", "effect": "EXAM_REVIVE"},
+        {"name": "Đồng Hồ Cát Ngưng Đọng (Time Freeze)", "type": "CONSUMABLE", "css": "item-time-freeze", "price": 90, "desc": "Đóng băng đồng hồ đếm ngược thêm 30 giây để suy nghĩ câu hỏi khó.", "icon": "time_freeze.png", "effect": "TIME_FREEZE"},
+        {"name": "Rương Báu Không Gian (Cosmic Mystery Chest)", "type": "CONSUMABLE", "css": "item-mystery-chest", "price": 200, "desc": "Mở khóa ngẫu nhiên lượng xu lớn hoặc danh hiệu/khung avatar hiếm.", "icon": "cosmic_chest.png", "effect": "LUCKY_CHEST"}
     ]
 
     for it in items:
         c = CosmeticItem.query.filter_by(css_class=it["css"]).first()
         if not c:
-            c = CosmeticItem(name=it["name"], type=it["type"], css_class=it["css"], price_coins=it["price"], description=it["desc"])
+            c = CosmeticItem(
+                name=it["name"], 
+                type=it["type"], 
+                css_class=it["css"], 
+                price_coins=it["price"], 
+                description=it["desc"],
+                icon_preview=it.get("icon", "default_item.png"),
+                item_effect=it.get("effect")
+            )
             db.session.add(c)
+        else:
+            if it.get("icon") and (not c.icon_preview or c.icon_preview == "default_item.png"):
+                c.icon_preview = it["icon"]
+            if it.get("effect") and not c.item_effect:
+                c.item_effect = it["effect"]
     db.session.commit()
 
 
@@ -889,6 +916,7 @@ def get_cosmetics():
             "css_class": item.css_class,
             "description": item.description,
             "price_coins": item.price_coins,
+            "icon_preview": item.icon_preview or "default_item.png",
             "item_effect": getattr(item, 'item_effect', None),
             "is_owned": is_owned,
             "is_equipped": is_equipped,
