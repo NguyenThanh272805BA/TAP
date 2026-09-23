@@ -804,6 +804,26 @@
         });
     }
 
+    let isRoadmapMilestoneExamActive = false;
+
+    // Giám sát đóng/reload tab khi đang làm bài thi chặng
+    window.addEventListener('beforeunload', (e) => {
+        if (isRoadmapMilestoneExamActive) {
+            e.preventDefault();
+            e.returnValue = '⚠️ CẢNH BÁO QUY CHẾ THI: Bài thi chặng đang diễn ra! Đóng tab hoặc tải lại sẽ bị hủy bài thi, phạt trừ 50 RP và GIÁNG HẠNG!';
+            return e.returnValue;
+        }
+    });
+
+    window.addEventListener('pagehide', () => {
+        if (isRoadmapMilestoneExamActive && currentMilestoneId && currentExamData) {
+            navigator.sendBeacon(`/api/roadmap/milestone/${currentMilestoneId}/submit_exam`, JSON.stringify({
+                exam_token: currentExamData.exam_token,
+                is_abandoned: true
+            }));
+        }
+    });
+
     function showModalView(viewName) {
         ['prep', 'exam', 'report'].forEach(v => {
             const el = document.getElementById(`view-${v}`);
@@ -812,6 +832,15 @@
     }
 
     function closeMilestoneModal() {
+        if (isRoadmapMilestoneExamActive) {
+            confirmAbandonExam();
+            return;
+        }
+        forceCloseMilestoneModal();
+    }
+
+    function forceCloseMilestoneModal() {
+        isRoadmapMilestoneExamActive = false;
         clearInterval(examTimerInterval);
         clearInterval(prepCooldownInterval);
         document.getElementById('milestone-modal').style.display = 'none';
@@ -849,6 +878,7 @@
 
                 currentExamData = data;
                 examTimeLeft = data.time_limit_sec || 420;
+                isRoadmapMilestoneExamActive = true;
 
                 // Render 4 Sections
                 renderSection1MCQ(data.sections.vocab_mcq || []);
@@ -973,16 +1003,20 @@
         const selected = scrambleSelectedMap[currentScrambleIdx] || [];
         const letters = q.shuffled_letters || [];
 
-        // Slots
+        // Slots: Hiển thị các ô đã điền. Bấm vào chữ để BỎ XUỐNG
         document.getElementById('exam-scramble-slots').innerHTML = letters.map((_, i) => {
-            const filled = selected[i] ? selected[i].letter : '';
-            return `<div class="scramble-slot">${filled}</div>`;
+            const item = selected[i];
+            if (item) {
+                return `<div class="scramble-slot filled" style="cursor: pointer; border-color: var(--neon-cyan); box-shadow: 0 4px 0 #000, 0 0 10px rgba(6,182,212,0.4);" title="Bấm vào để bỏ chữ '${item.letter}' xuống" onclick="removeExamLetter(${i})">${item.letter}</div>`;
+            } else {
+                return `<div class="scramble-slot empty" style="border-style: dashed; border-color: #475569;"></div>`;
+            }
         }).join('');
 
-        // Pool
+        // Pool: Ngân hàng chữ cái. Bấm vào chữ để BỎ LÊN ô
         document.getElementById('exam-scramble-pool').innerHTML = letters.map((ch, idx) => {
             const isUsed = selected.some(s => s.tileIdx === idx);
-            return `<div class="letter-tile ${isUsed ? 'used' : ''}" id="scramble-tile-${currentScrambleIdx}-${idx}" onclick="pickExamLetter(${idx}, '${ch}')">${ch}</div>`;
+            return `<div class="letter-tile ${isUsed ? 'used' : ''}" id="scramble-tile-${currentScrambleIdx}-${idx}" title="${isUsed ? 'Đã chọn' : 'Bấm để đưa lên ô'}" onclick="pickExamLetter(${idx}, '${ch}')">${ch}</div>`;
         }).join('');
     }
 
@@ -1001,6 +1035,22 @@
         updateExamProgressUI();
     }
 
+    function removeExamLetter(selectedIdx) {
+        if (!scrambleSelectedMap[currentScrambleIdx]) return;
+        const selected = scrambleSelectedMap[currentScrambleIdx];
+        if (selectedIdx >= 0 && selectedIdx < selected.length) {
+            selected.splice(selectedIdx, 1);
+            const q = currentExamData.sections.word_scramble[currentScrambleIdx];
+            if (selected.length > 0) {
+                examAnswers.word_scramble[q.id] = selected.map(s => s.letter).join('');
+            } else {
+                delete examAnswers.word_scramble[q.id];
+            }
+            renderCurrentScrambleWord();
+            updateExamProgressUI();
+        }
+    }
+
     function resetCurrentScrambleWord() {
         scrambleSelectedMap[currentScrambleIdx] = [];
         const q = currentExamData.sections.word_scramble[currentScrambleIdx];
@@ -1016,19 +1066,33 @@
         resetExamSyntax();
     }
 
+    function renderExamSyntaxSlots() {
+        const slotContainer = document.getElementById('exam-syntax-slots');
+        if (!syntaxSelectedChunks || syntaxSelectedChunks.length === 0) {
+            slotContainer.innerHTML = '<span style="color: #64748b; font-size: 12px; font-style: italic;">Bấm các khối từ bên dưới để ghép thành câu hoàn chỉnh (bấm vào từ trên này để bỏ xuống)...</span>';
+            delete examAnswers.syntax['syntax_0'];
+        } else {
+            slotContainer.innerHTML = syntaxSelectedChunks.map((c, idx) => 
+                `<span class="syntax-tile" style="background: rgba(6, 182, 212, 0.25); border: 2px solid var(--neon-cyan); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Bấm vào để bỏ từ này xuống" onclick="removeExamSyntaxChunk(${idx})">${c.text} <small style="color: #ef4444; font-weight: bold;">✕</small></span>`
+            ).join(' ');
+            examAnswers.syntax['syntax_0'] = syntaxSelectedChunks.map(c => c.text);
+        }
+        updateExamProgressUI();
+    }
+
     function resetExamSyntax() {
         syntaxSelectedChunks = [];
         delete examAnswers.syntax['syntax_0'];
 
         const container = document.getElementById('exam-syntax-slots');
-        container.innerHTML = '<span style="color: #64748b; font-size: 12px; font-style: italic;">Chọn các khối từ bên dưới để ghép thành câu hoàn chỉnh...</span>';
+        container.innerHTML = '<span style="color: #64748b; font-size: 12px; font-style: italic;">Bấm các khối từ bên dưới để ghép thành câu hoàn chỉnh (bấm vào từ trên này để bỏ xuống)...</span>';
 
         if (!currentExamData || !currentExamData.sections || !currentExamData.sections.syntax) return;
         const chunks = currentExamData.sections.syntax.shuffled_chunks || [];
 
         document.getElementById('exam-syntax-pool').innerHTML = chunks.map((chunk, idx) => {
             const safeChunk = chunk.replace(/'/g, "\\'");
-            return `<div class="syntax-tile" id="syn-tile-${idx}" onclick="pickExamSyntaxChunk(${idx}, '${safeChunk}')">${chunk}</div>`;
+            return `<div class="syntax-tile" id="syn-tile-${idx}" title="Bấm để đưa lên câu" onclick="pickExamSyntaxChunk(${idx}, '${safeChunk}')">${chunk}</div>`;
         }).join('');
 
         updateExamProgressUI();
@@ -1040,14 +1104,18 @@
 
         tile.classList.add('used');
         syntaxSelectedChunks.push({ tileIdx: tileIdx, text: chunk });
+        renderExamSyntaxSlots();
+    }
 
-        const slotContainer = document.getElementById('exam-syntax-slots');
-        slotContainer.innerHTML = syntaxSelectedChunks.map(c => 
-            `<span style="background: rgba(103, 232, 249, 0.2); border: 2px solid #000000; padding: 6px 14px; border-radius: 8px; font-family: var(--text-mono); font-weight: 700; color: #fff; box-shadow: 0 2px 0 #000000;">${c.text}</span>`
-        ).join('');
-
-        examAnswers.syntax['syntax_0'] = syntaxSelectedChunks.map(c => c.text);
-        updateExamProgressUI();
+    function removeExamSyntaxChunk(chunkIdx) {
+        if (chunkIdx >= 0 && chunkIdx < syntaxSelectedChunks.length) {
+            const removed = syntaxSelectedChunks.splice(chunkIdx, 1)[0];
+            const tile = document.getElementById(`syn-tile-${removed.tileIdx}`);
+            if (tile) {
+                tile.classList.remove('used');
+            }
+            renderExamSyntaxSlots();
+        }
     }
 
     /* RENDER SECTION 4: GRAMMAR CLOZE */
@@ -1109,35 +1177,66 @@
     }
 
     /* BỎ THI GIỮA CHỪNG */
+    /* BỎ THI GIỮA CHỪNG */
     function confirmAbandonExam() {
-        const ok = confirm("⚠️ CẢNH BÁO QUY CHẾ THI:\n\nNếu bạn thoát ngang hoặc bỏ dở giữa chừng, hệ thống sẽ phạt TRỪ -20 RP và tính là 1 lần trượt bài thi.\n\nBạn có chắc chắn muốn bỏ thi không?");
-        if (!ok) return;
+        window.showConfirm(
+            "⚠️ CẢNH BÁO QUY CHẾ THI CHẶNG:\n\nNếu bạn thoát ngang hoặc bỏ dở giữa chừng:\n• Bài thi sẽ bị tính 0 điểm\n• Hệ thống sẽ PHẠT TRỪ 50 RP UY TÍN\n• Nguy cơ cao bị GIÁNG HẠNG (TỤT RANK) ngay lập tức!\n\nBạn có chắc chắn muốn bỏ thi không?",
+            "CẢNH BÁO BỎ THI CHẶNG",
+            () => {
+                isRoadmapMilestoneExamActive = false;
+                clearInterval(examTimerInterval);
+                fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit_exam`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        exam_token: currentExamData ? currentExamData.exam_token : '',
+                        is_abandoned: true
+                    })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    let demoteMsg = (data.result && data.result.demoted)
+                        ? `\n\n🚨 TỤT RANK: Điểm RP còn ${data.result.new_rp}. Bạn đã bị GIÁNG HẠNG từ [${data.result.old_rank}] xuống [${data.result.new_rank}]!`
+                        : (data.result ? `\n\nĐiểm RP còn lại: ${data.result.new_rp} RP.` : '');
 
-        clearInterval(examTimerInterval);
-        fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit_exam`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                exam_token: currentExamData ? currentExamData.exam_token : '',
-                is_abandoned: true
-            })
-        })
-        .then(r => r.json())
-        .then(data => {
-            alert(`⚠️ Bạn đã bỏ thi! Bị phạt trừ ${data.result.rp_change} RP.`);
-            closeMilestoneModal();
-            loadRoadmap();
-        });
+                    window.showDanger(
+                        `⚠️ Bạn đã bỏ thi!\nBị xử phạt trừ ${Math.abs(data.result ? data.result.rp_change : 50)} RP.${demoteMsg}`,
+                        "KỶ LUẬT THI CỬ"
+                    ).then(() => {
+                        forceCloseMilestoneModal();
+                        loadRoadmap();
+                    });
+                })
+                .catch(() => {
+                    forceCloseMilestoneModal();
+                    loadRoadmap();
+                });
+            },
+            null,
+            "CHẤP NHẬN PHẠT & THOÁT",
+            "TIẾP TỤC LÀM BÀI"
+        );
     }
 
     /* NỘP BÀI THI */
     function submitAcademicExam(forceTimeout = false) {
         const answeredCount = getAnsweredCount();
         if (!forceTimeout && answeredCount < 8) {
-            const ok = confirm(`⚠️ CẢNH BÁO: Bạn mới làm được ${answeredCount}/8 câu hỏi. Các câu bỏ trống sẽ bị tính 0 điểm và có nguy cơ cao DÍNH ĐIỂM LIỆT (< 5.0).\n\nBạn có chắc chắn muốn nộp bài thi lúc này không?`);
-            if (!ok) return;
+            window.showConfirm(
+                `⚠️ CẢNH BÁO: Bạn mới làm được ${answeredCount}/8 câu hỏi. Các câu bỏ trống sẽ bị tính 0 điểm và có nguy cơ cao DÍNH ĐIỂM LIỆT (< 5.0) dẫn đến TRƯỢT THI.\n\nBạn có chắc chắn muốn nộp bài thi lúc này không?`,
+                "XÁC NHẬN NỘP BÀI",
+                () => executeSubmitAcademicExam(),
+                null,
+                "NỘP BÀI NGAY",
+                "QUAY LẠI LÀM TIẾP"
+            );
+            return;
         }
+        executeSubmitAcademicExam();
+    }
 
+    function executeSubmitAcademicExam() {
+        isRoadmapMilestoneExamActive = false;
         clearInterval(examTimerInterval);
 
         fetch(`/api/roadmap/milestone/${currentMilestoneId}/submit_exam`, {
@@ -1155,8 +1254,8 @@
         })
         .then(data => {
             if (data.error) {
-                alert(data.error);
-                closeMilestoneModal();
+                window.showDanger(data.error);
+                forceCloseMilestoneModal();
                 return;
             }
 
@@ -1165,7 +1264,7 @@
             loadRoadmap();
         })
         .catch(err => {
-            alert(err.message);
+            window.showDanger(err.message);
         });
     }
 
@@ -1261,15 +1360,15 @@
                     <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">${item.section}</span>
                     <span style="font-size: 12px; font-family: var(--text-mono);">${statusBadge}</span>
                 </div>
-                <div style="color: #fff; font-size: 13px; font-weight: bold; margin-bottom: 6px;">${item.question}</div>
+                <div style="color: #fff; font-size: 13px; font-weight: bold; margin-bottom: 6px;">${item.question || item.prompt || 'Câu hỏi khảo sát'}</div>
                 <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 3px;">
-                    Bạn đã chọn: <strong style="color: ${item.is_correct ? 'var(--pixel-green)' : '#ef4444'};">${item.user_answer}</strong>
+                    Bạn đã chọn: <strong style="color: ${item.is_correct ? 'var(--pixel-green)' : '#ef4444'};">${item.user_answer || 'Chưa trả lời'}</strong>
                 </div>
                 <div style="font-size: 12px; color: #cbd5e1; margin-bottom: 5px;">
-                    Đáp án chuẩn: <strong style="color: var(--pixel-green);">${item.correct_answer}</strong>
+                    Đáp án chuẩn: <strong style="color: var(--pixel-green);">${item.correct_answer || ''}</strong>
                 </div>
                 <div style="font-size: 11px; color: #94a3b8; font-style: italic; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 4px; margin-top: 4px;">
-                    💡 Lời giải: ${item.explanation}
+                    💡 Lời giải: ${item.explanation || 'Đáp án đã được phân tích theo chuẩn ngữ pháp CEFR.'}
                 </div>
             </div>`;
         });

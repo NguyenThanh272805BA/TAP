@@ -2,18 +2,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
-    /* Nền sáng hơn, màu Synthwave/Cyberpunk sâu thẳm nhưng rực rỡ */
-    --bg-gradient: linear-gradient(135deg, #17103a 0%, #201b54 50%, #173873 100%);
-    --glass-bg: rgba(30, 41, 75, 0.55);
-    --glass-border: rgba(255, 255, 255, 0.25);
-    --pixel-border: rgba(129, 140, 248, 0.5);
+    /* CHẾ ĐỘ TỐI (DARK MODE) - OBSIDIAN SLATE DỊU MẮT, BẢO VỆ THỊ LỰC */
+    --bg-main: #0b0f19;
+    --bg-gradient: linear-gradient(135deg, #090d16 0%, #0f172a 45%, #131d33 100%);
+    --glass-bg: rgba(17, 24, 39, 0.72);
+    --glass-border: rgba(148, 163, 184, 0.16);
+    --pixel-border: rgba(99, 102, 241, 0.35);
+    --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.08);
 
-    /* Bảng màu Neon Siêu Sáng */
-    --neon-purple: #d8b4fe;
-    --neon-cyan: #67e8f9;
-    --neon-pink: #f9a8d4;
-    --neon-amber: #fde047;
-    --pixel-green: #6ee7b7;
+    /* Bảng màu Neon Dịu Mắt (Calibrated Eye-Comfort Accents) */
+    --neon-purple: #c084fc; /* Violet mềm mại */
+    --neon-cyan: #38bdf8;   /* Sky Blue dịu mắt, chống chói lóa */
+    --neon-pink: #f472b6;   /* Rose êm dịu */
+    --neon-amber: #fbbf24;  /* Amber ấm áp */
+    --pixel-green: #34d399; /* Emerald ngọc lục bảo */
+
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    /* Nút bấm ở Dark Mode: Bề mặt sáng nổi bật trên nền tối */
+    --btn-main-bg: #2563eb;
+    --btn-main-color: #ffffff;
+    --btn-main-border: rgba(255, 255, 255, 0.2);
+    --btn-main-shadow: 0 4px 0 #1d4ed8, 0 6px 16px rgba(37, 99, 235, 0.35);
 
     /* Đổi font Pixel vỡ tiếng Việt sang Chakra Petch (Tech/Cyberpunk hỗ trợ VN) */
     --text-pixel: 'Chakra Petch', sans-serif;
@@ -34,29 +46,16 @@ body {
     min-height: 100vh;
     box-sizing: border-box;
     overflow-x: hidden;
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* Màn hình CRT cổ điển quét sọc phát sáng */
+/* TẮT HOÀN TOÀN SỌC CRT VÀ NOISE ĐỂ CHỐNG MỎI MẮT, BẢO VỆ THỊ LỰC */
 body::after {
-    content: " ";
-    display: block;
-    position: fixed;
-    top: 0; left: 0; bottom: 0; right: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(255, 255, 255, 0.03) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-    z-index: 99999;
-    pointer-events: none;
-    background-size: 100% 3px, 6px 100%;
+    display: none !important;
 }
 
-/* Nền nhiễu hạt giả lập sương mù không gian */
 body::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0.04;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    z-index: 1;
+    display: none !important;
 }
 
 /* =========================================================
@@ -585,111 +584,699 @@ body::before {
     .card-large, .card-wide, .card-medium, .card-tall { grid-column: span 1; grid-row: auto; }
 }
 /* =========================================================
-   [ PHASE 6 ] CLEAN MODE / LIGHT MODE - ĐẢO NGƯỢC TOÀN DIỆN
+   HỆ THỐNG 2 CHẾ ĐỘ SÁNG / TỐI CÔNG THÁI HỌC BẢO VỆ MẮT
+   & PHÍM BẤM ĐẢO CHIỀU TƯƠNG PHẢN CAO (INVERTED BUTTONS)
    ========================================================= */
-body.clean-mode {
-    /* 1. Ghi đè biến hệ thống: Đổi gradient và kính mờ sang sáng */
-    --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
-    --glass-bg: rgba(255, 255, 255, 0.9) !important;
-    --glass-border: rgba(0, 0, 0, 0.15) !important;
 
-    /* 2. Đảo màu Neon chói thành màu Deep Tone (Đậm) để nổi bật trên nền trắng */
-    --neon-purple: #6b21a8 !important; /* Tím đậm */
-    --neon-cyan: #0369a1 !important;   /* Xanh biển đậm */
-    --neon-pink: #be185d !important;   /* Hồng đậm */
-    --neon-amber: #b45309 !important;  /* Cam/Nâu đậm */
-    --pixel-green: #047857 !important; /* Xanh ngọc đậm */
+/* CHẾ ĐỘ SÁNG (LIGHT MODE / CLEAN MODE) */
+body.clean-mode,
+body.theme-light {
+    /* 1. Nền ngà Slate ấm dịu mắt (Soft Paper Ivory) - Chống lóa, chống mỏi mắt */
+    --bg-main: #f8fafc;
+    --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%) !important;
+    --glass-bg: #ffffff !important;
+    --glass-border: #e2e8f0 !important;
+    --pixel-border: #94a3b8 !important;
+    --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
 
-    color: #0f172a !important; /* Đổi màu chữ mặc định thành Đen nhạt */
+    /* 2. Màu sắc điểm nhấn Deep Jewel Tones - Đậm đà, sắc nét, tương phản hoàn hảo */
+    --neon-purple: #6d28d9 !important; /* Deep Violet */
+    --neon-cyan: #0284c7 !important;   /* Deep Ocean Blue */
+    --neon-pink: #be123c !important;   /* Rich Ruby/Rose */
+    --neon-amber: #b45309 !important;  /* Warm Bronze */
+    --pixel-green: #047857 !important; /* Forest Emerald */
+
+    /* 3. Màu chữ đạt chuẩn tương phản cao WCAG AAA */
+    --text-primary: #0f172a !important;
+    --text-secondary: #334155 !important;
+    --text-muted: #64748b !important;
+    color: #0f172a !important;
 }
 
-/* Xóa sương mù và sọc màn hình CRT */
-body.clean-mode::before, body.clean-mode::after {
-    display: none !important;
-}
-
-/* Xóa mọi hiệu ứng Glow (phát sáng) gây nhòe chữ */
-body.clean-mode * {
+/* Tắt mọi hiệu ứng bóng phát sáng gây nhòe chữ khi đọc lâu */
+body.clean-mode *,
+body.theme-light * {
     text-shadow: none !important;
 }
 
-/* 3. PHÉP THUẬT: Ép các nền đen trong inline style thành xám sáng */
-body.clean-mode [style*="background: rgba(0,0,0"],
-body.clean-mode [style*="background:rgba(0,0,0"],
-body.clean-mode [style*="background: rgba(0, 0, 0"] {
-    background: rgba(0, 0, 0, 0.05) !important;
-    border-color: rgba(0, 0, 0, 0.15) !important;
+/* 4. TỐI ƯU HÓA SIDEBAR Ở CHẾ ĐỘ SÁNG */
+body.clean-mode .sidebar,
+body.theme-light .sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid #e2e8f0 !important;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.04) !important;
 }
 
-/* 4. PHÉP THUẬT: Ép các chữ trắng/xám sáng trong inline style thành đen/xám đậm */
+body.clean-mode .nav-item,
+body.theme-light .nav-item {
+    color: #334155 !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.clean-mode .nav-item:hover,
+body.clean-mode .nav-item.active,
+body.theme-light .nav-item:hover,
+body.theme-light .nav-item.active {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #0f172a !important;
+    transform: translateX(6px) !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18) !important;
+}
+
+body.clean-mode .nav-item svg,
+body.theme-light .nav-item svg {
+    color: inherit !important;
+    stroke: currentColor !important;
+}
+
+/* 5. TỐI ƯU HÓA CÁC THẺ BENTO & CARD Ở CHẾ ĐỘ SÁNG */
+body.clean-mode .bento-card,
+body.clean-mode .exam-portal-card,
+body.clean-mode .launch-card,
+body.theme-light .bento-card,
+body.theme-light .exam-portal-card,
+body.theme-light .launch-card {
+    background: #ffffff !important;
+    border: 1.5px solid #e2e8f0 !important;
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+    color: #0f172a !important;
+}
+
+body.clean-mode .bento-card:hover,
+body.clean-mode .exam-portal-card:hover,
+body.theme-light .bento-card:hover,
+body.theme-light .exam-portal-card:hover {
+    border-color: #0284c7 !important;
+    box-shadow: 0 12px 30px -5px rgba(15, 23, 42, 0.12) !important;
+    transform: translateY(-4px) !important;
+}
+
+/* Tiêu đề & typography trong card */
+body.clean-mode .pixel-title,
+body.theme-light .pixel-title {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* 6. HỆ THỐNG PHÍM BẤM ĐẢO CHIỀU TƯƠNG PHẢN CAO (INVERTED BUTTON SYSTEM) */
+
+/* Nút bấm mặc định .pixel-btn đảo chiều sang Deep Obsidian #0f172a chữ trắng */
+body.clean-mode .pixel-btn,
+body.theme-light .pixel-btn {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border: 2px solid #020617 !important;
+    box-shadow: 0 4px 0 #020617, 0 6px 14px rgba(15, 23, 42, 0.15) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+body.clean-mode .pixel-btn:hover,
+body.theme-light .pixel-btn:hover {
+    background: #1e293b !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 0 #020617, 0 10px 20px rgba(15, 23, 42, 0.22) !important;
+    filter: none !important;
+}
+
+body.clean-mode .pixel-btn:active,
+body.theme-light .pixel-btn:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0 1px 0 #020617 !important;
+}
+
+/* Nút bấm màu đặc trưng: Đảo sang sắc độ đầm chắc, độ tương phản tuyệt đối */
+body.clean-mode .pixel-btn[style*="background: var(--neon-cyan)"],
+body.clean-mode .pixel-btn[style*="background:var(--neon-cyan)"],
+body.theme-light .pixel-btn[style*="background: var(--neon-cyan)"],
+body.theme-light .pixel-btn[style*="background:var(--neon-cyan)"],
+body.clean-mode #btn-start-band-exam,
+body.theme-light #btn-start-band-exam {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border: 2px solid #0369a1 !important;
+    box-shadow: 0 4px 0 #075985, 0 6px 14px rgba(2, 132, 199, 0.25) !important;
+}
+
+body.clean-mode .pixel-btn[style*="background: var(--neon-cyan)"]:hover,
+body.theme-light .pixel-btn[style*="background: var(--neon-cyan)"]:hover,
+body.clean-mode #btn-start-band-exam:hover,
+body.theme-light #btn-start-band-exam:hover {
+    background: #0369a1 !important;
+    color: #ffffff !important;
+}
+
+body.clean-mode .pixel-btn[style*="background: var(--neon-amber)"],
+body.clean-mode .pixel-btn[style*="background:var(--neon-amber)"],
+body.theme-light .pixel-btn[style*="background: var(--neon-amber)"],
+body.theme-light .pixel-btn[style*="background:var(--neon-amber)"],
+body.clean-mode #btn-checkin,
+body.theme-light #btn-checkin {
+    background: #d97706 !important;
+    color: #ffffff !important;
+    border: 2px solid #b45309 !important;
+    box-shadow: 0 4px 0 #92400e, 0 6px 14px rgba(217, 119, 6, 0.25) !important;
+}
+
+body.clean-mode .pixel-btn[style*="background: var(--neon-pink)"],
+body.clean-mode .pixel-btn[style*="background:var(--neon-pink)"],
+body.theme-light .pixel-btn[style*="background: var(--neon-pink)"],
+body.theme-light .pixel-btn[style*="background:var(--neon-pink)"] {
+    background: #be123c !important;
+    color: #ffffff !important;
+    border: 2px solid #9f1239 !important;
+    box-shadow: 0 4px 0 #881337, 0 6px 14px rgba(190, 18, 60, 0.25) !important;
+}
+
+/* Nút phụ / Outline (Secondary / Action Buttons) đảo màu ngược lại:
+   Bình thường: Nền trắng, viền xám, chữ đen.
+   Khi rê chuột / kích hoạt: Nền đen #0f172a, chữ trắng tinh! */
+body.clean-mode .filter-pill,
+body.clean-mode .test-nav-btn,
+body.clean-mode button[style*="background: rgba(0,0,0"],
+body.clean-mode a[style*="background: rgba(0,0,0"],
+body.theme-light .filter-pill,
+body.theme-light .test-nav-btn,
+body.theme-light button[style*="background: rgba(0,0,0"],
+body.theme-light a[style*="background: rgba(0,0,0"] {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+body.clean-mode .filter-pill:hover,
+body.clean-mode .filter-pill.active,
+body.clean-mode .test-nav-btn:hover,
+body.clean-mode .test-nav-btn.active,
+body.clean-mode button[style*="background: rgba(0,0,0"]:hover,
+body.clean-mode a[style*="background: rgba(0,0,0"]:hover,
+body.theme-light .filter-pill:hover,
+body.theme-light .filter-pill.active,
+body.theme-light .test-nav-btn:hover,
+body.theme-light .test-nav-btn.active,
+body.theme-light button[style*="background: rgba(0,0,0"]:hover,
+body.theme-light a[style*="background: rgba(0,0,0"]:hover {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #0f172a !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2) !important;
+}
+
+/* Thẻ chọn Band Pill (Band Tab Pills) đảo chiều */
+body.clean-mode .band-tab-pill,
+body.theme-light .band-tab-pill {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.clean-mode .band-tab-pill:hover,
+body.clean-mode .band-tab-pill.active,
+body.theme-light .band-tab-pill:hover,
+body.theme-light .band-tab-pill.active {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border: 2px solid #0284c7 !important;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.2) !important;
+}
+
+/* 7. ÉP MÀU TẤT CẢ KHỐI NỀN ĐEN INLINE VỀ SÁNG TRẮNG ĐỒNG BỘ */
+body.clean-mode [style*="background: rgba(0,0,0"],
+body.clean-mode [style*="background:rgba(0,0,0"],
+body.clean-mode [style*="background: rgba(0, 0, 0"],
+body.clean-mode [style*="background: rgba(15, 23, 42"],
+body.clean-mode [style*="background: rgba(255,255,255,0.03)"],
+body.theme-light [style*="background: rgba(0,0,0"],
+body.theme-light [style*="background:rgba(0,0,0"],
+body.theme-light [style*="background: rgba(0, 0, 0"],
+body.theme-light [style*="background: rgba(15, 23, 42"],
+body.theme-light [style*="background: rgba(255,255,255,0.03)"] {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* Ép màu các chữ trắng/xám inline về xám sẫm rõ nét */
 body.clean-mode [style*="color: #fff"],
 body.clean-mode [style*="color:#fff"],
 body.clean-mode [style*="color: #ffffff"],
-body.clean-mode .pixel-text {
+body.clean-mode .pixel-text,
+body.theme-light [style*="color: #fff"],
+body.theme-light [style*="color:#fff"],
+body.theme-light [style*="color: #ffffff"],
+body.theme-light .pixel-text {
     color: #0f172a !important;
 }
 
 body.clean-mode [style*="color: #94a3b8"],
 body.clean-mode [style*="color:#94a3b8"],
-body.clean-mode [style*="color: #cbd5e1"] {
+body.clean-mode [style*="color: #cbd5e1"],
+body.theme-light [style*="color: #94a3b8"],
+body.theme-light [style*="color:#94a3b8"],
+body.theme-light [style*="color: #cbd5e1"] {
     color: #475569 !important;
 }
 
-/* Tối ưu lại Menu Sidebar */
-body.clean-mode .sidebar {
+/* 8. TỐI ƯU FORM INPUT & TEXTAREA Ở CHẾ ĐỘ SÁNG */
+body.clean-mode textarea,
+body.clean-mode input,
+body.clean-mode select,
+body.clean-mode .auth-input,
+body.theme-light textarea,
+body.theme-light input,
+body.theme-light select,
+body.theme-light .auth-input {
     background: #ffffff !important;
-    border-right: 1px solid #cbd5e1 !important;
-    box-shadow: 2px 0 15px rgba(0,0,0,0.05) !important;
-}
-body.clean-mode .nav-item {
-    color: #475569 !important;
-    background: transparent !important;
-}
-body.clean-mode .nav-item:hover, body.clean-mode .nav-item.active {
-    background: #e0f2fe !important;
-    color: #0284c7 !important;
-    border-left: 4px solid #0284c7 !important;
-    transform: translateX(5px) !important;
-    box-shadow: none !important;
-}
-
-/* Tối ưu lại Bento Cards */
-body.clean-mode .bento-card {
-    background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
-}
-body.clean-mode .bento-card:hover {
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
-    border-color: #0284c7 !important;
-}
-
-/* Tối ưu Input & Textarea */
-body.clean-mode textarea, body.clean-mode input, body.clean-mode .auth-input {
-    background: #f8fafc !important;
     color: #0f172a !important;
-    border: 1px solid #94a3b8 !important;
-    box-shadow: none !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04) !important;
 }
-body.clean-mode textarea:focus, body.clean-mode input:focus {
+
+body.clean-mode textarea:focus,
+body.clean-mode input:focus,
+body.theme-light textarea:focus,
+body.theme-light input:focus {
     border-color: #0284c7 !important;
     background: #ffffff !important;
     box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2) !important;
 }
 
-/* Tối ưu Khung Master G Feedback */
-body.clean-mode .ai-dialog-box {
+/* 9. TỐI ƯU MODAL & KHUNG THÔNG BÁO */
+body.clean-mode #notification-dropdown,
+body.theme-light #notification-dropdown,
+body.clean-mode .ai-dialog-box,
+body.theme-light .ai-dialog-box {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12) !important;
+    color: #0f172a !important;
+}
+
+body.clean-mode #notif-header,
+body.theme-light #notif-header {
     background: #f1f5f9 !important;
-    border: 2px solid #0284c7 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.clean-mode #notification-bell,
+body.theme-light #notification-bell {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.clean-mode #notification-bell svg,
+body.theme-light #notification-bell svg {
+    color: #0f172a !important;
+}
+
+/* 10. CHUỖI ĐIỂM DANH STREAK DAY Ở CHẾ ĐỘ SÁNG */
+body.clean-mode .streak-day,
+body.theme-light .streak-day {
+    background: #f8fafc !important;
+    border: 2px solid #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+body.clean-mode .streak-day.active,
+body.theme-light .streak-day.active {
+    background: #047857 !important;
+    color: #ffffff !important;
+    border-color: #065f46 !important;
+}
+
+/* =========================================================
+   11. BẢO VỆ MẮT CÔNG THÁI HỌC: TOÀN DIỆN THẺ HỌC TẬP, BENTO TOPIC, PHÒNG KHẢO THÍ & BÀI THI
+   ========================================================= */
+
+/* 11.1 Thẻ Bento Chủ Đề Từ Vựng (.bento-topic-card) */
+body.clean-mode .bento-topic-card,
+body.theme-light .bento-topic-card,
+html.clean-mode .bento-topic-card,
+html.theme-light .bento-topic-card {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+    color: #0f172a !important;
+}
+
+body.clean-mode .bento-topic-card:hover,
+body.theme-light .bento-topic-card:hover,
+html.clean-mode .bento-topic-card:hover,
+html.theme-light .bento-topic-card:hover {
+    background: #ffffff !important;
+    border-color: #0284c7 !important;
+    box-shadow: 0 12px 28px -4px rgba(2, 132, 199, 0.18), 0 6px 12px -2px rgba(2, 132, 199, 0.08) !important;
+    transform: translateY(-4px) !important;
+}
+
+body.clean-mode .bento-topic-card .tap-icon,
+body.theme-light .bento-topic-card .tap-icon {
+    color: #0284c7 !important;
+}
+
+body.clean-mode .bento-topic-card strong,
+body.clean-mode .bento-topic-title,
+body.theme-light .bento-topic-card strong,
+body.theme-light .bento-topic-title {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+}
+
+body.clean-mode .bento-topic-count,
+body.theme-light .bento-topic-count {
+    color: #64748b !important;
+}
+
+body.clean-mode .topic-sample-chip,
+body.theme-light .topic-sample-chip {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    border: 1px solid #e2e8f0 !important;
+    font-weight: 500 !important;
+}
+
+body.clean-mode .bento-topic-card [style*="background: rgba(255,255,255,0.05)"],
+body.theme-light .bento-topic-card [style*="background: rgba(255,255,255,0.05)"] {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+body.clean-mode .topic-progress-label,
+body.theme-light .topic-progress-label {
+    color: #64748b !important;
+}
+
+body.clean-mode .topic-progress-track,
+body.clean-mode .bento-topic-card [style*="background: rgba(255,255,255,0.1)"],
+body.theme-light .topic-progress-track,
+body.theme-light .bento-topic-card [style*="background: rgba(255,255,255,0.1)"] {
+    background: #e2e8f0 !important;
+}
+
+body.clean-mode .bento-topic-card .pixel-btn,
+body.clean-mode .topic-open-btn,
+body.theme-light .bento-topic-card .pixel-btn,
+body.theme-light .topic-open-btn {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border: 1.5px solid #0369a1 !important;
+    box-shadow: 0 3px 0 #075985 !important;
+    font-weight: 700 !important;
+}
+
+body.clean-mode .bento-topic-card .pixel-btn:hover,
+body.clean-mode .topic-open-btn:hover,
+body.theme-light .bento-topic-card .pixel-btn:hover,
+body.theme-light .topic-open-btn:hover {
+    background: #0369a1 !important;
+    box-shadow: 0 5px 0 #075985 !important;
+    transform: translateY(-1px) !important;
+}
+
+/* 11.2 Phòng Thi Tập Trung & Thẻ Lựa Chọn (.exam-chamber-card, .exam-option-btn, .palette-btn) */
+body.clean-mode .exam-chamber-card,
+body.theme-light .exam-chamber-card {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+    color: #0f172a !important;
+}
+
+body.clean-mode .exam-option-btn,
+body.theme-light .exam-option-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 3px 0 #cbd5e1, 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.clean-mode .exam-option-btn:hover,
+body.theme-light .exam-option-btn:hover {
+    background: #f0f9ff !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    box-shadow: 0 4px 0 #0284c7, 0 4px 12px rgba(2, 132, 199, 0.15) !important;
+}
+
+body.clean-mode .exam-option-btn.selected,
+body.theme-light .exam-option-btn.selected {
+    background: #eff6ff !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    font-weight: bold !important;
+    box-shadow: 0 3px 0 #0284c7, 0 0 12px rgba(2, 132, 199, 0.25) !important;
+}
+
+body.clean-mode .palette-btn,
+body.theme-light .palette-btn {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
+}
+
+body.clean-mode .palette-btn:hover,
+body.theme-light .palette-btn:hover {
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+}
+
+body.clean-mode .palette-btn.current,
+body.theme-light .palette-btn.current {
+    border-color: #d97706 !important;
+    color: #d97706 !important;
+    background: #fffbeb !important;
+}
+
+body.clean-mode .palette-btn.answered,
+body.theme-light .palette-btn.answered {
+    background: #dcfce7 !important;
+    border-color: #16a34a !important;
+    color: #15803d !important;
+}
+
+body.clean-mode .timer-badge,
+body.theme-light .timer-badge {
+    background: #ffffff !important;
+    border: 1.5px solid #0284c7 !important;
+    color: #0284c7 !important;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15) !important;
+}
+
+/* 11.3 Bài Thi Học Thuật Roadmap (.exam-tab-btn, .mcq-option-card, .scramble-slot, .letter-tile) */
+body.clean-mode .exam-tab-btn,
+body.theme-light .exam-tab-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #475569 !important;
+    box-shadow: 0 2px 0 #cbd5e1 !important;
+}
+
+body.clean-mode .exam-tab-btn:hover,
+body.theme-light .exam-tab-btn:hover {
+    background: #f8fafc !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+}
+
+body.clean-mode .exam-tab-btn.active,
+body.theme-light .exam-tab-btn.active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0369a1 !important;
+    box-shadow: 0 3px 0 #075985 !important;
+}
+
+body.clean-mode .mcq-option-card,
+body.theme-light .mcq-option-card {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 3px 0 #cbd5e1 !important;
+}
+
+body.clean-mode .mcq-option-card:hover,
+body.theme-light .mcq-option-card:hover {
+    background: #f0f9ff !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    box-shadow: 0 4px 0 #0284c7 !important;
+}
+
+body.clean-mode .mcq-option-card.selected,
+body.theme-light .mcq-option-card.selected {
+    background: #eff6ff !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    box-shadow: 0 3px 0 #0284c7, 0 0 12px rgba(2, 132, 199, 0.2) !important;
+}
+
+body.clean-mode .mcq-option-letter,
+body.theme-light .mcq-option-letter {
+    background: #f1f5f9 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0284c7 !important;
     box-shadow: none !important;
 }
 
-/* Tối ưu Nút bấm */
-body.clean-mode .pixel-btn {
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+body.clean-mode .mcq-option-card.selected .mcq-option-letter,
+body.theme-light .mcq-option-card.selected .mcq-option-letter {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0369a1 !important;
 }
-body.clean-mode .pixel-btn:hover {
-    filter: brightness(0.9) !important;
+
+body.clean-mode .scramble-slot,
+body.theme-light .scramble-slot {
+    background: #f8fafc !important;
+    border: 2px solid #cbd5e1 !important;
+    border-bottom: 4px solid #0284c7 !important;
+    color: #0f172a !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.clean-mode .letter-tile,
+body.theme-light .letter-tile {
+    background: #ffffff !important;
+    border: 2px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 3px 0 #cbd5e1 !important;
+}
+
+body.clean-mode .letter-tile:hover,
+body.theme-light .letter-tile:hover {
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    background: #f0f9ff !important;
+}
+
+/* 11.4 Thẻ Nhiệm Vụ Mega Quest (.quest-card-item, .quest-tab-btn) */
+body.clean-mode .quest-tab-btn,
+body.theme-light .quest-tab-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #475569 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.clean-mode .quest-tab-btn:hover,
+body.theme-light .quest-tab-btn:hover {
+    background: #f8fafc !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+}
+
+body.clean-mode .quest-tab-btn.active,
+body.theme-light .quest-tab-btn.active {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+    border-color: #0369a1 !important;
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.25) !important;
+}
+
+body.clean-mode .quest-card-item,
+body.theme-light .quest-card-item {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05) !important;
+    color: #0f172a !important;
+}
+
+body.clean-mode .quest-card-item:hover,
+body.theme-light .quest-card-item:hover {
+    border-color: #0284c7 !important;
+    box-shadow: 0 6px 16px rgba(2, 132, 199, 0.12) !important;
+}
+
+body.clean-mode .quest-card-item.completed,
+body.theme-light .quest-card-item.completed {
+    background: #f0fdf4 !important;
+    border-color: #86efac !important;
+}
+
+body.clean-mode .quest-card-item.claimed,
+body.theme-light .quest-card-item.claimed {
+    background: #f8fafc !important;
+    opacity: 0.65;
+    border-color: #e2e8f0 !important;
+}
+
+/* 11.5 Bảng Chi Tiết Band Khảo Thí (#band-detail-box) */
+body.clean-mode #band-detail-box,
+body.theme-light #band-detail-box {
+    background: #ffffff !important;
+    border: 2px solid #0284c7 !important;
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.1) !important;
+    color: #0f172a !important;
+}
+
+body.clean-mode #band-detail-box strong,
+body.theme-light #band-detail-box strong {
+    color: #0f172a !important;
+}
+
+body.clean-mode #band-detail-box [style*="background: rgba(255,255,255,0.03)"],
+body.theme-light #band-detail-box [style*="background: rgba(255,255,255,0.03)"] {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* 11.6 Đấu Trường AI & Thẻ Chế Độ (.mode-select-btn, .arena-option-btn, .stat-pill) */
+body.clean-mode .mode-select-btn,
+body.theme-light .mode-select-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.clean-mode .mode-select-btn:hover,
+body.theme-light .mode-select-btn:hover {
+    border-color: #0284c7 !important;
+    box-shadow: 0 8px 24px rgba(2, 132, 199, 0.18) !important;
+    transform: translateY(-3px) scale(1.015) !important;
+}
+
+body.clean-mode .arena-option-btn,
+body.theme-light .arena-option-btn {
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 0 #cbd5e1, 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.clean-mode .arena-option-btn:hover:not(:disabled),
+body.theme-light .arena-option-btn:hover:not(:disabled) {
+    background: #f0f9ff !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    box-shadow: 0 5px 0 #0284c7, 0 6px 16px rgba(2, 132, 199, 0.15) !important;
+}
+
+body.clean-mode .arena-option-btn.selected,
+body.theme-light .arena-option-btn.selected {
+    background: #eff6ff !important;
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    box-shadow: 0 4px 0 #0284c7 !important;
+}
+
+body.clean-mode .stat-pill,
+body.theme-light .stat-pill {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #475569 !important;
 }
 
 /* =========================================================
@@ -1803,6 +2390,219 @@ body.clean-mode .pixel-btn:hover {
     text-align: center;
     box-shadow: 0 0 30px rgba(6, 182, 212, 0.25);
     margin: 20px 0;
+}
+
+/* ========================================================================= */
+/* [ TAP POPUP MODAL ] HỆ THỐNG POPUP THÔNG BÁO NẢY GIỮA MÀN HÌNH BẮT MẮT   */
+/* ========================================================================= */
+
+.tap-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 15, 29, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease-out;
+}
+
+.tap-popup-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.tap-popup-card {
+    position: relative;
+    width: 92%;
+    max-width: 480px;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.96));
+    border: 2.5px solid #000000;
+    border-radius: 20px;
+    padding: 30px 26px 26px;
+    box-shadow: 0 10px 0 #000000, 0 25px 60px rgba(0, 0, 0, 0.8);
+    text-align: center;
+    transform: scale(0.65);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tap-popup-overlay.active .tap-popup-card {
+    opacity: 1;
+    transform: scale(1);
+    animation: popupBounceIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes popupBounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.65) translateY(20px);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(1.06) translateY(-4px);
+    }
+    85% {
+        transform: scale(0.98) translateY(1px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Biến thể màu sắc & Glow Neon */
+.tap-popup-card.type-success {
+    border-color: #10b981;
+    box-shadow: 0 10px 0 #000000, 0 0 35px rgba(16, 185, 129, 0.45);
+}
+.tap-popup-card.type-warning {
+    border-color: #f59e0b;
+    box-shadow: 0 10px 0 #000000, 0 0 40px rgba(245, 158, 11, 0.5);
+}
+.tap-popup-card.type-danger {
+    border-color: #ef4444;
+    box-shadow: 0 10px 0 #000000, 0 0 45px rgba(239, 68, 68, 0.6);
+    animation: popupBounceIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, dangerPulse 2s infinite alternate;
+}
+.tap-popup-card.type-info {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 10px 0 #000000, 0 0 35px rgba(6, 182, 212, 0.45);
+}
+
+@keyframes dangerPulse {
+    0% { box-shadow: 0 10px 0 #000000, 0 0 30px rgba(239, 68, 68, 0.5); }
+    100% { box-shadow: 0 10px 0 #000000, 0 0 50px rgba(239, 68, 68, 0.9); }
+}
+
+.tap-popup-icon-wrap {
+    width: 64px;
+    height: 64px;
+    margin: -10px auto 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    border: 2px solid #000000;
+    box-shadow: 0 4px 0 #000000;
+    animation: iconPopFloat 2.2s infinite ease-in-out alternate;
+}
+
+@keyframes iconPopFloat {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(-4px) scale(1.08); }
+}
+
+.type-success .tap-popup-icon-wrap {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #10b981;
+    box-shadow: 0 4px 0 #000000, 0 0 20px rgba(16, 185, 129, 0.4);
+}
+.type-warning .tap-popup-icon-wrap {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: #f59e0b;
+    color: #f59e0b;
+    box-shadow: 0 4px 0 #000000, 0 0 20px rgba(245, 158, 11, 0.4);
+}
+.type-danger .tap-popup-icon-wrap {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #ef4444;
+    box-shadow: 0 4px 0 #000000, 0 0 25px rgba(239, 68, 68, 0.5);
+}
+.type-info .tap-popup-icon-wrap {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: var(--neon-cyan);
+    color: var(--neon-cyan);
+    box-shadow: 0 4px 0 #000000, 0 0 20px rgba(6, 182, 212, 0.4);
+}
+
+.tap-popup-title {
+    font-family: var(--text-pixel);
+    font-size: 16px;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+.type-success .tap-popup-title { color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+.type-warning .tap-popup-title { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+.type-danger .tap-popup-title { color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+.type-info .tap-popup-title { color: var(--neon-cyan); text-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+
+.tap-popup-message {
+    font-size: 14px;
+    color: #cbd5e1;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    white-space: pre-line;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 0 6px;
+}
+
+.tap-popup-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+}
+
+.tap-popup-btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-family: var(--text-pixel);
+    font-size: 11px;
+    cursor: pointer;
+    border: 2px solid #000000;
+    box-shadow: 0 4px 0 #000000;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.5px;
+    flex: 1;
+    max-width: 200px;
+}
+.tap-popup-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #000000;
+}
+.tap-popup-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #000000;
+}
+
+.tap-popup-btn-confirm {
+    background: linear-gradient(135deg, var(--neon-cyan), #0284c7);
+    color: #000000;
+    font-weight: 800;
+}
+.type-success .tap-popup-btn-confirm {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+}
+.type-warning .tap-popup-btn-confirm {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #000000;
+}
+.type-danger .tap-popup-btn-confirm {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    color: #ffffff;
+}
+
+.tap-popup-btn-cancel {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: #64748b;
+    color: #94a3b8;
+}
+.tap-popup-btn-cancel:hover {
+    color: #ffffff;
+    border-color: #94a3b8;
 }
 
 

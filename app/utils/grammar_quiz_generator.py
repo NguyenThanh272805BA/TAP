@@ -113,12 +113,15 @@ def generate_grammar_quiz(grammar_obj):
     ]
 
     # Trộn thứ tự đáp án ngẫu nhiên để bài test khách quan
+    letters = ['A', 'B', 'C', 'D']
     for q in questions:
         orig_options = q["options"]
         correct_content = orig_options[q["correct_idx"]]
         shuffled = list(orig_options)
         random.shuffle(shuffled)
-        q["options"] = shuffled
         q["correct_idx"] = shuffled.index(correct_content)
+        q["question"] = q["prompt"]
+        q["options"] = [{"key": letters[i] if i < 4 else str(i+1), "text": opt} for i, opt in enumerate(shuffled)]
+        q["raw_options"] = shuffled
 
     return questions

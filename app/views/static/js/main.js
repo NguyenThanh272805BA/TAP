@@ -9,16 +9,43 @@ function isMobileDevice() {
     return (window.innerWidth <= 768) || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-// [ PHASE 6 ] HÀM HỖ TRỢ: CHẾ ĐỘ CLEAN MODE
-function toggleCleanMode() {
-    const isClean = document.body.classList.toggle('clean-mode');
-    localStorage.setItem('clean_mode', isClean);
-    const modeBtn = document.getElementById('btn-clean-mode');
-    if (modeBtn) {
-        modeBtn.innerHTML = isClean
-        ? '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg> <span style="font-family: var(--text-pixel); font-size: 11px;">CHẾ ĐỘ TĨNH LẶNG</span>'
-        : '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg> <span style="font-family: var(--text-pixel); font-size: 11px;">CHẾ ĐỘ TĨNH LẶNG</span>';
+// [ EYE-COMFORT THEME SYSTEM ] ĐIỀU HÀNH 2 CHẾ ĐỘ SÁNG / TỐI DỊU MẮT CÔNG THÁI HỌC
+function applyThemeUI(theme) {
+    const isLight = (theme === 'light');
+    if (isLight) {
+        document.body.classList.add('clean-mode', 'theme-light');
+        document.documentElement.classList.add('clean-mode', 'theme-light');
+    } else {
+        document.body.classList.remove('clean-mode', 'theme-light');
+        document.documentElement.classList.remove('clean-mode', 'theme-light');
     }
+
+    const iconEl = document.getElementById('theme-toggle-icon');
+    const textEl = document.getElementById('theme-toggle-text');
+    const toggleBtn = document.getElementById('btn-theme-toggle');
+    if (iconEl && textEl) {
+        if (isLight) {
+            iconEl.innerText = '☀️';
+            textEl.innerText = 'CHẾ ĐỘ SÁNG (DỊU MẮT)';
+            if (toggleBtn) toggleBtn.style.color = '#0284c7';
+        } else {
+            iconEl.innerText = '🌙';
+            textEl.innerText = 'CHẾ ĐỘ TỐI (DỊU MẮT)';
+            if (toggleBtn) toggleBtn.style.color = 'var(--neon-amber)';
+        }
+    }
+}
+
+function toggleTheme() {
+    const currentIsLight = document.body.classList.contains('theme-light') || document.body.classList.contains('clean-mode');
+    const newTheme = currentIsLight ? 'dark' : 'light';
+    localStorage.setItem('tap_theme', newTheme);
+    localStorage.setItem('clean_mode', newTheme === 'light');
+    applyThemeUI(newTheme);
+}
+
+function toggleCleanMode() {
+    toggleTheme();
 }
 
 // [ PHASE 6 ] HÀM HỖ TRỢ: GIẢ LẬP STREAMING TYPING CHO DỮ LIỆU TĨNH (Dự phòng)
@@ -97,12 +124,9 @@ window.TAPIcons = {
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    // Khôi phục trạng thái Clean Mode
-    if (localStorage.getItem('clean_mode') === 'true') {
-        document.body.classList.add('clean-mode');
-        const modeBtn = document.getElementById('btn-clean-mode');
-        if(modeBtn) modeBtn.innerHTML = '<svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg> <span style="font-family: var(--text-pixel); font-size: 11px;">CHẾ ĐỘ TĨNH LẶNG</span>';
-    }
+    // Khôi phục trạng thái Theme Sáng / Tối công thái học
+    const savedTheme = localStorage.getItem('tap_theme') || (localStorage.getItem('clean_mode') === 'true' ? 'light' : 'dark');
+    applyThemeUI(savedTheme);
 
     const currentPath = window.location.pathname;
 
@@ -1612,3 +1636,125 @@ if (document.readyState === 'loading') {
 } else {
     TAPAudio.init();
 }
+
+/* ========================================================================= */
+/* [ TAP POPUP ENGINE ] HỆ THỐNG POPUP TRUNG TÂM NẢY BẮT MẮT TOÀN WEB       */
+/* ========================================================================= */
+
+window.TAPPopup = {
+    overlayEl: null,
+    cardEl: null,
+    resolveCallback: null,
+    autoCloseTimer: null,
+
+    init() {
+        if (document.getElementById('tap-popup-overlay')) {
+            this.overlayEl = document.getElementById('tap-popup-overlay');
+            this.cardEl = this.overlayEl.querySelector('.tap-popup-card');
+            return;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.id = 'tap-popup-overlay';
+        overlay.className = 'tap-popup-overlay';
+        overlay.innerHTML = `
+            <div class="tap-popup-card" id="tap-popup-card">
+                <div class="tap-popup-icon-wrap" id="tap-popup-icon">🔔</div>
+                <div class="tap-popup-title" id="tap-popup-title">THÔNG BÁO</div>
+                <div class="tap-popup-message" id="tap-popup-message">...</div>
+                <div class="tap-popup-actions" id="tap-popup-actions">
+                    <button class="tap-popup-btn tap-popup-btn-confirm" id="tap-popup-btn-confirm">ĐỒNG Ý</button>
+                    <button class="tap-popup-btn tap-popup-btn-cancel" id="tap-popup-btn-cancel" style="display: none;">HỦY BỎ</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        this.overlayEl = overlay;
+        this.cardEl = overlay.querySelector('.tap-popup-card');
+
+        const confirmBtn = document.getElementById('tap-popup-btn-confirm');
+        const cancelBtn = document.getElementById('tap-popup-btn-cancel');
+
+        confirmBtn.onclick = () => this.handleAction(true);
+        cancelBtn.onclick = () => this.handleAction(false);
+    },
+
+    show({ title = 'THÔNG BÁO', message = '', type = 'info', confirmText = 'ĐỒNG Ý', cancelText = null, onConfirm = null, onCancel = null, autoCloseMs = 0 } = {}) {
+        this.init();
+        if (this.autoCloseTimer) {
+            clearTimeout(this.autoCloseTimer);
+            this.autoCloseTimer = null;
+        }
+
+        const iconEl = document.getElementById('tap-popup-icon');
+        const titleEl = document.getElementById('tap-popup-title');
+        const msgEl = document.getElementById('tap-popup-message');
+        const confirmBtn = document.getElementById('tap-popup-btn-confirm');
+        const cancelBtn = document.getElementById('tap-popup-btn-cancel');
+
+        this.cardEl.className = `tap-popup-card type-${type}`;
+
+        const icons = {
+            success: '✅',
+            warning: '⚠️',
+            danger: '🚨',
+            info: '💡'
+        };
+        iconEl.innerHTML = icons[type] || '🔔';
+        titleEl.innerText = title;
+        msgEl.innerHTML = message.replace(/\n/g, '<br>');
+
+        confirmBtn.innerText = confirmText;
+        if (cancelText) {
+            cancelBtn.innerText = cancelText;
+            cancelBtn.style.display = 'inline-block';
+        } else {
+            cancelBtn.style.display = 'none';
+        }
+
+        this.overlayEl.classList.add('active');
+
+        if (autoCloseMs && autoCloseMs > 0) {
+            this.autoCloseTimer = setTimeout(() => {
+                this.close();
+            }, autoCloseMs);
+        }
+
+        return new Promise((resolve) => {
+            this.resolveCallback = (confirmed) => {
+                this.close();
+                if (confirmed && onConfirm) onConfirm();
+                if (!confirmed && onCancel) onCancel();
+                resolve(confirmed);
+            };
+        });
+    },
+
+    handleAction(confirmed) {
+        if (this.resolveCallback) {
+            this.resolveCallback(confirmed);
+            this.resolveCallback = null;
+        } else {
+            this.close();
+        }
+    },
+
+    close() {
+        if (this.autoCloseTimer) {
+            clearTimeout(this.autoCloseTimer);
+            this.autoCloseTimer = null;
+        }
+        if (this.overlayEl) {
+            this.overlayEl.classList.remove('active');
+        }
+    }
+};
+
+window.showTapPopup = (opts) => window.TAPPopup.show(opts);
+window.showSuccess = (message, title = 'THÀNH CÔNG', autoCloseMs = 3500) => window.TAPPopup.show({ title, message, type: 'success', autoCloseMs });
+window.showWarning = (message, title = 'CẢNH BÁO') => window.TAPPopup.show({ title, message, type: 'warning' });
+window.showDanger = (message, title = 'NGUY HIỂM / THẤT BẠI') => window.TAPPopup.show({ title, message, type: 'danger' });
+window.showInfo = (message, title = 'THÔNG BÁO', autoCloseMs = 4000) => window.TAPPopup.show({ title, message, type: 'info', autoCloseMs });
+window.showConfirm = (message, title = 'XÁC NHẬN', onConfirm = null, onCancel = null, confirmText = 'XÁC NHẬN', cancelText = 'HỦY BỎ') => 
+    window.TAPPopup.show({ title, message, type: 'warning', confirmText, cancelText, onConfirm, onCancel });

@@ -132,6 +132,11 @@ def create_app():
     def quests_page():
         return render_template('quests.html')
 
+    # 12. Phân Hệ Game Nông Trại Tri Thức (Vocab Farm)
+    @app.route('/farm')
+    def farm_page():
+        return render_template('farm.html')
+
 
     # --- ĐĂNG KÝ CÁC BLUEPRINTS ĐIỀU HƯỚNG API BACKEND ---
     from app.controllers.auth_controller import auth_bp
@@ -140,6 +145,7 @@ def create_app():
     from app.controllers.admin_controller import admin_bp
     from app.controllers.roadmap_controller import roadmap_bp
     from app.controllers.leaderboard_controller import leaderboard_bp
+    from app.controllers.farm_controller import farm_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(game_bp)
@@ -147,5 +153,9 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(roadmap_bp)
     app.register_blueprint(leaderboard_bp)
+    app.register_blueprint(farm_bp)
+
+    with app.app_context():
+        db.create_all()
 
     return app

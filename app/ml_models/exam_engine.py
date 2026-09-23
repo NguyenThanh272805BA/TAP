@@ -484,7 +484,11 @@ class LocalExamEngine:
                 correct_idx = key_info.get("correct_index", -1)
 
                 # Đối soát theo text đáp án hoặc theo index (A/B/C/D)
-                if user_ans.lower() == correct_ans.lower() or (user_ans.isdigit() and int(user_ans) == correct_idx):
+                # Chuẩn hóa để so sánh cú pháp linh hoạt (loại bỏ dấu câu cuối/khoảng trắng thừa)
+                clean_u = re.sub(r'[\.\?\!\,\;]+$', '', user_ans).strip().lower()
+                clean_c = re.sub(r'[\.\?\!\,\;]+$', '', correct_ans).strip().lower()
+
+                if (clean_u and clean_u == clean_c) or user_ans.lower() == correct_ans.lower() or (user_ans.isdigit() and int(user_ans) == correct_idx):
                     is_correct = True
                     awarded_score = 1.0
                     correct_count += 1
@@ -563,20 +567,20 @@ class LocalExamEngine:
         else:
             subscores["writing"] = subscores["grammar"]
 
-        # Ước tính CEFR Band đạt được
-        if final_score_10 >= 9.0:
+        # Ước tính CEFR Band đạt được (Chuẩn Khảo Thí Khắc Nghiệt Quốc Tế)
+        if final_score_10 >= 9.5:
             estimated_band = "C2"
             band_title = "C2 - Độc Cô Cầu Bại (Mastery)"
-        elif final_score_10 >= 7.5:
+        elif final_score_10 >= 8.6:
             estimated_band = "C1"
             band_title = "C1 - Cao Cấp (Effective Operational)"
-        elif final_score_10 >= 6.0:
+        elif final_score_10 >= 7.4:
             estimated_band = "B2"
             band_title = "B2 - Trung Cao Cấp (Vantage)"
-        elif final_score_10 >= 4.5:
+        elif final_score_10 >= 6.0:
             estimated_band = "B1"
             band_title = "B1 - Trung Cấp (Threshold)"
-        elif final_score_10 >= 3.0:
+        elif final_score_10 >= 4.5:
             estimated_band = "A2"
             band_title = "A2 - Sơ Cấp (Waystage)"
         else:

@@ -241,6 +241,9 @@
             </div>
         </div>
 
+        <!-- Banner Thông Báo Thăng Band / Chưa Đạt Tiêu Chuẩn Thăng Band -->
+        <div id="report-band-upgrade-banner" style="display: none; margin-bottom: 25px; padding: 16px 20px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 14px; line-height: 1.5;"></div>
+
         <!-- 4 Thanh Đo Phân Tích Kỹ Năng Con (Subscores) -->
         <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 14px; padding: 20px; margin-bottom: 30px;">
             <div class="pixel-title" style="color: var(--neon-cyan); font-size: 13px; margin-bottom: 15px;">
@@ -358,6 +361,8 @@
                 currentMockExam = data;
                 currentQuestionIdx = 0;
                 userMockAnswers = {};
+                isExamActive = true;
+                tabSwitchWarningCount = 0;
 
                 // Cài đặt đồng hồ
                 examRemainingSeconds = (data.time_limit_minutes || 15) * 60;
@@ -488,8 +493,36 @@
                     </label>
                     <textarea id="user-answer-${q.id}" class="auth-input" style="width: 100%; min-height: 120px; padding: 14px; font-size: 15px; resize: none; margin-bottom: 0; font-family: var(--text-mono);" placeholder="Nhập câu tiếng Anh hoàn chỉnh theo yêu cầu đề bài..." oninput="onTextInputChange('${q.id}', this.value)">${savedAnswer}</textarea>
                 </div>`;
+        } else if (q.type === 'syntax_scramble' || q.type === 'scramble') {
+            // TƯƠNG TÁC GHÉP CHỮ HAI CHIỀU (BẤM LÊN / BẤM XUỐNG)
+            contentHtml += `
+                <div style="margin-top: 15px;">
+                    <div style="font-size: 12px; color: var(--neon-amber); margin-bottom: 15px; font-family: var(--text-mono); background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--neon-amber); padding: 8px 12px; border-radius: 6px;">
+                        💡 <strong>Thao tác ghép chữ:</strong> Bấm vào ô chữ bên dưới để <strong>đưa lên</strong> câu ghép. Bấm vào chữ trên câu ghép để <strong>bỏ xuống</strong> lại ngân hàng từ.
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 12px; color: var(--neon-cyan); margin-bottom: 8px; font-family: var(--text-mono); font-weight: bold;">
+                            > CÂU ĐÃ GHÉP CỦA BẠN (Bấm vào từ bất kỳ để gỡ xuống):
+                        </label>
+                        <div id="scramble-slots-${q.id}" class="scramble-slots-row" style="min-height: 60px; border: 2px dashed var(--neon-cyan); background: rgba(0,0,0,0.4); border-radius: 12px; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 12px; color: #94a3b8; margin-bottom: 8px; font-family: var(--text-mono);">
+                            > NGÂN HÀNG TỪ / CỤM TỪ (Bấm vào từ để đưa lên câu):
+                        </label>
+                        <div id="scramble-pool-${q.id}" class="scramble-pool-row" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="pixel-btn" onclick="clearScrambleAnswer('${q.id}')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #94a3b8; font-size: 11px; padding: 8px 16px;">
+                            ↺ XÓA HẾT ĐÁP ÁN (LÀM LẠI)
+                        </button>
+                    </div>
+                </div>`;
         } else {
-            // MCQ, Error Spotting, Syntax Scramble with Options
+            // MCQ, Error Spotting with Options
             contentHtml += `<div style="display: flex; flex-direction: column; gap: 10px;">`;
             (q.options || []).forEach((opt, oIdx) => {
                 const isSelected = (savedAnswer === opt);
@@ -504,6 +537,11 @@
         }
 
         card.innerHTML = contentHtml;
+
+        // Nếu là dạng ghép chữ thì kích hoạt logic tiles
+        if (q.type === 'syntax_scramble' || q.type === 'scramble') {
+            setupScrambleUI(q, savedAnswer);
+        }
 
         // Cập nhật trạng thái nút điều hướng
         document.getElementById('btn-prev-q').disabled = (currentQuestionIdx === 0);
@@ -525,35 +563,53 @@
     function setupScrambleUI(q, savedVal) {
         const slotsRow = document.getElementById(`scramble-slots-${q.id}`);
         const poolRow = document.getElementById(`scramble-pool-${q.id}`);
-        const words = q.options || [];
+        if (!slotsRow || !poolRow) return;
 
-        let currentSelected = savedVal ? savedVal.split(' ') : [];
+        // Lấy danh sách mảnh từ từ scrambled_chunks hoặc options
+        const words = (q.scrambled_chunks && q.scrambled_chunks.length > 0) ? q.scrambled_chunks : (q.options || []);
+
+        let currentSelected = savedVal ? savedVal.trim().split(/\s+/).filter(Boolean) : [];
 
         function renderTiles() {
             slotsRow.innerHTML = '';
-            currentSelected.forEach((w, idx) => {
-                const t = document.createElement('span');
-                t.className = 'syntax-tile';
-                t.innerText = w;
-                t.onclick = () => {
-                    currentSelected.splice(idx, 1);
-                    userMockAnswers[q.id.toString()] = currentSelected.join(' ');
-                    renderTiles();
-                    renderQuestionPalette();
-                };
-                slotsRow.appendChild(t);
-            });
+            if (currentSelected.length === 0) {
+                slotsRow.innerHTML = '<span style="color: #64748b; font-size: 13px; font-style: italic;">Chưa có từ nào được chọn. Hãy bấm vào các từ bên dưới để đưa lên...</span>';
+            } else {
+                currentSelected.forEach((w, idx) => {
+                    const t = document.createElement('span');
+                    t.className = 'syntax-tile';
+                    t.style.background = 'rgba(6, 182, 212, 0.25)';
+                    t.style.borderColor = 'var(--neon-cyan)';
+                    t.style.cursor = 'pointer';
+                    t.style.display = 'inline-flex';
+                    t.style.alignItems = 'center';
+                    t.style.gap = '6px';
+                    t.title = `Bấm vào để bỏ từ '${w}' xuống`;
+                    t.innerHTML = `${w} <small style="color: #ef4444; font-weight: bold;">✕</small>`;
+                    t.onclick = () => {
+                        currentSelected.splice(idx, 1);
+                        userMockAnswers[q.id.toString()] = currentSelected.join(' ');
+                        renderTiles();
+                        renderQuestionPalette();
+                    };
+                    slotsRow.appendChild(t);
+                });
+            }
 
             poolRow.innerHTML = '';
-            words.forEach(w => {
-                const countInSelected = currentSelected.filter(x => x === w).length;
-                const countInTotal = words.filter(x => x === w).length;
-                const isAvailable = countInSelected < countInTotal;
+            const tempSelected = [...currentSelected];
+            words.forEach((w, wIdx) => {
+                const foundIdx = tempSelected.indexOf(w);
+                const isUsed = (foundIdx !== -1);
+                if (isUsed) {
+                    tempSelected.splice(foundIdx, 1);
+                }
 
                 const t = document.createElement('span');
-                t.className = `syntax-tile ${!isAvailable ? 'used' : ''}`;
+                t.className = `syntax-tile ${isUsed ? 'used' : ''}`;
                 t.innerText = w;
-                if (isAvailable) {
+                t.title = isUsed ? 'Từ đã được đưa lên câu' : `Bấm để đưa từ '${w}' lên câu`;
+                if (!isUsed) {
                     t.onclick = () => {
                         currentSelected.push(w);
                         userMockAnswers[q.id.toString()] = currentSelected.join(' ');
@@ -568,22 +624,76 @@
         renderTiles();
     }
 
+    function clearScrambleAnswer(qId) {
+        delete userMockAnswers[qId.toString()];
+        const q = currentMockExam.questions.find(item => item.id.toString() === qId.toString());
+        if (q) setupScrambleUI(q, '');
+        renderQuestionPalette();
+    }
+
+    let isExamActive = false;
+    let tabSwitchWarningCount = 0;
+
+    // GIÁM SÁT KỶ LUẬT THI CỬ: Chặn đóng/reload tab
+    window.addEventListener('beforeunload', (e) => {
+        if (isExamActive) {
+            e.preventDefault();
+            e.returnValue = '⚠️ CẢNH BÁO QUY CHẾ THI: Bạn đang trong phòng thi! Đóng tab hoặc tải lại trang sẽ bị hủy bài thi, phạt trừ 50 RP và GIÁNG HẠNG!';
+            return e.returnValue;
+        }
+    });
+
+    // Cưỡng bức xử phạt nếu người dùng đóng trình duyệt đột ngột
+    window.addEventListener('pagehide', () => {
+        if (isExamActive) {
+            navigator.sendBeacon('/api/game/exam/mock/abandon', JSON.stringify({ reason: 'force_tab_close' }));
+        }
+    });
+
+    // GIÁM SÁT RỜI MÀN HÌNH / CHUYỂN TAB
+    document.addEventListener('visibilitychange', () => {
+        if (!isExamActive) return;
+
+        if (document.hidden) {
+            tabSwitchWarningCount++;
+            if (tabSwitchWarningCount >= 2) {
+                isExamActive = false;
+                handleExamDisqualified();
+            }
+        } else {
+            if (tabSwitchWarningCount === 1) {
+                window.showDanger(
+                    "⚠️ CẢNH BÁO VI PHẠM QUY CHẾ THI (Lần 1/2)!\n\nPhát hiện bạn vừa rời khỏi tab phòng thi. Quy chế khảo thí yêu cầu sự tập trung tuyệt đối 100% trên màn hình làm bài.\n\nNếu tiếp tục rời tab hoặc chuyển ứng dụng thêm 1 lần nữa, bài thi sẽ bị ĐÌNH CHỈ NGAY LẬP TỨC và tài khoản sẽ bị TRỪ 50 RP dẫn đến TỤT RANK!",
+                    "GIÁM SÁT PHÒNG THI"
+                );
+            }
+        }
+    });
+
     function confirmSubmitExam() {
         saveCurrentInputAnswer();
         const answeredCount = Object.keys(userMockAnswers).filter(k => userMockAnswers[k] !== "").length;
         const total = currentMockExam.total_questions;
 
-        let msg = `Bạn đã hoàn thành ${answeredCount}/${total} câu hỏi. Bạn có chắc chắn muốn nộp bài thi?`;
+        let msg = `Bạn đã hoàn thành ${answeredCount}/${total} câu hỏi. Bạn có chắc chắn muốn nộp bài thi để AI Master G chấm điểm?`;
         if (answeredCount < total) {
-            msg = `⚠️ Chú ý: Bạn còn ${total - answeredCount} câu chưa trả lời. Bạn có chắc chắn muốn nộp bài ngay bây giờ?`;
+            msg = `⚠️ Chú ý: Bạn còn ${total - answeredCount} câu chưa trả lời. Các câu chưa trả lời sẽ nhận 0 điểm.\n\nBạn có chắc chắn muốn nộp bài thi ngay lúc này?`;
         }
 
-        if (confirm(msg)) {
-            submitMockExamDirect();
-        }
+        window.showConfirm(
+            msg,
+            "NỘP BÀI THI",
+            () => {
+                submitMockExamDirect();
+            },
+            null,
+            "NỘP BÀI NGAY",
+            "QUAY LẠI LÀM TIẾP"
+        );
     }
 
     function submitMockExamDirect() {
+        isExamActive = false;
         clearInterval(examCountdownTimer);
         saveCurrentInputAnswer();
 
@@ -611,11 +721,11 @@
             if (evalResult.status === 'success') {
                 renderExamReport(evalResult);
             } else {
-                alert("Lỗi chấm thi: " + (evalResult.error || "Vui lòng thử lại."));
+                window.showDanger("Lỗi chấm thi: " + (evalResult.error || "Vui lòng thử lại."));
             }
         })
         .catch(err => {
-            alert("Lỗi gửi kết quả bài thi: " + err.message);
+            window.showDanger("Lỗi gửi kết quả bài thi: " + err.message);
             card.innerHTML = `
                 <div style="text-align: center; padding: 40px; color: #ef4444;">
                     <div style="font-size: 16px; margin-bottom: 15px;">⚠️ Có lỗi khi gửi bài thi: ${err.message}</div>
@@ -636,6 +746,26 @@
         document.getElementById('report-estimated-band').innerText = report.estimated_band;
         document.getElementById('report-band-title').innerText = report.band_title;
         document.getElementById('report-coins-reward').innerText = `+${report.coins_reward}`;
+
+        // Cập nhật Banner Thăng Cấp Band (Khắc Nghiệt)
+        const upgradeBanner = document.getElementById('report-band-upgrade-banner');
+        if (upgradeBanner) {
+            if (report.band_upgraded) {
+                upgradeBanner.style.display = 'block';
+                upgradeBanner.style.background = 'rgba(52, 211, 153, 0.15)';
+                upgradeBanner.style.border = '2px solid var(--pixel-green)';
+                upgradeBanner.style.color = 'var(--pixel-green)';
+                upgradeBanner.innerHTML = `🎉 CHÚC MỪNG! BẠN ĐÃ THĂNG CẤP LÊN BAND ${report.new_band} TRÊN TOÀN HỆ THỐNG!`;
+            } else if (report.band_blocked_reason) {
+                upgradeBanner.style.display = 'block';
+                upgradeBanner.style.background = 'rgba(251, 191, 36, 0.15)';
+                upgradeBanner.style.border = '2px solid var(--neon-amber)';
+                upgradeBanner.style.color = 'var(--neon-amber)';
+                upgradeBanner.innerHTML = `⚠️ TIÊU CHUẨN THĂNG BAND: ${report.band_blocked_reason}`;
+            } else {
+                upgradeBanner.style.display = 'none';
+            }
+        }
 
         // Subscores
         const subs = report.subscores || {};
@@ -673,7 +803,7 @@
                 </div>
                 ${!isCor ? `<div style="font-size: 14px; color: var(--pixel-green); margin-bottom: 8px;"><span style="color: #94a3b8;">Đáp án chính xác:</span> <strong>${res.correct_answer}</strong></div>` : ''}
                 <div style="font-size: 13px; color: #94a3b8; line-height: 1.5; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px;">
-                    💡 ${res.explanation || res.ai_feedback}
+                    💡 ${res.explanation || res.ai_feedback || 'Đã ghi nhận câu trả lời và cập nhật đánh giá CEFR.'}
                 </div>
             </div>`;
         });
@@ -681,10 +811,69 @@
     }
 
     function confirmExitExam() {
-        if (confirm("⚠️ CẢNH BÁO: Bài thi chưa được nộp. Nếu bạn thoát ra lúc này, toàn bộ tiến trình sẽ bị hủy bỏ. Bạn có chắc chắn muốn quay lại?")) {
-            clearInterval(examCountdownTimer);
+        if (!isExamActive) {
             window.location.href = '/test';
+            return;
         }
+
+        window.showConfirm(
+            "⚠️ CẢNH BÁO QUY CHẾ THI:\n\nBạn đang làm bài thi đánh giá năng lực CEFR! Nếu bạn thoát ra lúc này:\n• Bài thi sẽ bị tính 0 điểm\n• Bạn sẽ bị PHẠT TRỪ 50 RP UY TÍN\n• Nguy cơ cao bị GIÁNG HẠNG (TỤT RANK) ngay lập tức!\n\nBạn có chắc chắn muốn bỏ thi không?",
+            "CẢNH BÁO BỎ THI",
+            () => {
+                isExamActive = false;
+                clearInterval(examCountdownTimer);
+
+                fetch('/api/game/exam/mock/abandon', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ reason: 'user_exit' })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    let demoteMsg = data.demoted 
+                        ? `\n\n🚨 TỤT RANK: Điểm RP còn ${data.new_rp}. Bạn đã bị GIÁNG HẠNG từ [${data.old_rank}] xuống [${data.new_rank}]!`
+                        : `\n\nĐiểm RP còn lại: ${data.new_rp} RP (Bậc rank: ${data.new_rank}).`;
+
+                    window.showDanger(
+                        `Đã ghi nhận bỏ thi!\nBạn bị phạt trừ ${data.penalty_rp} RP.${demoteMsg}`,
+                        "KỶ LUẬT THI CỬ"
+                    ).then(() => {
+                        window.location.href = '/test';
+                    });
+                })
+                .catch(() => {
+                    window.location.href = '/test';
+                });
+            },
+            null,
+            "CHẤP NHẬN PHẠT & THOÁT",
+            "TIẾP TỤC LÀM BÀI"
+        );
+    }
+
+    function handleExamDisqualified() {
+        clearInterval(examCountdownTimer);
+        fetch('/api/game/exam/mock/abandon', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ reason: 'tab_switch_violation' })
+        })
+        .then(res => res.json())
+        .then(data => {
+            let demoteMsg = data.demoted 
+                ? `\n\n🚨 TỤT RANK: Bạn đã bị GIÁNG HẠNG xuống [${data.new_rank}] do điểm RP giảm sâu!`
+                : `\n\nĐiểm RP còn lại: ${data.new_rp} RP.`;
+
+            window.showDanger(
+                `ĐÌNH CHỈ BÀI THI DO VI PHẠM QUY CHẾ!\n\nBạn đã rời khỏi tab thi quá số lần cho phép (2 lần). Hệ thống đã tự động tính 0 điểm và phạt trừ ${data.penalty_rp} RP.${demoteMsg}`,
+                "ĐÌNH CHỈ THI CỬ"
+            ).then(() => {
+                window.location.href = '/test';
+            });
+        })
+        .catch(() => {
+            window.location.href = '/test';
+        });
     }
 </script>
 {% endblock %}

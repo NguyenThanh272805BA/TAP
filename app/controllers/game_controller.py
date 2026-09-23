@@ -24,6 +24,7 @@ from app.ml_models.scramble_engine import LocalScrambleEngine
 from app.ml_models.exam_engine import LocalExamEngine
 from app.utils.grammar_quiz_generator import generate_grammar_collocations, generate_grammar_quiz
 from app.utils.vocab_exam_service import generate_50_vocab_exam, evaluate_50_vocab_exam, apply_self_assessment_and_generate_srs_roadmap
+from app.utils.level_manager import check_and_update_level, compute_user_academic_tier
 
 
 game_bp = Blueprint('game', __name__, url_prefix='/api/game')
@@ -1316,14 +1317,84 @@ def submit_mock_exam():
 
         achieved_band = eval_result.get('estimated_band', 'A1')
         band_ranks = {'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6}
-        if band_ranks.get(achieved_band, 1) > band_ranks.get(getattr(user, 'current_band', 'A1'), 1) and eval_result['final_score'] >= 8.0:
-            user.current_band = achieved_band
-            eval_result['band_upgraded'] = True
-            eval_result['new_band'] = achieved_band
+        current_user_band = getattr(user, 'current_band', 'A1')
+
+        # ĐIỀU KIỆN THĂNG BAND KHẮC NGHIỆT QUỐC TẾ:
+        # 1. Band mục tiêu phải cao hơn Band hiện tại.
+        # 2. Điểm tổng kết bài thi >= 8.5/10.0 (tương đương tỷ lệ đúng >= 85%).
+        # 3. Tiêu chí "Không Kỹ Năng Liệt": Toàn bộ 4 kỹ năng thành phần (Vocab, Grammar, Syntax, Writing) phải >= 6.5/10.0.
+        eval_result['band_upgraded'] = False
+        if band_ranks.get(achieved_band, 1) > band_ranks.get(current_user_band, 1):
+            subscores = eval_result.get('subscores') or {}
+            weak_skills = [sec for sec, sc in subscores.items() if sc < 6.5]
+            
+            if eval_result['final_score'] < 8.5:
+                eval_result['band_blocked_reason'] = f"Chưa thể thăng Band {achieved_band}: Điểm tổng đạt {eval_result['final_score']}/10.0 (Chuẩn thăng Band yêu cầu tối thiểu >= 8.5/10.0)."
+            elif weak_skills:
+                eval_result['band_blocked_reason'] = f"Chưa thể thăng Band {achieved_band}: Dính kỹ năng lệch ({', '.join(weak_skills)} < 6.5đ). Chuẩn thăng Band yêu cầu năng lực đồng đều, mọi kỹ năng phải >= 6.5/10.0."
+            else:
+                user.current_band = achieved_band
+                eval_result['band_upgraded'] = True
+                eval_result['new_band'] = achieved_band
+
+        # CẬP NHẬT RANK HỌC THUẬT & KIỂM TRA THĂNG/GIÁNG HẠNG (PROMOTION / DEMOTION)
+        level_changed, new_rank = check_and_update_level(user_id)
+        eval_result['level_changed'] = level_changed
+        eval_result['current_level'] = user.current_level
 
         db.session.commit()
 
     return jsonify(eval_result), 200
+
+
+@game_bp.route('/exam/mock/abandon', methods=['POST'])
+def abandon_mock_exam():
+    """Xử lý kỷ luật khi người dùng bỏ thi / đóng tab / chuyển tab vi phạm quy chế thi"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Không tìm thấy người dùng!"}), 404
+
+    old_rank = user.current_level
+    old_rp = user.academic_rp if user.academic_rp is not None else 500
+
+    # Phạt kỷ luật nghiêm ngặt: Trừ 50 RP uy tín học thuật
+    penalty = 50 + ((user.consecutive_fails or 0) * 10)
+    user.academic_rp = max(0, old_rp - penalty)
+    user.consecutive_fails = (user.consecutive_fails or 0) + 1
+    user.last_exam_fail_time = datetime.now()
+
+    log_feedback = f"[KỶ LUẬT PHÒNG THI] Người dùng tự ý rời phòng thi / đóng tab khi chưa nộp bài. Hệ thống xử phạt trừ {penalty} RP và tính 1 lần trượt thi."
+    test_log = TestLog(
+        user_id=user_id,
+        score=0.0,
+        ai_feedback=log_feedback
+    )
+    db.session.add(test_log)
+
+    # Kiểm tra giáng hạng tức thì nếu RP rơi xuống dưới ngưỡng của bậc rank hiện tại
+    level_changed, new_rank = check_and_update_level(user_id)
+    demoted = level_changed and (new_rank != old_rank)
+
+    db.session.commit()
+
+    # Xóa session đề thi hiện tại nếu có
+    session.pop('current_exam_answer_key', None)
+
+    return jsonify({
+        "status": "abandoned",
+        "penalty_rp": penalty,
+        "old_rp": old_rp,
+        "new_rp": user.academic_rp,
+        "old_rank": old_rank,
+        "new_rank": user.current_level,
+        "demoted": demoted,
+        "message": f"Bị xử phạt trừ {penalty} RP do vi phạm quy chế thi!" + (f" Bạn đã bị GIÁNG HẠNG xuống {user.current_level}!" if demoted else "")
+    }), 200
+
 
 
 @game_bp.route('/exam/history', methods=['GET'])

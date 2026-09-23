@@ -56,6 +56,16 @@ def generate_50_vocab_exam(user_id=None):
         random.shuffle(options)
         correct_idx = options.index(correct_meaning)
 
+        letters = ['A', 'B', 'C', 'D']
+        formatted_options = []
+        for o_i, opt_text in enumerate(options):
+            formatted_options.append({
+                "key": letters[o_i] if o_i < 4 else str(o_i + 1),
+                "text": opt_text
+            })
+
+        prompt_str = f"Hãy chọn bản dịch hoặc định nghĩa tiếng Việt chuẩn xác nhất cho từ '{v.word}':"
+
         questions.append({
             "id": idx,
             "question_num": idx,
@@ -63,8 +73,10 @@ def generate_50_vocab_exam(user_id=None):
             "word": v.word,
             "theme": v.theme or "General",
             "cefr_level": v.cefr_level or "A1",
-            "prompt": f"Hãy chọn bản dịch hoặc định nghĩa tiếng Việt chuẩn xác nhất cho từ '{v.word}':",
-            "options": options,
+            "prompt": prompt_str,
+            "question": prompt_str,
+            "options": formatted_options,
+            "raw_options": options,
             "correct_idx": correct_idx,
             "correct_meaning": correct_meaning
         })
@@ -103,7 +115,12 @@ def evaluate_50_vocab_exam(questions, user_answers):
         if is_correct:
             correct_count += 1
 
-        user_selected_text = q["options"][selected_option_idx] if 0 <= selected_option_idx < len(q["options"]) else "Chưa chọn"
+        opts = q.get("options", [])
+        if 0 <= selected_option_idx < len(opts):
+            opt_obj = opts[selected_option_idx]
+            user_selected_text = opt_obj["text"] if isinstance(opt_obj, dict) else str(opt_obj)
+        else:
+            user_selected_text = "Chưa chọn"
 
         results.append({
             "question_num": q["question_num"],
@@ -113,6 +130,7 @@ def evaluate_50_vocab_exam(questions, user_answers):
             "cefr_level": q["cefr_level"],
             "user_choice_idx": selected_option_idx,
             "user_choice_text": user_selected_text,
+            "meaning": q["correct_meaning"],
             "correct_meaning": q["correct_meaning"],
             "is_correct": is_correct,
             # Mặc định gợi ý trạng thái dựa trên kết quả trả lời
@@ -143,7 +161,7 @@ def apply_self_assessment_and_generate_srs_roadmap(user_id, assessments):
 
     for item in assessments:
         vocab_id = item.get("vocab_id")
-        level = item.get("memorization_level", "CHUA_THUOC").upper()
+        level = (item.get("status") or item.get("memorization_level") or "CHUA_THUOC").upper()
         if not vocab_id:
             continue
 

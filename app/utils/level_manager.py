@@ -5,13 +5,13 @@ from app.models.test import TestLog
 from app.models.roadmap import UserMilestoneProgress, RoadmapMilestone
 from app import db
 
-# BẢNG ÁNH XẠ RANK HỌC THUẬT THEO KHUNG CEFR & ĐIỂM RP (ACADEMIC ROADMAP TIERS)
+# BẢNG ÁNH XẠ RANK HỌC THUẬT THEO KHUNG CEFR & ĐIỂM RP (ACADEMIC ROADMAP TIERS - CHUẨN KHẮC NGHIỆT)
 ACADEMIC_TIERS = [
-    {"band": "C2", "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)", "min_milestones": 12, "min_rp": 1600, "req_vocab": 1200, "req_sentence": 800},
-    {"band": "C1", "rank_name": "Kiến Trúc Sư C1 (Platinum)", "min_milestones": 8, "min_rp": 1200, "req_vocab": 800, "req_sentence": 500},
-    {"band": "B2", "rank_name": "Pháp Sư B2 (Gold)", "min_milestones": 6, "min_rp": 850, "req_vocab": 500, "req_sentence": 300},
-    {"band": "B1", "rank_name": "Chiến Binh B1 (Silver)", "min_milestones": 4, "min_rp": 550, "req_vocab": 250, "req_sentence": 150},
-    {"band": "A2", "rank_name": "Thợ Săn A2 (Bronze II)", "min_milestones": 2, "min_rp": 300, "req_vocab": 80, "req_sentence": 40},
+    {"band": "C2", "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)", "min_milestones": 16, "min_rp": 2400, "req_vocab": 1800, "req_sentence": 1200},
+    {"band": "C1", "rank_name": "Kiến Trúc Sư C1 (Platinum)", "min_milestones": 12, "min_rp": 1700, "req_vocab": 1100, "req_sentence": 700},
+    {"band": "B2", "rank_name": "Pháp Sư B2 (Gold)", "min_milestones": 8, "min_rp": 1200, "req_vocab": 700, "req_sentence": 450},
+    {"band": "B1", "rank_name": "Chiến Binh B1 (Silver)", "min_milestones": 5, "min_rp": 800, "req_vocab": 400, "req_sentence": 250},
+    {"band": "A2", "rank_name": "Thợ Săn A2 (Bronze II)", "min_milestones": 3, "min_rp": 450, "req_vocab": 160, "req_sentence": 90},
     {"band": "A1", "rank_name": "Tân Binh A1 (Bronze I)", "min_milestones": 0, "min_rp": 0, "req_vocab": 0, "req_sentence": 0}
 ]
 
@@ -75,14 +75,14 @@ def check_and_update_level(user_id):
 def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_abandoned=False):
     """
     Quy trình xử lý kết quả khảo thí chặng Lộ trình Target Band KHẮC NGHIỆT chuẩn đời thật:
-    1. Quy tắc Điểm Liệt: Mọi phần thi phải >= 5.0/10.0. Nếu có 1 phần < 5.0 -> TRƯỢT NGAY.
-    2. Điểm Chuẩn Qua Ải: Tổng điểm >= 7.5/10.0.
+    1. Quy tắc Điểm Liệt: Mọi phần thi phải >= 6.0/10.0. Nếu có 1 phần < 6.0 -> TRƯỢT NGAY.
+    2. Điểm Chuẩn Qua Ải: Tổng điểm >= 8.2/10.0.
     3. Thưởng / Phạt RP:
        - Đỗ: +60 đến +100 RP.
-       - Trượt: Phạt -35 RP (Bỏ cuộc giữa chừng phạt -20 RP).
+       - Trượt: Phạt -45 RP (Bỏ cuộc giữa chừng phạt -65 RP).
        - Trượt liên tiếp >= 2: Tăng cảnh báo giáng hạng.
        - Giáng hạng (Demotion) nếu RP tụt xuống dưới ngưỡng.
-    4. Kích hoạt Cooldown 45 giây trước khi được thi lại.
+    4. Kích hoạt Cooldown 90 giây trước khi được thi lại để buộc ôn tập nghiêm túc.
     """
     if not user_id or not milestone_id:
         return {"error": "Thiếu mã người dùng hoặc mã chặng thi!"}
@@ -105,11 +105,11 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
     else:
         progress.attempts = (progress.attempts or 0) + 1
 
-    # Kiểm tra Điểm Liệt
+    # Kiểm tra Điểm Liệt (Ngưỡng khắc nghiệt >= 6.0)
     disqualified = False
     disqualified_sections = []
     for sec_key, sec_score in section_scores.items():
-        if sec_score < 5.0:
+        if sec_score < 6.0:
             disqualified = True
             sec_label = SECTION_NAMES.get(sec_key, sec_key)
             disqualified_sections.append(f"{sec_label} ({sec_score:.1f}/10)")
@@ -121,9 +121,9 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
         disqualified = True
         disqualified_reason = "Bỏ dở bài thi giữa chừng! Hệ thống tính 0 điểm và phạt vi phạm quy chế thi."
     elif disqualified:
-        disqualified_reason = f"DÍNH ĐIỂM LIỆT! Các phần thi dưới 5.0 điểm: {', '.join(disqualified_sections)}. Quy chế thi yêu cầu mọi phần phải đạt tối thiểu 5.0/10."
-    elif exam_score < 7.5:
-        disqualified_reason = f"Chưa đạt điểm chuẩn qua ải ({exam_score:.1f}/10.0). Điểm chuẩn học thuật yêu cầu tối thiểu 7.5/10.0."
+        disqualified_reason = f"DÍNH ĐIỂM LIỆT! Các phần thi dưới 6.0 điểm: {', '.join(disqualified_sections)}. Quy chế thi yêu cầu mọi phần phải đạt tối thiểu 6.0/10."
+    elif exam_score < 8.2:
+        disqualified_reason = f"Chưa đạt điểm chuẩn qua ải ({exam_score:.1f}/10.0). Điểm chuẩn học thuật yêu cầu tối thiểu 8.2/10.0."
     else:
         passed = True
 
@@ -160,11 +160,11 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
             promoted = True
 
     else:
-        # Bị phạt trừ RP
+        # Bị phạt trừ RP (Chuẩn khảo thí kỷ luật nghiêm ngặt)
         if is_abandoned:
-            rp_change = -20
+            rp_change = -65  # Phạt nặng -65 RP khi tự ý bỏ cuộc / thoát phòng thi
         else:
-            rp_change = -35
+            rp_change = -45
 
         user.academic_rp = max(0, user.academic_rp + rp_change)
         user.consecutive_fails = (user.consecutive_fails or 0) + 1
@@ -196,6 +196,6 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
         "current_rank": user.current_level,
         "current_band": getattr(user, 'current_band', 'A1'),
         "consecutive_fails": user.consecutive_fails,
-        "cooldown_seconds": 45 if not passed else 0,
+        "cooldown_seconds": 90 if not passed else 0,
         "reward_coins": milestone.reward_coins if passed else 0
     }
