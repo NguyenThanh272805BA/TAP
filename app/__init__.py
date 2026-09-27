@@ -64,6 +64,11 @@ def create_app():
     def dashboard():
         return render_template('dashboard.html')
 
+    # 2.1. Cẩm Nang Hướng Dẫn Sử Dụng Chi Tiết Cho Người Mới Bắt Đầu (User Guide)
+    @app.route('/guide')
+    def guide_page():
+        return render_template('guide.html')
+
     @app.route('/learn')
     def learn_page():
         return render_template('learn.html')

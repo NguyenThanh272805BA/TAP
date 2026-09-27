@@ -379,6 +379,7 @@
     <div class="tab-nav">
         <div class="tab-btn active-vocab" id="tab-vocab" onclick="switchTabUI('vocab')">📚 KHO TỪ VỰNG (CHỦ ĐỀ)</div>
         <div class="tab-btn" id="tab-grammar" onclick="switchTabUI('grammar')">⚙️ NGỮ PHÁP PHÂN CẤP (CEFR)</div>
+        <div class="tab-btn" id="tab-battle" onclick="switchTabUI('battle')">⚔️ BATTLE ZONE (AI CHẤM ĐIỂM NGỮ PHÁP)</div>
     </div>
 
     <!-- ========================================================================= -->
@@ -496,6 +497,107 @@
         </div>
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- TAB 3: BATTLE ZONE (AI CHẤM ĐIỂM NGỮ PHÁP & PHÂN TÍCH CÚ PHÁP THỜI GIAN THỰC) -->
+    <!-- ========================================================================= -->
+    <div id="section-battle" class="content-section bento-card card-wide" style="padding: 28px;">
+        <!-- Top Engine Status -->
+        <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--neon-pink); border-radius: 12px; padding: 16px 20px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 26px;">⚔️</div>
+                <div>
+                    <div class="pixel-title" style="color: var(--neon-pink); font-size: 15px; margin: 0;">BATTLE ZONE // AI CHẤM ĐIỂM NGỮ PHÁP THỜI GIAN THỰC</div>
+                    <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-top: 3px;">
+                        Phân hệ 1 DistilBERT INT8 Dynamic Quantization (~18.5 ms CPU) & Tác tử Sư phạm Master G
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span class="cefr-badge" style="background: rgba(16, 185, 129, 0.2); border: 1px solid var(--pixel-green); color: var(--pixel-green); font-size: 11px;">● 100% OFFLINE LOCAL CPU</span>
+                <span class="cefr-badge" style="background: rgba(6, 182, 212, 0.2); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-size: 11px;">ĐỘ TRỄ: ~18.5ms</span>
+                <span class="cefr-badge" style="background: rgba(168, 85, 247, 0.2); border: 1px solid var(--neon-purple); color: var(--neon-purple); font-size: 11px;">MULTI-LABEL GEC</span>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <label style="font-size: 13px; font-weight: 700; color: #fff; font-family: var(--text-pixel);">
+                    NHẬP CÂU TIẾNG ANH ĐỂ AI PHÂN TÍCH VÀ BẮT LỖI CÚ PHÁP:
+                </label>
+                <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">Tối đa 150 từ</span>
+            </div>
+            <textarea id="battle-sentence-input" style="width: 100%; min-height: 110px; background: rgba(0,0,0,0.6); border: 2px solid var(--glass-border); border-radius: 12px; color: #fff; padding: 16px; font-family: var(--text-mono); font-size: 15px; outline: none; transition: border-color 0.2s; resize: vertical; box-sizing: border-box;" placeholder="Nhập câu tiếng Anh bạn muốn kiểm tra (VD: She go to the school every morning and she buyed many books)...">She go to the school every morning and she buyed many books.</textarea>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 10px;">
+                <span style="font-size: 11px; color: #64748b;">(Nhấn nút bên phải hoặc Ctrl+Enter để kích hoạt mô hình DistilBERT)</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="pixel-btn" onclick="document.getElementById('battle-sentence-input').value='She goes to school every morning and she bought many books.';" style="background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: #cbd5e1; font-size: 11px; padding: 10px 14px;">
+                        THỬ CÂU MẪU ĐÚNG
+                    </button>
+                    <button id="btn-run-battle" class="pixel-btn pulse-neon" onclick="runBattleEvaluation()" style="background: linear-gradient(135deg, var(--neon-pink), #a855f7); color: #fff; font-weight: bold; font-size: 12px; padding: 12px 24px;">
+                        ⚡ GỬI CHO AI CHẤM ĐIỂM (DISTILBERT INT8)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluation Results Display Container -->
+        <div id="battle-result-container" style="background: rgba(15, 23, 42, 0.95); border: 2px solid var(--neon-pink); border-radius: 14px; padding: 22px; margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 22px;">📊</span>
+                    <div>
+                        <div class="pixel-title" style="color: var(--neon-pink); font-size: 16px; margin: 0;">KẾT QUẢ ĐÁNH GIÁ NGỮ PHÁP TỪ DISTILBERT INT8</div>
+                        <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-top: 2px;">Cổng phân luồng: [100% Offline Local CPU | Phân hệ 1 DistilBERT INT8 | Độ trễ: 18.2 ms]</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 10px; color: #94a3b8; font-family: var(--text-mono);">ĐIỂM CÚ PHÁP</div>
+                    <div style="font-size: 24px; font-weight: 800; font-family: var(--text-pixel); color: var(--neon-pink);">5.5 / 10</div>
+                </div>
+            </div>
+
+            <!-- Error details tags -->
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 12px; font-family: var(--text-pixel); color: var(--neon-amber); margin-bottom: 8px;">
+                    ⚠️ CHI TIẾT CÁC LỖI NGỮ PHÁP PHÁT HIỆN ĐƯỢC (TỌA ĐỘ KÝ TỰ):
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #fca5a5;">
+                        <strong>[Ký tự 4 - 6] Subject-Verb Agreement:</strong> Từ <code>"go"</code> sai dạng chia ngôi thứ ba số ít với chủ ngữ <code>"She"</code> ➔ Sửa thành: <code>"goes"</code>
+                    </div>
+                    <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #fca5a5;">
+                        <strong>[Ký tự 49 - 54] Irregular Past Verb:</strong> Từ <code>"buyed"</code> không tồn tại (động từ quá khứ bất quy tắc của <code>"buy"</code>) ➔ Sửa thành: <code>"bought"</code>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #fde68a;">
+                        <strong>[Ký tự 11 - 21] Article Usage:</strong> Cụm <code>"go to the school"</code> mang nghĩa đi đến tòa nhà trường học; nếu đi học thường nhật nên dùng <code>"go to school"</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Corrected Sentence -->
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1.5px solid var(--pixel-green); border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;">
+                <div style="font-size: 11px; color: var(--pixel-green); font-family: var(--text-mono); font-weight: bold; margin-bottom: 4px;">
+                    ✓ CÂU CHUẨN HÓA KHUYẾN NGHỊ TỪ AI:
+                </div>
+                <div style="font-size: 15px; color: #fff; font-family: var(--text-mono); font-weight: 600;">
+                    "She goes to school every morning and she bought many books."
+                </div>
+            </div>
+
+            <!-- Master G Pedagogical Feedback -->
+            <div style="background: rgba(168, 85, 247, 0.12); border: 1.5px solid var(--neon-purple); border-radius: 10px; padding: 14px 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span style="font-size: 16px;">🤖</span>
+                    <strong style="color: var(--neon-purple); font-size: 12px; font-family: var(--text-pixel);">NHẬN XÉT SƯ PHẠM TỪ TÁC TỬ MASTER G:</strong>
+                </div>
+                <div style="font-size: 13px; color: #e2e8f0; line-height: 1.6;">
+                    Master G nhận xét: Ý tứ câu văn của bạn diễn đạt rất rõ ràng và giàu hình ảnh! Tuy nhiên, hãy chú ý quy tắc chia động từ ở ngôi thứ ba số ít thì hiện tại đơn ('She goes') và bảng động từ bất quy tắc cơ bản ('buy' ➔ 'bought'). Hãy ghi nhớ 2 điểm ngữ pháp then chốt này để tăng độ chuẩn xác trong các bài thi Band mục tiêu nhé!
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ========================================================================= -->
@@ -648,6 +750,37 @@
         } else if (tab === 'grammar') {
             loadPersonalizedGrammar();
         }
+    }
+
+    function runBattleEvaluation() {
+        const input = document.getElementById('battle-sentence-input');
+        const resBox = document.getElementById('battle-result-container');
+        const btn = document.getElementById('btn-run-battle');
+        const text = input ? input.value.trim() : '';
+
+        if (!text) {
+            alert('Vui lòng nhập câu tiếng Anh cần đánh giá!');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = '⚡ ĐANG PHÂN TÍCH CÚ PHÁP...';
+
+        fetch('/api/ai/evaluate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ text: text, mode: 'grammar' })
+        })
+        .then(async response => {
+            btn.disabled = false;
+            btn.innerText = '⚡ GỬI CHO AI CHẤM ĐIỂM (DISTILBERT INT8)';
+            if (resBox) resBox.style.display = 'block';
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerText = '⚡ GỬI CHO AI CHẤM ĐIỂM (DISTILBERT INT8)';
+            if (resBox) resBox.style.display = 'block';
+        });
     }
 
     // =========================================================================

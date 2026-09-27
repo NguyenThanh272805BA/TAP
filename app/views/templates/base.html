@@ -56,6 +56,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     Bảng Điều Khiển
                 </a>
+                <a href="/guide" class="nav-item" style="color: var(--neon-cyan); border-left: 3px solid var(--neon-cyan);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Cẩm Nang Tân Binh
+                </a>
                 <a href="/roadmap" class="nav-item">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
                     Lộ Trình Target Band
@@ -143,6 +147,210 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+
+    <!-- ================================================================= -->
+    <!-- MASTER G COMPANION: FLOATING PEDAGOGICAL AI AGENT WIDGET -->
+    <!-- ================================================================= -->
+    <div id="master-g-companion-widget" style="position: fixed; bottom: 25px; right: 25px; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; font-family: var(--text-main);">
+        <!-- Speech Bubble -->
+        <div id="master-g-speech-bubble" onclick="openMasterGModal()" style="display: none; max-width: 290px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px); border: 1.5px solid var(--neon-purple); border-radius: 14px 14px 2px 14px; padding: 10px 14px; box-shadow: 0 8px 32px rgba(168, 85, 247, 0.35); margin-bottom: 10px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-family: var(--text-pixel); font-size: 10px; color: var(--neon-cyan); letter-spacing: 0.5px;">🤖 MASTER G // ONLINE</span>
+                <span onclick="event.stopPropagation(); closeMasterGSpeechBubble();" style="color: #64748b; font-size: 11px; cursor: pointer; padding: 0 4px;" title="Tạm ẩn lời nhắc">✕</span>
+            </div>
+            <div id="master-g-speech-text" style="font-size: 12px; color: #e2e8f0; line-height: 1.4;">
+                Sư phụ Master G đang theo dõi tiến độ của bạn. Nhấn vào đây để xem chẩn đoán toàn diện!
+            </div>
+        </div>
+
+        <!-- Floating Button -->
+        <button id="master-g-avatar-btn" onclick="toggleMasterGModal()" style="width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%); border: 2.5px solid var(--neon-purple); box-shadow: 0 0 20px rgba(168, 85, 247, 0.5), inset 0 0 10px rgba(168, 85, 247, 0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; transition: all 0.3s ease; transform: scale(1);" onmouseover="this.style.transform='scale(1.08)'; this.style.borderColor='var(--neon-cyan)';" onmouseout="this.style.transform='scale(1)'; this.style.borderColor='var(--neon-purple)';" title="Trợ lý Sư phạm Toàn cảnh Master G">
+            <span style="font-size: 26px; filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.8));">🧙‍♂️</span>
+            <!-- Live Pulse Dot -->
+            <span style="position: absolute; top: 2px; right: 2px; width: 13px; height: 13px; background: var(--pixel-green); border-radius: 50%; border: 2px solid #0f172a; box-shadow: 0 0 8px var(--pixel-green);"></span>
+        </button>
+    </div>
+
+    <!-- MASTER G COMMAND CENTER MODAL -->
+    <div id="master-g-hub-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 100000; justify-content: center; align-items: center; font-family: var(--text-main);">
+        <div style="background: rgba(15, 23, 42, 0.96); border: 2px solid var(--neon-purple); border-radius: 16px; width: 92%; max-width: 760px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(168, 85, 247, 0.35);">
+            
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; background: linear-gradient(90deg, rgba(88, 28, 135, 0.4), rgba(15, 23, 42, 0.8)); border-bottom: 1.5px solid var(--glass-border);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 28px;">🧙‍♂️</span>
+                    <div>
+                        <div class="pixel-title" style="color: var(--neon-cyan); font-size: 16px; margin: 0; letter-spacing: 1px;">MASTER G // TRỢ LÝ ĐIỀU PHỐI SƯ PHẠM</div>
+                        <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-top: 2px;">Mạng lưới Tác tử Tự hành Cục bộ (6 Phân Hệ AI Chuyên Biệt)</div>
+                    </div>
+                </div>
+                <button onclick="closeMasterGModal()" class="pixel-btn" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; padding: 6px 12px; font-size: 11px; box-shadow: none; cursor: pointer;">✕ ĐÓNG</button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div style="padding: 22px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; flex: 1;">
+                
+                <!-- HERO DIRECTIVE CARD -->
+                <div style="background: linear-gradient(135deg, rgba(88, 28, 135, 0.35), rgba(15, 23, 42, 0.85)); border: 1.5px solid var(--neon-purple); border-radius: 12px; padding: 18px; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <span class="pixel-title" style="font-size: 12px; color: var(--neon-amber); letter-spacing: 0.5px;">🎯 CHỈ THỊ SƯ PHẠM ƯU TIÊN</span>
+                        <span id="hub-cefr-badge" style="background: rgba(6, 182, 212, 0.2); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--text-mono); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">BAND: ĐANG QUÉT...</span>
+                    </div>
+                    <div id="hub-directive-title" style="font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 6px;">
+                        Đang kích hoạt quy trình chẩn đoán các phân hệ học máy...
+                    </div>
+                    <div id="hub-directive-advice" style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 14px;">
+                        Hệ thống đang đối chiếu dữ liệu ngữ pháp, trí nhớ đường cong quên Ebbinghaus và tiến độ lộ trình học tập của bạn.
+                    </div>
+                    <button id="hub-directive-btn" onclick="executeHubAction()" class="pixel-btn pulse-neon" style="background: var(--pixel-green); color: #000; font-weight: 800; padding: 10px 18px; font-size: 12px; width: 100%;">
+                        🚀 THỰC THI CHỈ THỊ NGAY
+                    </button>
+                </div>
+
+                <!-- 4 FAST ACTION GATEWAYS -->
+                <div>
+                    <div style="font-size: 11px; font-family: var(--text-pixel); color: #94a3b8; margin-bottom: 10px; letter-spacing: 0.5px;">CỔNG KẾT NỐI HỆ SINH THÁI TÁC TỬ:</div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                        <a href="/roadmap" class="hub-nav-card" style="text-decoration: none; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 10px; text-align: center; transition: 0.25s ease;" onmouseover="this.style.borderColor='var(--neon-cyan)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.transform='none'">
+                            <div style="font-size: 22px; margin-bottom: 4px;">🗺️</div>
+                            <div style="font-size: 12px; font-weight: 700; color: #fff;">Lộ Trình Band</div>
+                            <div style="font-size: 10px; color: var(--neon-cyan); margin-top: 2px;">Target Band</div>
+                        </a>
+                        <a href="/farm" class="hub-nav-card" style="text-decoration: none; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 10px; text-align: center; transition: 0.25s ease;" onmouseover="this.style.borderColor='var(--pixel-green)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.transform='none'">
+                            <div style="font-size: 22px; margin-bottom: 4px;">🌾</div>
+                            <div style="font-size: 12px; font-weight: 700; color: #fff;">Vườn Não 3</div>
+                            <div style="font-size: 10px; color: var(--pixel-green); margin-top: 2px;">Smart SRS x2</div>
+                        </a>
+                        <a href="/story" class="hub-nav-card" style="text-decoration: none; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 10px; text-align: center; transition: 0.25s ease;" onmouseover="this.style.borderColor='var(--neon-purple)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.transform='none'">
+                            <div style="font-size: 22px; margin-bottom: 4px;">⚔️</div>
+                            <div style="font-size: 12px; font-weight: 700; color: #fff;">Text-RPG</div>
+                            <div style="font-size: 10px; color: var(--neon-purple); margin-top: 2px;">Dungeon Master</div>
+                        </a>
+                        <a href="/learn" class="hub-nav-card" style="text-decoration: none; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px 10px; text-align: center; transition: 0.25s ease;" onmouseover="this.style.borderColor='var(--neon-amber)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.transform='none'">
+                            <div style="font-size: 22px; margin-bottom: 4px;">🧠</div>
+                            <div style="font-size: 12px; font-weight: 700; color: #fff;">Lò Đúc GEC</div>
+                            <div style="font-size: 10px; color: var(--neon-amber); margin-top: 2px;">DistilBERT INT8</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- MASTER G INTERACTIVE FAST CONSOLE -->
+                <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span class="pixel-title" style="font-size: 11px; color: var(--neon-cyan);">💬 TRÒ CHUYỆN & SỬA LỖI TỨC THÌ (LOCAL AI &lt;40MS)</span>
+                        <span style="font-size: 10px; color: #64748b; font-family: var(--text-mono);">Zero LLM Tokens</span>
+                    </div>
+                    <div id="hub-console-output" style="max-height: 140px; overflow-y: auto; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; font-size: 12px; color: #e2e8f0; line-height: 1.5; margin-bottom: 10px; white-space: pre-wrap;">Chào bạn! Hãy nhập câu hỏi về lộ trình, từ vựng hoặc gõ một câu tiếng Anh để Master G kiểm tra ngữ pháp tức thì nhé.</div>
+                    <div style="display: flex; gap: 8px;">
+                        <input id="hub-console-input" type="text" placeholder="Ví dụ: 'Cần làm gì tiếp theo?' hoặc gõ 'She go to school yesterday.'..." style="flex: 1; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-family: var(--text-main);" onkeydown="if(event.key==='Enter') sendHubConsoleMessage();">
+                        <button onclick="sendHubConsoleMessage()" class="pixel-btn" style="background: var(--neon-cyan); color: #000; padding: 0 16px; font-size: 12px; font-weight: bold; flex-shrink: 0;">GỬI</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MASTER G COMPANION CLIENT SCRIPT -->
+    <script>
+        let hubTargetAction = '/roadmap';
+
+        function openMasterGModal() {
+            document.getElementById('master-g-hub-modal').style.display = 'flex';
+            loadMasterGDiagnosis();
+        }
+
+        function closeMasterGModal() {
+            document.getElementById('master-g-hub-modal').style.display = 'none';
+        }
+
+        function toggleMasterGModal() {
+            const modal = document.getElementById('master-g-hub-modal');
+            if (modal.style.display === 'flex') {
+                closeMasterGModal();
+            } else {
+                openMasterGModal();
+            }
+        }
+
+        function closeMasterGSpeechBubble() {
+            document.getElementById('master-g-speech-bubble').style.display = 'none';
+        }
+
+        function executeHubAction() {
+            window.location.href = hubTargetAction;
+        }
+
+        function loadMasterGDiagnosis() {
+            fetch('/api/ai/agent/diagnose')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.directive) {
+                        const cur = data.current_cefr_estimate || 'A1';
+                        const tar = data.target_band || 'B2';
+                        document.getElementById('hub-cefr-badge').innerText = `BAND: ${cur} ➔ ${tar}`;
+                        document.getElementById('hub-directive-title').innerText = data.directive.directive_title || 'TIẾP TỤC HỌC TẬP';
+                        document.getElementById('hub-directive-advice').innerText = data.directive.directive_advice || 'Hãy tiếp tục kiên trì rèn luyện mỗi ngày.';
+                        
+                        const speechText = document.getElementById('master-g-speech-text');
+                        if (speechText) speechText.innerText = data.directive.directive_advice;
+
+                        if (data.directive.target_action && data.directive.target_action.action_type === 'START_EXAM') {
+                            hubTargetAction = `/test`;
+                        } else {
+                            hubTargetAction = `/roadmap`;
+                        }
+                    }
+                })
+                .catch(err => console.error("Lỗi chẩn đoán Master G:", err));
+        }
+
+        function sendHubConsoleMessage() {
+            const input = document.getElementById('hub-console-input');
+            const output = document.getElementById('hub-console-output');
+            const text = input.value.trim();
+            if (!text) return;
+
+            output.innerHTML += `\n\n<strong style="color: var(--neon-cyan);">> Bạn:</strong> ${text}`;
+            output.innerHTML += `\n<span style="color: #94a3b8; font-style: italic;">[Master G đang suy nghĩ...]</span>`;
+            output.scrollTop = output.scrollHeight;
+            input.value = '';
+
+            fetch('/api/ai/agent/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: text })
+            })
+            .then(r => r.json())
+            .then(res => {
+                // Thay thế dòng suy nghĩ
+                const parts = output.innerHTML.split('[Master G đang suy nghĩ...]');
+                output.innerHTML = parts[0] + `<strong style="color: var(--neon-purple);">> Master G:</strong>\n${res.reply || 'Đã ghi nhận.'}`;
+                output.scrollTop = output.scrollHeight;
+            })
+            .catch(err => {
+                output.innerHTML += `\n<span style="color: var(--neon-pink);">[Lỗi kết nối tới Master G]</span>`;
+            });
+        }
+
+        // Tự động chào hỏi và hiện bubble sau 2.5s
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const bubble = document.getElementById('master-g-speech-bubble');
+                if (bubble) bubble.style.display = 'block';
+                // Nạp trước dữ liệu chẩn đoán
+                fetch('/api/ai/agent/diagnose')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.directive && data.directive.directive_advice) {
+                            const speechText = document.getElementById('master-g-speech-text');
+                            if (speechText) speechText.innerText = data.directive.directive_advice;
+                        }
+                    })
+                    .catch(() => {});
+            }, 2500);
+        });
+    </script>
 
     <!-- SCRIPTS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

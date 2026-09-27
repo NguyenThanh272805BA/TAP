@@ -129,8 +129,13 @@
         else if (name.includes('nhân đôi') || name.includes('booster')) iconKey = 'zap';
         else if (name.includes('la bàn') || name.includes('radar')) iconKey = 'sparkles';
         else if (name.includes('hồi sinh') || name.includes('revive')) iconKey = 'award';
-        else if (name.includes('đồng hồ') || name.includes('thời gian') || name.includes('freeze')) iconKey = 'clock';
-        else if (name.includes('rương') || name.includes('chest')) iconKey = 'box';
+        else if (name.includes('đồng hồ') || name.includes('thời gian') || name.includes('freeze')) iconKey = 'hourglass';
+        else if (name.includes('phân bón') || name.includes('sinh trưởng') || name.includes('fertilizer')) iconKey = 'food';
+        else if (name.includes('thức ăn') || name.includes('gia súc') || name.includes('feed')) iconKey = 'animal';
+        else if (name.includes('thuốc tiên') || name.includes('tập trung') || name.includes('elixir')) iconKey = 'potion';
+        else if (name.includes('bùa') || name.includes('talisman') || name.includes('may mắn')) iconKey = 'star';
+        else if (name.includes('rương') || name.includes('chest')) iconKey = 'chest';
+        else if (name.includes('quà') || name.includes('gift')) iconKey = 'gift';
 
         return window.TAPIcons ? window.TAPIcons.get(iconKey) : '✨';
     }
@@ -160,7 +165,8 @@
                         <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 12px;">
                             <div style="width: 54px; height: 54px; border-radius: 12px; background: rgba(16, 185, 129, 0.12); border: 1.5px solid var(--pixel-green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);">
                                 ${iconImgUrl ? 
-                                    `<img src="${iconImgUrl}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover;">` : 
+                                    `<img src="${iconImgUrl}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
+                                     <span class="tap-icon" style="width: 28px; height: 28px; color: var(--pixel-green); display: none;">${iconSvg}</span>` : 
                                     `<span class="tap-icon" style="width: 28px; height: 28px; color: var(--pixel-green);">${iconSvg}</span>`
                                 }
                             </div>

@@ -856,13 +856,32 @@ def ensure_default_cosmetics():
         {"name": "Khung Năng Lượng Cyber Allspark", "type": "AVATAR_FRAME", "css": "frame-cyber-allspark", "price": 3800, "desc": "Sở hữu sức mạnh khối lập phương khởi nguyên Allspark, vòng kẹp năng lượng xoay phản hồi cùng tia điện plasma.", "icon": "cyber_allspark.png", "effect": "CYBER_ALLSPARK"},
         {"name": "Khung Lò Phản Ứng Kinetic Vô Cực", "type": "AVATAR_FRAME", "css": "frame-kinetic-reactor", "price": 5000, "desc": "Đỉnh cao công nghệ Cybertron - Con quay hồi chuyển vi sai 3 trục Gimbal tự cân bằng không gian vĩnh cửu.", "icon": "kinetic_reactor.png", "effect": "KINETIC_REACTOR"},
 
+        # 10 KHUNG AVATAR ĐỘNG SIÊU CẤP ĐẶC BIỆT MỚI
+        {"name": "Khung Hắc Long Thần Uy", "type": "AVATAR_FRAME", "css": "frame-shadow-dragon", "price": 2800, "desc": "Bạo Chúa Hắc Long - Vòng lửa tím thẫm ma thuật xoay tròn cùng linh hồn hắc long hộ thể bảo vệ avatar.", "icon": "shadow_dragon.png", "effect": "SHADOW_DRAGON"},
+        {"name": "Khung Hố Đen Kỳ Dị Tinh Không", "type": "AVATAR_FRAME", "css": "frame-black-hole", "price": 3500, "desc": "Hố đen kỳ dị vũ trụ với đĩa bồi tụ xoáy sâu hút trọn ánh sáng và lực hấp dẫn lượng tử vô cực.", "icon": "black_hole.png", "effect": "BLACK_HOLE"},
+        {"name": "Khung Anh Đào Vũ Khúc", "type": "AVATAR_FRAME", "css": "frame-sakura-blossom", "price": 1500, "desc": "Cơn lốc cánh hoa anh đào nở rộ xoay chuyển êm đềm với sắc hồng phấn dịu mát phong cách Anime.", "icon": "sakura_blossom.png", "effect": "SAKURA_BLOSSOM"},
+        {"name": "Khung Vua Biển Sâu Leviathan", "type": "AVATAR_FRAME", "css": "frame-ocean-leviathan", "price": 2600, "desc": "Uy quyền Thủy Tề biển sâu - Thủy triều lam ngọc cuộn trào cùng đinh ba ánh sáng phát quang.", "icon": "ocean_leviathan.png", "effect": "OCEAN_LEVIATHAN"},
+        {"name": "Khung Phượng Hoàng Tái Sinh", "type": "AVATAR_FRAME", "css": "frame-phoenix-rebirth", "price": 3000, "desc": "Lửa thiêng bất tử từ tro tàn phượng hoàng, vầng hào quang rực rỡ thiêu đốt mọi giới hạn điểm số.", "icon": "phoenix_rebirth.png", "effect": "PHOENIX_REBIRTH"},
+        {"name": "Khung Neon Cyber Samurai", "type": "AVATAR_FRAME", "css": "frame-cyber-samurai", "price": 2900, "desc": "Lưỡi kiếm song sát Cyberpunk chém xuyên không gian với vệt sáng Cyan & Magenta tốc độ cực hạn.", "icon": "cyber_samurai.png", "effect": "CYBER_SAMURAI"},
+        {"name": "Khung Trận Pháp Cổ Ngữ Tri Thức", "type": "AVATAR_FRAME", "css": "frame-arcane-runes", "price": 3400, "desc": "Vòng tròn ma pháp trận cổ đại chứa các ký tự Rune học thuật xoay đồng tâm tỏa sáng lam tím huyền bí.", "icon": "arcane_runes.png", "effect": "ARCANE_RUNES"},
+        {"name": "Khung Lăng Kính Pha Lê Đa Sắc", "type": "AVATAR_FRAME", "css": "frame-prismatic-crystal", "price": 4000, "desc": "Tinh thể kim cương giác cắt hoàn mỹ tán sắc ánh sáng thành dải 7 sắc cầu vồng lấp lánh như sao trời.", "icon": "prismatic_crystal.png", "effect": "PRISMATIC_CRYSTAL"},
+        {"name": "Khung Hỏa Diệm Núi Lửa Dung Nham", "type": "AVATAR_FRAME", "css": "frame-volcanic-magma", "price": 2700, "desc": "Dòng dung nham nóng chảy 1200°C trào dâng từ tâm địa chấn với xung lực nứt vỡ địa cầu mãnh liệt.", "icon": "volcanic_magma.png", "effect": "VOLCANIC_MAGMA"},
+        {"name": "Khung Vũ Trụ Tinh Vân Vĩnh Cửu", "type": "AVATAR_FRAME", "css": "frame-nebula-galaxy", "price": 4500, "desc": "Dải ngân hà huyền ảo ngập tràn bụi sao tinh vân liên tục xoay vần cùng vệt sao băng bay lượn lộng lẫy.", "icon": "nebula_galaxy.png", "effect": "NEBULA_GALAXY"},
+
         # VẬT PHẨM TIÊU HAO HỖ TRỢ
         {"name": "Khiên Bảo Vệ Chuỗi (Streak Shield)", "type": "CONSUMABLE", "css": "item-streak-shield", "price": 120, "desc": "Bảo vệ chuỗi ngày học Streak không bị reset về 0 nếu bỏ lỡ 1 ngày.", "icon": "streak_shield.png", "effect": "STREAK_SHIELD"},
         {"name": "Thuốc Nhân Đôi Xu & EXP (2x Booster)", "type": "CONSUMABLE", "css": "item-booster-2x", "price": 180, "desc": "Nhân 2 toàn bộ Xu và EXP kiếm được trong 30 phút kế tiếp.", "icon": "booster_2x.png", "effect": "DOUBLE_COINS"},
         {"name": "La Bàn Gợi Ý AI (Radar Hint)", "type": "CONSUMABLE", "css": "item-radar-hint", "price": 80, "desc": "Khai phá gợi ý thông minh từ AI giải thích chi tiết đáp án câu hỏi.", "icon": "radar_hint.png", "effect": "AI_HINT"},
         {"name": "Bình Hồi Sinh Thần Tốc (Exam Revive)", "type": "CONSUMABLE", "css": "item-exam-revive", "price": 150, "desc": "Hồi sinh ngay lập tức trong bài thi hoặc trận đấu khi hết lượt làm sai.", "icon": "exam_revive.png", "effect": "EXAM_REVIVE"},
         {"name": "Đồng Hồ Cát Ngưng Đọng (Time Freeze)", "type": "CONSUMABLE", "css": "item-time-freeze", "price": 90, "desc": "Đóng băng đồng hồ đếm ngược thêm 30 giây để suy nghĩ câu hỏi khó.", "icon": "time_freeze.png", "effect": "TIME_FREEZE"},
-        {"name": "Rương Báu Không Gian (Cosmic Mystery Chest)", "type": "CONSUMABLE", "css": "item-mystery-chest", "price": 200, "desc": "Mở khóa ngẫu nhiên lượng xu lớn hoặc danh hiệu/khung avatar hiếm.", "icon": "cosmic_chest.png", "effect": "LUCKY_CHEST"}
+        {"name": "Rương Báu Không Gian (Cosmic Mystery Chest)", "type": "CONSUMABLE", "css": "item-mystery-chest", "price": 200, "desc": "Mở khóa ngẫu nhiên lượng xu lớn hoặc danh hiệu/khung avatar hiếm.", "icon": "cosmic_chest.png", "effect": "LUCKY_CHEST"},
+
+        # 5 VẬT PHẨM TIÊU HAO HỖ TRỢ MỚI
+        {"name": "Phân Bón Sinh Trưởng Thần Tốc", "type": "CONSUMABLE", "css": "item-farm-fertilizer", "price": 100, "desc": "Bón phân siêu cấp cho toàn bộ cây trồng trong Nông Trại Tri Thức, giảm ngay 50% thời gian sinh trưởng còn lại.", "icon": "farm_fertilizer.png", "effect": "FARM_FERTILIZER"},
+        {"name": "Thức Ăn Gia Súc Vàng", "type": "CONSUMABLE", "css": "item-golden-feed", "price": 110, "desc": "Thức ăn dinh dưỡng đặc biệt giải trừ ngay lập tức thời gian hồi chiêu (Cooldown) của Bò, Gà, Heo trong nông trại.", "icon": "golden_feed.png", "effect": "GOLDEN_FEED"},
+        {"name": "Thuốc Tiên Tập Trung Học Thuật", "type": "CONSUMABLE", "css": "item-academic-elixir", "price": 160, "desc": "Khai thông trí nhớ! Nhận ngay +200 Xu và +50 Điểm Rank Đấu Trường Academic RP.", "icon": "academic_elixir.png", "effect": "ACADEMIC_ELIXIR"},
+        {"name": "Bùa May Mắn Gacha Nông Trại", "type": "CONSUMABLE", "css": "item-lucky-talisman", "price": 130, "desc": "Kích hoạt vận may! Nhận ngẫu nhiên 1 gói hạt giống cấp Hiếm/Sử Thi trong nông trại và +150 Xu thưởng.", "icon": "lucky_talisman.png", "effect": "LUCKY_TALISMAN"},
+        {"name": "Hộp Quà Tri Ân Master G", "type": "CONSUMABLE", "css": "item-master-gift", "price": 250, "desc": "Hộp quà bí ẩn độc quyền từ Master G, mở ra nhận ngẫu nhiên từ 200 đến 1,000 Xu báu vật (Tỉ lệ Jackpot hiếm)!", "icon": "master_gift.png", "effect": "MASTER_GIFT"}
     ]
 
     for it in items:
@@ -879,6 +898,8 @@ def ensure_default_cosmetics():
             )
             db.session.add(c)
         else:
+            # Tuyệt đối không ghi đè giá bán (price_coins), tên (name), mô tả (description) đã được Admin tùy chỉnh trong DB!
+            # Chỉ bổ sung icon_preview hoặc item_effect nếu ban đầu chưa có
             if it.get("icon") and (not c.icon_preview or c.icon_preview == "default_item.png"):
                 c.icon_preview = it["icon"]
             if it.get("effect") and not c.item_effect:
@@ -1724,6 +1745,64 @@ def use_consumable():
         effect_msg = "💖 Bình Hồi Sinh đã sẵn sàng! Bạn sẽ được cứu mạng không bị trừ điểm Rank nếu rớt bài thi."
     elif item.item_effect == 'TIME_FREEZE':
         effect_msg = "⏳ Đồng Hồ Cát đã được kích hoạt! Tăng thêm 90 giây trong phòng thi kế tiếp."
+    elif item.item_effect == 'FARM_FERTILIZER':
+        from app.models.farm import FarmPlot
+        now = datetime.now()
+        plots = FarmPlot.query.filter_by(user_id=user_id).all()
+        boosted_count = 0
+        for p in plots:
+            if p.crop_code and p.planted_at and p.harvest_ready_at and p.harvest_ready_at > now:
+                rem_sec = (p.harvest_ready_at - now).total_seconds()
+                reduce_by = rem_sec * 0.5
+                p.harvest_ready_at = p.harvest_ready_at - timedelta(seconds=reduce_by)
+                boosted_count += 1
+        effect_msg = f"🌱 Phân Bón Thần Tốc kích hoạt! Đã rút ngắn 50% thời gian sinh trưởng cho {boosted_count} ô cây trồng đang phát triển."
+    elif item.item_effect == 'GOLDEN_FEED':
+        from app.controllers.farm_controller import _ANIMAL_LAST_INTERACTIONS
+        for a_code in ['cow', 'chicken', 'pig']:
+            if (user_id, a_code) in _ANIMAL_LAST_INTERACTIONS:
+                del _ANIMAL_LAST_INTERACTIONS[(user_id, a_code)]
+        effect_msg = "🌾 Đã cho Bò, Gà, Heo ăn Thức Ăn Vàng! Toàn bộ Cooldown gia súc đã được giải trừ lập tức!"
+    elif item.item_effect == 'ACADEMIC_ELIXIR':
+        user.coins = (user.coins or 0) + 200
+        user.academic_rp = (user.academic_rp or 500) + 50
+        effect_msg = "🧪 Uống Thuốc Tiên Học Thuật thành công! Nhận ngay +200 Xu và +50 Điểm Rank Academic RP!"
+    elif item.item_effect == 'LUCKY_TALISMAN':
+        import random
+        from app.models.farm import FarmCrop, FarmInventory
+        rare_crops = FarmCrop.query.filter(FarmCrop.rarity.in_(['RARE', 'EPIC', 'LEGENDARY'])).all()
+        if not rare_crops:
+            rare_crops = FarmCrop.query.all()
+        selected_crop = random.choice(rare_crops) if rare_crops else None
+        crop_name = selected_crop.name if selected_crop else "Hạt Giống Hoàng Kim"
+        if selected_crop:
+            inv = FarmInventory.query.filter_by(user_id=user_id, item_type='SEED', item_code=f"seed_{selected_crop.code}").first()
+            if inv:
+                inv.quantity += 1
+            else:
+                inv = FarmInventory(user_id=user_id, item_type='SEED', item_code=f"seed_{selected_crop.code}", quantity=1)
+                db.session.add(inv)
+        user.coins = (user.coins or 0) + 150
+        effect_msg = f"🧿 Bùa May Mắn phát quang! Bạn nhận được 1x Hạt Giống {crop_name} ({selected_crop.rarity if selected_crop else 'HIẾM'}) và +150 Xu!"
+    elif item.item_effect == 'MASTER_GIFT':
+        import random
+        # Mốc nhận thưởng 200 - 1,000 Xu với tỉ lệ gacha phân tầng (tỉ lệ trúng mốc cao thấp dần)
+        roll = random.random() * 100
+        if roll < 60: # 60% Thường (200 - 280 Xu)
+            rolled_coins = random.randint(200, 280)
+            tier_msg = "Phổ Thông"
+        elif roll < 88: # 28% May Mắn (281 - 450 Xu)
+            rolled_coins = random.randint(281, 450)
+            tier_msg = "May Mắn ⭐"
+        elif roll < 97: # 9% Đại Cát (451 - 700 Xu)
+            rolled_coins = random.randint(451, 700)
+            tier_msg = "Đại Cát 🌟"
+        else: # 3% JACKPOT SIÊU CẤP (701 - 1,000 Xu)
+            rolled_coins = random.randint(701, 1000)
+            tier_msg = "JACKPOT TỐI THƯỢNG 👑"
+
+        user.coins = (user.coins or 0) + rolled_coins
+        effect_msg = f"🎁 Master G mở Hộp Quà: Bạn quay trúng phẩm cấp [{tier_msg}] nhận {rolled_coins} Xu báu vật (Mốc 200 - 1,000 Xu)!"
     else:
         effect_msg = f"✨ Đã sử dụng thành công {item.name}!"
 

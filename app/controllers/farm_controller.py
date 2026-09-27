@@ -745,3 +745,204 @@ def interact_animal():
         "animals": get_animals_state_for_user(user_id)
     }), 200
 
+
+@farm_bp.route('/srs-quiz', methods=['GET'])
+def get_farm_srs_quiz():
+    """
+    KÍCH HOẠT NÃO 3 SMART SRS CHO NÔNG TRẠI:
+    Trích xuất từ vựng cần ôn tập hoặc phù hợp với cây trồng
+    để tạo câu đố 1-question flashcard tưới nước siêu tốc.
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        user_id = request.args.get('user_id', type=int) or 1
+
+    plot_id = request.args.get('plot_id', type=int)
+    plot = FarmPlot.query.filter_by(id=plot_id, user_id=user_id).first() if plot_id else None
+
+    # 1. Ưu tiên từ đến hạn ôn tập trong UserVocabulary (next_review_time <= now)
+    now = datetime.now()
+    due_uv = db.session.query(UserVocabulary, Vocabulary).join(
+        Vocabulary, UserVocabulary.vocab_id == Vocabulary.id
+    ).filter(
+        UserVocabulary.user_id == user_id,
+        UserVocabulary.next_review_time <= now
+    ).order_by(UserVocabulary.next_review_time.asc()).first()
+
+    target_vocab = None
+    target_uv = None
+
+    if due_uv:
+        target_uv, target_vocab = due_uv
+    else:
+        # Nếu chưa có từ đến hạn, lấy từ theo CEFR level của cây trồng
+        crop_level = "A1"
+        if plot and plot.crop_code:
+            crop = FarmCrop.query.get(plot.crop_code)
+            if crop:
+                crop_level = crop.cefr_level
+
+        candidate = db.session.query(UserVocabulary, Vocabulary).join(
+            Vocabulary, UserVocabulary.vocab_id == Vocabulary.id
+        ).filter(
+            UserVocabulary.user_id == user_id,
+            Vocabulary.cefr_level == crop_level
+        ).first()
+
+        if candidate:
+            target_uv, target_vocab = candidate
+        else:
+            # Lấy bất kỳ từ nào đã mở khóa của user
+            candidate = db.session.query(UserVocabulary, Vocabulary).join(
+                Vocabulary, UserVocabulary.vocab_id == Vocabulary.id
+            ).filter(UserVocabulary.user_id == user_id).first()
+            if candidate:
+                target_uv, target_vocab = candidate
+            else:
+                target_vocab = Vocabulary.query.first()
+
+    if not target_vocab:
+        return jsonify({"status": "error", "message": "Không tìm thấy dữ liệu từ vựng!"}), 404
+
+    # Tạo 4 phương án (1 đúng + 3 nhiễu)
+    correct_meaning = target_vocab.meaning
+    distractors_query = db.session.query(Vocabulary.meaning).filter(
+        Vocabulary.id != target_vocab.id,
+        Vocabulary.meaning != correct_meaning
+    ).order_by(db.func.random()).limit(3).all()
+
+    distractor_meanings = [d[0] for d in distractors_query]
+    while len(distractor_meanings) < 3:
+        distractor_meanings.append("Khái niệm khác...")
+
+    all_options = [correct_meaning] + distractor_meanings
+    random.shuffle(all_options)
+
+    return jsonify({
+        "status": "success",
+        "quiz": {
+            "vocab_id": target_vocab.id,
+            "word": target_vocab.word,
+            "cefr_level": target_vocab.cefr_level or "A2",
+            "phonetic": getattr(target_vocab, 'phonetic', '') or '',
+            "options": all_options,
+            "plot_id": plot_id
+        }
+    }), 200
+
+
+@farm_bp.route('/srs-water', methods=['POST'])
+def srs_water_plot():
+    """
+    TƯỚI NƯỚC BẰNG NÃO 3 SMART SRS:
+    1. Kiểm tra câu trả lời từ vựng của người dùng.
+    2. Cập nhật FSRS (SmartSRS Brain 3) cho UserVocabulary: predict_next_review.
+    3. Thưởng cây trồng: Rút ngắn 35-50% thời gian sinh trưởng, 40% cơ hội Golden Double, +15 Xu +10 RP.
+    4. Trả về phản hồi sư phạm Master G.
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        req_data = request.get_json(silent=True) or {}
+        user_id = req_data.get('user_id') or 1
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Không tìm thấy người dùng!"}), 404
+
+    data = request.get_json(silent=True) or {}
+    plot_id = data.get('plot_id')
+    vocab_id = data.get('vocab_id')
+    selected_option = (data.get('selected_option') or '').strip()
+    response_time_ms = float(data.get('response_time_ms') or 2000.0)
+
+    plot = FarmPlot.query.filter_by(id=plot_id, user_id=user_id).first()
+    if not plot or not plot.crop_code or not plot.harvest_ready_at:
+        return jsonify({"error": "Ô đất chưa được gieo hạt!"}), 400
+
+    now = datetime.now()
+    if now >= plot.harvest_ready_at:
+        return jsonify({"error": "Cây đã chín hoàn toàn, hãy thu hoạch ngay!"}), 400
+
+    vocab = Vocabulary.query.get(vocab_id)
+    if not vocab:
+        return jsonify({"error": "Từ vựng không hợp lệ!"}), 404
+
+    is_correct = (selected_option.lower() == vocab.meaning.strip().lower())
+
+    # Cập nhật Brain 3 Smart SRS
+    uv = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=vocab.id).first()
+    if not uv:
+        uv = UserVocabulary(user_id=user_id, vocab_id=vocab.id, is_unlocked=True)
+        db.session.add(uv)
+
+    from app.ml_models.srs_predictor import SmartSRS
+    srs_engine = SmartSRS()
+
+    current_fail = uv.fail_count if uv.fail_count is not None else 0
+    current_avg = uv.avg_response_time if uv.avg_response_time is not None else 0.0
+    current_prev_interval = uv.previous_interval if uv.previous_interval is not None else 0.0
+
+    if is_correct:
+        uv.fail_count = max(0, current_fail - 1)
+        uv.memorization_level = 'DA_THUOC'
+    else:
+        uv.fail_count = current_fail + 1
+        uv.memorization_level = 'CHUA_THUOC'
+
+    time_sec = response_time_ms / 1000.0
+    uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2.0
+
+    next_review_dt, new_interval = srs_engine.predict_next_review(
+        uv.fail_count, uv.avg_response_time, current_prev_interval
+    )
+    uv.next_review_time = next_review_dt
+    uv.previous_interval = new_interval
+    uv.last_tested_at = now
+
+    remaining_sec = (plot.harvest_ready_at - now).total_seconds()
+
+    if is_correct:
+        pct_reduction = random.uniform(0.35, 0.50)
+        reduction = remaining_sec * pct_reduction
+        plot.harvest_ready_at = plot.harvest_ready_at - timedelta(seconds=reduction)
+        plot.watered_count = (plot.watered_count or 0) + 1
+
+        became_golden = False
+        if not plot.is_golden and random.random() < 0.40:
+            plot.is_golden = True
+            became_golden = True
+
+        coins_bonus = 15
+        rp_bonus = 10
+        user.coins = (user.coins or 0) + coins_bonus
+        user.academic_rp = (user.academic_rp or 500) + rp_bonus
+
+        golden_msg = " ✨ CÂY HÓA HOÀNG KIM (X2 phần thưởng khi gặt)!" if became_golden else ""
+        master_g_msg = (
+            f"🧠 NÃO 3 SMART SRS: Kích hoạt thành công trí nhớ từ '{vocab.word}'! "
+            f"Rút ngắn thần tốc {int(reduction)}s sinh trưởng (+{coins_bonus} Xu, +{rp_bonus} RP).{golden_msg}"
+        )
+    else:
+        reduction = remaining_sec * 0.10
+        plot.harvest_ready_at = plot.harvest_ready_at - timedelta(seconds=reduction)
+        plot.watered_count = (plot.watered_count or 0) + 1
+        master_g_msg = (
+            f"💡 MASTER G NHẮC NHỞ: '{vocab.word}' nghĩa là '{vocab.meaning}'. "
+            f"Hệ thống đã điều chỉnh đường cong quên để bạn ôn sớm! Cây được tưới nhẹ (giảm {int(reduction)}s)."
+        )
+
+    db.session.commit()
+
+    return jsonify({
+        "status": "success",
+        "is_correct": is_correct,
+        "correct_meaning": vocab.meaning,
+        "word": vocab.word,
+        "message": master_g_msg,
+        "plot": plot.to_dict(),
+        "user_coins": user.coins,
+        "academic_rp": user.academic_rp,
+        "next_review": uv.next_review_time.strftime("%Y-%m-%d %H:%M:%S")
+    }), 200
+
+

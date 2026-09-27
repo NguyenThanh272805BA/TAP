@@ -1146,6 +1146,45 @@
         </div>
     </div>
 </div>
+
+<!-- =========================================================================
+     MODAL 6: TƯỚI NƯỚC BẰNG NÃO 3 SMART SRS (FSRS VOCABULARY WATERING)
+     ========================================================================= -->
+<div class="farm-modal-overlay" id="farm-srs-water-modal" style="display: none; align-items: center; justify-content: center; z-index: 99999;">
+    <div class="farm-modal-box" style="max-width: 620px; border-color: var(--neon-cyan); box-shadow: 0 0 50px rgba(6, 182, 212, 0.4); text-align: center; position: relative;">
+        <button onclick="closeSrsWaterModal()" class="pixel-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); padding: 4px 10px; font-size: 11px;">✕</button>
+        
+        <div style="font-size: 36px; margin-bottom: 8px;">🧠💧✨</div>
+        <div class="pixel-title" style="font-size: 18px; color: var(--neon-cyan); margin-bottom: 4px;">
+            TƯỚI NƯỚC NĂNG LƯỢNG TRÍ TUỆ (SMART SRS)
+        </div>
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">
+            Phân Hệ SRS FSRS: Trả lời đúng để rút ngắn <strong style="color: var(--pixel-green);">-35% đến -50%</strong> thời gian & kích hoạt <strong style="color: var(--neon-amber);">Cây Hoàng Kim X2 Thưởng</strong>!
+        </div>
+
+        <!-- Target Vocab Card -->
+        <div style="background: rgba(15, 23, 42, 0.85); border: 2px solid var(--neon-purple); border-radius: 14px; padding: 20px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 8px;">
+                <span id="srs-water-cefr-badge" class="cefr-badge b1">B1</span>
+                <span id="srs-water-phonetic" style="color: #94a3b8; font-family: var(--text-mono); font-size: 13px;"></span>
+            </div>
+            <div id="srs-water-word" style="font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 1px; margin-bottom: 6px;">
+                VOCABULARY
+            </div>
+            <div style="font-size: 12px; color: #cbd5e1;">
+                Chọn ý nghĩa chuẩn xác nhất trong tiếng Việt:
+            </div>
+        </div>
+
+        <!-- 4 Multiple Choice Buttons -->
+        <div id="srs-water-options-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <!-- JS will inject options -->
+        </div>
+
+        <!-- Feedback Result Box -->
+        <div id="srs-water-feedback-box" style="display: none; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 600; line-height: 1.4;"></div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -1323,6 +1362,7 @@
                     const waterDisabled = plot.watered_count >= 1 ? 'disabled style="opacity: 0.5;"' : '';
                     quickButtons = `
                         <div class="iso-quick-actions" onclick="event.stopPropagation();">
+                            <button class="iso-mini-btn" onclick="openSrsWaterModal(${plot.id}, ${idx})" title="Tưới Tri Thức Não 3 SRS (-50% + X2 Vàng)">🧠</button>
                             <button class="iso-mini-btn" onclick="waterPlot(${plot.id})" ${waterDisabled} title="Tưới nước giảm 15% thời gian">💧</button>
                             <button class="iso-mini-btn" onclick="openBoosterModal(${plot.id}, ${idx})" title="Dùng phân bón tăng tốc">⚡</button>
                         </div>
@@ -1397,13 +1437,18 @@
                 } else {
                     const waterDisabled = plot.watered_count >= 1 ? 'disabled style="opacity: 0.5; font-size: 10px;"' : 'style="background: rgba(56, 189, 248, 0.2); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-size: 10px;"';
                     actionButtonHtml = `
-                    <div style="display: flex; gap: 8px; width: 100%;">
-                        <button class="pixel-btn" onclick="waterPlot(${plot.id})" ${waterDisabled}>
-                            💧 Tưới (${plot.watered_count >= 1 ? 'Đã tưới' : '-15%'})
+                    <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+                        <button class="pixel-btn pulse-neon" onclick="openSrsWaterModal(${plot.id}, ${idx})" style="background: linear-gradient(135deg, rgba(88, 28, 135, 0.9), rgba(6, 182, 212, 0.9)); border: 1.5px solid var(--neon-cyan); color: #fff; font-size: 10px; font-weight: 800; padding: 7px 6px; width: 100%;">
+                            🧠 TƯỚI TRI THỨC SRS (-50% + X2 VÀNG)
                         </button>
-                        <button class="pixel-btn" onclick="openBoosterModal(${plot.id}, ${idx})" style="background: rgba(251, 191, 36, 0.2); border: 1px solid var(--neon-amber); color: var(--neon-amber); font-size: 10px; flex: 1;">
-                            ⚡ Bón Phân
-                        </button>
+                        <div style="display: flex; gap: 6px; width: 100%;">
+                            <button class="pixel-btn" onclick="waterPlot(${plot.id})" ${waterDisabled} style="flex: 1; font-size: 10px;">
+                                💧 Tưới (${plot.watered_count >= 1 ? 'Đã tưới' : '-15%'})
+                            </button>
+                            <button class="pixel-btn" onclick="openBoosterModal(${plot.id}, ${idx})" style="background: rgba(251, 191, 36, 0.2); border: 1px solid var(--neon-amber); color: var(--neon-amber); font-size: 10px; flex: 1;">
+                                ⚡ Bón Phân
+                            </button>
+                        </div>
                     </div>`;
                 }
 
@@ -1612,6 +1657,109 @@
             }
         })
         .catch(err => alert("Lỗi kết nối gieo hạt: " + err.message));
+    let currentSrsQuizData = null;
+    let srsQuizStartTime = null;
+
+    function openSrsWaterModal(plotId, plotIdx) {
+        selectedPlotId = plotId;
+        const modal = document.getElementById('farm-srs-water-modal');
+        const feedback = document.getElementById('srs-water-feedback-box');
+        if (feedback) feedback.style.display = 'none';
+
+        const optContainer = document.getElementById('srs-water-options-container');
+        optContainer.innerHTML = '<div style="grid-column: 1/-1; color: var(--neon-cyan); padding: 20px; font-family: var(--text-pixel);">ĐANG NẠP THỬ THÁCH NÃO 3 SMART SRS...</div>';
+        modal.style.display = 'flex';
+
+        fetch(`/api/game/farm/srs-quiz?plot_id=${plotId}`)
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'success' && res.quiz) {
+                    currentSrsQuizData = res.quiz;
+                    srsQuizStartTime = Date.now();
+
+                    document.getElementById('srs-water-word').innerText = res.quiz.word;
+                    const badge = document.getElementById('srs-water-cefr-badge');
+                    badge.innerText = res.quiz.cefr_level;
+                    badge.className = `cefr-badge ${(res.quiz.cefr_level || 'a1').toLowerCase()}`;
+                    document.getElementById('srs-water-phonetic').innerText = res.quiz.phonetic || '';
+
+                    let optsHtml = '';
+                    res.quiz.options.forEach((opt, oIdx) => {
+                        optsHtml += `
+                            <button class="pixel-btn srs-opt-btn" onclick="submitSrsWaterChoice('${opt.replace(/'/g, "\\'")}', this)" style="background: rgba(0,0,0,0.5); border: 1.5px solid var(--glass-border); padding: 14px 12px; font-size: 13px; text-transform: none; text-align: center; border-radius: 8px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+                                ${opt}
+                            </button>
+                        `;
+                    });
+                    optContainer.innerHTML = optsHtml;
+                } else {
+                    optContainer.innerHTML = `<div style="grid-column: 1/-1; color: var(--neon-pink);">${res.message || 'Lỗi tải câu hỏi từ vựng!'}</div>`;
+                }
+            })
+            .catch(err => {
+                optContainer.innerHTML = `<div style="grid-column: 1/-1; color: var(--neon-pink);">Lỗi kết nối Não 3 Smart SRS!</div>`;
+            });
+    }
+
+    function closeSrsWaterModal() {
+        document.getElementById('farm-srs-water-modal').style.display = 'none';
+    }
+
+    function submitSrsWaterChoice(selectedText, btnEl) {
+        if (!currentSrsQuizData || !selectedPlotId) return;
+
+        const responseTimeMs = Date.now() - (srsQuizStartTime || Date.now());
+        document.querySelectorAll('.srs-opt-btn').forEach(b => b.disabled = true);
+
+        fetch('/api/game/farm/srs-water', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                plot_id: selectedPlotId,
+                vocab_id: currentSrsQuizData.vocab_id,
+                selected_option: selectedText,
+                response_time_ms: responseTimeMs
+            })
+        })
+        .then(r => r.json())
+        .then(res => {
+            const feedback = document.getElementById('srs-water-feedback-box');
+            feedback.style.display = 'block';
+
+            if (res.status === 'success') {
+                if (res.is_correct) {
+                    btnEl.style.background = 'var(--pixel-green)';
+                    btnEl.style.color = '#000';
+                    feedback.style.background = 'rgba(20, 83, 45, 0.9)';
+                    feedback.style.border = '1px solid var(--pixel-green)';
+                    feedback.style.color = '#a7f3d0';
+                } else {
+                    btnEl.style.background = '#ef4444';
+                    feedback.style.background = 'rgba(127, 29, 29, 0.9)';
+                    feedback.style.border = '1px solid #ef4444';
+                    feedback.style.color = '#fecaca';
+                }
+                feedback.innerHTML = res.message;
+
+                if (res.user_coins !== undefined) {
+                    const coinEl = document.getElementById('farm-user-coins');
+                    if (coinEl) coinEl.innerText = `${res.user_coins} Xu`;
+                }
+
+                setTimeout(() => {
+                    closeSrsWaterModal();
+                    loadFarmState();
+                }, 1800);
+            } else {
+                feedback.style.background = 'rgba(127, 29, 29, 0.9)';
+                feedback.style.border = '1px solid #ef4444';
+                feedback.style.color = '#fecaca';
+                feedback.innerText = res.error || 'Lỗi xử lý tưới nước!';
+            }
+        })
+        .catch(err => {
+            alert('Lỗi kết nối tưới nước SRS: ' + err.message);
+        });
     }
 
     function waterPlot(plotId) {

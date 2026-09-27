@@ -1,6 +1,7 @@
 import os
 import sys
 import random
+import re
 from typing import Dict, List, Optional
 from app.ml_models.vocab_classifier import VocabCEFRClassifier
 
@@ -13,89 +14,92 @@ if sys.platform == "win32":
 
 class LocalCritiqueSynthesizer:
     """
-    Bộ não Tổng hợp Nhận xét Sư phạm Thích ứng theo Cấp độ (Level-Aware Pedagogical & Persona Critique Synthesizer)
-    Tự động điều chỉnh phong cách nhận xét của Master G theo đúng trình độ người học:
-    - SƠ CẤP (Beginner - A1/A2): Khích lệ, ân cần chỉ dẫn, tập trung ngữ pháp cốt lõi, không bắt bẻ văn phong.
-    - TRUNG CẤP (Intermediate - B1/B2): Xéo xắt vừa phải, thách thức, chỉ lỗi thì hoàn thành, liên từ, gợi ý từ vựng B2.
-    - CAO CẤP (Advanced - C1/C2): Tiêu chuẩn khắt khe bản xứ, soi kỹ sắc thái nghĩa, Collocation, tính tự nhiên.
+    Bộ não Tổng hợp Nhận xét Sư phạm Tự nhiên & Thích ứng theo Cấp độ (Level-Aware Pedagogical Mentor Synthesizer)
+    Master G đóng vai trò là một người thầy / cố vấn ngôn ngữ tiếng Anh uyên bác, tinh tế, ân cần nhưng sắc sảo:
+    - Loại bỏ hoàn toàn giọng điệu máy móc, các thẻ tag thô cứng kiểu log file [ĐÁNH GIÁ TỔNG QUAN].
+    - Giải thích lỗi sai bằng tiếng Việt tự nhiên, trực quan, giải thích rõ nguyên nhân ngữ pháp và cách tư duy.
+    - Đưa ra phiên bản viết lại tự nhiên và gợi ý nâng cấp câu văn phù hợp theo 3 bậc trình độ:
+      + SƠ CẤP (Beginner): Khích lệ, ân cần, giảng giải ngữ pháp nền tảng rõ ràng, dễ hiểu.
+      + TRUNG CẤP (Intermediate): Trau chuốt tính trôi chảy, sự hòa hợp thì, liên từ và gợi ý từ vựng B1/B2.
+      + CAO CẤP (Advanced): Soi kỹ sắc thái nghĩa, collocations học thuật và độ tự nhiên bản xứ (idiomatic flow).
     """
 
     RULE_CATEGORY_MAP = {
-        'GRAMMAR': 'Ngữ pháp cơ bản',
-        'TYPOS': 'Lỗi chính tả & Gõ phím',
+        'GRAMMAR': 'Ngữ pháp',
+        'TYPOS': 'Chính tả',
         'SPELLING': 'Chính tả từ vựng',
-        'CASING': 'Quy tắc viết hoa',
-        'PUNCTUATION': 'Dấu câu & Ngắt nghỉ',
-        'STYLE': 'Văn phong & Phong cách diễn đạt',
+        'CASING': 'Viết hoa đầu câu',
+        'PUNCTUATION': 'Dấu câu',
+        'STYLE': 'Văn phong diễn đạt',
         'COLLOCATIONS': 'Kết hợp từ (Collocation)',
-        'CONFUSED_WORDS': 'Nhầm lẫn từ đồng âm/gần nghĩa'
+        'CONFUSED_WORDS': 'Từ dễ gây nhầm lẫn'
     }
 
-    # Ngân hàng lời mở đầu Master G chuẩn mực theo 3 Cấp độ người học và 4 Thang điểm (Không emoji, không ký tự rác)
+    # Ngân hàng lời mở đầu tự nhiên, thân thiện và giàu tính sư phạm của Master G
     LEVEL_ADAPTIVE_OPENINGS = {
         'BEGINNER': {
             'perfect': [
-                "[Tân Binh Xuất Sắc] Quá tuyệt vời! Đối với người mới bắt đầu, một câu chuẩn chỉnh thế này là điểm 10 xứng đáng.",
-                "[Khởi Đầu Vững Chắc] Master G rất ưng ý. Bạn nắm rất vững cấu trúc câu nền tảng rồi đấy.",
-                "[Tiến Bộ Nhanh] Câu viết chuẩn xác, không có lỗi ngữ pháp. Tiếp tục phát huy phong độ này nhé."
+                "Khởi đầu rất tuyệt vời! Bạn đặt một câu chuẩn xác và gãy gọn. Đối với người mới bắt đầu, đây là một nền móng cực kỳ vững chắc.",
+                "Master G rất ấn tượng với câu viết này! Bạn nắm rất vững cấu trúc câu căn bản và diễn đạt rất tự tin.",
+                "Một câu viết chuẩn chỉ, không có bất kỳ điểm sơ suất nào! Tiếp tục phát huy phản xạ tốt này nhé."
             ],
             'good': [
-                "[Đang Lên Tay] Ý tưởng câu rất tốt! Chỉ còn một chút sơ suất nhỏ, sửa là ngon lành ngay.",
-                "[Cố Gắng Tốt] Câu của bạn truyền tải thông điệp khá rõ ràng. Hãy trau chuốt lại một vài chi tiết nhỏ.",
-                "[Rất Triển Vọng] Gần đạt điểm tối đa rồi. Hãy lưu ý thêm một chi tiết nhỏ dưới đây."
+                "Ý tưởng của bạn rất hay và truyền tải thông điệp rất dễ hiểu! Chỉ cần trau chuốt lại một vài chi tiết nhỏ là câu sẽ hoàn hảo.",
+                "Một nỗ lực đặt câu rất tốt! Bạn đã diễn đạt được trọn vẹn ý muốn nói, chỉ cần lưu ý một điểm ngữ pháp nhỏ dưới đây.",
+                "Rất triển vọng! Cấu trúc câu tổng thể khá sáng sủa, sửa lại một chút là câu văn sẽ chuẩn chỉnh ngay."
             ],
             'average': [
-                "[Lưu Ý Nền Tảng] Bình tĩnh nào, mới học thì sai là chuyện bình thường. Nhìn kỹ các lỗi cơ bản này để nhớ lâu hơn nhé.",
-                "[Chỉ Dẫn Cho Bạn] Đừng nản lòng! Hãy chú ý cách chia từ và ghép câu theo hướng dẫn bên dưới của Master G.",
-                "[Nhắc Nhở Nhẹ] Cấu trúc câu chưa thật sự ổn định. Để Master G gỡ rối từng chỗ cho bạn."
+                "Cố gắng rất đáng ghi nhận! Mới học tiếng Anh thì việc gặp một vài vướng mắc ngữ pháp là hoàn toàn bình thường. Hãy cùng Master G gỡ rối nhé.",
+                "Đừng lo lắng nhé! Ý tưởng của bạn đã có, chúng ta chỉ cần sắp xếp lại trật tự từ và cách chia động từ cho thật ăn khớp.",
+                "Câu của bạn đã biểu đạt được ý định, nhưng cấu trúc cần được gia cố thêm một chút. Xem gợi ý của Master G bên dưới nhé."
             ],
             'poor': [
-                "[Vực Dậy Tinh Thần] Câu này chưa hoàn chỉnh thành phần câu hoặc bị xáo trộn ngữ pháp. Hãy xem câu chuẩn bên dưới để luyện tập lại.",
-                "[Tập Trung Lại Nào] Cần chú ý cấu trúc câu cơ bản. Bình tĩnh xem gợi ý sửa chi tiết của Master G dưới đây nhé.",
-                "[Khởi Động Lại] Đừng sợ sai. Xem Master G sửa từng từ một để lần sau viết câu tự tin hơn."
+                "Đừng nản lòng nhé! Việc bạn chủ động viết câu đã là một bước tiến đáng khen. Hãy xem phân tích bên dưới để nắm chắc cách đặt câu hơn.",
+                "Bình tĩnh nào! Tiếng Anh có một số quy tắc ghép câu nền tảng rất thú vị. Hãy cùng Master G sửa từng chi tiết nhé.",
+                "Mọi hành trình vạn dặm đều bắt đầu từ những câu viết đầu tiên. Xem câu chuẩn bên dưới để ghi nhớ cấu trúc nhé."
             ]
         },
         'INTERMEDIATE': {
             'perfect': [
-                "[Chiến Binh Đẳng Cấp] Rất ấn tượng. Đôi mắt tinh tường của Master G không bắt bẻ được ngươi điểm nào. Phong độ rất vững vàng.",
-                "[Tay Viết Lão Luyện] Chuẩn không cần chỉnh. Cấu trúc mượt mà, dùng từ tự tin và đĩnh đạc.",
-                "[Không Tì Vết] Ngữ pháp chuẩn mực như sách in. Tạm thời thu hồi danh hiệu 'thánh sai vặt' của ngươi."
+                "Rất ấn tượng! Câu văn của bạn rất mạch lạc, cấu trúc chuẩn mực và diễn đạt hết sức tự nhiên.",
+                "Chuẩn không cần chỉnh! Bạn dùng từ và ngữ pháp rất tự tin, nhịp điệu câu đọc lên rất mượt mà.",
+                "Một câu văn xuất sắc! Cấu trúc câu gãy gọn và truyền tải thông điệp rất đĩnh đạc."
             ],
             'good': [
-                "[Khá Khẩm Đấy] Viết tương đối ổn áp đấy học trò, nhưng ở trình độ này không nên để sót mấy hạt sạn nhỏ này.",
-                "[Vẫn Còn Sạn] Cấu trúc sáng sủa nhưng vẫn có chỗ làm Master G chưa hài lòng. Mau tinh chỉnh lại.",
-                "[Thiếu Tí Nữa] Suýt thì hoàn hảo nếu ngươi không bất cẩn ở vài chỗ này."
+                "Câu viết tương đối tốt và sáng ý! Ở trình độ này, chỉ cần bạn chú ý thêm một hạt sạn nhỏ dưới đây là câu sẽ hoàn hảo hơn nhiều.",
+                "Diễn đạt khá trôi chảy! Bạn đã thể hiện được tư duy liên kết câu tốt, chỉ cần tinh chỉnh lại một chi tiết nhỏ này.",
+                "Gần như đạt điểm tuyệt đối! Bạn chỉ bất cẩn một chút ở phần chia từ, sửa lại là chuẩn ngay."
             ],
             'average': [
-                "[Hơi Mất Phong Độ] Tầm này rồi mà vẫn để sai cấu trúc cơ bản thế này à? Mau chấn chỉnh lại cho ta.",
-                "[Cảnh Báo Lủng Củng] Diễn đạt thế này người bản xứ nghe sẽ rất bối rối đấy. Mau xem lại các lỗi bên dưới.",
-                "[Ngữ Pháp Bay Quá] Ngữ pháp đang bay bổng quá đà rồi đấy nhé. Ghìm cương lại với các lỗi sau."
+                "Ý tưởng câu rất đáng khen, nhưng cách dùng từ hoặc phối hợp thì của bạn đang hơi gợn một chút. Hãy xem phân tích để hoàn thiện hơn.",
+                "Cấu trúc câu này cần được làm mượt mà hơn để người bản ngữ có thể nắm bắt thông điệp một cách tự nhiên nhất.",
+                "Bạn đang có xu hướng dịch theo lối tư duy tiếng Việt nên câu hơi mất tự nhiên. Hãy cùng Master G điều chỉnh lại nhé."
             ],
             'poor': [
-                "[Master G Cạn Lời] Câu cú tan hoang, cấu trúc lộn xộn. Hãy dừng lại đọc kỹ phân tích bên dưới.",
-                "[Tan Hoang Cấu Trúc] Cấu trúc vỡ trận hoàn toàn. Cần xem lại ngay cách đặt câu.",
-                "[Chấn Chỉnh Ngay] Viết thế này thực sự chưa đạt yêu cầu. Sửa ngay lập tức."
+                "Câu văn đang bị xáo trộn cấu trúc và thiếu sự liên kết giữa các thành phần. Hãy đọc kỹ phần phân tích bên dưới để lấy lại phong độ nhé.",
+                "Diễn đạt hiện tại chưa phản ánh đúng năng lực của bạn. Cần rà soát lại quy tắc cấu trúc câu cơ bản ngay.",
+                "Cần chấn chỉnh lại cách đặt câu! Hãy tập trung vào cấu trúc câu hoàn chỉnh trước khi viết những câu dài phức tạp."
             ]
         },
         'ADVANCED': {
             'perfect': [
-                "[Bậc Thầy Tinh Hoa] Tuyệt tác! Diễn đạt tự nhiên, chuẩn mực học thuật và sắc thái cực kỳ tinh tế.",
-                "[Đỉnh Cao Ngôn Từ] Không còn gì để chỉnh sửa. Câu văn đạt độ mượt mà và tự nhiên của người bản xứ có học thức.",
-                "[Độc Cô Cầu Bại] Master G công nhận sự hoàn mỹ trong câu văn này của ngươi."
+                "Tuyệt vời! Câu văn đạt độ mượt mà, tự nhiên và sắc thái biểu cảm rất chuẩn mực theo phong cách bản ngữ.",
+                "Rất đĩnh đạc! Cách bạn kết hợp từ và lựa chọn cấu trúc câu thể hiện năng lực ngôn ngữ rất sâu sắc.",
+                "Không còn điểm nào để chê! Câu văn rất học thuật, tự nhiên và có chiều sâu."
             ],
             'good': [
-                "[Soi Kính Hiển Vi] Ở cảnh giới này, ngữ pháp chuẩn thôi là chưa đủ. Master G vẫn thấy một chút gợn về tính tự nhiên (Idiomatic flow).",
-                "[Cần Độ Tinh Tế] Đúng ngữ pháp nhưng chưa đạt độ chạm tinh tế nhất. Cùng Master G nâng cấp sắc thái nghĩa.",
-                "[Đánh Bóng Kim Cương] Câu này chỉ cần mài giũa thêm một góc nhỏ về văn phong là hoàn hảo."
+                "Ngữ pháp rất vững vàng! Ở trình độ cao cấp này, Master G chỉ muốn gợi ý thêm một góc nhìn nhỏ về tính tự nhiên (idiomatic flow) để câu đắt giá hơn.",
+                "Đúng ngữ pháp nhưng nếu muốn đạt đến độ tự nhiên tinh tế nhất, bạn có thể cân nhắc nâng cấp một vài kết hợp từ (collocations).",
+                "Câu văn sắc bén! Chỉ cần mài giũa thêm một chút về phong cách hành văn là đạt tiêu chuẩn bản xứ trọn vẹn."
             ],
             'average': [
-                "[Tiêu Chuẩn Khắt Khe] Với cấp bậc của ngươi, để xuất hiện những lỗi cấu trúc thế này là một bước lùi đáng trách. Nhìn kỹ đây.",
-                "[Hạ Phong Độ] Quá chủ quan trong liên kết câu và sắc thái nghĩa. Không thể chấp nhận lỗi này ở đẳng cấp này.",
-                "[Cảnh Báo Sa Sút] Viết câu gượng gạo và dùng từ chưa chuẩn collocation. Xem phân tích chuyên sâu bên dưới."
+                "Ở cấp độ này, việc để xuất hiện các lỗi cấu trúc cơ bản thế này là điều bạn cần lưu tâm rèn luyện lại ngay. Xem phân tích bên dưới nhé.",
+                "Câu văn hơi gượng gạo và dùng từ chưa thật sự chuẩn xác theo ngữ cảnh học thuật. Hãy đọc kỹ gợi ý bên dưới.",
+                "Cần chú ý hơn đến tính liên kết và sắc thái nghĩa của từng từ khi đặt trong văn cảnh phức tạp."
             ],
             'poor': [
-                "[Rơi Đài Cao Thủ] Không thể tin nổi một người ở cấp bậc này lại viết ra câu vỡ trận như thế này. Tự kiểm điểm ngay.",
-                "[Khủng Hoảng Ngôn Từ] Diễn đạt hoàn toàn mất kiểm soát. Mau xem lại toàn bộ cấu trúc và từ vựng ngay lập tức."
+                "Câu văn bị vỡ cấu trúc và thiếu tính mạch lạc. Bạn cần chậm lại một nhịp để củng cố lại trật tự câu trước khi thử sức với các cấu trúc khó.",
+                "Diễn đạt chưa đạt chuẩn ở cấp bậc này. Hãy xem lại toàn bộ cấu trúc và cách chọn từ để khôi phục phong độ."
             ]
         }
     }
@@ -109,7 +113,6 @@ class LocalCritiqueSynthesizer:
             return 'BEGINNER'
         l = str(level_str).lower()
 
-        # Nhóm Cao cấp / Master
         advanced_keywords = [
             'độc cô', 'á thần', 'triết gia', 'hủy diệt', 'kiến trúc', 'bẻ cong',
             'lãnh chúa', 'bậc thầy', 'nghệ nhân', 'advanced', 'c1', 'c2', 'master'
@@ -117,7 +120,6 @@ class LocalCritiqueSynthesizer:
         if any(k in l for k in advanced_keywords):
             return 'ADVANCED'
 
-        # Nhóm Trung cấp / Intermediate
         intermediate_keywords = [
             'chiến binh', 'hiệp sĩ', 'pháp sư', 'học giả', 'đạo tặc', 'trinh sát',
             'thợ săn', 'intermediate', 'b1', 'b2'
@@ -125,7 +127,6 @@ class LocalCritiqueSynthesizer:
         if any(k in l for k in intermediate_keywords):
             return 'INTERMEDIATE'
 
-        # Nhóm Sơ cấp / Beginner (Tân binh, Thực tập sinh, Kẻ sống sót, Kẻ lang thang, A1, A2)
         return 'BEGINNER'
 
     def _determine_tier(self, score: float) -> str:
@@ -136,6 +137,92 @@ class LocalCritiqueSynthesizer:
         elif score >= 5.0:
             return 'average'
         return 'poor'
+
+    def explain_error_pedagogically(self, err: Dict, user_input: str) -> str:
+        """
+        Chuyển hóa thông báo lỗi thô của LanguageTool thành lời chỉ dẫn sư phạm tiếng Việt tự nhiên, ấm áp và dễ hiểu.
+        """
+        rule_id = str(err.get('rule_id', '')).upper()
+        msg = str(err.get('message', ''))
+        msg_lower = msg.lower()
+        reps = err.get('replacements', [])
+        rep = reps[0] if reps else ""
+        context = err.get('context', '')
+        category = str(err.get('category', 'GRAMMAR')).upper()
+
+        # Tìm từ/cụm từ sai trong câu
+        offset = err.get('offset', 0)
+        length = err.get('error_length', 0)
+        err_word = ""
+        if length > 0 and 0 <= offset < len(user_input):
+            err_word = user_input[offset:offset + length].strip()
+
+        # 1. Lỗi chỉ nhập 1 từ đơn lẻ hoặc câu khuyết vị ngữ (Fragment)
+        if rule_id == "SINGLE_WORD_INPUT":
+            return "Bạn mới chỉ nhập một từ đơn lẻ. Để hoàn thành nhiệm vụ, hãy đặt từ này vào một câu hoàn chỉnh có đầy đủ Chủ ngữ và Vị ngữ nhé."
+        if rule_id == "SENTENCE_FRAGMENT":
+            return "Câu của bạn đang thiếu động từ chính (vị ngữ). Hãy bổ sung thêm hành động hoặc trạng thái để tạo thành câu hoàn chỉnh diễn đạt trọn vẹn một ý nghĩ."
+
+        # 2. Lỗi mạo từ a / an
+        if 'EN_A_VS_AN' in rule_id or "use 'an' instead of 'a'" in msg_lower or "use 'a' instead of 'an'" in msg_lower:
+            if rep:
+                return f"Quy tắc mạo từ 'a' / 'an': Dùng **'{rep}'** (thay vì *'{err_word or 'từ trước đó'}'*) vì từ đi liền sau bắt đầu bằng nguyên âm/phụ âm trong phát âm."
+            return "Quy tắc mạo từ: Chú ý dùng 'an' trước các từ bắt đầu bằng nguyên âm phát âm (u, e, o, a, i) và 'a' trước phụ âm."
+
+        # 3. Lỗi thiếu mạo từ (Missing article)
+        if 'ARTICLE' in rule_id or 'article is missing' in msg_lower or 'an article seems' in msg_lower:
+            noun = err_word or "danh từ này"
+            rep_hint = f" (ví dụ: *{rep}*)" if rep else ""
+            return f"Thiếu mạo từ: Danh từ đếm được số ít *'{noun}'* cần có mạo từ (*a*, *an*, *the*) hoặc đại từ sở hữu đứng trước{rep_hint}."
+
+        # 4. Lỗi sự hòa hợp Chủ ngữ - Động từ (Subject-Verb Agreement)
+        if any(k in rule_id for k in ['AGREEMENT', 'VERB_AGR', 'PERS_PRONOUN']) or any(k in msg_lower for k in ['third-person', 'singular', 'agreement error', 'subject and verb']):
+            if 'auxiliary' in msg_lower or 'do not' in user_input.lower() or 'does not' in rep.lower():
+                aux_rep = rep if rep else "does not"
+                aux_err = err_word if err_word else "do not"
+                return f"Sự hòa hợp chủ ngữ & trợ động từ: Với chủ ngữ ngôi thứ ba số ít, bạn cần dùng trợ động từ **'{aux_rep}'** thay vì *'{aux_err}'*."
+            if rep:
+                return f"Sự hòa hợp Chủ - Vị: Chủ ngữ và động từ cần hòa hợp về số ít/số nhiều. Gợi ý bạn nên chia là **'{rep}'** (thay cho *'{err_word}'*)."
+            return "Sự hòa hợp Chủ - Vị: Chú ý chia động từ tương ứng với chủ ngữ số ít hoặc số nhiều."
+
+        # 5. Lỗi động từ sau trợ động từ (Modal / Auxiliary + Bare Infinitive)
+        if 'auxiliary verb' in msg_lower or 'base form' in msg_lower:
+            if rep:
+                return f"Dạng động từ sau trợ động từ: Sau trợ động từ (như *do, does, did, can, will...*), động từ chính bắt buộc giữ ở dạng nguyên mẫu không chia: dùng **'{rep}'** (không thêm 's' hay 'ed')."
+            return "Sau trợ động từ, động từ chính luôn ở dạng nguyên mẫu không chia."
+
+        # 6. Lỗi thì và phân từ (Tenses & Participles)
+        if any(k in msg_lower for k in ['past tense', 'past participle', 'participle should be used']):
+            if rep:
+                return f"Chia thì & dạng động từ: Ở ngữ cảnh này, bạn cần dùng dạng quá khứ / phân từ **'{rep}'** thay cho *'{err_word}'* để đúng thì của câu."
+            return "Hãy kiểm tra lại dạng quá khứ hoặc phân từ của động từ để phù hợp với ngữ cảnh thì."
+
+        # 7. Lỗi giới từ (Prepositions)
+        if 'PREPOSITION' in rule_id or 'preposition' in msg_lower:
+            if rep:
+                return f"Giới từ tự nhiên: Thay vì dùng *'{err_word}'*, người bản ngữ thường kết hợp với giới từ **'{rep}'** trong ngữ cảnh này."
+            return "Chú ý lựa chọn giới từ phù hợp với động từ hoặc tính từ đi trước."
+
+        # 8. Lỗi chính tả & gõ phím (Spelling / Typo)
+        if category in ['TYPOS', 'SPELLING'] or 'MORFOLOGIK' in rule_id or 'spelling mistake' in msg_lower:
+            if rep:
+                return f"Chính tả từ vựng: Từ *'{err_word}'* có vẻ bị gõ nhầm. Gợi ý từ đúng là **'{rep}'**."
+            return f"Từ *'{err_word}'* dường như bị sai chính tả. Hãy kiểm tra lại cách viết."
+
+        # 9. Lỗi viết hoa đầu câu (Casing)
+        if category == 'CASING' or 'UPPERCASE' in rule_id or 'uppercase letter' in msg_lower:
+            return "Quy chuẩn viết câu: Hãy nhớ viết hoa chữ cái đầu câu để câu văn thêm chỉn chu và đúng chuẩn mực."
+
+        # 10. Lỗi dấu câu (Punctuation)
+        if category == 'PUNCTUATION' or 'PUNCTUATION' in rule_id or 'comma' in msg_lower:
+            return "Dấu câu & ngắt nghỉ: Hãy chú ý ngắt nghỉ và đặt dấu câu phù hợp để người đọc dễ theo dõi mạch câu."
+
+        # 11. Tổng quát / Fallback: Làm mềm thông điệp tiếng Anh
+        if rep:
+            return f"Lưu ý diễn đạt tại *'{err_word or 'vị trí này'}'*: Gợi ý điều chỉnh thành **'{rep}'** để câu văn chuẩn xác và tự nhiên hơn."
+
+        clean_msg = msg.replace('"', "'")
+        return f"Điểm cần lưu ý: {clean_msg}."
 
     def _analyze_vocabulary_sophistication(self, text: str, user_tier: str, is_fragment: bool = False) -> Dict:
         """Phân tích mức độ tinh tế của từ vựng theo chuẩn CEFR và đối chiếu với Cấp độ người học."""
@@ -157,29 +244,31 @@ class LocalCritiqueSynthesizer:
         advanced_words = [w[0] for w in ranked_words if w[2] >= 4]
 
         if is_fragment:
-            comment = f"Cụm từ chứa từ vựng cấp độ {max_level} [{', '.join(advanced_words or [ranked_words[0][0]])}]. Hãy đặt từ này vào một câu hoàn chỉnh để hệ thống ghi nhận điểm số."
+            word_show = ', '.join(advanced_words or [ranked_words[0][0]])
+            comment = f"Cụm từ chứa từ vựng cấp độ {max_level} ({word_show}). Hãy đặt từ này vào một câu hoàn chỉnh có chủ ngữ và vị ngữ để Master G ghi nhận điểm số nhé."
             return {
                 "max_level": max_level,
                 "highlight_words": advanced_words,
                 "comment": comment
             }
 
-        # Nhận xét thích ứng theo cấp độ người học
+        # Nhận xét thích ứng theo cấp độ người học tự nhiên, tích cực
         if user_tier == 'BEGINNER':
-            if advanced_words or max_level in ['B1', 'B2', 'C1', 'C2']:
-                comment = f"Khá ấn tượng! Dù ở cấp độ cơ bản nhưng bạn đã sử dụng từ vựng nâng cao [{', '.join(advanced_words or [ranked_words[0][0]])}] ({max_level}). Rất đáng khen!"
+            if advanced_words:
+                word_show = ', '.join(advanced_words)
+                comment = f"Điểm sáng từ vựng: Bạn đã chủ động dùng từ nâng cao [{word_show}] ({max_level}). Đây là dấu hiệu tiến bộ rất đáng khích lệ!"
             else:
-                comment = f"Từ vựng căn bản ({max_level}), phù hợp để củng cố nền tảng ngữ pháp câu chắc chắn."
+                comment = f"Vốn từ nền tảng ({max_level}) được dùng rất đúng chỗ, rất thích hợp để rèn luyện phản xạ ngữ pháp vững vàng."
         elif user_tier == 'INTERMEDIATE':
             if advanced_words:
-                comment = f"Điểm sáng từ vựng: Bạn phối hợp tốt các từ cấp độ [{', '.join(advanced_words)}] ({max_level}). Cố gắng dùng thêm collocations tự nhiên."
+                comment = f"Điểm sáng từ vựng: Bạn kết hợp tốt các từ cấp độ [{', '.join(advanced_words)}] ({max_level}). Hãy tiếp tục làm quen với các cụm collocations tự nhiên đi kèm nhé."
             else:
-                comment = "Từ vựng ở mức căn bản (A1/A2). Là người học trung cấp, hãy mạnh dạn thay thế bằng các từ đồng nghĩa B1/B2 phong phú hơn."
+                comment = "Từ vựng ở mức cơ bản (A1/A2). Khi đã vững ngữ pháp, bạn có thể thử thay thế bằng một số từ đồng nghĩa ở mức B1/B2 để câu văn thêm sinh động."
         else:  # ADVANCED
             if max_level in ['C1', 'C2']:
-                comment = f"Vốn từ xuất sắc ({max_level}) với các từ ngữ học thuật chuyên sâu [{', '.join(advanced_words)}]. Giữ vững phong độ đỉnh cao này."
+                comment = f"Vốn từ phong phú và giàu tính học thuật ({max_level}) với [{', '.join(advanced_words)}]. Giữ vững phong độ sắc bén này nhé."
             else:
-                comment = "Ở cấp bậc Cao Cấp, vốn từ này còn khá đơn giản (chưa có từ C1/C2). Hãy làm phong phú câu bằng các từ ngữ mang tính học thuật hoặc sắc thái thành ngữ."
+                comment = "Ở cấp bậc Cao Cấp, câu văn sẽ đắt giá hơn nữa nếu bạn lồng ghép thêm các thành ngữ (idioms) hoặc kết hợp từ học thuật nâng cao."
 
         return {
             "max_level": max_level,
@@ -189,10 +278,10 @@ class LocalCritiqueSynthesizer:
 
     def synthesize(self, user_input: str, gec_result: Dict, user_level: str = "Beginner") -> str:
         """
-        Tổng hợp nhận xét cá nhân hóa theo cấp độ người học:
-        - Giọng điệu Master G thích ứng theo Level (Beginner / Intermediate / Advanced)
-        - Đánh giá tổng quan, chỉ rõ lỗi sai, góp ý cụ thể, phân tích từ vựng CEFR
-        - Loại bỏ hoàn toàn icon rác và các ký tự markdown thừa thãi
+        Tổng hợp nhận xét cá nhân hóa theo phong cách Cố Vấn Ngôn Ngữ Master G:
+        - Tự nhiên, ấm áp, thấu cảm, giàu giá trị sư phạm.
+        - Xóa bỏ hoàn toàn định dạng hộp cứng nhắc [ĐÁNH GIÁ TỔNG QUAN].
+        - Giải thích lỗi sai mạch lạc bằng tiếng Việt.
         """
         score = float(gec_result.get('score', 0.0))
         corrected_text = gec_result.get('corrected_text', user_input).strip()
@@ -201,78 +290,92 @@ class LocalCritiqueSynthesizer:
         tier = self._determine_tier(score)
         user_tier = self.normalize_user_level(user_level)
 
-        # 1. Lời mở đầu phong cách Master G thích ứng theo Level (Không emoji)
+        # 1. Lời mở đầu Master G đồng hành
         level_openings = self.LEVEL_ADAPTIVE_OPENINGS.get(user_tier, self.LEVEL_ADAPTIVE_OPENINGS['BEGINNER'])
         opening_pool = level_openings.get(tier, level_openings['average'])
         opening = random.choice(opening_pool)
 
-        # Huy hiệu cấp độ hiển thị trên nhận xét (Sạch sẽ, chuẩn chỉ)
-        level_badge = {
-            'BEGINNER': '[Cấp độ: Sơ Cấp / Tân Binh]',
-            'INTERMEDIATE': '[Cấp độ: Trung Cấp / Chiến Binh]',
-            'ADVANCED': '[Cấp độ: Cao Cấp / Bậc Thầy]'
-        }.get(user_tier, '[Cấp độ: Người Học]')
+        tier_title = {
+            'BEGINNER': 'Sơ Cấp',
+            'INTERMEDIATE': 'Trung Cấp',
+            'ADVANCED': 'Cao Cấp'
+        }.get(user_tier, 'Người Học')
 
         output_parts = [
-            f"{level_badge} — [Master G Đánh Giá: {score}/10 Điểm]",
+            f"🎯 Master G Cố Vấn | Đánh giá: {score}/10 Điểm ({tier_title})",
+            "",
             opening,
             ""
         ]
 
-        # 2. [ĐÁNH GIÁ TỔNG QUAN]
-        output_parts.append("[ĐÁNH GIÁ TỔNG QUAN]")
+        # 2. Chi tiết lỗi sai & phân tích sư phạm (nếu có lỗi)
         if is_fragment:
-            output_parts.append(f"Nội dung nhập vào chưa phải là một câu hoàn chỉnh ('{user_input}'). Bạn mới chỉ đưa ra một cụm từ rời rạc thiếu vị ngữ. Một câu tiếng Anh chuẩn bắt buộc phải có đầy đủ Chủ ngữ (Subject) và Động từ chính (Verb) để diễn đạt một ý nghĩ trọn vẹn.")
-        elif len(errors) > 0:
-            output_parts.append(f"Câu của bạn đã thể hiện được ý tưởng diễn đạt nhưng cấu trúc ngữ pháp còn thiếu sót ({len(errors)} điểm cần lưu ý). Cần điều chỉnh để câu văn chuẩn xác và tự nhiên hơn.")
-        else:
-            output_parts.append("Câu văn hoàn chỉnh, cấu trúc ngữ pháp chuẩn mực, các thành phần câu liên kết chặt chẽ và truyền tải thông điệp rõ ràng.")
-        output_parts.append("")
-
-        # 3. [CHI TIẾT LỖI SAI & PHÂN TÍCH]
-        output_parts.append("[CHI TIẾT LỖI SAI & PHÂN TÍCH]")
-        if errors:
-            # Đối với Beginner: Ẩn bớt các lỗi STYLE để tránh làm học viên ngợp
+            output_parts.append("🔍 Điểm cốt lõi cần lưu ý:")
+            output_parts.append(
+                f"Nội dung bạn nhập vào ('{user_input}') hiện mới là một cụm từ rời rạc chứ chưa phải câu hoàn chỉnh. "
+                f"Trong tiếng Anh, một câu chuẩn bắt buộc phải có đầy đủ Chủ ngữ (Subject) và Động từ chính (Verb) để diễn đạt một ý nghĩ trọn vẹn."
+            )
+            output_parts.append("")
+        elif errors:
+            output_parts.append(f"🔍 Những điểm cần lưu ý ({len(errors)} điểm):")
+            # Beginner: Ưu tiên hiển thị lỗi ngữ pháp cốt lõi, tránh làm học viên ngợp
             displayed_errors = errors
             if user_tier == 'BEGINNER':
                 grammar_core = [e for e in errors if e.get('category') != 'STYLE']
                 displayed_errors = grammar_core if grammar_core else errors
 
-            for i, err in enumerate(displayed_errors[:4], 1):
-                cat = self.RULE_CATEGORY_MAP.get(err.get('category', ''), 'Ngữ pháp')
-                msg = err.get('message', 'Lỗi cấu trúc câu')
-                reps = err.get('replacements', [])
-                rep_str = f" -> Gợi ý sửa: '{', '.join(reps[:2])}'" if reps else ""
-                output_parts.append(f"{i}. [{cat}] {msg}{rep_str}")
+            for err in displayed_errors[:4]:
+                explanation = self.explain_error_pedagogically(err, user_input)
+                output_parts.append(f"• {explanation}")
+            output_parts.append("")
         else:
-            output_parts.append("Không phát hiện lỗi ngữ pháp hay chính tả trong câu.")
-        output_parts.append("")
+            output_parts.append("✨ Điểm sáng trong câu:")
+            output_parts.append("• Cấu trúc câu chuẩn xác 100%, các thành phần câu liên kết chặt chẽ và truyền tải ý tứ rất mạch lạc.")
+            output_parts.append("")
 
-        # 4. [CÂU CHUẨN ĐỀ XUẤT]
-        output_parts.append("[CÂU CHUẨN ĐỀ XUẤT]")
-        if corrected_text:
+        # 3. Phiên bản đề xuất chuẩn chỉnh (nếu có sự thay đổi)
+        if corrected_text and corrected_text.strip().lower() != user_input.strip().lower():
+            output_parts.append("💡 Phiên bản chuẩn chỉnh đề xuất:")
             output_parts.append(f'"{corrected_text}"')
-        else:
+            output_parts.append("")
+        elif not errors and not is_fragment:
+            output_parts.append("💡 Câu văn hoàn thiện:")
             output_parts.append(f'"{user_input}"')
-        output_parts.append("")
+            output_parts.append("")
 
-        # 5. [GÓP Ý & HƯỚNG DẪN HOÀN THIỆN]
-        output_parts.append("[GÓP Ý & HƯỚNG DẪN HOÀN THIỆN]")
-        if is_fragment:
-            output_parts.append("Lời khuyên: Để hoàn thành nhiệm vụ và đạt điểm cao, hãy biến cụm từ này thành một câu trọn vẹn bằng cách thêm Chủ ngữ và Động từ diễn tả hành động hoặc trạng thái. Ví dụ: 'The chemical reaction occurs rapidly in the laboratory.'")
-        elif user_tier == 'BEGINNER':
-            output_parts.append("Lời khuyên: Luôn ghi nhớ cấu trúc nền tảng S-V-O (Chủ ngữ + Động từ + Tân ngữ). Chú ý sự hòa hợp giữa chủ ngữ số ít/số nhiều và quy tắc chia động từ ở thì hiện tại đơn.")
-        elif user_tier == 'INTERMEDIATE':
-            output_parts.append("Lời khuyên: Hãy thử mở rộng câu bằng các liên từ phụ thuộc (although, because, while...) hoặc bổ sung trạng từ để câu văn đa dạng và có chiều sâu hơn.")
-        else:  # ADVANCED
-            output_parts.append("Lời khuyên: Chú ý tăng cường tính tự nhiên của kết hợp từ (collocations) chuẩn mực theo phong cách bản xứ. Tận dụng các cấu trúc câu nâng cao để tăng sức thuyết phục.")
-        output_parts.append("")
-
-        # 6. [NĂNG LỰC TỪ VỰNG & CEFR]
+        # 4. Lời khuyên nâng cấp từ Master G (Pedagogical Upgrade)
         vocab_analysis = self._analyze_vocabulary_sophistication(user_input, user_tier, is_fragment=is_fragment)
+        output_parts.append("🚀 Lời khuyên phát triển từ Master G:")
+        if is_fragment:
+            output_parts.append(
+                "Để biến cụm từ này thành một câu trọn vẹn, hãy thử gắn thêm một hành động hoặc trạng thái cụ thể. "
+                "Ví dụ: 'The chemical reaction occurs rapidly in the laboratory.'"
+            )
+        elif user_tier == 'BEGINNER':
+            if errors:
+                output_parts.append(
+                    "Hãy luôn ghi nhớ quy tắc trục xương sống: Chủ ngữ + Động từ + Tân ngữ (S-V-O). "
+                    "Khi viết, chỉ cần dừng lại 2 giây kiểm tra xem động từ đã chia đúng theo chủ ngữ chưa là câu sẽ luôn chuẩn chỉnh."
+                )
+            else:
+                output_parts.append(
+                    "Bạn đã nắm rất vững cấu trúc câu nền tảng! Khi đã quen tay, hãy thử mở rộng câu bằng cách thêm từ nối (because, so, and) "
+                    "hoặc bổ sung trạng từ chỉ thời gian, nơi chốn để câu giàu thông tin hơn nhé."
+                )
+        elif user_tier == 'INTERMEDIATE':
+            output_parts.append(
+                "Để câu văn thêm chiều sâu, hãy thử kết hợp các liên từ phụ thuộc (although, whereas, while...) "
+                "hoặc sử dụng mệnh đề quan hệ rút gọn. Điều này sẽ giúp câu văn của bạn đạt phong cách tự nhiên chuẩn B2."
+            )
+        else:  # ADVANCED
+            output_parts.append(
+                "Ở cấp độ này, hãy chú ý tăng cường các collocations học thuật và nhịp điệu của câu. "
+                "Sự phối hợp tinh tế giữa câu ngắn và câu ghép phức sẽ tạo nên một phong cách hành văn đầy sức thuyết phục."
+            )
+
+        # Nhận xét từ vựng nếu có
         if vocab_analysis["comment"]:
-            output_parts.append("[NĂNG LỰC TỪ VỰNG & CEFR]")
-            output_parts.append(vocab_analysis['comment'])
+            output_parts.append(f"• Vốn từ: {vocab_analysis['comment']}")
 
         return "\n".join(output_parts)
 
@@ -294,19 +397,19 @@ if __name__ == "__main__":
         "score": 6.6,
         "corrected_text": "She does not like apples.",
         "errors": [
-            {"category": "GRAMMAR", "message": "The pronoun 'She' is third-person singular.", "replacements": ["does not"]},
-            {"category": "GRAMMAR", "message": "After auxiliary verb, use base form 'like'.", "replacements": ["like"]}
+            {"rule_id": "PERS_PRONOUN_AGREEMENT", "category": "GRAMMAR", "message": "The pronoun 'She' is third-person singular.", "replacements": ["does not"], "offset": 4, "error_length": 6},
+            {"rule_id": "AUXILIARY_VERB", "category": "GRAMMAR", "message": "After auxiliary verb, use base form 'like'.", "replacements": ["like"], "offset": 11, "error_length": 5}
         ]
     }
 
     print("=== THỬ NGHIỆM CÙNG MỘT CÂU VỚI 3 CẤP ĐỘ KHÁC NHAU ===\n")
-    print("--- 1. NGƯỜI DÙNG SƠ CẤP (TÂN BINH NGƠ NGÁC) ---")
+    print("--- 1. NGƯỜI DÙNG SƠ CẤP ---")
     print(synthesizer.synthesize(sample_sentence, mock_bad_gec, user_level="Tân Binh Ngơ Ngác"))
     print("\n" + "="*70 + "\n")
 
-    print("--- 2. NGƯỜI DÙNG TRUNG CẤP (CHIẾN BINH GIAO TIẾP) ---")
+    print("--- 2. NGƯỜI DÙNG TRUNG CẤP ---")
     print(synthesizer.synthesize(sample_sentence, mock_bad_gec, user_level="Chiến Binh Giao Tiếp"))
     print("\n" + "="*70 + "\n")
 
-    print("--- 3. NGƯỜI DÙNG CAO CẤP (ĐỘC CÔ CẦU BẠI) ---")
+    print("--- 3. NGƯỜI DÙNG CAO CẤP ---")
     print(synthesizer.synthesize(sample_sentence, mock_bad_gec, user_level="Độc Cô Cầu Bại"))

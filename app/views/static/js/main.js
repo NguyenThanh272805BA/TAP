@@ -88,7 +88,11 @@ window.TAPIcons = {
         chest: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
         quest: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
         book: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
-        star: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
+        star: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        zap: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+        sparkles: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/></svg>',
+        award: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>',
+        gift: '<svg class="tap-icon-svg" viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>'
     },
 
     get(name, size = 22, className = "") {
@@ -500,18 +504,36 @@ function updateChibeEmotion(score) {
 function renderStructuredFeedback(rawText) {
     if (!rawText) return "";
     let clean = rawText;
-    // 1. Xóa toàn bộ ký tự markdown thừa (**bold**, *italic*, > quotes, leftover asterisks)
-    clean = clean.replace(/\*\*(.*?)\*\*/g, '$1');
-    clean = clean.replace(/\*(.*?)\*/g, '$1');
-    clean = clean.replace(/^>\s*/gm, '');
-    clean = clean.replace(/\*\*/g, '');
 
-    // 2. Định dạng các đề mục sư phạm rõ ràng, màu sắc chuyên nghiệp
-    clean = clean.replace(/\[ĐÁNH GIÁ TỔNG QUAN\]/g, '<div style="color: var(--neon-cyan); font-weight: 700; margin-top: 10px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ ĐÁNH GIÁ TỔNG QUAN ]</div>');
-    clean = clean.replace(/\[CHI TIẾT LỖI SAI & PHÂN TÍCH\]/g, '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ CHI TIẾT LỖI SAI & PHÂN TÍCH ]</div>');
-    clean = clean.replace(/\[CÂU CHUẨN ĐỀ XUẤT\]/g, '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ CÂU CHUẨN ĐỀ XUẤT ]</div>');
-    clean = clean.replace(/\[GÓP Ý & HƯỚNG DẪN HOÀN THIỆN\]/g, '<div style="color: var(--neon-amber); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ GÓP Ý & HƯỚNG DẪN HOÀN THIỆN ]</div>');
-    clean = clean.replace(/\[NĂNG LỰC TỪ VỰNG & CEFR\]/g, '<div style="color: var(--neon-purple); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px; letter-spacing: 0.5px;">[ NĂNG LỰC TỪ VỰNG & CEFR ]</div>');
+    // Header badge (🎯 Master G Cố Vấn | ...)
+    clean = clean.replace(/^(🎯\s*Master G\s*Cố Vấn[^\n]*)/m, 
+        '<div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 5px 12px; border-radius: 8px; font-weight: 700; font-size: 13px; margin-bottom: 10px;">$1</div>');
+
+    // Section headers
+    clean = clean.replace(/(🔍\s*Những điểm cần lưu ý[^\n]*:?)/g, 
+        '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+    clean = clean.replace(/(🔍\s*Điểm cốt lõi cần lưu ý[^\n]*:?)/g, 
+        '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+    clean = clean.replace(/(✨\s*Điểm sáng trong câu[^\n]*:?)/g, 
+        '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+    clean = clean.replace(/(💡\s*Phiên bản chuẩn chỉnh đề xuất[^\n]*:?)/g, 
+        '<div style="color: var(--neon-amber); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+    clean = clean.replace(/(💡\s*Câu văn hoàn thiện[^\n]*:?)/g, 
+        '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+    clean = clean.replace(/(🚀\s*Lời khuyên phát triển từ Master G[^\n]*:?)/g, 
+        '<div style="color: var(--neon-purple); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+
+    // Backward-compatibility with older bracketed headers
+    clean = clean.replace(/\[ĐÁNH GIÁ TỔNG QUAN\]/g, '<div style="color: var(--neon-cyan); font-weight: 700; margin-top: 10px; margin-bottom: 4px; font-size: 13px;">[ ĐÁNH GIÁ TỔNG QUAN ]</div>');
+    clean = clean.replace(/\[CHI TIẾT LỖI SAI & PHÂN TÍCH\]/g, '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px;">[ CHI TIẾT LỖI SAI & PHÂN TÍCH ]</div>');
+    clean = clean.replace(/\[CÂU CHUẨN ĐỀ XUẤT\]/g, '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px;">[ CÂU CHUẨN ĐỀ XUẤT ]</div>');
+    clean = clean.replace(/\[GÓP Ý & HƯỚNG DẪN HOÀN THIỆN\]/g, '<div style="color: var(--neon-amber); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px;">[ GÓP Ý & HƯỚNG DẪN HOÀN THIỆN ]</div>');
+    clean = clean.replace(/\[NĂNG LỰC TỪ VỰNG & CEFR\]/g, '<div style="color: var(--neon-purple); font-weight: 700; margin-top: 12px; margin-bottom: 4px; font-size: 13px;">[ NĂNG LỰC TỪ VỰNG & CEFR ]</div>');
+
+    // Rich markdown formatting (Bold, Italic, Bullet points)
+    clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #67e8f9; font-weight: 600;">$1</strong>');
+    clean = clean.replace(/\*([^*\n]+)\*/g, '<em style="color: #f1f5f9;">$1</em>');
+    clean = clean.replace(/^•\s+(.*)/gm, '<div style="padding-left: 10px; margin-bottom: 4px; line-height: 1.5;"><span style="color: var(--neon-cyan); margin-right: 6px;">•</span>$1</div>');
 
     return clean.replace(/\n/g, '<br>');
 }
@@ -950,6 +972,21 @@ function initRPGStory() {
     .then(res => res.json())
     .then(data => {
         terminal.innerHTML = "";
+        if (data.target_words && data.target_words.length > 0) {
+            const pillsContainer = document.getElementById('story-target-words-pills');
+            if (pillsContainer) {
+                let html = '';
+                data.target_words.forEach(tw => {
+                    html += `
+                        <div style="background: rgba(168, 85, 247, 0.2); border: 1px solid var(--neon-purple); border-radius: 6px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 6px;" title="${tw.meaning}">
+                            <span style="color: #fff; font-weight: bold; font-family: var(--text-mono); font-size: 12px;">${tw.word}</span>
+                            <span style="font-size: 10px; color: var(--neon-cyan); background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 4px;">${tw.cefr_level || 'B1'}</span>
+                        </div>
+                    `;
+                });
+                pillsContainer.innerHTML = html;
+            }
+        }
         appendStoryScene(data, true);
     })
     .catch(err => {
@@ -1095,10 +1132,24 @@ function executeStoryAction(overrideText = null) {
                             }
 
                             const scoreColor = data.score >= 5.0 ? "var(--pixel-green)" : "var(--neon-pink)";
+                            let critBanner = '';
+                            if (data.critical_hit) {
+                                critBanner = `
+                                    <div style="background: linear-gradient(90deg, rgba(234, 179, 8, 0.25), rgba(168, 85, 247, 0.25)); border: 1.5px solid var(--neon-amber); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; animation: pulseGlow 1.5s infinite alternate; box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);">
+                                        <span style="font-size: 24px;">⚔️💥</span>
+                                        <div>
+                                            <div style="font-family: var(--text-pixel); font-size: 12px; color: var(--neon-amber); font-weight: bold;">CRITICAL HIT // BẠO KÍCH NGỮ NGHĨA!</div>
+                                            <div style="font-size: 12px; color: #fff; margin-top: 2px;">${data.combat_reward_msg || 'Vận dụng chuẩn xác từ vựng mục tiêu! (+25 Xu, +15 RP)'}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
                             // Chèn điểm số an toàn không làm vỡ DOM
                             gmDiv.insertAdjacentHTML('beforebegin', `
+                                ${critBanner}
                                 <div style="font-size: 12px; color: ${scoreColor}; font-family: var(--text-pixel); margin-bottom: 10px; text-align: right; letter-spacing:0.5px;">
-                                    [LOCAL GEC RATING: ${data.score}/10]
+                                    [LOCAL GEC RATING: ${data.score}/10] ${data.critical_hit ? '⚡ BẠO KÍCH' : ''}
                                 </div>
                             `);
                             gmDiv.style.display = "block";

@@ -35,6 +35,26 @@ class VocabCEFRClassifier:
         if word_lower in self.oxford_dict:
             return self.oxford_dict[word_lower]
 
+        # Bước 1.5: Thử dạng nguyên mẫu/số ít (Lemmatization nhẹ)
+        candidates = []
+        if word_lower.endswith('ies') and len(word_lower) > 4:
+            candidates.append(word_lower[:-3] + 'y')
+        if word_lower.endswith('es') and len(word_lower) > 3:
+            candidates.append(word_lower[:-2])
+            candidates.append(word_lower[:-1])
+        if word_lower.endswith('s') and len(word_lower) > 2 and not word_lower.endswith(('ss', 'us', 'is')):
+            candidates.append(word_lower[:-1])
+        if word_lower.endswith('ed') and len(word_lower) > 3:
+            candidates.append(word_lower[:-1])
+            candidates.append(word_lower[:-2])
+        if word_lower.endswith('ing') and len(word_lower) > 4:
+            candidates.append(word_lower[:-3])
+            candidates.append(word_lower[:-3] + 'e')
+
+        for cand in candidates:
+            if cand in self.oxford_dict:
+                return self.oxford_dict[cand]
+
         # Bước 2: Hybrid Fallback - Nếu là từ lóng, cụm từ hoặc từ ngoài từ điển
         # zipf_frequency trả về dải điểm logarit cơ số 10 (thường từ 1.0 đến 8.0)
         # Điểm càng cao -> Từ càng phổ biến (VD: 'the' ~ 8.0, 'apple' ~ 5.0)

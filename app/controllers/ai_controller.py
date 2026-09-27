@@ -3,7 +3,7 @@ import time
 import json
 import random
 import re
-from datetime import date
+from datetime import date, datetime, timedelta
 from flask import Blueprint, request, jsonify, session, Response, stream_with_context
 
 # --- Lõi AI Cục bộ (Local Brains) ---
@@ -83,7 +83,7 @@ def manage_sliding_window(active_run, max_turns=3):
 @ai_bp.route('/evaluate', methods=['POST'])
 def evaluate():
     data = request.get_json(silent=True) or {}
-    user_id = session.get('user_id')
+    user_id = session.get('user_id') or data.get('user_id')
     raw_input = data.get('text', '')
     mode = data.get('mode', 'grammar')
 
@@ -129,12 +129,60 @@ def evaluate():
         if success:
             quest_completed_word = word
 
+    # Kiểm tra Bạo kích Từ vựng mục tiêu (Adaptive Dungeon Master - Não 3 & Não 1)
+    is_critical_hit = False
+    critical_word = None
+    combat_reward_msg = None
+    if mode in ['story', 'story_choose']:
+        clean_tokens = set(re.findall(r'\b[a-zA-Z]+\b', user_input.lower()))
+        user_words = db.session.query(Vocabulary).join(
+            UserVocabulary, Vocabulary.id == UserVocabulary.vocab_id
+        ).filter(UserVocabulary.user_id == user_id).all()
+
+        matched = []
+        for v in user_words:
+            v_clean = v.word.lower().strip()
+            if len(v_clean) >= 2 and re.search(r'\b' + re.escape(v_clean) + r'\b', user_input.lower()):
+                matched.append(v)
+                break
+
+        if not matched:
+            for token in clean_tokens:
+                if len(token) >= 3:
+                    v_match = Vocabulary.query.filter(db.func.lower(Vocabulary.word) == token).first()
+                    if v_match:
+                        matched.append(v_match)
+                        break
+
+        if matched and local_score >= 5.5:
+            is_critical_hit = True
+            hit_vocab = matched[0]
+            critical_word = hit_vocab.word
+            bonus_coins = 25
+            bonus_rp = 15
+            user_obj = User.query.get(user_id)
+            if user_obj:
+                user_obj.coins = (user_obj.coins or 0) + bonus_coins
+                user_obj.academic_rp = (user_obj.academic_rp or 500) + bonus_rp
+            uv_rec = UserVocabulary.query.filter_by(user_id=user_id, vocab_id=hit_vocab.id).first()
+            if not uv_rec:
+                uv_rec = UserVocabulary(user_id=user_id, vocab_id=hit_vocab.id, is_unlocked=True)
+                db.session.add(uv_rec)
+            uv_rec.memorization_level = 'DA_THUOC'
+            uv_rec.fail_count = max(0, (uv_rec.fail_count or 0) - 1)
+            uv_rec.next_review_time = datetime.now() + timedelta(days=3)
+            db.session.commit()
+            combat_reward_msg = f"⚔️ BẠO KÍCH NGỮ NGHĨA! Vận dụng chuẩn xác từ '{critical_word}' (+{bonus_coins} Xu, +{bonus_rp} RP)!"
+
     def generate_stream():
         meta_data = {
             "type": "meta",
             "score": local_score,
             "intent": detected_intent,
-            "quest_notification": f"Đặt câu với từ '{quest_completed_word}' (+20 Xu)" if quest_completed_word else None
+            "quest_notification": f"Đặt câu với từ '{quest_completed_word}' (+20 Xu)" if quest_completed_word else None,
+            "critical_hit": is_critical_hit,
+            "critical_word": critical_word,
+            "combat_reward_msg": combat_reward_msg
         }
         yield f"data: {json.dumps(meta_data)}\n\n"
 
@@ -197,9 +245,33 @@ def evaluate():
                         [HINT]: I need to ___ carefully. | Tôi cần hành động cẩn trọng.
                         """
 
-                for chunk in stream_gemini_response(prompt):
-                    full_ai_response += chunk
-                    yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
+                try:
+                    for chunk in stream_gemini_response(prompt):
+                        full_ai_response += chunk
+                        yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
+                except Exception:
+                    # LOCAL DUNGEON MASTER FALLBACK (Đảm bảo 100% không bao giờ gián đoạn)
+                    crit_flavor = f"\n\n⚔️ [BẠO KÍCH NGỮ NGHĨA]: Từ vựng '{critical_word}' tạo hiệu ứng áp đảo!" if is_critical_hit else ""
+                    if story_turn >= 10:
+                        fallback_text = (
+                            f"[EN] You summon your deepest reserves of resilience and wisdom. Through sheer courage, you survive the ordeal.{crit_flavor}\n\n"
+                            f"[VN] Bạn dồn toàn bộ nghị lực và trí tuệ. Bằng sự quả cảm, bạn đã xuất sắc sống sót vượt qua thử thách.\n\n"
+                            f"[STATUS]: Survived"
+                        )
+                    elif mode == 'story_choose':
+                        fallback_text = (
+                            f"[EN] Your tactical maneuver '{user_input}' succeeds smoothly (Rating: {local_score}/10). The environment tests your agility.{crit_flavor}\n\n"
+                            f"[VN] Nước đi chiến thuật '{user_input}' thành công mỹ mãn (Đánh giá: {local_score}/10). Không gian xung quanh thử thách sự nhanh nhạy của bạn.\n\n"
+                            f"[CHOICES]: Fortify your shelter | Scout the perimeter | Search for resources | Secure elevated ground"
+                        )
+                    else:
+                        fallback_text = (
+                            f"[EN] You execute your decision: '{user_input}'. Your sound grammar ({local_score}/10) keeps you on course.{crit_flavor}\n\n"
+                            f"[VN] Bạn triển khai quyết định: '{user_input}'. Cú pháp chuẩn xác ({local_score}/10) giữ bạn an toàn.\n\n"
+                            f"[HINT]: I need to evaluate the next step carefully."
+                        )
+                    full_ai_response = fallback_text
+                    yield f"data: {json.dumps({'type': 'chunk', 'text': fallback_text})}\n\n"
 
                 active_run.history += f" ||| [TURN {story_turn}] {user_input} -> {full_ai_response}"
                 active_run.turn = story_turn
@@ -239,11 +311,15 @@ def evaluate():
                 else:
                     # 2. CHUYỂN GIAO CHO LLM KHI ĐỘ BẤT ĐỊNH CAO / OOD
                     prompt = f"""
-                    Học trò nhập câu: "{user_input}"
-                    Điểm ngữ pháp máy chấm: {local_score}/10. Chi tiết: {local_feedback}
-                    Lý do chuyển giao: {gec_res.get('escalation_reason', 'Cấu trúc phức tạp')}
-                    Bạn là Master G mỏ hỗn, hãy nhận xét xéo xắt, phân tích ngữ nghĩa sâu sắc, chửi nếu sai, khen nếu đúng.
-                    Trả về text thuần túy, không định dạng JSON.
+                    Học viên nhập câu: "{user_input}"
+                    Điểm ngữ pháp hệ thống phân tích: {local_score}/10. Chi tiết: {local_feedback}
+                    Lý do chuyển tiếp: {gec_res.get('escalation_reason', 'Cấu trúc phức tạp')}
+                    
+                    Bạn là Master G - Cố vấn học thuật tiếng Anh uyên bác, tinh tế, ân cần nhưng sắc sảo.
+                    Hãy nhận xét tự nhiên, sâu sắc, giải thích rõ ràng nguyên nhân ngữ pháp và ngữ nghĩa bằng tiếng Việt dễ hiểu.
+                    Khen ngợi nỗ lực diễn đạt, chỉ rõ cách chỉnh sửa để câu văn đạt độ tự nhiên của người bản ngữ, và đề xuất câu chuẩn chỉnh.
+                    Xưng hô: Master G / bạn (không dùng ngươi, ta).
+                    Trả về text thuần túy, không dùng định dạng JSON.
                     """
                     for chunk in stream_gemini_response(prompt):
                         full_ai_response += chunk
@@ -314,7 +390,8 @@ def generate_unit():
         # Báo lỗi rõ ràng nếu user tạo trùng chủ đề đã mở khóa
         if added == 0:
             return jsonify({
-                               "error": f"Đừng ăn tham! Ngươi đã mở khóa sạch bóng từ vựng của chủ đề '{topic}' rồi, hãy đổi chủ đề khác!"}), 400
+                "error": f"Bạn đã mở khóa toàn bộ từ vựng của chủ đề '{topic}' rồi! Hãy lựa chọn thêm các chủ đề thú vị khác nhé."
+            }), 400
 
         return jsonify({"message": f"[CACHE HIT] Lò đúc đã nạp nhanh {added} từ vựng Unit '{topic}' từ Bộ nhớ Đệm!",
                         "added": added,
@@ -529,7 +606,7 @@ def generate_random_unit():
 @ai_bp.route('/story/init', methods=['POST'])
 def init_story():
     data = request.get_json(silent=True) or {}
-    user_id = session.get('user_id')
+    user_id = session.get('user_id') or data.get('user_id') or 1
     topic_id = data.get('topic_id', 1)
     story_mode = data.get('mode', 'write')
 
@@ -542,6 +619,23 @@ def init_story():
 
     topic = StoryTopic.query.get(topic_id) if topic_id else None
     theme_context = topic.system_prompt if topic else "Bối cảnh sinh tồn hậu tận thế."
+
+    # Trích xuất 3 từ vựng mục tiêu bạo kích (Brain 3 Smart SRS & UserVocab)
+    target_vocabs = db.session.query(Vocabulary).join(
+        UserVocabulary, Vocabulary.id == UserVocabulary.vocab_id
+    ).filter(
+        UserVocabulary.user_id == user_id
+    ).order_by(UserVocabulary.next_review_time.asc()).limit(3).all()
+
+    if not target_vocabs:
+        target_vocabs = Vocabulary.query.order_by(db.func.random()).limit(3).all()
+
+    target_words_list = [{
+        "id": v.id,
+        "word": v.word,
+        "meaning": v.meaning,
+        "cefr_level": v.cefr_level
+    } for v in target_vocabs]
 
     if story_mode == 'choose':
         prompt = f"""
@@ -559,24 +653,43 @@ def init_story():
     try:
         clean_json = call_gemini_with_retry(prompt)
 
-        # Sửa lại Regex thành find an toàn hơn
         start_idx = clean_json.find('{')
         end_idx = clean_json.rfind('}')
         if start_idx != -1 and end_idx != -1:
             clean_json = clean_json[start_idx:end_idx + 1]
 
         result = json.loads(clean_json)
+        result["target_words"] = target_words_list
         new_run.history = f"[GM]: {result.get('scene_en', '')}"
         db.session.commit()
         return jsonify(result), 200
-    except Exception as e:
-        return jsonify({
-            "scene_en": "System error. The world is collapsing.",
-            "scene_vn": "Lỗi hệ thống.",
-            "choices": ["Fix", "Reboot", "Wait", "Quit"],
+    except Exception:
+        # LOCAL DUNGEON MASTER INITIALIZATION FALLBACK (100% HOẠT ĐỘNG OFFLINE)
+        topic_title = topic.title if topic else "Vùng đất hoang tàn"
+        fallback_scene_en = f"You awaken in the eerie atmosphere of {topic_title}. Smoke and digital residue hang thick in the air. Survival demands your immediate action."
+        fallback_scene_vn = f"Bạn thức tỉnh giữa không khí ma mị của {topic_title}. Khói bụi và tàn dư số lơ lửng trong không trung. Bản năng sinh tồn đòi hỏi bạn phải hành động ngay lập tức."
+
+        fallback_res = {
+            "scene_en": fallback_scene_en,
+            "scene_vn": fallback_scene_vn,
+            "target_words": target_words_list,
             "is_end": False,
             "turn": 1
-        }), 200
+        }
+        if story_mode == 'choose':
+            fallback_res["choices"] = [
+                "Inspect surrounding equipment",
+                "Climb high vantage point",
+                "Scan for electromagnetic signals",
+                "Proceed stealthily through shadows"
+            ]
+        else:
+            fallback_res["hint_en"] = "I need to ___ the surrounding terrain."
+            fallback_res["hint_vn"] = "Tôi cần khảo sát địa hình xung quanh."
+
+        new_run.history = f"[GM]: {fallback_scene_en}"
+        db.session.commit()
+        return jsonify(fallback_res), 200
 
 
 @ai_bp.route('/hint', methods=['POST'])
@@ -585,3 +698,161 @@ def get_hint():
         return jsonify({"hint": call_gemini_with_retry("Cho 1 câu tiếng Anh gợi ý điền vào chỗ trống.")}), 200
     except:
         return jsonify({"hint": "Tự suy nghĩ đi!"}), 200
+
+
+@ai_bp.route('/agent/diagnose', methods=['GET', 'POST'])
+def agent_diagnose():
+    """
+    ENDPOINT TÁC TỬ TỰ HÀNH MASTER G (100% LOCAL NON-LLM AGENT)
+    Tự động phán đoán năng lực học viên, phát hiện lỗ hổng và xuất toa học tập cá nhân hóa tức thì (< 50ms).
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        req_data = request.get_json(silent=True) or {}
+        target_id = request.args.get('user_id', type=int) or req_data.get('user_id', 1)
+        user_id = target_id
+
+    from app.utils.master_g_agent import MasterGPedagogicalAgent
+    agent = MasterGPedagogicalAgent()
+    prescription = agent.diagnose_and_prescribe(user_id)
+    return jsonify(prescription), 200
+
+
+@ai_bp.route('/agent/ask', methods=['POST'])
+def agent_ask():
+    """
+    KÊNH ĐÀM THOẠI TRỰC TIẾP VỚI MASTER G (100% LOCAL AI AGENT)
+    Xử lý câu hỏi, chẩn đoán ngữ pháp cục bộ qua DistilBERT GEC INT8 hoặc
+    phân loại ý định qua MLP để hướng dẫn chiến lược học tập tức thì (< 40ms).
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        req_data = request.get_json(silent=True) or {}
+        user_id = req_data.get('user_id', 1)
+
+    data = request.get_json(silent=True) or {}
+    query = (data.get('query') or '').strip()
+    if not query:
+        return jsonify({"status": "error", "message": "Nội dung câu hỏi trống!"}), 400
+
+    from app.utils.master_g_agent import MasterGPedagogicalAgent
+    from app.ml_models.semantic_intent_parser import SemanticIntentParser
+
+    agent = MasterGPedagogicalAgent()
+    intent_parser = SemanticIntentParser()
+    intent = intent_parser.parse_intent(query)
+
+    words = query.split()
+    english_word_count = sum(1 for w in words if re.match(r'^[a-zA-Z]+$', w))
+    is_english_query = len(words) >= 2 and (english_word_count / max(1, len(words))) > 0.6
+
+    if is_english_query:
+        gec_res = gec_engine.evaluate(query, user_level="Intermediate")
+        score = gec_res.get('score', 8.0)
+        corrected = gec_res.get('corrected', query)
+        critique = gec_res.get('master_g_critique', gec_res.get('feedback', 'Cú pháp tương đối chuẩn mực.'))
+        reply = (
+            f"📝 **Phân tích Cú pháp (Não 1 DistilBERT GEC INT8):**\n"
+            f"• Điểm chuẩn xác: **{score}/10**\n"
+            f"• Bản chuẩn hóa: *\"{corrected}\"*\n"
+            f"• Nhận xét sư phạm: {critique}"
+        )
+    else:
+        prescription = agent.diagnose_and_prescribe(user_id)
+        current_band = prescription.get('current_cefr_estimate', 'A2')
+        target_band = prescription.get('target_band', 'B2')
+        directive = prescription.get('directive', {})
+        due_count = prescription.get('smart_srs_health', {}).get('due_reviews_count', 0)
+
+        q_lower = query.lower()
+        if any(k in q_lower for k in ["lộ trình", "roadmap", "band", "mục tiêu"]):
+            reply = (
+                f"🎯 **La Bàn Lộ Trình (Master G):**\n"
+                f"Bạn đang ở mốc **{current_band}** và đang tiến tới **{target_band}**.\n"
+                f"👉 **Khuyến nghị ưu tiên:** {directive.get('directive_advice', 'Vượt qua bài khảo thí mốc tiếp theo!')}\n"
+                f"🔗 [Mở Lộ Trình Học Tập](/roadmap)"
+            )
+        elif any(k in q_lower for k in ["từ vựng", "quên", "srs", "vườn", "nông trại", "farm"]):
+            reply = (
+                f"🌾 **Vườn Tri Thức & Não 3 Smart SRS:**\n"
+                f"Hôm nay bạn có **{due_count} từ vựng** đang nằm ở điểm rơi của đường cong quên Ebbinghaus.\n"
+                f"👉 Hãy vào Nông Trại để thực hiện tưới nước bằng Não 3 SRS, giúp cây lớn nhanh 50% và nhân đôi thưởng!\n"
+                f"🔗 [Đến Nông Trại Tri Thức](/farm)"
+            )
+        elif any(k in q_lower for k in ["game", "rpg", "sinh tồn", "story", "đấu trường"]):
+            reply = (
+                f"⚔️ **Tác Tử Dungeon Master (Text-RPG):**\n"
+                f"Khi tham gia sinh tồn RPG, hãy đặt câu chứa các từ vựng mục tiêu để kích hoạt **BẠO KÍCH NGỮ NGHĨA** gây sát thương lớn và nhận thêm +25 Xu, +15 RP!\n"
+                f"🔗 [Vào Text-RPG Sinh Tồn](/story)"
+            )
+        else:
+            reply = (
+                f"🤖 **Master G Sư Phạm (Ý định: {intent}):**\n"
+                f"• {directive.get('directive_title', 'HÀNH ĐỘNG ĐỀ XUẤT')}\n"
+                f"• {directive.get('directive_advice', 'Tập trung củng cố kiến thức mỗi ngày để duy trì chuỗi học tập!')}"
+            )
+
+    return jsonify({
+        "status": "success",
+        "intent": intent,
+        "reply": reply
+    }), 200
+
+
+# =========================================================================
+# ENDPOINTS TÁC TỬ TỰ HÀNH: TÍCH LŨY BAND & PHIÊN HỌC HÀNG NGÀY (CURATED SESSION)
+# =========================================================================
+@ai_bp.route('/agent/band_progress', methods=['GET', 'POST'])
+def agent_band_progress():
+    """
+    ENDPOINT KIỂM SOÁT TÍCH LŨY BAND THỰC TẾ
+    Trả về số từ vựng mục tiêu đã thuộc (DA_THUOC), tỷ lệ phần trăm và phán quyết mở/khóa phòng thi.
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        req_data = request.get_json(silent=True) or {}
+        user_id = request.args.get('user_id', type=int) or req_data.get('user_id', 1)
+
+    from app.utils.master_g_agent import MasterGPedagogicalAgent
+    agent = MasterGPedagogicalAgent()
+    progress = agent.compute_band_accumulation_progress(user_id)
+    return jsonify(progress), 200
+
+
+@ai_bp.route('/agent/session/start', methods=['GET', 'POST'])
+def agent_session_start():
+    """
+    KHỞI TẠO PHIÊN HỌC ĐỊNH HƯỚNG 15 PHÚT (CURATED DAILY SESSION)
+    Tác tử tự động tuyển chọn 4 bước học khép kín (Khởi động SRS -> Nạp từ vựng Band -> Thực chiến GEC -> Khép vòng).
+    Có kèm Chain-of-Thought (Tư duy tác tử) minh bạch.
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        req_data = request.get_json(silent=True) or {}
+        user_id = request.args.get('user_id', type=int) or req_data.get('user_id', 1)
+
+    from app.utils.master_g_agent import MasterGPedagogicalAgent
+    agent = MasterGPedagogicalAgent()
+    session_data = agent.generate_curated_session(user_id)
+    return jsonify(session_data), 200
+
+
+@ai_bp.route('/agent/session/submit', methods=['POST'])
+def agent_session_submit():
+    """
+    NỘP BÀI TỪNG BƯỚC TRONG PHIÊN HỌC HÀNG NGÀY
+    Đánh giá tức thì qua Não 1 (GEC DistilBERT), cập nhật Smart SRS và cấp thưởng Xu/RP.
+    """
+    user_id = session.get('user_id')
+    data = request.get_json(silent=True) or {}
+    if not user_id:
+        user_id = data.get('user_id', 1)
+
+    step_number = data.get('step', 1)
+    payload = data.get('payload', {})
+
+    from app.utils.master_g_agent import MasterGPedagogicalAgent
+    agent = MasterGPedagogicalAgent()
+    eval_result = agent.evaluate_session_step(user_id, step_number, payload)
+    return jsonify(eval_result), 200
+

@@ -330,6 +330,26 @@ def get_current_roadmap():
     total_count = len(results)
     progress_pct = round((total_completed / total_count * 100), 1) if total_count > 0 else 0
 
+    # Xác định chặng tiếp theo cần thực hiện (La bàn chỉ đường Master G)
+    next_milestone = None
+    for r in results:
+        if r["is_unlocked"] and not r["is_completed"]:
+            next_milestone = r
+            break
+
+    if next_milestone:
+        master_g_directive = (
+            f"Nhiệm vụ trọng tâm của bạn: Chinh phục '{next_milestone['title']}' (Band {next_milestone['band_level']}). "
+            f"Vượt qua 4 phần thi với điểm chuẩn >= {next_milestone['pass_score']} để nhận +{next_milestone['reward_coins']} Xu và thăng tiến trên Lộ trình!"
+        )
+    elif total_completed == total_count and total_count > 0:
+        master_g_directive = (
+            f"🏆 Xuất sắc! Bạn đã chinh phục toàn bộ {total_count} chặng của mục tiêu Band {target_band}. "
+            f"Hãy nâng Target Band lên nấc cao hơn hoặc tham gia Đấu Trường Arena để kiểm chứng bản lĩnh!"
+        )
+    else:
+        master_g_directive = "Hãy bắt đầu chặng đầu tiên để kích hoạt hành trình học tập thích ứng của bạn!"
+
     return jsonify({
         "current_band": current_band,
         "target_band": target_band,
@@ -341,8 +361,11 @@ def get_current_roadmap():
         "total_milestones": total_count,
         "completed_milestones": total_completed,
         "progress_pct": progress_pct,
+        "next_milestone": next_milestone,
+        "master_g_directive": master_g_directive,
         "milestones": results
     }), 200
+
 
 
 @roadmap_bp.route('/set_target', methods=['POST'])
@@ -672,6 +695,10 @@ def submit_milestone_exam(milestone_id):
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Người dùng không tồn tại!"}), 404
+
     data = request.get_json() or {}
     submitted_token = data.get('exam_token')
     is_abandoned = data.get('is_abandoned', False)
@@ -835,6 +862,35 @@ def submit_milestone_exam(milestone_id):
             "name": SECTION_NAMES.get(weakest_section_key, weakest_section_key),
             "score": section_scores[weakest_section_key]
         }
+
+    # Tổng hợp nhận xét sư phạm toàn diện mang linh hồn Master G
+    if result["passed"]:
+        if total_exam_score >= 9.0:
+            master_g_critique = (
+                f"Tuyệt tác học thuật! {user.username} đã xuất sắc vượt qua chặng '{milestone.title}' với {total_exam_score:.1f}/10 điểm. "
+                f"Bạn nắm rất vững cả từ vựng lẫn cú pháp cấu trúc câu. Hãy tự tin tiến bước sang chặng tiếp theo!"
+            )
+        else:
+            master_g_critique = (
+                f"Chúc mừng {user.username}! Bạn đã hoàn thành tốt chặng '{milestone.title}' với {total_exam_score:.1f}/10 điểm. "
+                f"Dù đã qua ải, Master G vẫn thấy một vài điểm cần trau chuốt. Hãy đọc kỹ phần đối soát bên dưới để gia cố nền móng trước chặng mới."
+            )
+    else:
+        weakest_info = result.get("weakest_section", {})
+        weak_name = weakest_info.get("name", "Kỹ năng chuyên sâu")
+        weak_score = weakest_info.get("score", 0.0)
+        if result.get("disqualified"):
+            master_g_critique = (
+                f"Bình tĩnh nào {user.username}! Bạn bị đánh trượt do dính Điểm Liệt ở phần '{weak_name}' ({weak_score:.1f}/10đ). "
+                f"Học thuật chuẩn quốc tế không chấp nhận lỗ hổng nền tảng. Hãy làm ngay bài tập giải cứu ở Trạm Vi Học bên dưới để lấy lại RP!"
+            )
+        else:
+            master_g_critique = (
+                f"Đừng nản chí {user.username}! Tổng điểm của bạn ({total_exam_score:.1f}/10đ) suýt soát đạt ngưỡng 7.5 qua ải. "
+                f"Điểm nghẽn lớn nhất của bạn nằm ở '{weak_name}'. Hãy xem ngay Trạm Vi Học Bù 30s bên dưới để mở khóa thi lại sau 5 giây!"
+            )
+
+    result["master_g_critique"] = master_g_critique
 
     # Xóa token phiên thi vừa nộp để chống lạm dụng nộp nhiều lần
     active_exams.pop(str(milestone_id), None)

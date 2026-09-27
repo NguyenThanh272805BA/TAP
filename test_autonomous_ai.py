@@ -27,7 +27,7 @@ class TestAutonomousAISystem(unittest.TestCase):
         cls.ctx.pop()
 
     def test_01_symbolic_gec_engine(self):
-        """Kiểm thử Bộ não 1: Symbolic Grammar Engine phát hiện lỗi và tự sửa không cần model CoLA"""
+        """Kiểm thử Phân hệ 1: Symbolic Grammar Engine phát hiện lỗi và tự sửa không cần model CoLA"""
         gec = LocalGECEngine()
         
         # Test câu sai ngữ pháp
@@ -49,7 +49,7 @@ class TestAutonomousAISystem(unittest.TestCase):
         print("\n[OK] Test 1: Symbolic Grammar Engine & Local Critique Synthesizer hoạt động chính xác.")
 
     def test_02_zero_shot_intent_parser(self):
-        """Kiểm thử Bộ não 2: Zero-shot Semantic Intent Parser không phụ thuộc file CSV"""
+        """Kiểm thử Phân hệ 2: Zero-shot Semantic Intent Parser không phụ thuộc file CSV"""
         parser = get_semantic_intent_parser()
         
         self.assertEqual(parser.parse_intent("Giải thích cấu trúc thì hiện tại hoàn thành"), "ask_grammar")
@@ -60,7 +60,7 @@ class TestAutonomousAISystem(unittest.TestCase):
         print("[OK] Test 2: Zero-shot Semantic Intent Parser phân loại chính xác 100% không cần train data.")
 
     def test_03_autonomous_corpus_miner(self):
-        """Kiểm thử Bộ não 3: Autonomous Miner trích xuất Collocation qua PMI và lọc Zipf từ văn bản thô"""
+        """Kiểm thử Phân hệ 3: Autonomous Miner trích xuất Collocation qua PMI và lọc Zipf từ văn bản thô"""
         miner = AutonomousCorpusMiner()
         sample_text = """
         Artificial intelligence and machine learning technologies provide autonomous solutions.
@@ -77,7 +77,7 @@ class TestAutonomousAISystem(unittest.TestCase):
         print(f"[OK] Test 3: Autonomous Miner đã trích xuất thành công {len(results)} mục tri thức từ ngữ liệu thô.")
 
     def test_04_fsrs_smart_srs(self):
-        """Kiểm thử Bộ não 4: Thuật toán FSRS tính toán chu kỳ theo độ khó và tốc độ phản xạ"""
+        """Kiểm thử Phân hệ 4: Thuật toán FSRS tính toán chu kỳ theo độ khó và tốc độ phản xạ"""
         srs = SmartSRS()
         
         # Làm bài đúng và nhanh
@@ -92,7 +92,7 @@ class TestAutonomousAISystem(unittest.TestCase):
         print(f"[OK] Test 4: FSRS phản hồi thích ứng chuẩn: Đúng nhanh ({int_fast:.1f}h) > Đúng chậm ({int_slow:.1f}h) > Sai ({int_fail:.1f}h).")
 
     def test_05_zpd_concept_recommender(self):
-        """Kiểm thử Bộ não 5: ZPD Concept Recommender xử lý Cold-start và tiệm tiến độ khó"""
+        """Kiểm thử Phân hệ 5: ZPD Concept Recommender xử lý Cold-start và tiệm tiến độ khó"""
         recommender = VocabRecommender()
         # Test với User ID 999999 (chưa có lịch sử học tập)
         recs = recommender.recommend_next_words(user_id=999999, top_n=3)

@@ -176,7 +176,7 @@ class LocalGECEngine:
         - Tính điểm khoa học theo mật độ lỗi và tính toàn vẹn cú pháp
         """
         if not text or len(text.strip()) == 0:
-            msg = "[ĐÁNH GIÁ TỔNG QUAN]\nBạn chưa nhập nội dung nào. Hãy nhập một câu tiếng Anh hoàn chỉnh có chứa từ vựng nhiệm vụ."
+            msg = "Bạn chưa nhập nội dung nào. Hãy nhập một câu tiếng Anh hoàn chỉnh (có chủ ngữ và động từ) để Master G đồng hành và chấm điểm cho bạn nhé!"
             return {
                 "score": 0.0,
                 "feedback": msg,
@@ -291,26 +291,7 @@ class LocalGECEngine:
                 if not corrected.endswith(('.', '!', '?')):
                     corrected += '.'
 
-            # 4. Tạo phản hồi nhận xét sư phạm chi tiết (Pedagogical Feedback)
-            if len(error_details) == 0:
-                feedback = "[ĐÁNH GIÁ TỔNG QUAN]\nCâu văn hoàn chỉnh, cấu trúc ngữ pháp chuẩn xác 100%."
-            else:
-                feedback_lines = [f"[Tìm thấy {len(error_details)} điểm cần lưu ý (Điểm: {score}/10)]:"]
-                for i, err in enumerate(error_details[:4], 1):
-                    rep_text = f" -> Gợi ý sửa: '{', '.join(err['replacements'])}'" if err['replacements'] else ""
-                    feedback_lines.append(f"{i}. {err['message']}{rep_text}")
-
-                if corrected != clean_text:
-                    feedback_lines.append(f"\n=> Câu chuẩn đề xuất: \"{corrected}\"")
-
-                feedback = "\n".join(feedback_lines)
-
-            # 5. Kiểm tra Cổng Phân Luồng Thông Minh
-            needs_escalation, uncertainty_score, reason = self._check_uncertainty(
-                clean_text, word_count, len(error_details), total_penalty
-            )
-
-            # 6. Sinh nhận xét Master G Local (Đầy đủ tổng quan, chỉ rõ lỗi, có góp ý và dọn sạch icon)
+            # 4. Sinh nhận xét Master G Local & Phản hồi sư phạm tự nhiên
             mock_res = {
                 "score": score,
                 "corrected_text": corrected,
@@ -319,6 +300,24 @@ class LocalGECEngine:
             }
             synthesizer = get_critique_synthesizer()
             master_g_critique = synthesizer.synthesize(clean_text, mock_res, user_level=user_level)
+
+            if len(error_details) == 0:
+                feedback = "Câu văn của bạn hoàn chỉnh và cấu trúc ngữ pháp chuẩn xác 100%."
+            else:
+                feedback_lines = [f"Phát hiện {len(error_details)} điểm cần lưu ý (Đánh giá: {score}/10 Điểm):"]
+                for i, err in enumerate(error_details[:4], 1):
+                    pedagogical_msg = synthesizer.explain_error_pedagogically(err, clean_text)
+                    feedback_lines.append(f"• {pedagogical_msg}")
+
+                if corrected != clean_text:
+                    feedback_lines.append(f"\n💡 Câu chuẩn đề xuất: \"{corrected}\"")
+
+                feedback = "\n".join(feedback_lines)
+
+            # 5. Kiểm tra Cổng Phân Luồng Thông Minh
+            needs_escalation, uncertainty_score, reason = self._check_uncertainty(
+                clean_text, word_count, len(error_details), total_penalty
+            )
 
             return {
                 "score": score,
@@ -376,8 +375,7 @@ class LocalGECEngine:
                 "escalation_reason": f"Fallback kích hoạt: {reason}"
             }
         except Exception as e:
-            print(f"[GEC ENGINE] Lỗi nghiêm trọng khi Fallback: {e}")
-            msg = "[SYSTEM WARNING] Lò phản ứng AI cạn kiệt. Master G đi vắng. Tạm cho 5 điểm."
+            msg = "Hệ thống tạm thời gặp gián đoạn kết nối. Master G đã ghi nhận câu viết của bạn. Hãy thử kiểm tra lại kết nối mạng hoặc thử lại với câu khác nhé!"
             return {
                 "score": 5.0,
                 "feedback": msg,

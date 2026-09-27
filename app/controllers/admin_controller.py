@@ -506,7 +506,10 @@ def update_shop_item(item_id):
     if 'css_class' in data and data['css_class']:
         item.css_class = str(data['css_class']).strip()
     if 'price_coins' in data and data['price_coins'] is not None:
-        item.price_coins = int(data['price_coins'])
+        try:
+            item.price_coins = max(0, int(data['price_coins']))
+        except (ValueError, TypeError):
+            return jsonify({"error": "Giá bán Xu không hợp lệ!"}), 400
     if 'description' in data:
         item.description = (data['description'] or '').strip()
     if 'icon_preview' in data:

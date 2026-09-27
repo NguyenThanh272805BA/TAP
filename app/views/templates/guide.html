@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}CẨM NANG HƯỚNG DẪN DÀNH CHO NGƯỜI MỚI BẮT ĐẦU{% endblock %}
+
+{% block content %}
+<style>
+    .guide-hero {
+        background: linear-gradient(135deg, rgba(88, 28, 135, 0.4) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border: 2px solid var(--neon-purple);
+        border-radius: 20px;
+        padding: 35px 40px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 45px rgba(168, 85, 247, 0.25);
+    }
+    .guide-hero::after {
+        content: "";
+        position: absolute;
+        top: -60px; right: -60px;
+        width: 320px; height: 320px;
+        background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .guide-nav-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--glass-border);
+        padding: 8px 16px;
+        border-radius: 9999px;
+        font-size: 13px;
+        color: #cbd5e1;
+        text-decoration: none;
+        transition: 0.25s;
+    }
+    .guide-nav-pill:hover, .guide-nav-pill.active {
+        border-color: var(--neon-cyan);
+        color: var(--neon-cyan);
+        background: rgba(6, 182, 212, 0.15);
+        transform: translateY(-2px);
+    }
+    .guide-section-card {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 25px;
+        position: relative;
+        transition: border-color 0.3s;
+    }
+    .guide-section-card:hover {
+        border-color: rgba(168, 85, 247, 0.5);
+    }
+    .step-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--neon-purple);
+        color: #fff;
+        font-weight: 800;
+        font-size: 14px;
+        flex-shrink: 0;
+        box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+    }
+    .feature-card {
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s;
+    }
+    .feature-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--neon-cyan);
+        box-shadow: 0 8px 24px rgba(6, 182, 212, 0.2);
+    }
+    .callout-box {
+        background: rgba(88, 28, 135, 0.2);
+        border-left: 4px solid var(--neon-purple);
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 18px 0;
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: #e2e8f0;
+    }
+</style>
+
+<!-- HERO HEADER -->
+<div class="guide-hero">
+    <div style="max-width: 780px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <span style="font-size: 26px;">🧙‍♂️</span>
+            <span class="pixel-title" style="color: var(--neon-cyan); font-size: 13px; letter-spacing: 1.5px;">
+                MASTER G ONBOARDING GUIDE // CẨM NANG NGƯỜI MỚI BẮT ĐẦU
+            </span>
+        </div>
+        <h1 style="font-size: 28px; font-weight: 800; color: #fff; margin: 0 0 12px 0; line-height: 1.3;">
+            Chào mừng bạn đến với Hệ Sinh Thái Học Ngoại Ngữ Tác Tử Thông Minh
+        </h1>
+        <p style="font-size: 15px; color: #cbd5e1; line-height: 1.6; margin-bottom: 24px;">
+            Hệ thống không phải là một ứng dụng luyện thi thông thường với các câu hỏi ngẫu nhiên bừa bãi. 
+            Đây là một <strong>Mạng lưới Tác tử AI Sư phạm (Multi-Pipeline Pedagogical Agent)</strong> kèm cặp bạn theo 
+            chu trình tích lũy thực chất, khoa học và cá nhân hóa tuyệt đối.
+        </p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="/dashboard" class="pixel-btn" style="background: var(--pixel-green); color: #000; font-weight: 800; padding: 12px 24px; text-decoration: none;">
+                🚀 VÀO BẢNG ĐIỀU KHIỂN & BẮT ĐẦU
+            </a>
+            <a href="#quy-trinh-hoc" class="pixel-btn" style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: #fff; text-decoration: none;">
+                📖 XEM QUY TRÌNH HỌC 4 BƯỚC
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK NAV BAR -->
+<div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 25px;">
+    <a href="#triet-ly-ai" class="guide-nav-pill">⚙️ 1. Mạng Lưới 6 Phân Hệ Học Máy</a>
+    <a href="#quy-trinh-hoc" class="guide-nav-pill">⏱️ 2. Phiên Học 4 Bước Chuẩn</a>
+    <a href="#tich-luy-band" class="guide-nav-pill">📊 3. Tích Lũy Band Thực Tế</a>
+    <a href="#ban-do-chuc-nang" class="guide-nav-pill">🗺️ 4. Bản Đồ Hệ Sinh Thái</a>
+    <a href="#meo-hoc-tap" class="guide-nav-pill">💡 5. Bí Kíp Bứt Phá Rank</a>
+</div>
+
+<!-- SECTION 1: MẠNG LƯỚI 6 PHÂN HỆ HỌC MÁY -->
+<div id="triet-ly-ai" class="guide-section-card">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+        <span style="font-size: 26px;">⚙️</span>
+        <div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">1. Mạng Lưới 6 Phân Hệ Học Máy Cục Bộ (Zero Cloud Lag)</h2>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 3px;">Hoạt động 100% Offline, bảo mật dữ liệu tuyệt đối và phản hồi tức thì dưới 40ms</div>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; color: #cbd5e1; line-height: 1.7;">
+        Thay vì chỉ gọi một chatbot đám mây chung chung dễ sinh ảo giác và phản hồi chậm, hệ thống phân chia chức năng học máy thành 
+        <strong>6 phân hệ chuyên trách độc lập</strong> dưới sự chỉ huy của Tác tử Sư phạm <strong>Master G</strong>:
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
+        <div class="feature-card">
+            <div style="font-size: 18px; margin-bottom: 6px;">🔍 <strong>Phân Hệ 1: DistilBERT GEC INT8</strong></div>
+            <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">
+                Chuyên gia thẩm định ngữ pháp và cú pháp. Soi từng lỗi nhỏ (chia thì, giới từ, mạo từ) và đưa ra bản sửa lỗi tức thì.
+            </div>
+        </div>
+        <div class="feature-card">
+            <div style="font-size: 18px; margin-bottom: 6px;">🎯 <strong>Phân Hệ 2: Intent NLU Engine</strong></div>
+            <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">
+                Đoán ý định học viên qua mô hình mạng nơ-ron cục bộ, giúp chuyển hóa câu hỏi tự nhiên thành hành động sư phạm chính xác.
+            </div>
+        </div>
+        <div class="feature-card">
+            <div style="font-size: 18px; margin-bottom: 6px;">📈 <strong>Phân Hệ 3: Smart SRS Ebbinghaus</strong></div>
+            <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">
+                Mô hình hồi quy dự báo chính xác thời điểm từ vựng bắt đầu mờ nhạt trong trí nhớ để triệu hồi đúng lúc bạn sắp quên.
+            </div>
+        </div>
+        <div class="feature-card">
+            <div style="font-size: 18px; margin-bottom: 6px;">📚 <strong>Phân Hệ 4: CEFR Zipf Classifier</strong></div>
+            <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">
+                Phân loại độ khó từ vựng chuẩn khung tham chiếu Châu Âu (A1 $\rightarrow$ C2) dựa trên phân bố tần suất tự nhiên 5.000 từ Oxford.
+            </div>
+        </div>
+        <div class="feature-card">
+            <div style="font-size: 18px; margin-bottom: 6px;">🔗 <strong>Phân Hệ 5: Content-Based Recommender</strong></div>
+            <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">
+                Gợi ý từ vựng liên tưởng và mạng lưới ngữ nghĩa tương đồng theo chủ đề, giúp học 1 biết 3.
+            </div>
+        </div>
+        <div class="feature-card">
+            <div style="font-size: 18px; margin-bottom: 6px;">⛏️ <strong>Phân Hệ 6: Autonomous Corpus Miner</strong></div>
+            <div style="font-size: 12.5px; color: #94a3b8; line-height: 1.5;">
+                Thuật toán khai phá cụm từ cố định (PMI Collocation Mining), giúp bạn dùng từ tự nhiên như người bản ngữ thay vì ghép chữ thô.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 2: QUY TRÌNH HỌC 4 BƯỚC -->
+<div id="quy-trinh-hoc" class="guide-section-card">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+        <span style="font-size: 26px;">⏱️</span>
+        <div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">2. Quy Trình Học 4 Bước Mỗi Ngày (Phiên Học 15 Phút Có Định Hướng)</h2>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 3px;">Xóa bỏ hoàn toàn sự mông lung và ngẫu nhiên mù quáng</div>
+        </div>
+    </div>
+
+    <div class="callout-box">
+        <strong>⚡ Vì sao không nên học ngẫu nhiên bừa bãi?</strong><br>
+        Nếu mỗi ngày bạn bốc bừa một chủ đề trên mạng hoặc làm vài câu trắc nghiệm rời rạc, não bộ sẽ không tạo được liên kết bền vững. 
+        Hệ thống áp dụng phương pháp <strong>"Ngẫu nhiên có kiểm soát (Constrained Randomness)"</strong>: 70% nội dung được cố định chặt chẽ theo 
+        tiến độ lộ trình Band và vùng nhớ suy giảm, chỉ 30% tình huống thực hành được thay đổi linh hoạt để chống nhàm chán.
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 25px;">
+        <!-- Bước 1 -->
+        <div style="display: flex; gap: 16px; background: rgba(0,0,0,0.3); padding: 18px 22px; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div class="step-badge">1</div>
+            <div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--neon-cyan); margin-bottom: 4px;">
+                    Khởi Động & Giải Phóng Vùng Nhớ (3 Phút - Não 3 Smart SRS)
+                </div>
+                <div style="font-size: 13.5px; color: #cbd5e1; line-height: 1.6;">
+                    Master G quét hồ sơ của bạn và lọc ra 4 từ vựng đang ở điểm rơi lãng quên Ebbinghaus. 
+                    Bạn chỉ cần giải đố nhanh (xếp từ scramble hoặc trắc nghiệm nghĩa). Việc này giúp "đánh thức" nơ-ron trước khi nạp bài mới.
+                </div>
+            </div>
+        </div>
+
+        <!-- Bước 2 -->
+        <div style="display: flex; gap: 16px; background: rgba(0,0,0,0.3); padding: 18px 22px; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div class="step-badge" style="background: var(--neon-cyan); color: #000;">2</div>
+            <div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--neon-cyan); margin-bottom: 4px;">
+                    Nạp Kiến Thức Mục Tiêu Chuẩn Band (5 Phút - Lò Đúc Có Định Hướng)
+                </div>
+                <div style="font-size: 13.5px; color: #cbd5e1; line-height: 1.6;">
+                    Không sinh chủ đề ngẫu nhiên! Nếu bạn đang ở A1 cần lên A2, Agent lấy chính xác 4 từ vựng A2 trong Oxford 5000 mà bạn chưa có, 
+                    kèm theo 1 cấu trúc ngữ pháp trọng tâm và cụm từ cố định (Collocation) tương ứng.
+                </div>
+            </div>
+        </div>
+
+        <!-- Bước 3 -->
+        <div style="display: flex; gap: 16px; background: rgba(0,0,0,0.3); padding: 18px 22px; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div class="step-badge" style="background: var(--neon-pink);">3</div>
+            <div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--neon-pink); margin-bottom: 4px;">
+                    Thử Thách Thực Chiến Đặt Câu (5 Phút - Giám Sát Cú Pháp GEC)
+                </div>
+                <div style="font-size: 13.5px; color: #cbd5e1; line-height: 1.6;">
+                    Agent đặt bạn vào một tình huống thực tế (phỏng vấn, công sở, du lịch). Bạn viết 1 câu tiếng Anh có sử dụng ít nhất 1 từ mới ở Bước 2. 
+                    Não 1 DistilBERT sẽ chấm điểm cú pháp ngay lập tức và kích hoạt <strong>"Bạo Kích Ngữ Nghĩa"</strong> (+Xu, +RP) nếu bạn dùng từ chuẩn mực!
+                </div>
+            </div>
+        </div>
+
+        <!-- Bước 4 -->
+        <div style="display: flex; gap: 16px; background: rgba(0,0,0,0.3); padding: 18px 22px; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div class="step-badge" style="background: var(--pixel-green); color: #000;">4</div>
+            <div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--pixel-green); margin-bottom: 4px;">
+                    Đánh Giá Năng Lực & Khép Vòng (2 Phút - Cập Nhật Tích Lũy)
+                </div>
+                <div style="font-size: 13.5px; color: #cbd5e1; line-height: 1.6;">
+                    Agent tổng kết điểm phiên học, cộng Xu, điểm Rank uy tín (RP) và cập nhật thanh tích lũy thăng hạng Band. 
+                    Bạn hoàn thành nhiệm vụ ngày mà không tốn quá nhiều thời gian!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 3: TÍCH LŨY BAND THỰC TẾ -->
+<div id="tich-luy-band" class="guide-section-card">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+        <span style="font-size: 26px;">📊</span>
+        <div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">3. Cơ Chế Tích Lũy Band Thực Tế (Band Accumulation Model)</h2>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 3px;">Nói không với thăng hạng ảo tưởng</div>
+        </div>
+    </div>
+
+    <p style="font-size: 14px; color: #cbd5e1; line-height: 1.7;">
+        Trong thực tế, để nhảy 1 bậc CEFR (ví dụ từ A1 lên A2 hoặc từ A2 lên B1), bạn cần tích lũy hàng trăm từ vựng chủ động và làm chủ 
+        nhiều cấu trúc ngữ pháp. Hệ thống thiết lập <strong>ngưỡng mở khóa bài thi thăng hạng</strong> rõ ràng:
+    </p>
+
+    <div style="overflow-x: auto; margin-top: 15px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--neon-cyan); color: var(--neon-cyan);">
+                    <th style="padding: 10px 14px;">Chặng Chuyển Đổi</th>
+                    <th style="padding: 10px 14px;">Từ Vựng Mục Tiêu Cần Thuộc</th>
+                    <th style="padding: 10px 14px;">Chuyên Đề Ngữ Pháp</th>
+                    <th style="padding: 10px 14px;">Kỳ Thi Thẩm Định</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="border-bottom: 1px solid var(--glass-border);">
+                    <td style="padding: 12px 14px; font-weight: bold; color: #fff;">A1 ➔ A2 (Sơ Cấp)</td>
+                    <td style="padding: 12px 14px; color: var(--neon-amber);">120 Từ vựng A2 đạt 'Đã Thuộc'</td>
+                    <td style="padding: 12px 14px;">4 Chuyên đề cốt lõi</td>
+                    <td style="padding: 12px 14px; color: var(--pixel-green);">Đạt ≥ 70% Đề Khảo thí A2</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--glass-border);">
+                    <td style="padding: 12px 14px; font-weight: bold; color: #fff;">A2 ➔ B1 (Trung Cấp Dưới)</td>
+                    <td style="padding: 12px 14px; color: var(--neon-amber);">250 Từ vựng B1 đạt 'Đã Thuộc'</td>
+                    <td style="padding: 12px 14px;">6 Chuyên đề cốt lõi</td>
+                    <td style="padding: 12px 14px; color: var(--pixel-green);">Đạt ≥ 75% Đề Khảo thí B1</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--glass-border);">
+                    <td style="padding: 12px 14px; font-weight: bold; color: #fff;">B1 ➔ B2 (Trung Cấp Trên)</td>
+                    <td style="padding: 12px 14px; color: var(--neon-amber);">400 Từ vựng B2 đạt 'Đã Thuộc'</td>
+                    <td style="padding: 12px 14px;">8 Chuyên đề cốt lõi</td>
+                    <td style="padding: 12px 14px; color: var(--pixel-green);">Đạt ≥ 75% Đề Khảo thí B2</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 14px; font-weight: bold; color: #fff;">B2 ➔ C1 (Cao Cấp)</td>
+                    <td style="padding: 12px 14px; color: var(--neon-amber);">600 Từ vựng C1 đạt 'Đã Thuộc'</td>
+                    <td style="padding: 12px 14px;">10 Chuyên đề nâng cao</td>
+                    <td style="padding: 12px 14px; color: var(--pixel-green);">Đạt ≥ 80% Đề Khảo thí C1</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout-box" style="border-left-color: var(--neon-amber); background: rgba(245, 158, 11, 0.1);">
+        <strong>🧙‍♂️ Vai trò Trọng tài của Master G:</strong><br>
+        Nếu bạn chưa tích lũy đủ số lượng từ vựng cần thiết, Master G sẽ tạm thời <strong>khóa phòng thi thăng hạng</strong> 
+        và cảnh báo tỷ lệ trượt. Điều này đảm bảo khi bạn bước vào phòng thi là bạn đã thực sự có đủ hành trang để chiến thắng.
+    </div>
+</div>
+
+<!-- SECTION 4: BẢN ĐỒ HỆ SINH THÁI -->
+<div id="ban-do-chuc-nang" class="guide-section-card">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+        <span style="font-size: 26px;">🗺️</span>
+        <div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">4. Bản Đồ Các Khu Vực Chức Năng (The Ecosystem Sandbox)</h2>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 3px;">Sau khi hoàn thành phiên học 15 phút, bạn có thể tự do khám phá các khu vực này</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+        <div class="feature-card">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="font-size: 22px;">🌾</span>
+                <a href="/farm" style="font-weight: 700; color: var(--pixel-green); text-decoration: none; font-size: 15px;">Nông Trại Tri Thức (/farm)</a>
+            </div>
+            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+                Mỗi từ vựng bạn học là một mầm cây. Thuật toán Smart SRS sẽ báo hiệu khi cây héo (sắp quên). 
+                Tưới nước đúng lúc bằng cách trả lời câu hỏi sẽ giúp cây thu hoạch được Xu và quả ngọt tri thức.
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="font-size: 22px;">⚔️</span>
+                <a href="/story" style="font-weight: 700; color: var(--neon-pink); text-decoration: none; font-size: 15px;">Text-RPG Sinh Tồn (/story)</a>
+            </div>
+            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+                Game nhập vai sinh tồn hậu tận thế cùng AI Dungeon Master. Ra quyết định hành động bằng câu tiếng Anh. 
+                Sử dụng từ vựng mục tiêu để kích hoạt đòn đánh bạo kích tiêu diệt quái vật!
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="font-size: 22px;">🎯</span>
+                <a href="/roadmap" style="font-weight: 700; color: var(--neon-cyan); text-decoration: none; font-size: 15px;">Lộ Trình Target Band (/roadmap)</a>
+            </div>
+            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+                Cây phả hệ kỹ năng hiển thị trực quan các mốc Milestone từ A1 đến C2. 
+                Giúp bạn biết chính xác mình đang đứng ở đâu và cần làm gì tiếp theo.
+            </div>
+        </div>
+
+        <div class="feature-card">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="font-size: 22px;">📝</span>
+                <a href="/test" style="font-weight: 700; color: var(--neon-amber); text-decoration: none; font-size: 15px;">Trung Tâm Khảo Thí (/test)</a>
+            </div>
+            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+                Nơi diễn ra các bài Placement Test (Đo trình độ đầu vào), Khảo thí theo Band và bài thi 50 câu toàn diện được chấm điểm bởi LocalExamEngine.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 5: MẸO & CHIẾN LƯỢC -->
+<div id="meo-hoc-tap" class="guide-section-card">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+        <span style="font-size: 26px;">💡</span>
+        <div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">5. Bí Kíp Dành Cho Tân Binh Để Tối Đa Hóa Hiệu Quả</h2>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 3px;">Kinh nghiệm từ các cao thủ trên bảng xếp hạng</div>
+        </div>
+    </div>
+
+    <ul style="font-size: 14px; color: #cbd5e1; line-height: 1.8; padding-left: 20px;">
+        <li><strong>Duy trì chuỗi Streak mỗi ngày:</strong> Điểm danh và hoàn thành phiên học đều đặn giúp bạn nhận lượng lớn Xu thưởng chu kỳ 7 ngày.</li>
+        <li><strong>Không bỏ quên Master G:</strong> Nút tròn Master G ở góc dưới bên phải luôn lắng nghe bạn. Bạn có thể gõ câu hỏi bất kỳ hoặc gõ một câu tiếng Anh để kiểm tra ngữ pháp tức thì (<40ms).</li>
+        <li><strong>Tập trung vào chất lượng hơn số lượng:</strong> Thuộc sâu 10 từ vựng và vận dụng được vào câu nói có giá trị gấp 10 lần việc học lướt 100 từ rồi quên sạch sau 2 ngày.</li>
+    </ul>
+
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px dashed var(--glass-border);">
+        <a href="/dashboard" class="pixel-btn pulse-neon" style="background: var(--neon-cyan); color: #000; font-weight: 800; font-size: 14px; padding: 14px 35px; text-decoration: none; display: inline-block;">
+            🎯 TIẾN VÀO TRUNG TÂM TÁC CHIẾN (DASHBOARD) NGAY ➔
+        </a>
+    </div>
+</div>
+
+{% endblock %}

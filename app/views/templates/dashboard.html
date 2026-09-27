@@ -136,6 +136,53 @@
         position: absolute;
         top: 4px; right: 4px;
     }
+
+    /* Agent Command Center Enhancements */
+    .dash-agent-grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 1.1fr) minmax(340px, 1.3fr);
+        gap: 20px;
+    }
+    @media (max-width: 900px) {
+        .dash-agent-grid { grid-template-columns: 1fr; }
+    }
+    .session-step-indicator {
+        display: flex;
+        border-bottom: 1.5px solid var(--glass-border);
+        background: rgba(0,0,0,0.3);
+    }
+    .session-step-tab {
+        flex: 1;
+        padding: 12px 8px;
+        text-align: center;
+        font-size: 11px;
+        font-family: var(--text-mono);
+        color: #64748b;
+        border-bottom: 2.5px solid transparent;
+        transition: 0.25s;
+    }
+    .session-step-tab.active {
+        color: var(--neon-cyan);
+        border-bottom-color: var(--neon-cyan);
+        background: rgba(6, 182, 212, 0.08);
+        font-weight: bold;
+    }
+    .session-step-tab.done {
+        color: var(--pixel-green);
+        border-bottom-color: var(--pixel-green);
+    }
+    .cot-line {
+        font-family: var(--text-mono);
+        font-size: 11px;
+        line-height: 1.6;
+        color: #94a3b8;
+        padding: 4px 8px;
+        border-left: 2px solid var(--neon-purple);
+        background: rgba(88, 28, 135, 0.1);
+        margin-bottom: 4px;
+        border-radius: 0 4px 4px 0;
+        animation: fadeIn 0.3s ease;
+    }
 </style>
 
 <!-- HERO WELCOME BANNER -->
@@ -151,7 +198,7 @@
             Chào mừng trở lại, <span id="dash-player-name" style="color: var(--neon-pink); font-family: var(--text-pixel);">Player</span>!
         </h1>
         <div style="font-size: 14px; color: #94a3b8; max-width: 580px; line-height: 1.6;">
-            Hệ thống Multi-Brain AI đã sẵn sàng tối ưu lộ trình học từ vựng, ngữ cảnh phản xạ và chấm bài thi CEFR hôm nay của bạn.
+            Hệ thống Multi-Pipeline AI đã sẵn sàng tối ưu lộ trình học từ vựng, ngữ cảnh phản xạ và chấm bài thi CEFR hôm nay của bạn.
         </div>
     </div>
 
@@ -171,6 +218,139 @@
                 <div style="font-size: 16px; font-weight: bold; color: var(--pixel-green);" id="dash-coins-count">0 Xu</div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- MASTER G AGENT COMMAND CENTER & BAND ACCUMULATION METER -->
+<!-- ================================================================= -->
+<div id="agent-command-center" style="background: linear-gradient(135deg, rgba(88, 28, 135, 0.35) 0%, rgba(15, 23, 42, 0.95) 100%); border: 2px solid var(--neon-purple); border-radius: 18px; padding: 24px; margin-bottom: 25px; box-shadow: 0 10px 40px rgba(168, 85, 247, 0.25); position: relative; overflow: hidden;">
+    <!-- Top Bar: Agent Identity & Status -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid var(--glass-border); padding-bottom: 14px; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #4c1d95, #311042); border: 2.5px solid var(--neon-purple); display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 0 18px rgba(168, 85, 247, 0.5);">
+                🧙‍♂️
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="pixel-title" style="color: var(--neon-cyan); font-size: 14px; margin: 0; letter-spacing: 1px;">MASTER G // TÁC TỬ ĐIỀU PHỐI SƯ PHẠM</span>
+                    <span style="display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--pixel-green); box-shadow: 0 0 8px var(--pixel-green);"></span>
+                </div>
+                <div style="font-size: 11.5px; color: #94a3b8; font-family: var(--text-mono); margin-top: 2px;">
+                    Mạng Lưới 6 Phân Hệ Học Máy Cục Bộ (Zero Cloud Lag &amp; Constrained Randomness)
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <a href="/guide" class="pixel-btn" style="background: rgba(103, 232, 249, 0.15); border: 1.5px solid var(--neon-cyan); color: var(--neon-cyan); font-size: 10.5px; padding: 7px 14px; text-decoration: none;">
+                📖 CẨM NANG HƯỚNG DẪN
+            </a>
+            <button onclick="toggleMasterGModal()" class="pixel-btn" style="background: rgba(168, 85, 247, 0.25); border: 1.5px solid var(--neon-purple); color: #fff; font-size: 10.5px; padding: 7px 14px; cursor: pointer;">
+                💬 HỎI ĐÁP CÙNG MASTER G
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Grid: 2 Columns (Band Accumulation & Curated Session Hero) -->
+    <div class="dash-agent-grid">
+        
+        <!-- CỘT 1: THƯỚC ĐO TÍCH LŨY BAND THỰC TẾ -->
+        <div style="background: rgba(0, 0, 0, 0.45); border: 1.5px solid var(--glass-border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span class="pixel-title" style="font-size: 12px; color: var(--neon-amber);">📊 TIẾN ĐỘ TÍCH LŨY BAND THỰC TẾ</span>
+                    <span id="dash-agent-target-badge" style="background: rgba(6, 182, 212, 0.2); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--text-mono); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+                        ĐANG TẢI...
+                    </span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div style="margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+                        <span style="color: #cbd5e1;">Từ vựng mục tiêu đã làm chủ (Smart SRS):</span>
+                        <strong id="dash-agent-vocab-stat" style="color: var(--neon-cyan); font-family: var(--text-mono);">0 / 0 từ (0%)</strong>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.08); height: 10px; border-radius: 5px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
+                        <div id="dash-agent-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)); transition: width 0.8s ease; box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);"></div>
+                    </div>
+                </div>
+
+                <!-- Trạng thái phòng thi -->
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <span id="dash-agent-exam-status-pill" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 6px; font-family: var(--text-mono);">
+                        🔒 TẠM KHÓA PHÒNG THI
+                    </span>
+                    <span style="font-size: 11px; color: #94a3b8;">(Cần tích lũy đủ vốn từ trước khi thi)</span>
+                </div>
+
+                <!-- Lời phán quyết của Master G -->
+                <div id="dash-agent-verdict-box" style="background: rgba(15, 23, 42, 0.85); border-left: 3px solid var(--neon-amber); padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #cbd5e1; line-height: 1.5;">
+                    Đang đối chiếu dữ liệu tích lũy...
+                </div>
+            </div>
+
+            <div style="margin-top: 14px;">
+                <button onclick="window.location.href='/roadmap'" class="pixel-btn" style="width: 100%; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 9px 12px; font-size: 11px;">
+                    🗺️ XEM CÂY LỘ TRÌNH BAND CHI TIẾT
+                </button>
+            </div>
+        </div>
+
+        <!-- CỘT 2: PHIÊN HỌC HÀNG NGÀY ĐỊNH HƯỚNG (15 PHÚT KHÔNG MÔNG LUNG) -->
+        <div style="background: linear-gradient(135deg, rgba(30, 27, 75, 0.65) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1.5px solid var(--neon-purple); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <div>
+                        <div class="pixel-title" style="font-size: 13px; color: var(--neon-pink); letter-spacing: 0.5px;">
+                            🎯 PHIÊN HỌC HÀNG NGÀY ĐỊNH HƯỚNG (15 PHÚT)
+                        </div>
+                        <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">
+                            Khắc phục tính ngẫu nhiên - 4 bước liền mạch khép kín do Agent dẫn dắt
+                        </div>
+                    </div>
+                    <span style="background: rgba(16, 185, 129, 0.2); border: 1px solid var(--pixel-green); color: var(--pixel-green); font-size: 10.5px; font-family: var(--text-mono); padding: 2px 8px; border-radius: 6px; font-weight: 700;">
+                        DAILY MISSION
+                    </span>
+                </div>
+
+                <!-- 4 Steps flow indicator -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 16px 0;">
+                    <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 6px; text-align: center;">
+                        <div style="font-size: 10px; color: var(--neon-cyan); font-weight: bold;">BƯỚC 1</div>
+                        <div style="font-size: 9.5px; color: #cbd5e1; margin-top: 2px;">Khởi động SRS</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 6px; text-align: center;">
+                        <div style="font-size: 10px; color: var(--neon-cyan); font-weight: bold;">BƯỚC 2</div>
+                        <div style="font-size: 9.5px; color: #cbd5e1; margin-top: 2px;">Nạp Từ Band</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 6px; text-align: center;">
+                        <div style="font-size: 10px; color: var(--neon-pink); font-weight: bold;">BƯỚC 3</div>
+                        <div style="font-size: 9.5px; color: #cbd5e1; margin-top: 2px;">Thực chiến GEC</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 6px; text-align: center;">
+                        <div style="font-size: 10px; color: var(--pixel-green); font-weight: bold;">BƯỚC 4</div>
+                        <div style="font-size: 9.5px; color: #cbd5e1; margin-top: 2px;">Khép Vòng</div>
+                    </div>
+                </div>
+
+                <div id="dash-agent-briefing-msg" style="font-size: 12.5px; color: #e2e8f0; line-height: 1.5; margin-bottom: 16px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                    Sư phụ Master G đang chuẩn bị giáo án cho phiên học hôm nay của bạn...
+                </div>
+            </div>
+
+            <!-- Big Glowing CTA Button -->
+            <div>
+                <button onclick="startCuratedDailySession()" class="pixel-btn pulse-neon" style="width: 100%; background: var(--pixel-green); color: #000; font-weight: 800; font-size: 13px; padding: 14px; border: 2px solid #000; cursor: pointer; letter-spacing: 0.5px;">
+                    🚀 BẮT ĐẦU PHIÊN HỌC HÔM NAY (15 PHÚT)
+                </button>
+                <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: #94a3b8; margin-top: 8px; font-family: var(--text-mono);">
+                    <span>🎁 +30 Xu</span>
+                    <span>⭐ +35 RP Uy Tín</span>
+                    <span>📈 +3.5% Tích Lũy Band</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -353,6 +533,46 @@
         </div>
     </div>
 </div>
+
+<!-- ================================================================= -->
+<!-- CURATED DAILY SESSION RUNNER MODAL (4-STEP GUIDED INTERFACE) -->
+<!-- ================================================================= -->
+<div id="curated-session-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.88); backdrop-filter: blur(14px); z-index: 100000; justify-content: center; align-items: center; font-family: var(--text-main);">
+    <div style="background: rgba(15, 23, 42, 0.98); border: 2px solid var(--neon-purple); border-radius: 18px; width: 92%; max-width: 820px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 70px rgba(168, 85, 247, 0.4);">
+        
+        <!-- Modal Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: linear-gradient(90deg, rgba(88, 28, 135, 0.5), rgba(15, 23, 42, 0.9)); border-bottom: 1.5px solid var(--glass-border);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 26px;">🧙‍♂️</span>
+                <div>
+                    <div class="pixel-title" style="color: var(--neon-cyan); font-size: 15px; margin: 0; letter-spacing: 1px;">PHIÊN HỌC TÁC TỬ // MASTER G SƯ PHẠM</div>
+                    <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">Giáo án định hướng 4 bước - Ngẫu nhiên có kiểm soát</div>
+                </div>
+            </div>
+            <button onclick="closeCuratedSessionModal()" class="pixel-btn" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; padding: 5px 12px; font-size: 11px; cursor: pointer;">✕ THOÁT</button>
+        </div>
+
+        <!-- 4 Step Tabs -->
+        <div class="session-step-indicator" id="modal-step-indicator">
+            <div class="session-step-tab active" id="tab-step-1">1. KHỞI ĐỘNG (SRS)</div>
+            <div class="session-step-tab" id="tab-step-2">2. NẠP KIẾN THỨC</div>
+            <div class="session-step-tab" id="tab-step-3">3. THỰC CHIẾN GEC</div>
+            <div class="session-step-tab" id="tab-step-4">4. ĐÁNH GIÁ</div>
+        </div>
+
+        <!-- Chain-of-Thought Collapse Container -->
+        <div id="session-cot-container" style="background: rgba(0,0,0,0.5); padding: 10px 18px; border-bottom: 1px solid var(--glass-border); max-height: 90px; overflow-y: auto;">
+            <div style="font-size: 10.5px; color: var(--neon-purple); font-family: var(--text-pixel); margin-bottom: 4px;">⚡ TƯ DUY MINH BẠCH CỦA TÁC TỬ (CHAIN OF THOUGHT):</div>
+            <div id="session-cot-lines"></div>
+        </div>
+
+        <!-- Dynamic Body Content -->
+        <div id="session-step-body" style="padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column;">
+            <div style="text-align: center; color: #94a3b8; padding: 40px 0;">Đang tải phiên học...</div>
+        </div>
+
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -480,7 +700,6 @@
             .then(data => {
                 if (data.error) return;
 
-                // Grade Pill
                 const pill = document.getElementById('dash-radar-grade-pill');
                 if (pill) {
                     pill.innerHTML = `[ HẠNG ${data.overall_grade}: ${data.grade_title} ] - ${data.overall_score.toFixed(1)}/100`;
@@ -488,7 +707,6 @@
                     pill.style.color = data.grade_color || 'var(--neon-cyan)';
                 }
 
-                // Strengths & Advice
                 const sEl = document.getElementById('dash-strongest-label');
                 const wEl = document.getElementById('dash-weakest-label');
                 const aEl = document.getElementById('dash-pedagogical-advice');
@@ -496,7 +714,6 @@
                 if (wEl) wEl.innerText = `${data.weakest.name} (${data.weakest.score}đ)`;
                 if (aEl) aEl.innerText = data.pedagogical_advice;
 
-                // Render SVG
                 const svgContainer = document.getElementById('dash-radar-svg-container');
                 if (svgContainer) {
                     svgContainer.innerHTML = generateRadarSVG(data.dimensions, {
@@ -509,7 +726,6 @@
                     });
                 }
 
-                // Render Metric Progress Bars
                 const col = document.getElementById('dash-radar-metrics-col');
                 if (col) {
                     let html = '';
@@ -531,5 +747,501 @@
             })
             .catch(err => console.error("Error loading dashboard radar:", err));
     }
+
+    // =========================================================================
+    // MASTER G AGENT COMMAND CENTER & CURATED SESSION ENGINE (CLIENT JS)
+    // =========================================================================
+    let currentSessionData = null;
+    let step1Answers = [];
+    let step1CurrentIdx = 0;
+
+    function loadAgentCommandCenter() {
+        // 1. Tải tiến độ tích lũy Band thực tế
+        fetch('/api/ai/agent/band_progress')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const badge = document.getElementById('dash-agent-target-badge');
+                    const vocabStat = document.getElementById('dash-agent-vocab-stat');
+                    const bar = document.getElementById('dash-agent-progress-bar');
+                    const examPill = document.getElementById('dash-agent-exam-status-pill');
+                    const verdictBox = document.getElementById('dash-agent-verdict-box');
+
+                    if (badge) badge.innerText = data.band_label || `${data.current_band} ➔ ${data.target_band}`;
+                    if (vocabStat) vocabStat.innerText = `${data.mastered_vocabs} / ${data.required_vocabs} từ (${data.percent}%)`;
+                    if (bar) bar.style.width = `${data.percent}%`;
+
+                    if (examPill) {
+                        if (data.is_exam_ready) {
+                            examPill.innerText = '🔓 ĐỦ ĐIỀU KIỆN MỞ PHÒNG THI';
+                            examPill.style.background = 'rgba(16, 185, 129, 0.2)';
+                            examPill.style.borderColor = 'var(--pixel-green)';
+                            examPill.style.color = 'var(--pixel-green)';
+                        } else {
+                            examPill.innerText = `🔒 TẠM KHÓA (CẦN THÊM ${data.shortfall} TỪ)`;
+                            examPill.style.background = 'rgba(239, 68, 68, 0.2)';
+                            examPill.style.borderColor = '#ef4444';
+                            examPill.style.color = '#ef4444';
+                        }
+                    }
+
+                    if (verdictBox) verdictBox.innerText = data.gatekeeper_verdict;
+                }
+            })
+            .catch(err => console.error("Lỗi nạp tiến độ tích lũy:", err));
+
+        // 2. Tải lời chẩn đoán của Master G
+        fetch('/api/ai/agent/diagnose')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.directive && data.directive.directive_advice) {
+                    const briefing = document.getElementById('dash-agent-briefing-msg');
+                    if (briefing) briefing.innerText = data.directive.directive_advice;
+                }
+            })
+            .catch(() => {});
+    }
+
+    // Khởi chạy phiên học 15 phút do Agent dẫn dắt
+    function startCuratedDailySession() {
+        const modal = document.getElementById('curated-session-modal');
+        const body = document.getElementById('session-step-body');
+        const cotLines = document.getElementById('session-cot-lines');
+
+        modal.style.display = 'flex';
+        setSessionTab(1);
+        cotLines.innerHTML = '<div class="cot-line">⚡ Master G đang kích hoạt các phân hệ học máy để thiết lập giáo án...</div>';
+        body.innerHTML = `
+            <div style="text-align: center; padding: 40px 0;">
+                <div style="font-size: 36px; margin-bottom: 12px; animation: pulse 1s infinite;">🧙‍♂️</div>
+                <div class="pixel-title" style="color: var(--neon-cyan); font-size: 14px;">ĐANG THIẾT LẬP GIÁO ÁN ĐỊNH HƯỚNG...</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 6px;">Đang lọc tập từ vựng chuẩn Oxford và bối cảnh thực chiến có kiểm soát</div>
+            </div>`;
+
+        fetch('/api/ai/agent/session/start')
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    body.innerHTML = `<div style="color: #ef4444; text-align: center;">Lỗi: ${data.error}</div>`;
+                    return;
+                }
+                currentSessionData = data;
+                
+                // Hiển thị Chain of Thought
+                if (data.thought_trace) {
+                    cotLines.innerHTML = '';
+                    data.thought_trace.forEach((line, i) => {
+                        setTimeout(() => {
+                            cotLines.innerHTML += `<div class="cot-line">${line}</div>`;
+                            document.getElementById('session-cot-container').scrollTop = document.getElementById('session-cot-container').scrollHeight;
+                        }, i * 250);
+                    });
+                }
+
+                setTimeout(() => {
+                    renderSessionStep1();
+                }, 1000);
+            })
+            .catch(err => {
+                body.innerHTML = `<div style="color: #ef4444; text-align: center;">Lỗi kết nối máy chủ AI: ${err}</div>`;
+            });
+    }
+
+    function closeCuratedSessionModal() {
+        document.getElementById('curated-session-modal').style.display = 'none';
+    }
+
+    function setSessionTab(stepNum) {
+        for (let i = 1; i <= 4; i++) {
+            const tab = document.getElementById(`tab-step-${i}`);
+            if (!tab) continue;
+            tab.classList.remove('active');
+            if (i === stepNum) tab.classList.add('active');
+            if (i < stepNum) tab.classList.add('done');
+        }
+    }
+
+    // -------------------------------------------------------------
+    // RENDER BƯỚC 1: KHỞI ĐỘNG (SMART SRS)
+    // -------------------------------------------------------------
+    function renderSessionStep1() {
+        setSessionTab(1);
+        step1Answers = [];
+        step1CurrentIdx = 0;
+        showStep1Question();
+    }
+
+    function showStep1Question() {
+        const body = document.getElementById('session-step-body');
+        const qList = currentSessionData.step_1.questions || [];
+
+        if (step1CurrentIdx >= qList.length) {
+            // Hoàn thành hết các câu hỏi bước 1 -> Nộp
+            body.innerHTML = `
+                <div style="text-align: center; padding: 25px 0;">
+                    <div style="font-size: 38px; margin-bottom: 10px;">🎯</div>
+                    <h3 style="color: #fff; margin-bottom: 8px;">ĐÃ HOÀN THÀNH PHẦN KHỞI ĐỘNG!</h3>
+                    <div style="color: #cbd5e1; font-size: 13px; max-width: 500px; margin: 0 auto 20px;">
+                        Não bộ đã được kích hoạt. Hãy bước sang Bước 2 để nạp 4 từ vựng mục tiêu và ngữ pháp chuẩn Band ${currentSessionData.learner.target_band}!
+                    </div>
+                    <button onclick="submitStep1AndProceed()" class="pixel-btn" style="background: var(--neon-cyan); color: #000; font-weight: bold; padding: 12px 28px; font-size: 12px;">
+                        TIẾP TỤC ➔ BƯỚC 2: NẠP TỪ VỰNG BAND
+                    </button>
+                </div>`;
+            return;
+        }
+
+        const q = qList[step1CurrentIdx];
+        let optionsHtml = '';
+        q.options.forEach(opt => {
+            optionsHtml += `
+                <button class="pixel-btn" onclick="handleStep1Choice('${encodeURIComponent(opt)}', '${encodeURIComponent(q.correct_option)}', ${q.vocab_id})" style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid var(--glass-border); color: #e2e8f0; padding: 12px; font-size: 12px; text-align: left; transition: 0.2s;" onmouseover="this.style.borderColor='var(--neon-cyan)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+                    ${opt}
+                </button>`;
+        });
+
+        body.innerHTML = `
+            <div style="max-width: 650px; margin: 0 auto; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <span style="font-size: 11px; font-family: var(--text-mono); color: var(--neon-cyan);">
+                        CÂU ${step1CurrentIdx + 1} / ${qList.length} (KHỞI ĐỘNG TRÍ NHỚ SRS)
+                    </span>
+                    <span style="font-size: 11px; color: #94a3b8;">Thời lượng: 3 Phút</span>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.4); border: 2px solid var(--neon-purple); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 6px;">TỪ VỰNG MỤC TIÊU:</div>
+                    <div style="font-size: 26px; font-weight: 800; color: #fff; letter-spacing: 1px;">${q.word}</div>
+                    ${q.scrambled && q.type === 'scramble' ? `<div style="font-size: 12px; color: var(--neon-amber); margin-top: 6px; font-family: var(--text-mono);">Gợi ý xáo trộn: <code>${q.scrambled}</code></div>` : ''}
+                </div>
+
+                <div style="font-size: 13px; color: #cbd5e1; margin-bottom: 12px; font-weight: 600;">
+                    Chọn ý nghĩa hoặc định nghĩa tiếng Việt chuẩn xác nhất:
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;" id="step1-options-grid">
+                    ${optionsHtml}
+                </div>
+            </div>`;
+    }
+
+    function handleStep1Choice(encodedChoice, encodedCorrect, vocabId) {
+        const choice = decodeURIComponent(encodedChoice);
+        const correct = decodeURIComponent(encodedCorrect);
+        const isCorrect = (choice === correct);
+
+        step1Answers.push({
+            vocab_id: vocabId,
+            choice: choice,
+            is_correct: isCorrect
+        });
+
+        // Flash feedback briefly
+        const grid = document.getElementById('step1-options-grid');
+        if (grid) {
+            Array.from(grid.children).forEach(btn => {
+                if (btn.innerText.trim() === correct) {
+                    btn.style.background = 'rgba(16, 185, 129, 0.4)';
+                    btn.style.borderColor = 'var(--pixel-green)';
+                } else if (btn.innerText.trim() === choice && !isCorrect) {
+                    btn.style.background = 'rgba(239, 68, 68, 0.4)';
+                    btn.style.borderColor = '#ef4444';
+                }
+                btn.disabled = true;
+            });
+        }
+
+        setTimeout(() => {
+            step1CurrentIdx++;
+            showStep1Question();
+        }, 600);
+    }
+
+    function submitStep1AndProceed() {
+        fetch('/api/ai/agent/session/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                step: 1,
+                payload: { answers: step1Answers }
+            })
+        })
+        .then(res => res.json())
+        .then(() => {
+            renderSessionStep2();
+        })
+        .catch(() => renderSessionStep2());
+    }
+
+    // -------------------------------------------------------------
+    // RENDER BƯỚC 2: NẠP KIẾN THỨC MỤC TIÊU BAND
+    // -------------------------------------------------------------
+    function renderSessionStep2() {
+        setSessionTab(2);
+        const body = document.getElementById('session-step-body');
+        const step2 = currentSessionData.step_2;
+        const words = step2.target_words || [];
+        const gm = step2.grammar || {};
+
+        let cardsHtml = '';
+        words.forEach(w => {
+            cardsHtml += `
+                <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--glass-border); border-radius: 10px; padding: 14px; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 17px; font-weight: 800; color: var(--neon-cyan);">${w.word}</span>
+                        <span style="font-size: 9.5px; background: rgba(168, 85, 247, 0.2); border: 1px solid var(--neon-purple); color: var(--neon-purple); padding: 1px 6px; border-radius: 4px; font-family: var(--text-mono); font-weight: bold;">
+                            ${w.cefr_level}
+                        </span>
+                    </div>
+                    <div style="font-size: 13px; color: #fff; font-weight: 600; margin-bottom: 6px;">${w.meaning}</div>
+                    <div style="font-size: 11px; color: var(--neon-amber); margin-bottom: 4px; font-family: var(--text-mono);">
+                        🔗 Cụm collocation: <em>${w.collocation}</em>
+                    </div>
+                    <div style="font-size: 11.5px; color: #94a3b8; line-height: 1.4; font-style: italic;">
+                        "${w.sample_sentence}"
+                    </div>
+                </div>`;
+        });
+
+        body.innerHTML = `
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <div>
+                        <h3 style="color: #fff; margin: 0; font-size: 16px;">BƯỚC 2: NẠP KIẾN THỨC MỤC TIÊU BAND ${currentSessionData.learner.target_band}</h3>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Thời lượng: 5 Phút | Tập trung học sâu 4 từ vựng và 1 cấu trúc cốt lõi</div>
+                    </div>
+                </div>
+
+                <!-- 4 Thẻ Từ Vựng -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+                    ${cardsHtml}
+                </div>
+
+                <!-- 1 Thẻ Ngữ Pháp Trọng Tâm -->
+                <div style="background: rgba(88, 28, 135, 0.25); border: 1.5px solid var(--neon-purple); border-radius: 12px; padding: 14px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <span style="font-size: 16px;">📐</span>
+                        <strong style="color: var(--neon-amber); font-size: 13px; font-family: var(--text-mono);">NGỮ PHÁP TRỌNG ĐIỂM: ${gm.structure}</strong>
+                    </div>
+                    <div style="font-size: 12.5px; color: #cbd5e1; margin-bottom: 6px;">${gm.explanation}</div>
+                    <div style="font-size: 12px; color: var(--neon-cyan); font-family: var(--text-mono);">
+                        Ví dụ: "${gm.example}"
+                    </div>
+                </div>
+
+                <div style="text-align: right;">
+                    <button onclick="submitStep2AndProceed()" class="pixel-btn" style="background: var(--neon-pink); color: #fff; font-weight: bold; padding: 12px 26px; font-size: 12px;">
+                        ĐÃ THẤU HIỂU ➔ SANG BƯỚC 3: THỰC CHIẾN ĐẶT CÂU
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    function submitStep2AndProceed() {
+        const words = currentSessionData.step_2.target_words || [];
+        fetch('/api/ai/agent/session/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                step: 2,
+                payload: { word_ids: words.map(w => w.id) }
+            })
+        })
+        .then(res => res.json())
+        .then(() => renderSessionStep3())
+        .catch(() => renderSessionStep3());
+    }
+
+    // -------------------------------------------------------------
+    // RENDER BƯỚC 3: THỰC CHIẾN ĐẶT CÂU (GEC EVALUATION)
+    // -------------------------------------------------------------
+    function renderSessionStep3() {
+        setSessionTab(3);
+        const body = document.getElementById('session-step-body');
+        const step3 = currentSessionData.step_3;
+        const sc = step3.scenario || {};
+        const reqWords = step3.required_words || [];
+
+        let chipsHtml = '';
+        reqWords.forEach(rw => {
+            chipsHtml += `<span style="background: rgba(103, 232, 249, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 3px 8px; border-radius: 6px; font-size: 11px; font-family: var(--text-mono); font-weight: bold;">${rw}</span> `;
+        });
+
+        body.innerHTML = `
+            <div style="max-width: 680px; margin: 0 auto; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <div>
+                        <h3 style="color: #fff; margin: 0; font-size: 16px;">BƯỚC 3: THỰC CHIẾN ĐẶT CÂU VỚI GEC AI</h3>
+                        <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Thời lượng: 5 Phút | Giám sát cú pháp tức thì bởi Não 1 DistilBERT</div>
+                    </div>
+                </div>
+
+                <!-- Scenario Card -->
+                <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--neon-purple); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                    <div style="font-size: 11px; color: var(--neon-pink); font-family: var(--text-mono); font-weight: bold; margin-bottom: 4px;">
+                        🎭 TÌNH HUỐNG: ${sc.context}
+                    </div>
+                    <div style="font-size: 13.5px; color: #fff; font-weight: 600; margin-bottom: 6px;">
+                        ${sc.prompt}
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8;">
+                        ${sc.guide}
+                    </div>
+                </div>
+
+                <!-- Required Words Target -->
+                <div style="margin-bottom: 14px;">
+                    <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 6px;">
+                        🎯 Từ vựng mục tiêu (Hãy dùng ít nhất 1 từ trong câu của bạn để kích hoạt <strong>Bạo Kích</strong>):
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        ${chipsHtml}
+                    </div>
+                </div>
+
+                <!-- Input area -->
+                <div style="margin-bottom: 14px;">
+                    <textarea id="step3-sentence-input" placeholder="Gõ câu tiếng Anh của bạn tại đây (ít nhất 4 từ)..." style="width: 100%; height: 80px; background: rgba(0,0,0,0.6); border: 1.5px solid var(--glass-border); border-radius: 10px; color: #fff; padding: 12px; font-size: 13px; font-family: var(--text-main); resize: none;" onkeydown="if(event.key==='Enter' && event.ctrlKey) submitStep3Sentence()"></textarea>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; color: #64748b;">(Nhấn Ctrl+Enter hoặc bấm nút bên phải để nộp)</span>
+                    <button onclick="submitStep3Sentence()" id="btn-submit-step3" class="pixel-btn pulse-neon" style="background: var(--neon-cyan); color: #000; font-weight: bold; padding: 11px 22px; font-size: 12px;">
+                        ⚡ GỬI CÂU CHO PHÂN HỆ 1 GEC CHẤM
+                    </button>
+                </div>
+
+                <!-- Feedback Area -->
+                <div id="step3-feedback-container" style="display: none; margin-top: 18px; background: rgba(15, 23, 42, 0.95); border-radius: 12px; padding: 16px; border: 1.5px solid var(--neon-cyan);"></div>
+            </div>`;
+    }
+
+    function submitStep3Sentence() {
+        const input = document.getElementById('step3-sentence-input');
+        const fb = document.getElementById('step3-feedback-container');
+        const btn = document.getElementById('btn-submit-step3');
+        const text = input ? input.value.trim() : '';
+
+        if (!text || text.split(/\s+/).length < 3) {
+            alert("Vui lòng viết một câu tiếng Anh hoàn chỉnh (ít nhất 4 từ)!");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "ĐANG PHÂN TÍCH CÚ PHÁP...";
+
+        fetch('/api/ai/agent/session/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                step: 3,
+                payload: {
+                    sentence: text,
+                    required_words: currentSessionData.step_3.required_words || []
+                }
+            })
+        })
+        .then(res => res.json())
+        .then(res => {
+            btn.disabled = false;
+            btn.innerText = "⚡ GỬI LẠI CÂU KHÁC";
+            fb.style.display = 'block';
+
+            let critBadge = '';
+            if (res.critical_hit) {
+                critBadge = `<div style="background: rgba(244, 114, 182, 0.2); border: 1px solid var(--neon-pink); color: var(--neon-pink); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; margin-bottom: 10px;">
+                    ⚔️ BẠO KÍCH NGỮ NGHĨA! Vận dụng chuẩn xác từ mục tiêu (+${res.bonus_coins} Xu, +${res.bonus_rp} RP)!
+                </div>`;
+            }
+
+            const formattedCritique = typeof renderStructuredFeedback === 'function' 
+                ? renderStructuredFeedback(res.critique || 'Cú pháp chuẩn mực.')
+                : (res.critique || 'Cú pháp chuẩn mực.').replace(/\n/g, '<br>');
+
+            fb.innerHTML = `
+                ${critBadge}
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                    <div style="font-size: 13px; color: #e2e8f0; line-height: 1.6;">
+                        ${formattedCritique}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <button onclick="renderSessionStep4()" class="pixel-btn" style="background: var(--pixel-green); color: #000; font-weight: bold; padding: 10px 22px; font-size: 12px;">
+                        TỔNG KẾT &amp; KHÉP VÒNG BƯỚC 4 ➔
+                    </button>
+                </div>`;
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerText = "⚡ GỬI CÂU CHO NÃO 1 GEC CHẤM";
+            alert("Lỗi phân tích: " + err);
+        });
+    }
+
+    // -------------------------------------------------------------
+    // RENDER BƯỚC 4: ĐÁNH GIÁ & KHÉP VÒNG
+    // -------------------------------------------------------------
+    function renderSessionStep4() {
+        setSessionTab(4);
+        const body = document.getElementById('session-step-body');
+
+        body.innerHTML = `
+            <div style="text-align: center; padding: 30px 20px;">
+                <div style="font-size: 48px; margin-bottom: 12px; animation: bounce 1s infinite;">🎉</div>
+                <h2 style="color: var(--neon-cyan); margin: 0 0 8px 0; font-size: 22px;">CHÚC MỪNG BẠN ĐÃ HOÀN THÀNH PHIÊN HỌC HÔM NAY!</h2>
+                <div style="font-size: 13.5px; color: #cbd5e1; max-width: 550px; margin: 0 auto 24px; line-height: 1.6;">
+                    Bạn đã thực hiện chuẩn mực chu trình 4 bước: <strong>Ôn tập SRS ➔ Nạp từ vựng Band ➔ Ứng dụng thực chiến ➔ Khép vòng</strong>. 
+                    Không còn sự ngẫu nhiên mù quáng, mỗi ngày là một bước tiến thực chất!
+                </div>
+
+                <!-- Reward Pills -->
+                <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 25px; flex-wrap: wrap;">
+                    <div style="background: rgba(16, 185, 129, 0.2); border: 1.5px solid var(--pixel-green); padding: 10px 18px; border-radius: 12px;">
+                        <div style="font-size: 10px; color: #94a3b8;">XU THƯỞNG</div>
+                        <div style="font-size: 18px; font-weight: bold; color: var(--pixel-green);">+30 Xu</div>
+                    </div>
+                    <div style="background: rgba(168, 85, 247, 0.2); border: 1.5px solid var(--neon-purple); padding: 10px 18px; border-radius: 12px;">
+                        <div style="font-size: 10px; color: #94a3b8;">ĐIỂM RANK (RP)</div>
+                        <div style="font-size: 18px; font-weight: bold; color: var(--neon-purple);">+35 RP</div>
+                    </div>
+                    <div style="background: rgba(6, 182, 212, 0.2); border: 1.5px solid var(--neon-cyan); padding: 10px 18px; border-radius: 12px;">
+                        <div style="font-size: 10px; color: #94a3b8;">TÍCH LŨY BAND</div>
+                        <div style="font-size: 18px; font-weight: bold; color: var(--neon-cyan);">+3.5%</div>
+                    </div>
+                </div>
+
+                <button onclick="finishSessionAndClose()" class="pixel-btn pulse-neon" style="background: var(--neon-cyan); color: #000; font-weight: 800; font-size: 13px; padding: 12px 35px;">
+                    TRỞ LẠI BẢNG ĐIỀU KHIỂN &amp; TIẾP TỤC
+                </button>
+            </div>`;
+
+        // Gửi xác nhận step 4
+        fetch('/api/ai/agent/session/submit', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ step: 4, payload: {} })
+        }).catch(() => {});
+    }
+
+    function finishSessionAndClose() {
+        closeCuratedSessionModal();
+        loadAgentCommandCenter();
+        // Refresh coins & streak
+        fetch('/api/auth/user/me')
+            .then(r => r.json())
+            .then(user => {
+                if (user && !user.error) {
+                    const streakEl = document.getElementById('dash-streak-count');
+                    const coinsEl = document.getElementById('dash-coins-count');
+                    if (streakEl) streakEl.textContent = `${user.streak || 0} Ngày`;
+                    if (coinsEl) coinsEl.textContent = `${user.coins || 0} Xu`;
+                }
+            })
+            .catch(() => {});
+    }
+
+    // Kích hoạt khi trang tải xong
+    document.addEventListener("DOMContentLoaded", () => {
+        loadAgentCommandCenter();
+    });
 </script>
 {% endblock %}

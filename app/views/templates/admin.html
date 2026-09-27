@@ -415,10 +415,10 @@
     <div class="bento-container" style="grid-template-columns: 2fr 1fr; gap: 20px;">
         <div class="bento-card" style="padding: 25px;">
             <div class="pixel-title" style="color: var(--neon-cyan); font-size: 14px; margin-bottom: 15px;">
-                KIẾN TRÚC HYBRID AI // BỘ NÃO TRUNG TÂM
+                KIẾN TRÚC HYBRID AI // TRUNG TÂM ĐIỀU PHỐI TÁC TỬ
             </div>
             <div style="color: #cbd5e1; font-size: 14px; line-height: 1.8;">
-                <p style="margin-top: 0;">Hệ thống TAP đang vận hành mô hình <strong>Multi-Brain Hybrid Edge-Cloud AI</strong>:</p>
+                <p style="margin-top: 0;">Hệ thống TAP đang vận hành mô hình <strong>Multi-Subsystem Hybrid Edge-Cloud AI</strong>:</p>
                 <ul style="padding-left: 20px; color: #94a3b8;">
                     <li><strong>Phân loại ý định & ngữ pháp:</strong> DistilBERT INT8 + Multilayer Perceptron (MLP).</li>
                     <li><strong>Khung Avatar Động:</strong> CSS Kinetic Animation & Transformer Mechanical Gear Engine.</li>
@@ -998,6 +998,11 @@
                         <option value="EXAM_REVIVE">EXAM_REVIVE (Hồi sinh bài thi)</option>
                         <option value="TIME_FREEZE">TIME_FREEZE (Đóng băng thời gian)</option>
                         <option value="LUCKY_CHEST">LUCKY_CHEST (Rương may mắn)</option>
+                        <option value="FARM_FERTILIZER">FARM_FERTILIZER (Phân bón sinh trưởng nông trại)</option>
+                        <option value="GOLDEN_FEED">GOLDEN_FEED (Thức ăn hồi cooldown gia súc)</option>
+                        <option value="ACADEMIC_ELIXIR">ACADEMIC_ELIXIR (Thuốc tiên Xu & Rank RP)</option>
+                        <option value="LUCKY_TALISMAN">LUCKY_TALISMAN (Bùa may mắn hạt giống hiếm)</option>
+                        <option value="MASTER_GIFT">MASTER_GIFT (Hộp quà tri ân Master G)</option>
                     </select>
                 </div>
             </div>
@@ -1504,10 +1509,14 @@
     function submitShopItem(e) {
         e.preventDefault();
         const id = document.getElementById('shop-item-id').value;
+        const rawPrice = document.getElementById('shop-item-price').value;
+        const parsedPrice = parseInt(rawPrice, 10);
+        const finalPrice = isNaN(parsedPrice) ? 0 : Math.max(0, parsedPrice);
+
         const payload = {
             name: document.getElementById('shop-item-name').value.trim(),
             type: document.getElementById('shop-item-type').value,
-            price_coins: parseInt(document.getElementById('shop-item-price').value) || 0,
+            price_coins: finalPrice,
             css_class: document.getElementById('shop-item-css').value.trim(),
             icon_preview: document.getElementById('shop-item-icon').value.trim(),
             item_effect: document.getElementById('shop-item-effect').value.trim() || null,
