@@ -3298,5 +3298,131 @@ body.theme-light .stat-pill {
     100% { transform: scale(1.05); box-shadow: 0 0 18px rgba(16, 185, 129, 0.8); }
 }
 
+/* ==============================================================
+   6. SPEAKING STUDIO & FILTER PILL CONTROLS (CYBERPUNK & CLEAN)
+   ============================================================== */
+button.filter-pill,
+.filter-pill {
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 1.5px solid var(--glass-border) !important;
+    color: #cbd5e1 !important;
+    padding: 7px 16px;
+    border-radius: 9999px;
+    font-family: var(--text-mono);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    user-select: none;
+    outline: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+button.filter-pill:hover,
+.filter-pill:hover {
+    border-color: var(--neon-cyan) !important;
+    color: #fff !important;
+    background: rgba(6, 182, 212, 0.2) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.35);
+}
+
+button.filter-pill.active,
+.filter-pill.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.4) 0%, rgba(14, 116, 144, 0.7) 100%) !important;
+    border-color: var(--neon-cyan) !important;
+    color: #fff !important;
+    font-weight: 800;
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+#source-pill-all {
+    border-radius: 10px !important;
+    padding: 8px 18px !important;
+    font-size: 13px !important;
+}
+
+#source-pill-all.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.4) 0%, rgba(2, 132, 199, 0.75) 100%) !important;
+    border-color: var(--neon-cyan) !important;
+    color: #fff !important;
+    box-shadow: 0 0 18px rgba(6, 182, 212, 0.55) !important;
+}
+
+#source-pill-my {
+    border-radius: 10px !important;
+    padding: 8px 18px !important;
+    font-size: 13px !important;
+}
+
+#source-pill-my.active {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.45) 0%, rgba(217, 70, 239, 0.75) 100%) !important;
+    border-color: var(--neon-purple) !important;
+    color: #fff !important;
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.55) !important;
+}
+
+.speed-pill {
+    border-radius: 8px !important;
+    padding: 5px 12px !important;
+    font-size: 11px !important;
+}
+
+.speed-pill.active {
+    background: rgba(6, 182, 212, 0.3) !important;
+    border-color: var(--neon-cyan) !important;
+    color: var(--neon-cyan) !important;
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.4) !important;
+}
+
+.band-pill {
+    min-width: 44px;
+    padding: 6px 14px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+}
+
+.band-pill.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.4) 0%, rgba(14, 116, 144, 0.8) 100%) !important;
+    border-color: var(--neon-cyan) !important;
+    color: #fff !important;
+    box-shadow: 0 0 14px rgba(6, 182, 212, 0.5) !important;
+}
+
+/* Light / Clean mode overrides */
+body.clean-mode button.filter-pill,
+body.clean-mode .filter-pill,
+body.theme-light button.filter-pill,
+body.theme-light .filter-pill {
+    background: #f1f5f9 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #334155 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.clean-mode button.filter-pill:hover,
+body.clean-mode .filter-pill:hover,
+body.theme-light button.filter-pill:hover,
+body.theme-light .filter-pill:hover {
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    background: #e0f2fe !important;
+}
+
+body.clean-mode button.filter-pill.active,
+body.clean-mode .filter-pill.active,
+body.theme-light button.filter-pill.active,
+body.theme-light .filter-pill.active {
+    background: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3) !important;
+}
+
+
 
 

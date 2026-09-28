@@ -277,7 +277,7 @@
         <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
             <span style="font-size: 11px; font-family: var(--text-pixel); color: #94a3b8;">NGUỒN TỪ:</span>
             <button class="filter-pill active" id="source-pill-all" onclick="selectVocabSource('all', this)">
-                🌐 Toàn Bộ Kho Từ (900+ Từ)
+                🎯 Kho Từ Vựng Phù Hợp Với Band
             </button>
             <button class="filter-pill" id="source-pill-my" onclick="selectVocabSource('my_words', this)">
                 🎒 Từ Của Tôi (Đang Học)
@@ -615,7 +615,7 @@
                     dynamicWordsList = [{
                         word: "Practice",
                         ipa: "/ˈpræk.tɪs/",
-                        meaning: "Bạn chưa mở khóa từ vựng nào trong tài khoản. Hãy cày nhiệm vụ hoặc quay lại nguồn 'Toàn Bộ Kho Từ' nhé!",
+                        meaning: "Bạn chưa mở khóa từ vựng nào trong tài khoản. Hãy cày nhiệm vụ hoặc chọn 'Kho Từ Vựng Phù Hợp Với Band' để luyện tập ngay nhé!",
                         theme: "Lưu ý",
                         band: "A1",
                         example: "Practice makes perfect."
@@ -700,13 +700,18 @@
         const w = words[currentWordIdx];
 
         const bandBadge = document.getElementById('current-word-band');
-        if (bandBadge) bandBadge.innerText = `BAND ${w.band || currentBand} • TỪ ${currentWordIdx + 1}/${words.length}`;
+        if (bandBadge) {
+            const bandText = (w.band && w.band !== 'ALL') ? `BAND ${w.band}` : (currentBand === 'ALL' ? 'TOÀN DIỆN' : `BAND ${currentBand}`);
+            bandBadge.innerText = `${bandText} • CHUẨN CEFR • TỪ ${currentWordIdx + 1}/${words.length}`;
+        }
 
         const themeBadge = document.getElementById('current-word-theme');
         if (themeBadge) themeBadge.innerText = `CHỦ ĐỀ: ${(w.theme || 'General').toUpperCase()}`;
 
         document.getElementById('current-word-text').innerText = w.word;
-        document.getElementById('current-word-ipa').innerText = w.ipa || `/${w.word.toLowerCase()}/`;
+        const rawIpa = (w.ipa || '').trim();
+        const formattedIpa = rawIpa ? (rawIpa.startsWith('/') ? rawIpa : `/${rawIpa}/`) : `/${w.word.toLowerCase()}/`;
+        document.getElementById('current-word-ipa').innerText = formattedIpa;
         document.getElementById('current-word-meaning').innerText = w.meaning;
         document.getElementById('current-word-example').innerText = `"${w.example || `Practice saying: '${w.word}'.`}"`;
 

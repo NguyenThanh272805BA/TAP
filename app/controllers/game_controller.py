@@ -154,9 +154,56 @@ def get_vocabularies():
     return jsonify({"vocabularies": output}), 200
 
 
+from functools import lru_cache
+
+try:
+    import eng_to_ipa as ipa_lib
+except ImportError:
+    ipa_lib = None
+
+
+@lru_cache(maxsize=15000)
+def compute_word_ipa(word: str) -> str:
+    """Tính toán phiên âm chuẩn IPA quốc tế cho từ hoặc cụm từ"""
+    if not word:
+        return ""
+    if ipa_lib:
+        try:
+            clean = re.sub(r'[^a-zA-Z\s\-]', '', word).strip()
+            res = ipa_lib.convert(clean).replace('*', '').strip()
+            if res:
+                return f"/{res}/"
+        except Exception:
+            pass
+    return f"/{word.lower().strip()}/"
+
+
+def generate_speaking_example(word: str, theme: str, band: str) -> str:
+    """Tạo câu văn mẫu ứng dụng thực tế theo chủ đề và trình độ CEFR"""
+    theme_upper = (theme or '').upper()
+    if any(t in theme_upper for t in ['TRAVEL', 'DU LỊCH']):
+        return f"When traveling abroad, knowing how to express '{word}' makes communication much easier."
+    elif any(t in theme_upper for t in ['FOOD', 'ẨM THỰC', 'RESTAURANT', 'SHOPPING']):
+        return f"The customer politely inquired about '{word}' before placing the order."
+    elif any(t in theme_upper for t in ['WORK', 'CAREER', 'BUSINESS', 'CÔNG SỞ', 'FINANCE']):
+        return f"In professional environments, understanding '{word}' is key to successful collaboration."
+    elif any(t in theme_upper for t in ['TECH', 'TECHNOLOGY', 'SCIENCE', 'KHOA HỌC']):
+        return f"Recent breakthroughs have shown how '{word}' impacts modern technological progress."
+    elif any(t in theme_upper for t in ['HEALTH', 'Y TẾ', 'SỨC KHỎE']):
+        return f"Doctors advise maintaining awareness of '{word}' for better daily wellbeing."
+    elif any(t in theme_upper for t in ['ACADEMIC', 'HỌC THUẬT', 'EDUCATION']):
+        return f"The lecture offered comprehensive insights into the concept of '{word}'."
+    elif any(t in theme_upper for t in ['CULTURE', 'VĂN HÓA', 'SOCIETY']):
+        return f"Understanding '{word}' enriches our appreciation of diverse global perspectives."
+    elif band in ['C1', 'C2']:
+        return f"The speaker eloquently explored '{word}' to illuminate complex human dynamics."
+    else:
+        return f"Practicing '{word}' in natural conversations will boost your speaking fluency."
+
+
 @game_bp.route('/speaking/words', methods=['GET'])
 def get_speaking_words():
-    """Lấy danh sách từ vựng phục vụ luyện nói và phát âm theo nhu cầu học viên"""
+    """Lấy danh sách từ vựng chuẩn CEFR phục vụ luyện nói và phát âm theo nhu cầu học viên"""
     band = request.args.get('band', 'A1').strip().upper()
     source = request.args.get('source', 'all').strip().lower()
     search = request.args.get('search', '').strip()
@@ -188,20 +235,36 @@ def get_speaking_words():
 
     output = []
     for w in words:
+        ipa_str = compute_word_ipa(w.word)
+        ex_str = generate_speaking_example(w.word, w.theme, w.cefr_level or 'A1')
         output.append({
             "id": w.id,
             "word": w.word,
             "meaning": w.meaning,
             "band": w.cefr_level or 'A1',
             "theme": w.theme or 'General',
-            "example": f"Practice saying: '{w.word}' with clear pronunciation."
+            "ipa": ipa_str,
+            "example": ex_str
+        })
+
+    # Nếu tìm kiếm từ khóa tiếng Anh tự do mà DB chưa có sẵn:
+    if len(output) == 0 and search:
+        custom_ipa = compute_word_ipa(search)
+        output.append({
+            "id": 0,
+            "word": search.strip(),
+            "meaning": f"Từ vựng tra cứu theo nhu cầu luyện tập: {search.strip()}",
+            "band": band if band != 'ALL' else 'B1',
+            "theme": "Luyện Tập Tự Do",
+            "ipa": custom_ipa,
+            "example": f"Practice saying '{search.strip()}' aloud with clear pronunciation and natural stress."
         })
 
     return jsonify({
         "success": True,
         "band": band,
         "source": source,
-        "total": total_count,
+        "total": total_count if total_count > 0 else len(output),
         "count": len(output),
         "words": output
     }), 200
