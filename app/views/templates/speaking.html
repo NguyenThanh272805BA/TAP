@@ -184,29 +184,60 @@
 <!-- TAB 1: LUYỆN PHÁT ÂM TỪ VỰNG THEO BAND -->
 <!-- ========================================================================= -->
 <div id="section-vocab" class="studio-card">
-    <!-- Band Filter Pills -->
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 25px;">
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="font-size: 12px; font-family: var(--text-pixel); color: #94a3b8;">CHỌN CẤP ĐỘ:</span>
-            <button class="filter-pill active" onclick="selectVocabBand('A1', this)">Band A1</button>
-            <button class="filter-pill" onclick="selectVocabBand('A2', this)">Band A2</button>
-            <button class="filter-pill" onclick="selectVocabBand('B1', this)">Band B1</button>
-            <button class="filter-pill" onclick="selectVocabBand('B2', this)">Band B2</button>
-            <button class="filter-pill" onclick="selectVocabBand('C1', this)">Band C1</button>
-            <button class="filter-pill" onclick="selectVocabBand('C2', this)">Band C2</button>
+    <!-- NGUỒN TỪ VỰNG & TÌM KIẾM THEO NHU CẦU -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px dashed var(--glass-border);">
+        <!-- Chọn nguồn từ: Toàn bộ hệ thống vs Kho từ cá nhân -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 11px; font-family: var(--text-pixel); color: #94a3b8;">NGUỒN TỪ:</span>
+            <button class="filter-pill active" id="source-pill-all" onclick="selectVocabSource('all', this)">
+                🌐 Toàn Bộ Kho Từ (900+ Từ)
+            </button>
+            <button class="filter-pill" id="source-pill-my" onclick="selectVocabSource('my_words', this)">
+                🎒 Từ Của Tôi (Đang Học)
+            </button>
         </div>
 
+        <!-- Tốc độ đọc -->
         <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 11px; color: #94a3b8;">Tốc độ đọc mẫu:</span>
+            <span style="font-size: 11px; color: #94a3b8;">Tốc độ đọc:</span>
             <button class="filter-pill active" id="speed-normal" onclick="setSpeechSpeed(1.0, this)" style="padding: 4px 10px; font-size: 11px;">1.0x Chuẩn</button>
             <button class="filter-pill" id="speed-slow" onclick="setSpeechSpeed(0.8, this)" style="padding: 4px 10px; font-size: 11px;">0.8x Chậm</button>
         </div>
     </div>
 
+    <!-- Ô TÌM KIẾM TỪ VỰNG THEO NHU CẦU & BỘ LỌC BAND CEFR -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 25px;">
+        <!-- Ô tìm kiếm từ vựng -->
+        <div style="position: relative; flex: 1; min-width: 260px; max-width: 450px;">
+            <input type="text" id="speaking-search-input" placeholder="🔍 Gõ từ tiếng Anh bất kỳ (ví dụ: school, learn, happy...)..." 
+                   oninput="handleSearchWordInput(this.value)" 
+                   style="width: 100%; background: rgba(0,0,0,0.45); border: 1.5px solid var(--glass-border); border-radius: 10px; padding: 10px 36px 10px 14px; color: #fff; font-size: 13.5px; font-family: var(--text-main); outline: none; transition: all 0.25s;"
+                   onfocus="this.style.borderColor='var(--neon-cyan)';" onblur="this.style.borderColor='var(--glass-border)';">
+            <span id="search-clear-btn" onclick="clearSearchWord()" style="display: none; position: absolute; right: 12px; top: 10px; color: #94a3b8; cursor: pointer; font-size: 13px;" title="Xóa tìm kiếm">✕</span>
+        </div>
+
+        <!-- Band Filter Pills -->
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-family: var(--text-pixel); color: #94a3b8; margin-right: 4px;">BAND:</span>
+            <button class="filter-pill" id="band-pill-all" onclick="selectVocabBand('ALL', this)" style="padding: 6px 12px;">Tất Cả</button>
+            <button class="filter-pill active" id="band-pill-a1" onclick="selectVocabBand('A1', this)" style="padding: 6px 12px;">A1</button>
+            <button class="filter-pill" id="band-pill-a2" onclick="selectVocabBand('A2', this)" style="padding: 6px 12px;">A2</button>
+            <button class="filter-pill" id="band-pill-b1" onclick="selectVocabBand('B1', this)" style="padding: 6px 12px;">B1</button>
+            <button class="filter-pill" id="band-pill-b2" onclick="selectVocabBand('B2', this)" style="padding: 6px 12px;">B2</button>
+            <button class="filter-pill" id="band-pill-c1" onclick="selectVocabBand('C1', this)" style="padding: 6px 12px;">C1</button>
+            <button class="filter-pill" id="band-pill-c2" onclick="selectVocabBand('C2', this)" style="padding: 6px 12px;">C2</button>
+        </div>
+    </div>
+
     <!-- MAIN WORD STAGE -->
     <div class="word-stage-card">
-        <div style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background: rgba(6, 182, 212, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--text-mono); font-size: 12px; font-weight: bold; margin-bottom: 15px;" id="current-word-band">
-            BAND A1 • TỪ VỰNG CƠ BẢN
+        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+            <div style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background: rgba(6, 182, 212, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--text-mono); font-size: 12px; font-weight: bold;" id="current-word-band">
+                BAND A1 • ĐANG TẢI...
+            </div>
+            <div style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background: rgba(168, 85, 247, 0.15); border: 1px solid var(--neon-purple); color: #d8b4fe; font-family: var(--text-mono); font-size: 12px; font-weight: bold;" id="current-word-theme">
+                CHỦ ĐỀ: GENERAL
+            </div>
         </div>
 
         <div id="current-word-text" style="font-size: 42px; font-weight: 800; color: #fff; letter-spacing: 1px; margin-bottom: 6px;">
@@ -229,17 +260,25 @@
         </div>
 
         <!-- AUDIO & MIC BUTTON CONTROLS -->
-        <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
-            <button class="pixel-btn" onclick="speakCurrentWord()" style="background: rgba(6, 182, 212, 0.2); border: 1.5px solid var(--neon-cyan); color: var(--neon-cyan); padding: 14px 24px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 18px;">🔊</span> NGHE PHÁT ÂM MẪU
+        <div style="display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <button class="pixel-btn" onclick="prevWord()" style="background: rgba(255, 255, 255, 0.08); border: 1.5px solid var(--glass-border); color: #cbd5e1; padding: 14px 18px; font-size: 13px;" title="Về từ trước đó">
+                ❮ TRƯỚC
+            </button>
+
+            <button class="pixel-btn" onclick="speakCurrentWord()" style="background: rgba(6, 182, 212, 0.2); border: 1.5px solid var(--neon-cyan); color: var(--neon-cyan); padding: 14px 22px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🔊</span> NGHE ĐỌC MẪU
             </button>
 
             <button class="btn-record-main" id="btn-record-word" onclick="toggleRecordCurrentWord()" title="Bấm để nói từ này vào Micro">
                 🎙️
             </button>
 
-            <button class="pixel-btn" onclick="nextRandomWord()" style="background: rgba(255, 255, 255, 0.08); border: 1.5px solid var(--glass-border); color: #cbd5e1; padding: 14px 20px; font-size: 13px;">
-                TỪ TIẾP THEO ❯
+            <button class="pixel-btn" onclick="nextWord()" style="background: rgba(6, 182, 212, 0.15); border: 1.5px solid var(--neon-cyan); color: #fff; padding: 14px 22px; font-size: 13px; font-weight: bold;" title="Sang từ tiếp theo">
+                TIẾP THEO ❯
+            </button>
+
+            <button class="pixel-btn" onclick="randomWord()" style="background: rgba(255, 255, 255, 0.08); border: 1.5px solid var(--glass-border); color: #cbd5e1; padding: 14px 16px; font-size: 13px;" title="Chọn ngẫu nhiên một từ trong danh sách">
+                🎲 NGẪU NHIÊN
             </button>
         </div>
 
@@ -429,18 +468,22 @@
         }
     ];
 
-    let currentBand = 'A1';
+    let currentSource = 'all'; // 'all' hoặc 'my_words'
+    let currentBand = 'A1';    // 'ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'
+    let currentSearch = '';
+    let dynamicWordsList = [];
     let currentWordIdx = 0;
     let speechRate = 1.0;
     let isWordRecording = false;
     let isFreeRecording = false;
+    let searchDebounceTimer = null;
 
     // Thống kê phiên
     let sessionWordsSpoken = 0;
     let sessionScores = [];
 
     document.addEventListener("DOMContentLoaded", () => {
-        renderCurrentWord();
+        fetchSpeakingWords();
         loadScenario(0);
     });
 
@@ -456,16 +499,92 @@
         });
     }
 
+    async function fetchSpeakingWords() {
+        const bandEl = document.getElementById('current-word-band');
+        if (bandEl) bandEl.innerText = "ĐANG TẢI KHO TỪ VỰNG...";
+
+        try {
+            const url = `/api/game/speaking/words?band=${currentBand}&source=${currentSource}&search=${encodeURIComponent(currentSearch)}&limit=100`;
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data && data.success && data.words && data.words.length > 0) {
+                dynamicWordsList = data.words;
+                currentWordIdx = 0;
+                renderCurrentWord();
+            } else {
+                if (currentSearch) {
+                    dynamicWordsList = [{
+                        word: currentSearch,
+                        ipa: "/custom/",
+                        meaning: "Từ vựng do bạn tìm kiếm tự do",
+                        theme: "Search Query",
+                        band: currentBand === 'ALL' ? 'Custom' : currentBand,
+                        example: `Practice saying: '${currentSearch}' clearly.`
+                    }];
+                    currentWordIdx = 0;
+                    renderCurrentWord();
+                } else if (currentSource === 'my_words') {
+                    dynamicWordsList = [{
+                        word: "Practice",
+                        ipa: "/ˈpræk.tɪs/",
+                        meaning: "Bạn chưa mở khóa từ vựng nào trong tài khoản. Hãy cày nhiệm vụ hoặc quay lại nguồn 'Toàn Bộ Kho Từ' nhé!",
+                        theme: "Lưu ý",
+                        band: "A1",
+                        example: "Practice makes perfect."
+                    }];
+                    currentWordIdx = 0;
+                    renderCurrentWord();
+                } else {
+                    dynamicWordsList = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
+                    currentWordIdx = 0;
+                    renderCurrentWord();
+                }
+            }
+        } catch (e) {
+            console.warn("Lỗi tải API từ vựng, chuyển sang kho dự phòng:", e);
+            dynamicWordsList = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
+            currentWordIdx = 0;
+            renderCurrentWord();
+        }
+    }
+
+    function selectVocabSource(src, btn) {
+        currentSource = src;
+        document.getElementById('source-pill-all').classList.toggle('active', src === 'all');
+        document.getElementById('source-pill-my').classList.toggle('active', src === 'my_words');
+        fetchSpeakingWords();
+    }
+
     function selectVocabBand(band, btn) {
         currentBand = band;
-        currentWordIdx = 0;
         document.querySelectorAll('#section-vocab .filter-pill').forEach(p => {
-            if (['Band A1','Band A2','Band B1','Band B2','Band C1','Band C2'].includes(p.innerText.trim())) {
+            if (['Tất Cả', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(p.innerText.trim())) {
                 p.classList.remove('active');
             }
         });
         btn.classList.add('active');
-        renderCurrentWord();
+        fetchSpeakingWords();
+    }
+
+    function handleSearchWordInput(val) {
+        const clearBtn = document.getElementById('search-clear-btn');
+        if (clearBtn) clearBtn.style.display = val.trim() ? 'block' : 'none';
+
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            currentSearch = val.trim();
+            fetchSpeakingWords();
+        }, 350);
+    }
+
+    function clearSearchWord() {
+        const inp = document.getElementById('speaking-search-input');
+        if (inp) inp.value = '';
+        const clearBtn = document.getElementById('search-clear-btn');
+        if (clearBtn) clearBtn.style.display = 'none';
+        currentSearch = '';
+        fetchSpeakingWords();
     }
 
     function setSpeechSpeed(rate, btn) {
@@ -475,16 +594,34 @@
         btn.classList.add('active');
     }
 
-    function renderCurrentWord() {
-        const words = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
+    function getCurrentTargetWord() {
+        const words = (dynamicWordsList && dynamicWordsList.length > 0) 
+            ? dynamicWordsList 
+            : (SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1']);
         if (currentWordIdx >= words.length) currentWordIdx = 0;
+        if (currentWordIdx < 0) currentWordIdx = words.length - 1;
+        return words[currentWordIdx] || { word: "English", meaning: "Tiếng Anh", band: "A1", theme: "General" };
+    }
+
+    function renderCurrentWord() {
+        const words = (dynamicWordsList && dynamicWordsList.length > 0) 
+            ? dynamicWordsList 
+            : (SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1']);
+
+        if (currentWordIdx >= words.length) currentWordIdx = 0;
+        if (currentWordIdx < 0) currentWordIdx = words.length - 1;
         const w = words[currentWordIdx];
 
-        document.getElementById('current-word-band').innerText = `BAND ${currentBand} • TỪ ${currentWordIdx + 1}/${words.length}`;
+        const bandBadge = document.getElementById('current-word-band');
+        if (bandBadge) bandBadge.innerText = `BAND ${w.band || currentBand} • TỪ ${currentWordIdx + 1}/${words.length}`;
+
+        const themeBadge = document.getElementById('current-word-theme');
+        if (themeBadge) themeBadge.innerText = `CHỦ ĐỀ: ${(w.theme || 'General').toUpperCase()}`;
+
         document.getElementById('current-word-text').innerText = w.word;
-        document.getElementById('current-word-ipa').innerText = w.ipa;
+        document.getElementById('current-word-ipa').innerText = w.ipa || `/${w.word.toLowerCase()}/`;
         document.getElementById('current-word-meaning').innerText = w.meaning;
-        document.getElementById('current-word-example').innerText = `"${w.example}"`;
+        document.getElementById('current-word-example').innerText = `"${w.example || `Practice saying: '${w.word}'.`}"`;
 
         // Ẩn meter kết quả cũ
         document.getElementById('word-accuracy-meter').style.display = 'none';
@@ -493,16 +630,37 @@
         isWordRecording = false;
     }
 
-    function nextRandomWord() {
-        const words = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
+    function prevWord() {
+        const words = (dynamicWordsList && dynamicWordsList.length > 0) ? dynamicWordsList : (SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1']);
+        currentWordIdx = (currentWordIdx - 1 + words.length) % words.length;
+        renderCurrentWord();
+    }
+
+    function nextWord() {
+        const words = (dynamicWordsList && dynamicWordsList.length > 0) ? dynamicWordsList : (SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1']);
         currentWordIdx = (currentWordIdx + 1) % words.length;
         renderCurrentWord();
     }
 
+    function randomWord() {
+        const words = (dynamicWordsList && dynamicWordsList.length > 0) ? dynamicWordsList : (SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1']);
+        if (words.length > 1) {
+            let nextIdx;
+            do {
+                nextIdx = Math.floor(Math.random() * words.length);
+            } while (nextIdx === currentWordIdx);
+            currentWordIdx = nextIdx;
+        }
+        renderCurrentWord();
+    }
+
+    function nextRandomWord() {
+        nextWord();
+    }
+
     function speakCurrentWord() {
-        const words = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
-        const w = words[currentWordIdx];
-        if (window.TAPSpeech) {
+        const w = getCurrentTargetWord();
+        if (window.TAPSpeech && w) {
             window.TAPSpeech.speak(w.word, { rate: speechRate });
         }
     }
@@ -510,8 +668,8 @@
     function toggleRecordCurrentWord() {
         const btn = document.getElementById('btn-record-word');
         const hint = document.getElementById('record-status-hint');
-        const words = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
-        const targetWord = words[currentWordIdx].word;
+        const targetWordObj = getCurrentTargetWord();
+        const targetWord = targetWordObj ? targetWordObj.word : "English";
 
         if (isWordRecording) {
             if (window.TAPSpeech) window.TAPSpeech.stopListening();

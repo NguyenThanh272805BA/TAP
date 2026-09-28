@@ -154,6 +154,59 @@ def get_vocabularies():
     return jsonify({"vocabularies": output}), 200
 
 
+@game_bp.route('/speaking/words', methods=['GET'])
+def get_speaking_words():
+    """Lấy danh sách từ vựng phục vụ luyện nói và phát âm theo nhu cầu học viên"""
+    band = request.args.get('band', 'A1').strip().upper()
+    source = request.args.get('source', 'all').strip().lower()
+    search = request.args.get('search', '').strip()
+    limit = min(request.args.get('limit', 50, type=int), 150)
+    user_id = session.get('user_id')
+
+    query = Vocabulary.query
+
+    # 1. Lọc theo nguồn từ vựng
+    if source == 'my_words' and user_id:
+        query = query.join(UserVocabulary, (Vocabulary.id == UserVocabulary.vocab_id)).filter(
+            UserVocabulary.user_id == user_id
+        )
+
+    # 2. Lọc theo cấp độ CEFR nếu chỉ định cụ thể
+    if band and band != 'ALL':
+        query = query.filter(Vocabulary.cefr_level == band)
+
+    # 3. Tìm kiếm theo từ khóa nếu học viên muốn luyện từ cụ thể
+    if search:
+        query = query.filter(
+            (Vocabulary.word.ilike(f'%{search}%')) |
+            (Vocabulary.meaning.ilike(f'%{search}%')) |
+            (Vocabulary.theme.ilike(f'%{search}%'))
+        )
+
+    total_count = query.count()
+    words = query.order_by(db.func.random()).limit(limit).all()
+
+    output = []
+    for w in words:
+        output.append({
+            "id": w.id,
+            "word": w.word,
+            "meaning": w.meaning,
+            "band": w.cefr_level or 'A1',
+            "theme": w.theme or 'General',
+            "example": f"Practice saying: '{w.word}' with clear pronunciation."
+        })
+
+    return jsonify({
+        "success": True,
+        "band": band,
+        "source": source,
+        "total": total_count,
+        "count": len(output),
+        "words": output
+    }), 200
+
+
 @game_bp.route('/recommend', methods=['GET'])
 def get_ml_recommendations():
     user_id = session.get('user_id')
