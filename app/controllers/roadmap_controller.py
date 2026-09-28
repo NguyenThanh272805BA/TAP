@@ -44,6 +44,42 @@ GRAMMAR_CLOZE_BANK = {
             "options": ["are developing", "develop", "developed", "develops"],
             "answer": "are developing",
             "explanation": "Chủ ngữ số nhiều 'engineers' và 'at this moment' dùng Hiện tại tiếp diễn: are + V-ing."
+        },
+        {
+            "prompt": "She usually _____ (walk) to the library on Saturday mornings.",
+            "options": ["walks", "walking", "walk", "is walking"],
+            "answer": "walks",
+            "explanation": "Thói quen lặp lại với 'usually' và chủ ngữ 'She' chia động từ thêm 's'."
+        },
+        {
+            "prompt": "There _____ (be) thirty computers in this high-tech classroom.",
+            "options": ["are", "is", "am", "be"],
+            "answer": "are",
+            "explanation": "Cấu trúc 'There are + Danh từ số nhiều' (thirty computers)."
+        },
+        {
+            "prompt": "Look at those birds! They _____ (fly) towards the mountains.",
+            "options": ["are flying", "flies", "fly", "flew"],
+            "answer": "are flying",
+            "explanation": "Hành động quan sát trực tiếp 'Look at...' đang xảy ra dùng Hiện tại tiếp diễn."
+        },
+        {
+            "prompt": "My younger brother _____ (not like) eating spicy food.",
+            "options": ["does not like", "do not like", "is not liking", "not like"],
+            "answer": "does not like",
+            "explanation": "Chủ ngữ ngôi 3 số ít 'brother' ở câu phủ định hiện tại đơn dùng trợ động từ 'does not like'."
+        },
+        {
+            "prompt": "Can you _____ (play) the guitar or the piano?",
+            "options": ["play", "plays", "playing", "played"],
+            "answer": "play",
+            "explanation": "Sau động từ khuyết thiếu 'can', động từ giữ nguyên mẫu không 'to'."
+        },
+        {
+            "prompt": "We always _____ (have) lunch together at twelve o'clock.",
+            "options": ["have", "has", "having", "had"],
+            "answer": "have",
+            "explanation": "Chủ ngữ 'We' đi với động từ nguyên mẫu 'have' trong thì hiện tại đơn."
         }
     ],
     "A2": [
@@ -70,6 +106,42 @@ GRAMMAR_CLOZE_BANK = {
             "options": ["have already completed", "already completed", "are already completing", "completed already"],
             "answer": "have already completed",
             "explanation": "Trạng từ 'already' kết hợp với trải nghiệm đạt được dùng Hiện tại hoàn thành: have/has + V3/ed."
+        },
+        {
+            "prompt": "While I was studying in the quiet room, the telephone suddenly _____ (ring).",
+            "options": ["rang", "was ringing", "rings", "has rung"],
+            "answer": "rang",
+            "explanation": "Hành động ngắn xen vào một hành động đang xảy ra trong quá khứ chia thì Quá khứ đơn (rang)."
+        },
+        {
+            "prompt": "Mount Everest is much _____ (high) than any other peak on Earth.",
+            "options": ["higher", "more high", "highest", "most high"],
+            "answer": "higher",
+            "explanation": "So sánh hơn của tính từ ngắn 'high' là 'higher than'."
+        },
+        {
+            "prompt": "They _____ (not visit) their grandparents since last Christmas.",
+            "options": ["have not visited", "did not visit", "do not visit", "were not visiting"],
+            "answer": "have not visited",
+            "explanation": "Dấu hiệu 'since last Christmas' yêu cầu chia thì Hiện tại hoàn thành phủ định (have not visited)."
+        },
+        {
+            "prompt": "Next summer vacation, our family _____ (travel) to Danang city.",
+            "options": ["will travel", "traveled", "have traveled", "travels"],
+            "answer": "will travel",
+            "explanation": "Dấu hiệu tương lai 'Next summer vacation' dùng thì Tương lai đơn (will travel)."
+        },
+        {
+            "prompt": "He bought a brand-new laptop because his old computer _____ (break) down.",
+            "options": ["broke", "breaks", "is breaking", "has broken"],
+            "answer": "broke",
+            "explanation": "Hành động xảy ra trong quá khứ diễn tả nguyên nhân kết quả chia Quá khứ đơn (broke)."
+        },
+        {
+            "prompt": "Have you ever _____ (taste) traditional Vietnamese pho?",
+            "options": ["tasted", "taste", "tasting", "tastes"],
+            "answer": "tasted",
+            "explanation": "Cấu trúc câu hỏi trải nghiệm 'Have you ever + V3/ed?'."
         }
     ],
     "B1": [
@@ -96,6 +168,42 @@ GRAMMAR_CLOZE_BANK = {
             "options": ["will be evaluated", "evaluated", "are evaluated", "have evaluated"],
             "answer": "will be evaluated",
             "explanation": "Câu bị động tương lai đơn: will be + V3/ed."
+        },
+        {
+            "prompt": "The young programmer _____ designed this mobile app won an international award.",
+            "options": ["who", "which", "whom", "whose"],
+            "answer": "who",
+            "explanation": "Đại từ quan hệ thay thế cho danh từ chỉ người 'programmer' làm chủ ngữ là 'who'."
+        },
+        {
+            "prompt": "You _____ (must / wear) a protective helmet when operating machinery in the factory.",
+            "options": ["must wear", "must wearing", "must to wear", "must wore"],
+            "answer": "must wear",
+            "explanation": "Động từ khiếm khuyết 'must' đi cùng động từ nguyên mẫu không 'to' diễn tả quy định bắt buộc."
+        },
+        {
+            "prompt": "Although the weather was harsh and stormy, the team _____ (continue) their expedition.",
+            "options": ["continued", "continues", "was continuing", "had continued"],
+            "answer": "continued",
+            "explanation": "Liên từ chỉ sự nhượng bộ 'Although' nối hai mệnh đề quá khứ có nghĩa đối lập."
+        },
+        {
+            "prompt": "I look forward to _____ (collaborate) with your innovative organization in the future.",
+            "options": ["collaborating", "collaborate", "collaborated", "to collaborate"],
+            "answer": "collaborating",
+            "explanation": "Cụm thành ngữ 'look forward to + V-ing' (trông đợi điều gì)."
+        },
+        {
+            "prompt": "This historic bridge _____ (construct) in the late nineteenth century.",
+            "options": ["was constructed", "is constructed", "constructed", "has been constructed"],
+            "answer": "was constructed",
+            "explanation": "Bị động thì Quá khứ đơn với mốc thời gian lịch sử 'nineteenth century'."
+        },
+        {
+            "prompt": "If Sarah _____ (arrive) on time, we will begin the seminar immediately.",
+            "options": ["arrives", "will arrive", "arrived", "is arriving"],
+            "answer": "arrives",
+            "explanation": "Câu điều kiện loại 1 mệnh đề 'If' dùng Hiện tại đơn (arrives)."
         }
     ],
     "B2": [
@@ -122,6 +230,42 @@ GRAMMAR_CLOZE_BANK = {
             "options": ["had the lecture concluded", "the lecture had concluded", "did the lecture conclude", "concluded the lecture"],
             "answer": "had the lecture concluded",
             "explanation": "Cấu trúc đảo ngữ phủ định: Hardly had + S + V3/ed + when + S + V2."
+        },
+        {
+            "prompt": "The CEO suggested that the marketing budget _____ (increase) for the upcoming quarter.",
+            "options": ["be increased", "is increased", "was increased", "increased"],
+            "answer": "be increased",
+            "explanation": "Thể giả định thức (Subjunctive) sau động từ 'suggest that S + (should) be + V3/ed'."
+        },
+        {
+            "prompt": "Had the engineers inspected the turbine, the mechanical breakdown _____ (avoid).",
+            "options": ["would have been avoided", "would be avoided", "was avoided", "had been avoided"],
+            "answer": "would have been avoided",
+            "explanation": "Đảo ngữ câu điều kiện loại 3: Had + S + V3/ed, S + would have been + V3/ed."
+        },
+        {
+            "prompt": "Seldom _____ such remarkable musical talent in an amateur competition.",
+            "options": ["have we witnessed", "we have witnessed", "we witnessed", "did we witnessed"],
+            "answer": "have we witnessed",
+            "explanation": "Đảo ngữ với trạng từ tần suất phủ định 'Seldom' đứng đầu câu."
+        },
+        {
+            "prompt": "The manager insisted on _____ (verify) all transaction records before authorizing the payout.",
+            "options": ["verifying", "verify", "verified", "to verify"],
+            "answer": "verifying",
+            "explanation": "Sau giới từ 'on' (insist on), động từ bắt buộc ở dạng V-ing."
+        },
+        {
+            "prompt": "The novel is believed _____ (translate) into more than forty languages worldwide.",
+            "options": ["to have been translated", "to translate", "translating", "having translated"],
+            "answer": "to have been translated",
+            "explanation": "Cấu trúc bị động khách quan quá khứ: S + is believed + to have been + V3."
+        },
+        {
+            "prompt": "Only after analyzing the sensor telemetry _____ the root cause of the anomaly.",
+            "options": ["did the scientists identify", "the scientists identified", "scientists did identify", "identified the scientists"],
+            "answer": "did the scientists identify",
+            "explanation": "Đảo ngữ với 'Only after + V-ing': Only after... + Trợ động từ + S + V."
         }
     ],
     "C1": [
@@ -148,6 +292,42 @@ GRAMMAR_CLOZE_BANK = {
             "options": ["that", "which", "who", "whom"],
             "answer": "that",
             "explanation": "Câu chẻ học thuật IELTS 8.0+: It is + [S] + that + V."
+        },
+        {
+            "prompt": "Under no circumstances _____ confidential patient records be disclosed without explicit consent.",
+            "options": ["should", "should not", "shall not", "ought"],
+            "answer": "should",
+            "explanation": "Đảo ngữ tuyệt đối 'Under no circumstances + Modal + S + V' mang sắc thái cấm chỉ nghiêm ngặt."
+        },
+        {
+            "prompt": "So complex _____ the mathematical conjecture that mathematicians labored for decades to prove it.",
+            "options": ["was", "is", "were", "has been"],
+            "answer": "was",
+            "explanation": "Cấu trúc đảo ngữ tính từ với 'So': So + Adj + to be + S + that..."
+        },
+        {
+            "prompt": "Little _____ that the diplomatic summit would precipitate an unprecedented trade alliance.",
+            "options": ["did they anticipate", "they anticipated", "anticipated they", "they did anticipate"],
+            "answer": "did they anticipate",
+            "explanation": "Đảo ngữ với 'Little' đứng đầu mang nghĩa phủ định (Họ hầu như không hề hay biết)."
+        },
+        {
+            "prompt": "Not until the archaeological excavation concluded _____ the true provenance of the artifact.",
+            "options": ["did researchers discern", "researchers discerned", "discerned researchers", "researchers had discerned"],
+            "answer": "did researchers discern",
+            "explanation": "Cấu trúc 'Not until... + Trợ động từ + S + V' (Mãi cho đến khi... thì mới...)."
+        },
+        {
+            "prompt": "It is imperative that every delegate _____ (comply) strictly with the multilateral treaty.",
+            "options": ["comply", "complies", "complied", "is complying"],
+            "answer": "comply",
+            "explanation": "Thể giả định hiện tại (Present Subjunctive): 'It is imperative that S + V(base form)'."
+        },
+        {
+            "prompt": "Much as the committee debated the proposal, no definitive verdict _____ (reach).",
+            "options": ["was reached", "reached", "is reached", "had been reached"],
+            "answer": "was reached",
+            "explanation": "'Much as...' (= Although) kết hợp bị động thời quá khứ biểu thị sự nhượng bộ trang trọng."
         }
     ],
     "C2": [
@@ -174,6 +354,42 @@ GRAMMAR_CLOZE_BANK = {
             "options": ["concluded", "concluding", "conclude", "concludes"],
             "answer": "concluded",
             "explanation": "Cấu trúc Perfect Participle: Having + V3/ed."
+        },
+        {
+            "prompt": "Barely _____ across the threshold when an deafening sonic blast reverberated through the hall.",
+            "options": ["had they stepped", "they had stepped", "did they step", "stepped they"],
+            "answer": "had they stepped",
+            "explanation": "Cấu trúc đảo ngữ thời gian cực hạn C2: Barely had + S + V3 + when + S + V2."
+        },
+        {
+            "prompt": "Such _____ the magnitude of the gravitational anomaly that nearby stars were perturbed.",
+            "options": ["was", "were", "is", "being"],
+            "answer": "was",
+            "explanation": "Cấu trúc đảo ngữ danh từ với 'Such': Such + be + Noun Phrase + that..."
+        },
+        {
+            "prompt": "Deep within the mountainous abyss _____ the forgotten subterranean catacombs.",
+            "options": ["lay", "laid", "lying", "lies"],
+            "answer": "lay",
+            "explanation": "Đảo ngữ vị trí trang trọng C2 (Inversion of Place): Prepositional phrase + Intransitive Verb + Subject."
+        },
+        {
+            "prompt": "Try as they _____ to decipher the archaic inscription, the enigma remained impenetrable.",
+            "options": ["might", "could", "would", "should"],
+            "answer": "might",
+            "explanation": "Thành ngữ nhượng bộ văn phong cao cấp C2: 'Verb + as + S + might' (= However hard they tried)."
+        },
+        {
+            "prompt": "Lest any misunderstandings _____ during negotiations, every clause was scrutinized by jurists.",
+            "options": ["arise", "arises", "arose", "arising"],
+            "answer": "arise",
+            "explanation": "Cấu trúc cổ điển C2 với 'Lest + S + (should) V-bare' (Để e rằng không...)."
+        },
+        {
+            "prompt": "Be that as it _____ , the board resolved to uphold the integrity of the founding charter.",
+            "options": ["may", "can", "might", "will"],
+            "answer": "may",
+            "explanation": "Thành ngữ C2 bất biến: 'Be that as it may' (= Nevertheless / Dẫu có như thế đi chăng nữa)."
         }
     ]
 }
@@ -499,9 +715,9 @@ def bypass_cooldown(milestone_id):
 def generate_milestone_exam(milestone_id):
     """
     SINH ĐỀ THI CHẶNG NGẪU NHIÊN 4 PHẦN THI CHUYÊN SÂU (ANTI-CHEAT / ANTI-EXPLOIT)
-    Bảo mật tuyệt đối: KHÔNG gửi đáp án đúng về Client!
-    Toàn bộ đáp án chuẩn được lưu trong Server Session gắn với exam_token.
-    Mỗi lần làm lại sẽ sinh ra bộ câu hỏi hoàn toàn mới.
+    Hỗ trợ 2 chế độ:
+    1. is_practice=false: Khảo thí Xếp Hạng chính thức (Chuẩn khắc nghiệt, tính RP, áp dụng Cooldown).
+    2. is_practice=true: Đấu Tập / Thi Thử An Toàn (Không trừ RP, không Cooldown, tự do cọ xát).
     """
     user_id = session.get('user_id')
     if not user_id:
@@ -512,15 +728,17 @@ def generate_milestone_exam(milestone_id):
     if not milestone:
         return jsonify({"error": "Không tìm thấy chặng này!"}), 404
 
-    # Kiểm tra Cooldown nếu thi trượt gần đây
-    if user.last_exam_fail_time:
+    is_practice = request.args.get('is_practice', 'false').lower() == 'true'
+
+    # Kiểm tra Cooldown nếu thi trượt gần đây (chỉ áp dụng với bài thi Xếp Hạng thật, bỏ qua khi Đấu tập)
+    if not is_practice and user.last_exam_fail_time:
         elapsed = (datetime.now() - user.last_exam_fail_time).total_seconds()
         if elapsed < 45:
             remaining = max(1, int(45 - elapsed))
             return jsonify({
                 "status": "cooldown",
                 "cooldown_remaining": remaining,
-                "message": f"Bạn đang trong thời gian tĩnh tâm ôn bài ({remaining}s). Hãy chờ hết giờ hoặc dùng 20 Xu để thi lại ngay!"
+                "message": f"Bạn đang trong thời gian tĩnh tâm ôn bài ({remaining}s). Hãy chuyển sang chế độ Đấu Tập Thử Sức hoặc làm bài tập Phục Hồi để thi lại ngay!"
             }), 403
 
     vocab_ids = milestone.get_vocab_ids()
@@ -656,6 +874,7 @@ def generate_milestone_exam(milestone_id):
     session['active_exams'][str(milestone_id)] = {
         "exam_token": exam_token,
         "milestone_id": milestone_id,
+        "is_practice": is_practice,
         "created_at": datetime.now().isoformat(),
         "keys": {
             "mcq": mcq_answer_key,
@@ -669,6 +888,7 @@ def generate_milestone_exam(milestone_id):
     return jsonify({
         "status": "success",
         "exam_token": exam_token,
+        "is_practice": is_practice,
         "milestone_id": milestone.id,
         "milestone_title": milestone.title,
         "band_level": milestone.band_level,
@@ -687,9 +907,9 @@ def submit_milestone_exam(milestone_id):
     """
     CHẤM ĐIỂM BÀI THI CHẶNG KHẮC NGHIỆT (CHỐNG BUG LEO RANK & TIẾT LỘ ĐÁP ÁN ĐẦY ĐỦ)
     1. Kiểm tra đối soát bảo mật với Session Exam Token.
-    2. Chấm độc lập 4 phần thi, kiểm tra Quy tắc Điểm Liệt (< 5.0/10 ở bất kỳ phần nào -> TRƯỢT).
-    3. Cập nhật Rank RP, giáng hạng nếu RP tụt, khóa cooldown nếu trượt.
-    4. Trả về báo cáo phân tích toàn diện kèm giải thích từng câu.
+    2. Chấm độc lập 4 phần thi, kiểm tra Quy tắc Điểm Liệt (< 6.0/10 ở bất kỳ phần nào -> TRƯỢT).
+    3. Hỗ trợ chế độ Đấu tập (is_practice=True) không phạt RP.
+    4. Kích hoạt tính năng Cứu Vớt Lỗ Hổng (Remediation) khi thi trượt.
     """
     user_id = session.get('user_id')
     if not user_id:
@@ -708,7 +928,6 @@ def submit_milestone_exam(milestone_id):
     exam_session = active_exams.get(str(milestone_id))
 
     if not exam_session or exam_session.get('exam_token') != submitted_token:
-        # Nếu bài thi bỏ cuộc nhưng phiên hết hạn vẫn trừ điểm kỷ luật
         if is_abandoned:
             res = process_exam_result(user_id, milestone_id, 0.0, {
                 "vocab_mcq": 0.0, "word_scramble": 0.0, "syntax": 0.0, "grammar_cloze": 0.0
@@ -716,6 +935,8 @@ def submit_milestone_exam(milestone_id):
             return jsonify({"status": "abandoned", "result": res}), 200
 
         return jsonify({"error": "Phiên làm bài thi không hợp lệ hoặc đã nộp trước đó! Vui lòng làm lại đề mới."}), 400
+
+    is_practice = bool(data.get('is_practice', False) or exam_session.get('is_practice', False))
 
     keys = exam_session.get('keys', {})
     mcq_keys = keys.get('mcq', {})
@@ -812,18 +1033,20 @@ def submit_milestone_exam(milestone_id):
         "grammar_cloze": score_cloze
     }
 
-    # Áp dụng bộ não quản lý Rank học thuật khắc nghiệt
+    # Áp dụng bộ não quản lý Rank học thuật (hỗ trợ is_practice)
     result = process_exam_result(
         user_id=user_id,
         milestone_id=milestone_id,
         exam_score=total_exam_score,
         section_scores=section_scores,
-        is_abandoned=is_abandoned
+        is_abandoned=is_abandoned,
+        is_practice=is_practice
     )
 
-    # Nếu đỗ: Tự động mở khóa từ vựng vào Smart SRS & gửi thông báo
     milestone = RoadmapMilestone.query.get(milestone_id)
-    if result["passed"]:
+
+    # Nếu đỗ trong chế độ thi chính thức (Ranked): Mở khóa SRS và gửi thông báo
+    if result["passed"] and not is_practice:
         vocab_ids = milestone.get_vocab_ids()
         if vocab_ids:
             from app.models.user_vocabulary import UserVocabulary
@@ -843,7 +1066,6 @@ def submit_milestone_exam(milestone_id):
                     uv.is_unlocked = True
                     uv.memorization_level = 'DA_THUOC'
 
-        # Gửi thông báo vinh danh
         notif = Notification(
             user_id=user_id,
             title=f"🏆 VƯỢT ẢI THÀNH CÔNG: {milestone.title}",
@@ -854,17 +1076,32 @@ def submit_milestone_exam(milestone_id):
         db.session.commit()
 
     # Nếu thi trượt: Định vị phần thi có điểm số thấp nhất để kích hoạt Trạm Vi Học Bù Lỗ Hổng
-    if not result["passed"]:
-        from app.utils.level_manager import SECTION_NAMES
-        weakest_section_key = min(section_scores, key=section_scores.get)
-        result["weakest_section"] = {
-            "key": weakest_section_key,
-            "name": SECTION_NAMES.get(weakest_section_key, weakest_section_key),
-            "score": section_scores[weakest_section_key]
-        }
+    from app.utils.level_manager import SECTION_NAMES
+    weakest_section_key = min(section_scores, key=section_scores.get)
+    result["weakest_section"] = {
+        "key": weakest_section_key,
+        "name": SECTION_NAMES.get(weakest_section_key, weakest_section_key),
+        "score": section_scores[weakest_section_key]
+    }
+
+    # Kích hoạt tính năng Cứu Vớt Lỗ Hổng (Remediation) nếu trượt ở Ranked mode
+    if not result["passed"] and not is_practice:
+        result["remediation_available"] = True
+        result["remediation_target"] = weakest_section_key
 
     # Tổng hợp nhận xét sư phạm toàn diện mang linh hồn Master G
-    if result["passed"]:
+    if is_practice:
+        if result["passed"]:
+            master_g_critique = (
+                f"🛡️ [ĐẤU TẬP XUẤT SẮC] Chúc mừng {user.username}! Bạn đạt {total_exam_score:.1f}/10 điểm trong lượt thi thử. "
+                f"Phong độ hiện tại của bạn hoàn toàn đủ chuẩn vượt ải xếp hạng. Hãy tự tin vào bài thi thật để lấy điểm RP nhé!"
+            )
+        else:
+            master_g_critique = (
+                f"🛡️ [ĐẤU TẬP RÈN LUYỆN] Lượt thi thử kết thúc ({total_exam_score:.1f}/10đ). Bạn không bị trừ bất kỳ điểm RP nào! "
+                f"Điểm cần khắc phục: '{result['weakest_section']['name']}'. Hãy xem giải thích bên dưới để hoàn thiện trước khi thi thật."
+            )
+    elif result["passed"]:
         if total_exam_score >= 9.0:
             master_g_critique = (
                 f"Tuyệt tác học thuật! {user.username} đã xuất sắc vượt qua chặng '{milestone.title}' với {total_exam_score:.1f}/10 điểm. "
@@ -876,18 +1113,17 @@ def submit_milestone_exam(milestone_id):
                 f"Dù đã qua ải, Master G vẫn thấy một vài điểm cần trau chuốt. Hãy đọc kỹ phần đối soát bên dưới để gia cố nền móng trước chặng mới."
             )
     else:
-        weakest_info = result.get("weakest_section", {})
-        weak_name = weakest_info.get("name", "Kỹ năng chuyên sâu")
-        weak_score = weakest_info.get("score", 0.0)
+        weak_name = result["weakest_section"]["name"]
+        weak_score = result["weakest_section"]["score"]
         if result.get("disqualified"):
             master_g_critique = (
                 f"Bình tĩnh nào {user.username}! Bạn bị đánh trượt do dính Điểm Liệt ở phần '{weak_name}' ({weak_score:.1f}/10đ). "
-                f"Học thuật chuẩn quốc tế không chấp nhận lỗ hổng nền tảng. Hãy làm ngay bài tập giải cứu ở Trạm Vi Học bên dưới để lấy lại RP!"
+                f"Học thuật chuẩn quốc tế không chấp nhận lỗ hổng nền tảng. Hãy làm ngay bài tập Phục Hồi Lỗ Hổng bên dưới để xóa Cooldown và nhận lại +20 RP!"
             )
         else:
             master_g_critique = (
-                f"Đừng nản chí {user.username}! Tổng điểm của bạn ({total_exam_score:.1f}/10đ) suýt soát đạt ngưỡng 7.5 qua ải. "
-                f"Điểm nghẽn lớn nhất của bạn nằm ở '{weak_name}'. Hãy xem ngay Trạm Vi Học Bù 30s bên dưới để mở khóa thi lại sau 5 giây!"
+                f"Đừng nản chí {user.username}! Tổng điểm của bạn ({total_exam_score:.1f}/10đ) suýt soát đạt ngưỡng 8.2 qua ải. "
+                f"Điểm nghẽn lớn nhất nằm ở '{weak_name}'. Hãy kích hoạt Trạm Cứu Vi Học bên dưới để phục hồi điểm số ngay lập tức!"
             )
 
     result["master_g_critique"] = master_g_critique
@@ -901,6 +1137,221 @@ def submit_milestone_exam(milestone_id):
         "status": "success",
         "result": result,
         "detailed_review": detailed_review
+    }), 200
+
+
+@roadmap_bp.route('/milestone/<int:milestone_id>/remediation/start', methods=['POST'])
+def start_remediation(milestone_id):
+    """
+    VÒNG LẶP CỨU CHỮA LỖ HỔNG (REMEDIATION LOOP):
+    Khi người dùng trượt bài thi vì dính Điểm Liệt ở phần nào, hệ thống sinh ra
+    3 câu hỏi tập trung đúng vào kỹ năng đó để ôn tập cứu vớt.
+    Hoàn thành đạt yêu cầu (>= 2/3 câu đúng) sẽ xóa ngay Cooldown và hồi lại +20 RP!
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    user = User.query.get(user_id)
+    milestone = RoadmapMilestone.query.get(milestone_id)
+    if not milestone:
+        return jsonify({"error": "Không tìm thấy chặng này!"}), 404
+
+    data = request.get_json() or {}
+    section_key = data.get('section_key', 'word_scramble')
+
+    vocab_ids = milestone.get_vocab_ids()
+    milestone_vocabs = Vocabulary.query.filter(Vocabulary.id.in_(vocab_ids)).all() if vocab_ids else []
+    if len(milestone_vocabs) < 3:
+        milestone_vocabs = Vocabulary.query.filter_by(cefr_level=milestone.band_level).limit(8).all()
+    if not milestone_vocabs:
+        milestone_vocabs = Vocabulary.query.limit(8).all()
+
+    drill_questions = []
+    remediation_keys = {}
+
+    from app.utils.level_manager import SECTION_NAMES
+
+    if section_key == 'word_scramble':
+        chosen = random.sample(milestone_vocabs, min(3, len(milestone_vocabs)))
+        for idx, v in enumerate(chosen):
+            q_id = f"remed_scramble_{idx}"
+            scramble_data = scramble_engine.generate_word_scramble(vocab_id=v.id)
+            drill_questions.append({
+                "id": q_id,
+                "type": "scramble",
+                "meaning": v.meaning,
+                "cefr": v.cefr_level or milestone.band_level,
+                "shuffled_letters": scramble_data["shuffled_letters"],
+                "length": len(scramble_data["shuffled_letters"]),
+                "hint": f"Từ bắt đầu bằng chữ '{v.word[0].upper()}'"
+            })
+            remediation_keys[q_id] = {
+                "correct_answer": "".join([c for c in v.word.strip().upper() if c.isalpha()]),
+                "word": v.word,
+                "meaning": v.meaning
+            }
+
+    elif section_key == 'syntax':
+        for idx in range(min(2, len(milestone_vocabs))):
+            q_id = f"remed_syntax_{idx}"
+            syntax_data = scramble_engine.generate_syntax_scramble(grammar_id=milestone.grammar_id)
+            drill_questions.append({
+                "id": q_id,
+                "type": "syntax",
+                "structure": syntax_data["structure"],
+                "explanation": syntax_data["explanation"],
+                "shuffled_chunks": syntax_data["shuffled_chunks"]
+            })
+            remediation_keys[q_id] = {
+                "original_sentence": syntax_data["original_sentence"]
+            }
+
+    elif section_key == 'grammar_cloze':
+        cloze_pool = GRAMMAR_CLOZE_BANK.get(milestone.band_level, GRAMMAR_CLOZE_BANK["B1"])
+        chosen_cloze = random.sample(cloze_pool, min(3, len(cloze_pool)))
+        for idx, item in enumerate(chosen_cloze):
+            q_id = f"remed_cloze_{idx}"
+            shuffled_opts = item["options"].copy()
+            random.shuffle(shuffled_opts)
+            drill_questions.append({
+                "id": q_id,
+                "type": "cloze",
+                "prompt": item["prompt"],
+                "options": shuffled_opts
+            })
+            remediation_keys[q_id] = {
+                "correct_answer": item["answer"],
+                "explanation": item["explanation"]
+            }
+
+    else:  # vocab_mcq or default
+        all_vocab_count = Vocabulary.query.count()
+        chosen = random.sample(milestone_vocabs, min(3, len(milestone_vocabs)))
+        for idx, v in enumerate(chosen):
+            q_id = f"remed_mcq_{idx}"
+            distractors = []
+            for _ in range(10):
+                rand_off = random.randint(0, max(0, all_vocab_count - 1))
+                cand = Vocabulary.query.offset(rand_off).first()
+                if cand and cand.id != v.id and cand.meaning != v.meaning and cand.meaning not in distractors:
+                    distractors.append(cand.meaning)
+                if len(distractors) >= 3:
+                    break
+            while len(distractors) < 3:
+                distractors.append("nghiên cứu thực nghiệm")
+            options = [v.meaning] + distractors[:3]
+            random.shuffle(options)
+            drill_questions.append({
+                "id": q_id,
+                "type": "mcq",
+                "word": v.word,
+                "cefr": v.cefr_level or milestone.band_level,
+                "options": options
+            })
+            remediation_keys[q_id] = {
+                "correct_answer": v.meaning,
+                "word": v.word
+            }
+
+    remediation_token = str(uuid.uuid4())
+    session['active_remediation'] = {
+        "token": remediation_token,
+        "milestone_id": milestone_id,
+        "section_key": section_key,
+        "keys": remediation_keys
+    }
+    session.modified = True
+
+    return jsonify({
+        "status": "success",
+        "remediation_token": remediation_token,
+        "section_key": section_key,
+        "section_name": SECTION_NAMES.get(section_key, section_key),
+        "milestone_title": milestone.title,
+        "questions": drill_questions,
+        "total_questions": len(drill_questions)
+    }), 200
+
+
+@roadmap_bp.route('/milestone/<int:milestone_id>/remediation/submit', methods=['POST'])
+def submit_remediation(milestone_id):
+    """
+    CHẤM BÀI TẬP CỨU VỚT LỖ HỔNG (REMEDIATION SUBMISSION):
+    Đạt >= 60% (từ 2/3 câu đúng):
+    - XÓA NGAY LẬP TỨC COOLDOWN 90S (hoàn toàn miễn phí, không tốn xu).
+    - HỒI PHỤC +20 ĐIỂM UY TÍN RP BỊ PHẠT.
+    - GIẢM 1 LẦN TRƯỢT LIÊN TIẾP (tránh nguy cơ giáng hạng).
+    """
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Người dùng không tồn tại!"}), 404
+
+    data = request.get_json() or {}
+    token = data.get('remediation_token')
+    user_answers = data.get('answers', {})
+
+    stored_remediation = session.get('active_remediation', {})
+    if not stored_remediation or stored_remediation.get('token') != token:
+        return jsonify({"error": "Phiên phục hồi không hợp lệ hoặc đã nộp rồi!"}), 400
+
+    keys = stored_remediation.get('keys', {})
+    section_key = stored_remediation.get('section_key', '')
+    correct_count = 0
+    total_q = max(1, len(keys))
+
+    for q_id, q_info in keys.items():
+        ans = user_answers.get(q_id)
+        if section_key == 'word_scramble':
+            u_clean = "".join([c for c in str(ans).strip().upper() if c.isalpha()])
+            if u_clean == q_info['correct_answer']:
+                correct_count += 1
+        elif section_key == 'syntax':
+            orig = q_info.get('original_sentence', '')
+            res = scramble_engine.verify_syntax_scramble(orig, ans if isinstance(ans, list) else [])
+            if res.get('is_correct', False):
+                correct_count += 1
+        else:
+            if str(ans).strip().lower() == str(q_info.get('correct_answer', '')).strip().lower():
+                correct_count += 1
+
+    pass_threshold = 0.60
+    accuracy = correct_count / total_q
+    passed = (accuracy >= pass_threshold)
+
+    rp_recovered = 0
+    if passed:
+        user.last_exam_fail_time = None
+        rp_recovered = 20
+        user.academic_rp = (user.academic_rp or 500) + rp_recovered
+        user.consecutive_fails = max(0, (user.consecutive_fails or 1) - 1)
+        db.session.commit()
+
+        message = (
+            f"🎉 TUYỆT VỜI! Bạn đạt {correct_count}/{total_q} câu đúng. "
+            f"Lỗ hổng kỹ năng đã được gia cố! Hệ thống đã XÓA COOLDOWN THI LẠI và HOÀN TRẢ +{rp_recovered} RP cho bạn!"
+        )
+    else:
+        message = (
+            f"Bạn làm đúng {correct_count}/{total_q} câu (chưa đạt ngưỡng tối thiểu 2/3). "
+            f"Đừng lo, hãy xem lại đáp án và bấm thử lại ngay để xóa Cooldown nhé!"
+        )
+
+    session.pop('active_remediation', None)
+    session.modified = True
+
+    return jsonify({
+        "status": "success",
+        "passed": passed,
+        "correct_count": correct_count,
+        "total_questions": total_q,
+        "rp_recovered": rp_recovered,
+        "new_rp": user.academic_rp,
+        "message": message
     }), 200
 
 
@@ -1407,4 +1858,117 @@ def submit_micro_drill(milestone_id):
         "message": f"🎉 ĐÃ BÙ LỖ HỔNG THÀNH CÔNG! Bạn nhận được +{rescue_rp} RP cứu viện và thời gian chờ thi lại được rút ngắn xuống chỉ còn 5 giây!",
         "review": review_details
     }), 200
+
+
+@roadmap_bp.route('/milestone/<int:milestone_id>/remediation/start', methods=['POST', 'GET'])
+def start_remediation_quiz(milestone_id):
+    """Tạo đề bài tập phục hồi 3 câu trắc nghiệm/gỡ bom dành cho trạm cứu hộ phòng thi"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    milestone = RoadmapMilestone.query.get(milestone_id)
+    band = milestone.band_level if milestone else 'A1'
+
+    data = request.get_json() or {}
+    sec_key = data.get('section_key', 'word_scramble')
+
+    # Lấy câu hỏi từ ADAPTIVE_MICRO_LESSONS
+    lesson = ADAPTIVE_MICRO_LESSONS.get((sec_key, band))
+    if not lesson:
+        lesson = ADAPTIVE_MICRO_LESSONS.get((sec_key, 'default'))
+    if not lesson:
+        for b in [band, 'B1', 'A2', 'A1', 'B2', 'C1']:
+            if (sec_key, b) in ADAPTIVE_MICRO_LESSONS:
+                lesson = ADAPTIVE_MICRO_LESSONS[(sec_key, b)]
+                break
+    if not lesson:
+        lesson = ADAPTIVE_MICRO_LESSONS.get(('grammar_cloze', 'A1'))
+
+    remed_token = str(uuid.uuid4())
+    answer_keys = {}
+    client_questions = []
+
+    for d in lesson["drills"]:
+        answer_keys[d["id"]] = {
+            "answer": d["answer"],
+            "explanation": d["explanation"]
+        }
+        client_questions.append({
+            "id": d["id"],
+            "prompt": d["prompt"],
+            "options": d.get("options", []),
+            "type": "mcq"
+        })
+
+    session['active_remediation'] = {
+        "remediation_token": remed_token,
+        "milestone_id": milestone_id,
+        "answer_keys": answer_keys
+    }
+    session.modified = True
+
+    return jsonify({
+        "status": "success",
+        "remediation_token": remed_token,
+        "milestone_id": milestone_id,
+        "questions": client_questions,
+        "drills": client_questions,
+        "title": lesson.get("title", "Bài tập phục hồi"),
+        "core_rule": lesson.get("core_rule", ""),
+        "trap_alert": lesson.get("trap_alert", "")
+    }), 200
+
+
+@roadmap_bp.route('/milestone/<int:milestone_id>/remediation/submit', methods=['POST'])
+def submit_remediation_quiz(milestone_id):
+    """Chấm điểm bài thi phục hồi cứu viện trong exam_room"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    user = User.query.get(user_id)
+    data = request.get_json() or {}
+    token = data.get('remediation_token')
+    user_answers = data.get('answers', {})
+
+    active_remed = session.get('active_remediation')
+    if not active_remed or active_remed.get('remediation_token') != token:
+        return jsonify({"error": "Phiên phục hồi không hợp lệ hoặc đã nộp!"}), 400
+
+    answer_keys = active_remed.get('answer_keys', {})
+    correct_count = 0
+
+    for q_id, q_info in answer_keys.items():
+        u_ans = str(user_answers.get(q_id, '')).strip().lower()
+        c_ans = str(q_info['answer']).strip().lower()
+        if u_ans == c_ans:
+            correct_count += 1
+
+    passed = (correct_count >= 2)
+    rp_recovered = 20 if passed else 0
+
+    if user and passed:
+        if user.academic_rp is None:
+            user.academic_rp = 500
+        user.academic_rp += rp_recovered
+        user.last_exam_fail_time = datetime.now() - timedelta(seconds=40)
+        if (user.consecutive_fails or 0) > 0:
+            user.consecutive_fails -= 1
+        check_and_update_level(user_id)
+        db.session.commit()
+
+    session.pop('active_remediation', None)
+    session.modified = True
+
+    return jsonify({
+        "status": "success",
+        "passed": passed,
+        "correct_count": correct_count,
+        "total": len(answer_keys),
+        "rp_recovered": rp_recovered,
+        "new_rp": user.academic_rp if user else 500,
+        "message": f"🎉 Bạn đã làm đúng {correct_count}/{len(answer_keys)} câu! Đã xóa Cooldown và phục hồi +{rp_recovered} RP!" if passed else f"Bạn làm đúng {correct_count}/{len(answer_keys)} câu (cần >= 2 câu). Hãy ôn tập thêm nhé!"
+    }), 200
+
 

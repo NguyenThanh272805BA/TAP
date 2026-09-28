@@ -72,17 +72,17 @@ def check_and_update_level(user_id):
     return level_changed, user.current_level
 
 
-def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_abandoned=False):
+def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_abandoned=False, is_practice=False):
     """
-    Quy trình xử lý kết quả khảo thí chặng Lộ trình Target Band KHẮC NGHIỆT chuẩn đời thật:
-    1. Quy tắc Điểm Liệt: Mọi phần thi phải >= 6.0/10.0. Nếu có 1 phần < 6.0 -> TRƯỢT NGAY.
-    2. Điểm Chuẩn Qua Ải: Tổng điểm >= 8.2/10.0.
-    3. Thưởng / Phạt RP:
-       - Đỗ: +60 đến +100 RP.
-       - Trượt: Phạt -45 RP (Bỏ cuộc giữa chừng phạt -65 RP).
-       - Trượt liên tiếp >= 2: Tăng cảnh báo giáng hạng.
-       - Giáng hạng (Demotion) nếu RP tụt xuống dưới ngưỡng.
-    4. Kích hoạt Cooldown 90 giây trước khi được thi lại để buộc ôn tập nghiêm túc.
+    Quy trình xử lý kết quả khảo thí chặng Lộ trình Target Band:
+    - Nếu is_practice=True (Chế độ Đấu tập / Thi thử):
+      + Không trừ RP, không giáng hạng, không phạt Cooldown.
+      + Cung cấp toàn bộ chẩn đoán điểm liệt và phản hồi để người học cọ xát an toàn.
+    - Nếu is_practice=False (Khảo thí Xếp hạng Thực tế):
+      + 1. Quy tắc Điểm Liệt: Mọi phần thi phải >= 6.0/10.0. Nếu có 1 phần < 6.0 -> TRƯỢT NGAY.
+      + 2. Điểm Chuẩn Qua Ải: Tổng điểm >= 8.2/10.0.
+      + 3. Thưởng / Phạt RP: Đỗ +60 đến +100 RP. Trượt phạt -45 RP (Bỏ cuộc -65 RP).
+      + 4. Giáng hạng nếu RP tụt dưới ngưỡng; phạt Cooldown ôn tập.
     """
     if not user_id or not milestone_id:
         return {"error": "Thiếu mã người dùng hoặc mã chặng thi!"}
@@ -103,7 +103,8 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
         progress = UserMilestoneProgress(user_id=user_id, milestone_id=milestone_id, attempts=1, best_score=0.0)
         db.session.add(progress)
     else:
-        progress.attempts = (progress.attempts or 0) + 1
+        if not is_practice:
+            progress.attempts = (progress.attempts or 0) + 1
 
     # Kiểm tra Điểm Liệt (Ngưỡng khắc nghiệt >= 6.0)
     disqualified = False
@@ -126,6 +127,29 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
         disqualified_reason = f"Chưa đạt điểm chuẩn qua ải ({exam_score:.1f}/10.0). Điểm chuẩn học thuật yêu cầu tối thiểu 8.2/10.0."
     else:
         passed = True
+
+    # NẾU LÀ CHẾ ĐỘ THI THỬ (PRACTICE MODE) -> KHÔNG THƯỞNG PHẠT RP, KHÔNG COOLDOWN
+    if is_practice:
+        return {
+            "passed": passed,
+            "score": exam_score,
+            "best_score": progress.best_score or 0.0,
+            "is_completed": progress.is_completed,
+            "section_scores": section_scores,
+            "disqualified": disqualified,
+            "disqualified_reason": disqualified_reason,
+            "rp_change": 0,
+            "old_rp": old_rp,
+            "new_rp": user.academic_rp,
+            "promoted": False,
+            "demoted": False,
+            "current_rank": user.current_level,
+            "current_band": getattr(user, 'current_band', 'A1'),
+            "consecutive_fails": user.consecutive_fails or 0,
+            "cooldown_seconds": 0,
+            "reward_coins": 0,
+            "is_practice": True
+        }
 
     rp_change = 0
     demoted = False

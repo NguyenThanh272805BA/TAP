@@ -38,7 +38,11 @@ class LocalExamEngine:
             ("Look at the sky! The [ _____ ] is shining brightly today.", "sun"),
             ("He rides his [ _____ ] to school every single day.", "bicycle"),
             ("She wears a warm woolen [ _____ ] in the winter.", "coat"),
-            ("My little sister loves to play with her cute [ _____ ].", "cat")
+            ("My little sister loves to play with her cute [ _____ ].", "cat"),
+            ("We bought two tickets to watch an exciting [ _____ ] tonight.", "movie"),
+            ("Please write your full [ _____ ] on the top of the test paper.", "name"),
+            ("The chef prepared a delicious bowl of chicken [ _____ ].", "soup"),
+            ("My grandfather reads the morning [ _____ ] with a cup of coffee.", "newspaper")
         ],
         'A2': [
             ("Because of the heavy rain, our flight was delayed by two [ _____ ].", "hours"),
@@ -46,7 +50,11 @@ class LocalExamEngine:
             ("You should keep your passport in a safe [ _____ ] while traveling.", "place"),
             ("She felt very [ _____ ] after working twelve hours continuously.", "exhausted"),
             ("This new restaurant offers delicious food at a reasonable [ _____ ].", "price"),
-            ("We decided to spend our summer [ _____ ] near the seaside.", "vacation")
+            ("We decided to spend our summer [ _____ ] near the seaside.", "vacation"),
+            ("The doctor advised him to get plenty of [ _____ ] and drink warm water.", "rest"),
+            ("Online shopping has become extremely [ _____ ] among modern youth.", "popular"),
+            ("Our team celebrated our great [ _____ ] with a celebratory dinner.", "success"),
+            ("Could you please provide me with more [ _____ ] about this scholarship?", "information")
         ],
         'B1': [
             ("The government launched a new campaign to raise public [ _____ ] of clean energy.", "awareness"),
@@ -54,7 +62,11 @@ class LocalExamEngine:
             ("She demonstrated great [ _____ ] by solving the complex problem in minutes.", "intelligence"),
             ("The company decided to [ _____ ] its production capacity to meet growing demand.", "expand"),
             ("His strong communication skills gave him a significant [ _____ ] in the interview.", "advantage"),
-            ("We need to protect the natural [ _____ ] of endangered wildlife species.", "environment")
+            ("We need to protect the natural [ _____ ] of endangered wildlife species.", "environment"),
+            ("The research team conducted a comprehensive [ _____ ] of consumer behavior.", "survey"),
+            ("Technological innovation plays a vital role in sustainable [ _____ ].", "development"),
+            ("The manager praised her strong [ _____ ] to company values.", "commitment"),
+            ("Financial experts recommend maintaining a diversified investment [ _____ ].", "portfolio")
         ],
         'B2': [
             ("The board of directors reached a unanimous [ _____ ] regarding the merger.", "decision"),
@@ -62,7 +74,11 @@ class LocalExamEngine:
             ("The sudden market collapse was completely [ _____ ] by financial analysts.", "unforeseen"),
             ("Technological advancements have greatly [ _____ ] global cross-border communication.", "facilitated"),
             ("The candidate's extensive international experience made him exceptionally [ _____ ].", "qualified"),
-            ("Addressing climate change requires global cooperation and collective [ _____ ].", "responsibility")
+            ("Addressing climate change requires global cooperation and collective [ _____ ].", "responsibility"),
+            ("The novel explores the delicate balance between personal ambition and moral [ _____ ].", "integrity"),
+            ("Economists warned that inflation could trigger widespread social [ _____ ].", "instability"),
+            ("His insightful critique highlighted several crucial [ _____ ] in the experimental setup.", "flaws"),
+            ("The revolutionary vaccine demonstrated unprecedented [ _____ ] during clinical trials.", "efficacy")
         ],
         'C1': [
             ("The politician's speech was filled with ambiguous rhetoric to [ _____ ] public scrutiny.", "evade"),
@@ -70,14 +86,21 @@ class LocalExamEngine:
             ("Her groundbreaking findings generated [ _____ ] discussions within the academic community.", "vigorous"),
             ("The intricate mechanism demonstrated unprecedented [ _____ ] and structural resilience.", "sophistication"),
             ("Technological innovation has begun to [ _____ ] obsolete industrial paradigms.", "supersede"),
-            ("He possessed an almost intuitive [ _____ ] into complex geopolitical dynamics.", "comprehension")
+            ("He possessed an almost intuitive [ _____ ] into complex geopolitical dynamics.", "comprehension"),
+            ("The scholar articulated an exceptionally [ _____ ] critique of modern consumerism.", "incisive"),
+            ("Unregulated speculation precipitated catastrophic [ _____ ] throughout banking systems.", "destabilization"),
+            ("Her philosophical treatise exhibits remarkable intellectual [ _____ ] and rigor.", "coherence"),
+            ("The diplomatic envoy sought to [ _____ ] rising hostilities through bilateral dialogue.", "ameliorate")
         ],
         'C2': [
             ("The philosopher articulated an [ _____ ] defense of ethical consequentialism.", "impeccable"),
             ("Such an egregious oversight is completely [ _____ ] in modern cryptographic systems.", "unacceptable"),
             ("The subtle nuances of dialectical reasoning require deep intellectual [ _____ ].", "perspicacity"),
             ("Their revolutionary paradigm was met with vehement [ _____ ] from dogmatic circles.", "repudiation"),
-            ("Economic turbulence precipitated widespread [ _____ ] across speculative markets.", "destabilization")
+            ("Economic turbulence precipitated widespread [ _____ ] across speculative markets.", "destabilization"),
+            ("The author's prose is characterized by its lyrical [ _____ ] and evocative cadence.", "eloquence"),
+            ("He navigated the treacherous Byzantine political landscape with consummate [ _____ ].", "subtlety"),
+            ("The historical treatise debunked the long-standing [ _____ ] surrounding the empire's fall.", "fallacy")
         ]
     }
 
@@ -104,6 +127,20 @@ class LocalExamEngine:
                 "correction": "are",
                 "rule": "Danh từ số nhiều 'many books' đi với cấu trúc 'There are', không dùng 'There is'.",
                 "options": ["is -> are", "many -> much", "table -> tables", "books -> book"]
+            },
+            {
+                "incorrect": "She can sings English songs very well.",
+                "error_token": "sings",
+                "correction": "sing",
+                "rule": "Sau động từ khuyết thiếu 'can', động từ giữ nguyên mẫu (sing).",
+                "options": ["sings -> sing", "well -> good", "very -> much", "songs -> song"]
+            },
+            {
+                "incorrect": "They is playing football in the school playground.",
+                "error_token": "is",
+                "correction": "are",
+                "rule": "Chủ ngữ số nhiều 'They' đi với động từ to be 'are' trong thì Hiện tại tiếp diễn.",
+                "options": ["is -> are", "playing -> play", "school -> schools", "playground -> playgrounds"]
             }
         ],
         'A2': [
@@ -127,6 +164,13 @@ class LocalExamEngine:
                 "correction": "must complete",
                 "rule": "Động từ khuyết thiếu 'must' đi trực tiếp với động từ nguyên thể không to (V-inf).",
                 "options": ["must to complete -> must complete", "this -> these", "before -> after", "Friday -> Fridays"]
+            },
+            {
+                "incorrect": "I have lived in this city since three years.",
+                "error_token": "since",
+                "correction": "for",
+                "rule": "Dùng 'for' cho khoảng thời gian (for three years) và 'since' cho mốc thời gian.",
+                "options": ["since -> for", "in -> at", "city -> cities", "lived -> live"]
             }
         ],
         'B1': [
@@ -150,6 +194,13 @@ class LocalExamEngine:
                 "correction": "written",
                 "rule": "Cấu trúc câu bị động 'was + V3/ed', phân từ 2 của 'write' là 'written'.",
                 "options": ["wrote -> written", "The -> A", "by -> with", "in -> at"]
+            },
+            {
+                "incorrect": "The engineer which designed this bridge received an prestigious award.",
+                "error_token": "which",
+                "correction": "who",
+                "rule": "Đại từ quan hệ chỉ người 'The engineer' phải dùng 'who', không dùng 'which'.",
+                "options": ["which -> who", "designed -> designs", "prestigious -> prestige", "received -> receives"]
             }
         ],
         'B2': [
@@ -173,6 +224,13 @@ class LocalExamEngine:
                 "correction": "started",
                 "rule": "Cấu trúc 'It is high time + S + V(past)' bắt buộc lùi động từ về quá khứ đơn (started).",
                 "options": ["start -> started", "taking -> to take", "threats -> threat", "seriously -> serious"]
+            },
+            {
+                "incorrect": "Hardly the lecture had begun when an urgent siren sounded.",
+                "error_token": "the lecture had begun",
+                "correction": "had the lecture begun",
+                "rule": "Đảo ngữ phủ định với 'Hardly': Hardly had + S + V3/ed + when...",
+                "options": ["the lecture had begun -> had the lecture begun", "begun -> began", "sounded -> sound", "urgent -> urgency"]
             }
         ],
         'C1': [
@@ -189,6 +247,27 @@ class LocalExamEngine:
                 "correction": "would have been avoided",
                 "rule": "Mệnh đề đảo ngữ điều kiện loại 3 'Had they listened' yêu cầu mệnh đề chính là 'would have been avoided'.",
                 "options": ["would be avoided -> would have been avoided", "listened -> listen", "catastrophe -> catastrophic", "warning -> warn"]
+            },
+            {
+                "incorrect": "It was precisely because of greed which the speculative bubble collapsed.",
+                "error_token": "which",
+                "correction": "that",
+                "rule": "Cấu trúc câu chẻ nhấn mạnh: It is/was + [Thành phần nhấn mạnh] + that + S + V.",
+                "options": ["which -> that", "because -> due", "collapsed -> collapses", "greed -> greedy"]
+            },
+            {
+                "incorrect": "The symposium, in that several prominent scholars spoke, concluded successfully.",
+                "error_token": "in that",
+                "correction": "in which",
+                "rule": "Sau giới từ (in) chỉ nơi chốn/sự kiện trong mệnh đề quan hệ không dùng 'that', phải dùng 'in which'.",
+                "options": ["in that -> in which", "spoke -> speak", "prominent -> prominence", "successfully -> successful"]
+            },
+            {
+                "incorrect": "Were the board of directors to approves the budget, construction would begin immediately.",
+                "error_token": "approves",
+                "correction": "approve",
+                "rule": "Đảo ngữ điều kiện loại 2: Were + S + to-V(inf) (approve, không chia số ít).",
+                "options": ["approves -> approve", "would begin -> will begin", "immediately -> immediate", "board -> boards"]
             }
         ],
         'C2': [
@@ -205,6 +284,27 @@ class LocalExamEngine:
                 "correction": "attend",
                 "rule": "Thể giả định thức (Subjunctive): 'It is imperative that S + V-inf' động từ giữ nguyên mẫu không chia (attend).",
                 "options": ["attends -> attend", "every -> all", "on time -> in time", "plenary -> plenarily"]
+            },
+            {
+                "incorrect": "Having conclude the clinical trials, the research institute published the results.",
+                "error_token": "conclude",
+                "correction": "concluded",
+                "rule": "Cấu trúc phân từ hoàn thành rút gọn (Perfect Participle): Having + V3/ed (concluded).",
+                "options": ["conclude -> concluded", "published -> publish", "clinical -> clinic", "trials -> trial"]
+            },
+            {
+                "incorrect": "Under no circumstances employees are permitted to disclose confidential enterprise data.",
+                "error_token": "employees are permitted",
+                "correction": "are employees permitted",
+                "rule": "Cụm phủ định tuyệt đối 'Under no circumstances' đứng đầu câu đòi hỏi đảo ngữ trợ động từ (are employees permitted).",
+                "options": ["employees are permitted -> are employees permitted", "disclose -> disclosing", "confidential -> confidentially", "enterprise -> enterprises"]
+            },
+            {
+                "incorrect": "Seldom such profound socio-economic paradigm shifts have been observed in modern history.",
+                "error_token": "such profound socio-economic paradigm shifts have been observed",
+                "correction": "have such profound socio-economic paradigm shifts been observed",
+                "rule": "Phó từ tần suất bán phủ định 'Seldom' đứng đầu câu đòi hỏi đảo ngữ trợ động từ 'have' lên trước chủ ngữ.",
+                "options": ["have been observed -> have they observed", "profound -> profoundly", "shifts -> shift", "observed -> observing"]
             }
         ]
     }

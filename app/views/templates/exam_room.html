@@ -124,6 +124,16 @@
             </div>
         </div>
 
+        <!-- Mode Switcher: Ranked vs Practice -->
+        <div class="exam-mode-switcher" id="exam-mode-switcher-bar">
+            <button class="exam-mode-pill active-ranked" id="pill-ranked" onclick="switchExamMode(false)">
+                ⚡ Khảo Thí Xếp Hạng
+            </button>
+            <button class="exam-mode-pill" id="pill-practice" onclick="switchExamMode(true)">
+                🛡️ Đấu Tập (Không Trừ RP)
+            </button>
+        </div>
+
         <div style="display: flex; align-items: center; gap: 15px;">
             <div class="timer-badge" id="exam-timer-box">
                 <span>⏱️</span>
@@ -335,11 +345,37 @@
     let userMockAnswers = {};
     let examCountdownTimer = null;
     let examRemainingSeconds = 900;
+    let isPracticeModeActive = false;
+    let isRecordingSpeech = false;
+
+    function switchExamMode(isPractice) {
+        if (isPracticeModeActive === isPractice) return;
+        isPracticeModeActive = isPractice;
+        const pillRanked = document.getElementById('pill-ranked');
+        const pillPractice = document.getElementById('pill-practice');
+        if (isPractice) {
+            pillRanked.className = 'exam-mode-pill';
+            pillPractice.className = 'exam-mode-pill active-practice';
+            if (window.showSuccess) {
+                window.showSuccess("Đã kích hoạt chế độ Đấu Tập! Bạn có thể làm bài thi thoải mái mà không lo bị trừ điểm RP hay tụt Rank.", "CHẾ ĐỘ ĐẤU TẬP");
+            }
+        } else {
+            pillRanked.className = 'exam-mode-pill active-ranked';
+            pillPractice.className = 'exam-mode-pill';
+            if (window.showWarning) {
+                window.showWarning("Đã kích hoạt chế độ Khảo Thí Xếp Hạng! Điểm số sẽ tính vào Rank RP và áp dụng quy chế nghiêm ngặt.", "KHẢO THÍ XẾP HẠNG");
+            }
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
         const urlParams = new URLSearchParams(window.location.search);
         const band = urlParams.get('band') || 'ALL';
         const num = parseInt(urlParams.get('num') || '10');
+        const isPracticeParam = urlParams.get('practice') === 'true' || urlParams.get('mode') === 'practice';
+        if (isPracticeParam) {
+            switchExamMode(true);
+        }
 
         initMockExam(band, num);
     });
@@ -348,7 +384,7 @@
         fetch('/api/game/exam/mock/generate', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ band: band, num_questions: num })
+            body: JSON.stringify({ band: band, num_questions: num, is_practice: isPracticeModeActive })
         })
         .then(res => {
             if (!res.ok) throw new Error("HTTP " + res.status);
@@ -477,10 +513,24 @@
         cefrBadge.innerText = `BAND ${bandVal}`;
         cefrBadge.className = `cefr-badge ${bandVal.toLowerCase()}`;
 
-        const card = document.getElementById('question-card');
-        const savedAnswer = userMockAnswers[q.id.toString()] || '';
-
-        let contentHtml = `<div style="font-size: 16px; color: #fff; line-height: 1.6; margin-bottom: 25px; font-weight: 500; white-space: pre-wrap;">${q.prompt}</div>`;
+        const cleanPromptForSpeech = (q.prompt || '').replace(/[\r\n]+/g, ' ').replace(/'/g, "\\'");
+        let contentHtml = `
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 20px;">
+                <div style="font-size: 16px; color: #fff; line-height: 1.6; font-weight: 500; white-space: pre-wrap; flex: 1;">${q.prompt}</div>
+                <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
+                    <button class="btn-speak-audio" onclick="TAPSpeech.speak('${cleanPromptForSpeech}', { element: this })" title="Nghe phát âm bản xứ (TTS)">
+                        <span class="speaker-icon">🔊</span>
+                        <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                        <span>Nghe</span>
+                    </button>
+                    <button class="tap-mic-btn" id="mic-btn-${q.id}" onclick="startShadowingPractice('${q.id}', '${cleanPromptForSpeech}')" title="Luyện đọc theo / Shadowing">
+                        <span>🎙️</span>
+                        <span id="mic-text-${q.id}">Luyện Nói</span>
+                    </button>
+                </div>
+            </div>
+            <div id="pronun-box-${q.id}" class="pronun-feedback-box" style="display: none;"></div>
+        `;
 
         if (q.type === 'writing_challenge' || q.type === 'writing') {
             contentHtml += `
@@ -711,7 +761,11 @@
         fetch('/api/game/exam/mock/submit', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ answers: userMockAnswers, exam_id: currentMockExam.exam_id })
+            body: JSON.stringify({
+                answers: userMockAnswers,
+                exam_id: currentMockExam.exam_id,
+                is_practice: isPracticeModeActive
+            })
         })
         .then(res => {
             if (!res.ok) throw new Error("HTTP " + res.status);
@@ -737,6 +791,72 @@
         });
     }
 
+    function startShadowingPractice(qId, targetText) {
+        const micBtn = document.getElementById(`mic-btn-${qId}`);
+        const micText = document.getElementById(`mic-text-${qId}`);
+        const box = document.getElementById(`pronun-box-${qId}`);
+        if (!micBtn || !box) return;
+
+        if (isRecordingSpeech) {
+            TAPSpeech.stopListening();
+            isRecordingSpeech = false;
+            micBtn.classList.remove('is-recording');
+            if (micText) micText.innerText = 'Luyện Nói';
+            return;
+        }
+
+        isRecordingSpeech = true;
+        micBtn.classList.add('is-recording');
+        if (micText) micText.innerText = 'Đang Nghe...';
+
+        box.style.display = 'flex';
+        box.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; animation: micRecordingPulse 1s infinite alternate;"></span>
+                <span style="color: #cbd5e1; font-size: 13px;">Hãy đọc to câu tiếng Anh trên vào micro của bạn...</span>
+            </div>
+            <button class="pixel-btn" onclick="startShadowingPractice('${qId}', '${targetText}')" style="background: rgba(255,255,255,0.1); font-size: 11px; padding: 4px 10px;">Dừng</button>
+        `;
+
+        TAPSpeech.startListening({
+            onStart: () => {},
+            onResult: (transcript, isFinal) => {
+                box.innerHTML = `
+                    <div style="flex: 1;">
+                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Giọng đọc nhận diện được:</div>
+                        <div style="font-size: 14px; color: #fff; font-weight: bold;">"${transcript}"</div>
+                    </div>
+                `;
+                if (isFinal) {
+                    const evalRes = TAPSpeech.evaluatePronunciation(targetText, transcript);
+                    box.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Bạn đã nói: <strong style="color: #fff;">"${transcript}"</strong></div>
+                            <div style="font-size: 13px; color: ${evalRes.badgeColor}; font-weight: 600;">${evalRes.label}</div>
+                        </div>
+                        <div class="pronun-score-badge" style="color: ${evalRes.badgeColor}; border-color: ${evalRes.badgeColor};">
+                            ${evalRes.score}%
+                        </div>
+                    `;
+                    isRecordingSpeech = false;
+                    micBtn.classList.remove('is-recording');
+                    if (micText) micText.innerText = 'Luyện Lại';
+                }
+            },
+            onError: (err) => {
+                isRecordingSpeech = false;
+                micBtn.classList.remove('is-recording');
+                if (micText) micText.innerText = 'Luyện Nói';
+                box.innerHTML = `<span style="color: #ef4444; font-size: 13px;">Không thể nhận diện giọng nói (Micro bị chặn hoặc không phát hiện âm thanh). Hãy kiểm tra quyền truy cập Micro.</span>`;
+            },
+            onEnd: () => {
+                isRecordingSpeech = false;
+                micBtn.classList.remove('is-recording');
+                if (micText) micText.innerText = 'Luyện Nói';
+            }
+        });
+    }
+
     function renderExamReport(report) {
         document.getElementById('mock-exam-screen').style.display = 'none';
         document.getElementById('mock-report-screen').style.display = 'block';
@@ -744,13 +864,19 @@
         document.getElementById('report-final-score').innerText = `${report.final_score} / 10`;
         document.getElementById('report-percentage').innerText = `(${report.percentage}% độ chính xác)`;
         document.getElementById('report-estimated-band').innerText = report.estimated_band;
-        document.getElementById('report-band-title').innerText = report.band_title;
+        document.getElementById('report-band-title').innerText = report.is_practice ? `${report.band_title} (ĐẤU TẬP)` : report.band_title;
         document.getElementById('report-coins-reward').innerText = `+${report.coins_reward}`;
 
-        // Cập nhật Banner Thăng Cấp Band (Khắc Nghiệt)
+        // Cập nhật Banner Thăng Cấp Band hoặc Chế độ Đấu tập
         const upgradeBanner = document.getElementById('report-band-upgrade-banner');
         if (upgradeBanner) {
-            if (report.band_upgraded) {
+            if (report.is_practice) {
+                upgradeBanner.style.display = 'block';
+                upgradeBanner.style.background = 'rgba(6, 182, 212, 0.15)';
+                upgradeBanner.style.border = '2px solid var(--neon-cyan)';
+                upgradeBanner.style.color = 'var(--neon-cyan)';
+                upgradeBanner.innerHTML = `🛡️ CHẾ ĐỘ ĐẤU TẬP HOÀN TẤT: Bài thi thử không tính vào điểm Rank RP và không áp dụng hình phạt. Bạn đã có một lượt cọ xát tuyệt vời!`;
+            } else if (report.band_upgraded) {
                 upgradeBanner.style.display = 'block';
                 upgradeBanner.style.background = 'rgba(52, 211, 153, 0.15)';
                 upgradeBanner.style.border = '2px solid var(--pixel-green)';
@@ -783,6 +909,37 @@
 
         document.getElementById('report-diagnostic-advice').innerText = report.diagnostic_advice;
 
+        // VÒNG LẶP CỨU CHỮA LỖ HỔNG (REMEDIATION CARD) NẾU THI TRƯỢT Ở RANKED
+        const existingRemed = document.getElementById('remediation-card-box');
+        if (existingRemed) existingRemed.remove();
+
+        if (!report.is_practice && (report.final_score < 5.0 || (subs && Object.values(subs).some(v => v < 6.0)))) {
+            const reportScreen = document.getElementById('mock-report-screen');
+            const reviewTitle = document.querySelector('#mock-report-screen .pixel-title:nth-of-type(2)');
+            const cardBox = document.createElement('div');
+            cardBox.className = 'remediation-card';
+            cardBox.id = 'remediation-card-box';
+            cardBox.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <div class="pixel-title" style="color: #f59e0b; font-size: 16px; margin: 0;">
+                            🛠️ TRẠM CỨU VI HỌC MASTER G: PHỤC HỒI ĐIỂM YẾU
+                        </div>
+                        <div style="font-size: 13px; color: #cbd5e1; margin-top: 4px;">
+                            Đừng nản chí! Bạn bị phạt trừ điểm do dính kỹ năng yếu. Hoàn thành 3 câu luyện tập trọng tâm để <strong>Xóa Cooldown</strong> và <strong>Hồi Phục +20 RP</strong>!
+                        </div>
+                    </div>
+                    <button class="pixel-btn" id="btn-trigger-remed" onclick="launchRemediationQuickQuiz()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: bold; padding: 10px 18px; font-size: 12px; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);">
+                        VÀO LUYỆN TẬP PHỤC HỒI NGAY ▶
+                    </button>
+                </div>
+                <div id="remediation-interactive-area" style="display: none; margin-top: 20px; border-top: 1px dashed rgba(245, 158, 11, 0.3); padding-top: 20px;"></div>
+            `;
+            if (reviewTitle) {
+                reviewTitle.parentNode.insertBefore(cardBox, reviewTitle);
+            }
+        }
+
         // Review Cards
         const reviewContainer = document.getElementById('review-cards-list');
         let rHtml = '';
@@ -810,9 +967,166 @@
         reviewContainer.innerHTML = rHtml;
     }
 
+    let currentRemediationData = null;
+    let userRemediationAnswers = {};
+
+    function launchRemediationQuickQuiz() {
+        const area = document.getElementById('remediation-interactive-area');
+        const triggerBtn = document.getElementById('btn-trigger-remed');
+        if (!area) return;
+        area.style.display = 'block';
+        area.innerHTML = '<div style="color: #f59e0b; font-family: var(--text-mono); font-size: 13px;">[ SYSTEM ] Đang sinh bài tập phục hồi 3 câu trọng tâm...</div>';
+        if (triggerBtn) triggerBtn.style.display = 'none';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const mId = parseInt(urlParams.get('milestone_id') || '1');
+
+        fetch(`/api/roadmap/milestone/${mId}/remediation/start`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ section_key: 'word_scramble' })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                currentRemediationData = data;
+                userRemediationAnswers = {};
+                renderRemediationQuiz(data, mId);
+            } else {
+                area.innerHTML = `<div style="color: #ef4444;">${data.error || 'Không thể tạo bài tập phục hồi.'}</div>`;
+            }
+        })
+        .catch(err => {
+            area.innerHTML = `<div style="color: #ef4444;">Lỗi kết nối: ${err.message}</div>`;
+        });
+    }
+
+    function renderRemediationQuiz(data, mId) {
+        const area = document.getElementById('remediation-interactive-area');
+        let html = `
+            <div style="font-size: 14px; color: #fff; margin-bottom: 15px; font-weight: bold;">
+                Nhiệm vụ: Hoàn thành đúng tối thiểu 2/3 câu hỏi để kích hoạt ân xá Cooldown và cộng +20 RP!
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+        `;
+
+        data.questions.forEach((q, idx) => {
+            html += `
+                <div style="background: rgba(0,0,0,0.6); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 10px; padding: 15px;">
+                    <div style="color: #f59e0b; font-size: 13px; font-weight: bold; margin-bottom: 8px;">
+                        Câu ${idx + 1}: ${q.meaning ? `Từ mang nghĩa: "${q.meaning}"` : (q.prompt || 'Sắp xếp câu')}
+                    </div>
+            `;
+            if (q.type === 'scramble') {
+                html += `
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">Các ký tự xáo trộn: <strong style="color: var(--neon-cyan); letter-spacing: 2px;">${q.shuffled_letters.join(' ')}</strong> (${q.hint})</div>
+                    <input type="text" class="auth-input" id="remed-input-${q.id}" placeholder="Nhập từ ghép đúng..." style="margin-bottom: 0; padding: 8px 12px; font-size: 14px; text-transform: uppercase;" oninput="userRemediationAnswers['${q.id}'] = this.value.trim().toUpperCase()">
+                `;
+            } else if (q.options) {
+                html += `<div style="display: flex; flex-direction: column; gap: 6px;">`;
+                q.options.forEach(opt => {
+                    html += `
+                        <button class="remed-opt-btn" onclick="selectRemedOption('${q.id}', '${opt.replace(/'/g, "\\'")}', this)">
+                            ${opt}
+                        </button>
+                    `;
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
+        });
+
+        html += `
+            <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                <button class="pixel-btn" onclick="submitRemediationQuiz(${mId})" style="background: var(--pixel-green); color: #000; font-weight: bold; padding: 10px 22px;">
+                    NỘP BÀI PHỤC HỒI 🚀
+                </button>
+            </div>
+        </div>`;
+
+        area.innerHTML = html;
+    }
+
+    function selectRemedOption(qId, val, btn) {
+        userRemediationAnswers[qId] = val;
+        btn.parentElement.querySelectorAll('.remed-opt-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function submitRemediationQuiz(mId) {
+        const area = document.getElementById('remediation-interactive-area');
+        if (!currentRemediationData) return;
+
+        fetch(`/api/roadmap/milestone/${mId}/remediation/submit`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                remediation_token: currentRemediationData.remediation_token,
+                answers: userRemediationAnswers
+            })
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === 'success') {
+                if (res.passed) {
+                    area.innerHTML = `
+                        <div style="background: rgba(34, 197, 94, 0.2); border: 2px solid var(--pixel-green); border-radius: 12px; padding: 20px; text-align: center;">
+                            <div class="pixel-title" style="color: var(--pixel-green); font-size: 18px; margin-bottom: 8px;">
+                                🏆 PHỤC HỒI THÀNH CÔNG (+${res.rp_recovered} RP)
+                            </div>
+                            <div style="color: #fff; font-size: 14px; margin-bottom: 15px;">
+                                ${res.message}
+                            </div>
+                            <button class="pixel-btn" onclick="location.reload()" style="background: var(--neon-cyan); color: #000; font-weight: bold; padding: 10px 20px;">
+                                BẮT ĐẦU LÀM LẠI ĐỀ THI NGAY ▶
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    area.innerHTML = `
+                        <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; border-radius: 12px; padding: 20px; text-align: center;">
+                            <div style="color: #ef4444; font-size: 16px; font-weight: bold; margin-bottom: 8px;">CHƯA ĐẠT YÊU CẦU (${res.correct_count}/${res.total_questions})</div>
+                            <div style="color: #cbd5e1; font-size: 13px; margin-bottom: 15px;">${res.message}</div>
+                            <button class="pixel-btn" onclick="launchRemediationQuickQuiz()" style="background: #f59e0b; color: #000; font-weight: bold; padding: 8px 16px;">
+                                THỬ LẠI LẦN NỮA ↺
+                            </button>
+                        </div>
+                    `;
+                }
+            } else {
+                area.innerHTML = `<div style="color: #ef4444;">${res.error || 'Lỗi khi nộp bài.'}</div>`;
+            }
+        })
+        .catch(err => {
+            area.innerHTML = `<div style="color: #ef4444;">Lỗi: ${err.message}</div>`;
+        });
+    }
+
     function confirmExitExam() {
         if (!isExamActive) {
             window.location.href = '/test';
+            return;
+        }
+
+        if (isPracticeModeActive) {
+            window.showConfirm(
+                "Bạn đang trong phòng Đấu Tập (Thi thử). Rời phòng thi lúc này sẽ không bị trừ bất kỳ điểm RP nào.\n\nBạn có muốn quay về sảnh khảo thí không?",
+                "RỜI PHÒNG ĐẤU TẬP",
+                () => {
+                    isExamActive = false;
+                    clearInterval(examCountdownTimer);
+                    fetch('/api/game/exam/mock/abandon', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ reason: 'user_exit', is_practice: true })
+                    }).finally(() => {
+                        window.location.href = '/test';
+                    });
+                },
+                null,
+                "RỜI PHÒNG",
+                "Ở LẠI LÀM TIẾP"
+            );
             return;
         }
 
@@ -826,7 +1140,7 @@
                 fetch('/api/game/exam/mock/abandon', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ reason: 'user_exit' })
+                    body: JSON.stringify({ reason: 'user_exit', is_practice: false })
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -853,10 +1167,15 @@
 
     function handleExamDisqualified() {
         clearInterval(examCountdownTimer);
+        if (isPracticeModeActive) {
+            window.showWarning("Bạn đã chuyển tab khi đang trong chế độ Đấu Tập. Hãy quay lại làm tiếp nhé!", "NHẮC NHỞ");
+            return;
+        }
+
         fetch('/api/game/exam/mock/abandon', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ reason: 'tab_switch_violation' })
+            body: JSON.stringify({ reason: 'tab_switch_violation', is_practice: false })
         })
         .then(res => res.json())
         .then(data => {
@@ -877,3 +1196,4 @@
     }
 </script>
 {% endblock %}
+

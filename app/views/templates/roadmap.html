@@ -377,15 +377,33 @@
 
             <!-- LÝ THUYẾT NGỮ PHÁP -->
             <div id="modal-grammar-box" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border-left: 3px solid var(--neon-amber); margin-bottom: 18px;">
-                <div style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold; font-size: 15px;" id="modal-grammar-structure">Cấu trúc</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <div style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold; font-size: 15px;" id="modal-grammar-structure">Cấu trúc</div>
+                    <button id="btn-speak-grammar" class="tap-audio-btn" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--neon-amber); color: var(--neon-amber); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Nghe phát âm ví dụ">
+                        🔊 Nghe Ví Dụ
+                    </button>
+                </div>
                 <div style="color: #cbd5e1; font-size: 13px; margin-top: 5px;" id="modal-grammar-exp">Giải thích</div>
                 <div style="color: #94a3b8; font-size: 12px; margin-top: 8px; font-style: italic;" id="modal-grammar-ex">Ví dụ: ...</div>
             </div>
 
             <!-- TỪ VỰNG CHẶNG -->
             <div style="color: var(--neon-cyan); font-family: var(--text-pixel); font-size: 13px; margin-bottom: 10px;">> TỪ VỰNG MỤC TIÊU CỦA CHẶNG:</div>
-            <div id="modal-vocab-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 25px;">
+            <div id="modal-vocab-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px;">
                 <!-- Render từ vựng -->
+            </div>
+
+            <!-- BẬT/TẮT CHẾ ĐỘ THI XẾP HẠNG VS ĐẤU TẬP -->
+            <div class="exam-mode-switcher" style="margin-bottom: 12px;">
+                <button class="exam-mode-pill active" id="mode-ranked-btn" onclick="setRoadmapExamMode(false)">
+                    ⚡ THI XẾP HẠNG (RANKED)
+                </button>
+                <button class="exam-mode-pill" id="mode-practice-btn" onclick="setRoadmapExamMode(true)">
+                    🛡️ ĐẤU TẬP KHÔNG PHẠT (PRACTICE)
+                </button>
+            </div>
+            <div id="roadmap-mode-desc" style="font-size: 12px; color: var(--neon-cyan); margin-bottom: 15px; font-family: var(--text-mono); text-align: center;">
+                Chế độ Thi Xếp Hạng: Tính điểm RP học thuật, có phạt trừ và Cooldown khi rớt. Đạt >= 7.5 để qua ải!
             </div>
 
             <button class="pixel-btn pulse-neon" id="btn-start-exam" onclick="startAcademicExam()" style="background: var(--neon-purple); width: 100%; padding: 15px; font-size: 13px; font-weight: bold;">
@@ -818,20 +836,32 @@
                     document.getElementById('modal-grammar-structure').innerText = data.grammar.structure;
                     document.getElementById('modal-grammar-exp').innerText = data.grammar.explanation;
                     document.getElementById('modal-grammar-ex').innerText = `Ví dụ: "${data.grammar.example}"`;
+                    const btnSpeakG = document.getElementById('btn-speak-grammar');
+                    if (btnSpeakG) {
+                        btnSpeakG.setAttribute('data-speech-text', data.grammar.example || data.grammar.structure);
+                    }
                 } else {
                     document.getElementById('modal-grammar-box').style.display = 'none';
                 }
 
-                // Bind Vocabularies
+                // Bind Vocabularies with Audio Buttons
                 let vHtml = '';
                 (data.vocabularies || []).forEach(v => {
                     vHtml += `
-                    <div style="background: rgba(0,0,0,0.5); padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border);">
-                        <strong style="color: var(--neon-cyan); font-size: 14px;">${v.word}</strong>
-                        <div style="color: #cbd5e1; font-size: 12px;">${v.meaning}</div>
+                    <div style="background: rgba(0,0,0,0.5); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                        <div style="overflow: hidden;">
+                            <strong style="color: var(--neon-cyan); font-size: 14px; display: block; text-overflow: ellipsis; white-space: nowrap;">${v.word}</strong>
+                            <div style="color: #cbd5e1; font-size: 12px; text-overflow: ellipsis; white-space: nowrap;">${v.meaning}</div>
+                        </div>
+                        <button class="tap-audio-btn" data-speech-text="${v.word.replace(/"/g, '&quot;')}" style="background: rgba(6, 182, 212, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; flex-shrink: 0;" title="Nghe phát âm">
+                            🔊
+                        </button>
                     </div>`;
                 });
                 document.getElementById('modal-vocab-list').innerHTML = vHtml || '<div style="color:#64748b;">Chưa có từ vựng chỉ định.</div>';
+
+                // Reset Mode to Ranked
+                setRoadmapExamMode(false);
 
                 // Check Cooldown
                 prepCooldownRemaining = data.user_status ? data.user_status.cooldown_remaining : 0;
@@ -841,22 +871,63 @@
             });
     }
 
+    let isRoadmapPracticeMode = false;
+
+    function setRoadmapExamMode(isPractice) {
+        isRoadmapPracticeMode = isPractice;
+        const rankedBtn = document.getElementById('mode-ranked-btn');
+        const practiceBtn = document.getElementById('mode-practice-btn');
+        const descEl = document.getElementById('roadmap-mode-desc');
+        const startBtn = document.getElementById('btn-start-exam');
+
+        if (!rankedBtn || !practiceBtn || !descEl || !startBtn) return;
+
+        if (isPractice) {
+            rankedBtn.classList.remove('active');
+            practiceBtn.classList.add('active');
+            descEl.innerHTML = '🛡️ <strong style="color: var(--pixel-green);">CHẾ ĐỘ ĐẤU TẬP (PRACTICE)</strong>: Làm quen với đề thi, <strong>0 mất RP</strong>, <strong>0 Cooldown</strong> khi trượt!';
+            startBtn.style.background = 'linear-gradient(135deg, #10b981, #06b6d4)';
+            startBtn.innerHTML = '🛡️ TIẾN VÀO PHÒNG ĐẤU TẬP (KHÔNG PHẠT RP) ▶';
+            const cooldownBox = document.getElementById('prep-cooldown-box');
+            if (cooldownBox) cooldownBox.style.display = 'none';
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
+            startBtn.style.cursor = 'pointer';
+        } else {
+            practiceBtn.classList.remove('active');
+            rankedBtn.classList.add('active');
+            descEl.innerHTML = '⚡ <strong style="color: var(--neon-amber);">CHẾ ĐỘ XẾP HẠNG (RANKED)</strong>: Tính điểm RP học thuật, có phạt trừ và Cooldown khi rớt. Đạt >= 7.5 để qua ải!';
+            startBtn.style.background = 'var(--neon-purple)';
+            startBtn.innerHTML = '⚡ TIẾN VÀO PHÒNG THI CHẶNG (4 PHẦN THI - 7 PHÚT) ▶';
+            handlePrepCooldownUI();
+        }
+    }
+
     function handlePrepCooldownUI() {
         clearInterval(prepCooldownInterval);
         const box = document.getElementById('prep-cooldown-box');
         const timerEl = document.getElementById('prep-cooldown-timer');
         const startBtn = document.getElementById('btn-start-exam');
+        if (!box || !startBtn) return;
+
+        if (isRoadmapPracticeMode) {
+            box.style.display = 'none';
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
+            startBtn.style.cursor = 'pointer';
+            return;
+        }
 
         if (prepCooldownRemaining > 0) {
             box.style.display = 'flex';
-            timerEl.innerText = prepCooldownRemaining;
+            if (timerEl) timerEl.innerText = prepCooldownRemaining;
             startBtn.disabled = true;
             startBtn.style.opacity = '0.5';
             startBtn.style.cursor = 'not-allowed';
 
             prepCooldownInterval = setInterval(() => {
                 prepCooldownRemaining--;
-                timerEl.innerText = prepCooldownRemaining;
+                if (timerEl) timerEl.innerText = prepCooldownRemaining;
                 if (prepCooldownRemaining <= 0) {
                     clearInterval(prepCooldownInterval);
                     box.style.display = 'none';
@@ -950,7 +1021,7 @@
         syntaxSelectedChunks = [];
         currentScrambleIdx = 0;
 
-        fetch(`/api/roadmap/milestone/${currentMilestoneId}/exam`)
+        fetch(`/api/roadmap/milestone/${currentMilestoneId}/exam?is_practice=${isRoadmapPracticeMode}`)
             .then(res => {
                 if (res.status === 403) {
                     return res.json().then(d => { throw new Error(d.message); });
@@ -1027,9 +1098,14 @@
         questions.forEach((q, qIdx) => {
             html += `
             <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; padding: 16px;">
-                <div style="color: #fff; font-size: 14px; margin-bottom: 12px; font-weight: bold;">
-                    Câu ${qIdx + 1}: Chọn ý nghĩa chính xác nhất của từ vựng <strong style="color: var(--neon-cyan); font-size: 16px;">"${q.word}"</strong>
-                    <span style="font-size: 10px; color: var(--neon-cyan); margin-left: 6px; padding: 2px 6px; border-radius: 4px; background: rgba(6,182,212,0.15); font-family: var(--text-mono);">${q.cefr}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div style="color: #fff; font-size: 14px; font-weight: bold;">
+                        Câu ${qIdx + 1}: Chọn ý nghĩa chính xác nhất của từ vựng <strong style="color: var(--neon-cyan); font-size: 16px;">"${q.word}"</strong>
+                        <span style="font-size: 10px; color: var(--neon-cyan); margin-left: 6px; padding: 2px 6px; border-radius: 4px; background: rgba(6,182,212,0.15); font-family: var(--text-mono);">${q.cefr}</span>
+                    </div>
+                    <button class="tap-audio-btn" data-speech-text="${q.word.replace(/"/g, '&quot;')}" style="background: rgba(6, 182, 212, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Nghe phát âm từ này">
+                        🔊 Nghe
+                    </button>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
                     ${q.options.map((opt, oIdx) => {
@@ -1332,7 +1408,8 @@
             body: JSON.stringify({
                 exam_token: currentExamData.exam_token,
                 answers: examAnswers,
-                is_abandoned: false
+                is_abandoned: false,
+                is_practice: isRoadmapPracticeMode
             })
         })
         .then(res => {
@@ -1364,7 +1441,15 @@
         const heroTitle = document.getElementById('report-hero-title');
         const heroSubtitle = document.getElementById('report-hero-subtitle');
 
-        if (result.passed) {
+        if (result.is_practice) {
+            heroBanner.style.background = 'rgba(6, 182, 212, 0.15)';
+            heroBanner.style.border = '2px solid var(--neon-cyan)';
+            heroIcon.innerText = '🛡️';
+            heroTitle.innerText = result.passed ? 'HOÀN THÀNH ĐẤU TẬP XUẤT SẮC!' : 'KẾT THÚC BÀI ĐẤU TẬP';
+            heroTitle.style.color = 'var(--neon-cyan)';
+            heroSubtitle.innerText = 'Chế độ Đấu Tập không phạt trừ RP và không tính Cooldown. Bạn có thể tự tin thi đấu xếp hạng bất cứ lúc nào!';
+            heroSubtitle.style.color = '#cbd5e1';
+        } else if (result.passed) {
             heroBanner.style.background = 'rgba(110, 231, 183, 0.15)';
             heroBanner.style.border = '2px solid var(--pixel-green)';
             heroIcon.innerText = '🏆';
@@ -1409,7 +1494,10 @@
 
         // RP Change
         const rpChangeEl = document.getElementById('report-rp-change');
-        if (result.rp_change > 0) {
+        if (result.is_practice) {
+            rpChangeEl.innerText = '0 RP (Đấu Tập)';
+            rpChangeEl.style.color = 'var(--neon-cyan)';
+        } else if (result.rp_change > 0) {
             rpChangeEl.innerText = `+${result.rp_change} RP`;
             rpChangeEl.style.color = 'var(--pixel-green)';
         } else {
@@ -1418,10 +1506,12 @@
         }
 
         let rankText = `Rank hiện tại: ${result.current_rank} (${result.new_rp} RP)`;
-        if (result.demoted) {
-            rankText = `🚨 BỊ GIÁNG CẤP XUỐNG: ${result.current_rank}!`;
-        } else if (result.promoted) {
-            rankText = `🎉 THĂNG HẠNG: ${result.current_rank}!`;
+        if (!result.is_practice) {
+            if (result.demoted) {
+                rankText = `🚨 BỊ GIÁNG CẤP XUỐNG: ${result.current_rank}!`;
+            } else if (result.promoted) {
+                rankText = `🎉 THĂNG HẠNG: ${result.current_rank}!`;
+            }
         }
         document.getElementById('report-current-rank').innerText = rankText;
 
@@ -1467,9 +1557,9 @@
         });
         reviewContainer.innerHTML = rHtml;
 
-        // XỬ LÝ TRẠM VI HỌC BÙ LỖ HỔNG (ADAPTIVE MICRO-LESSON) KHI TRƯỢT
+        // XỬ LÝ TRẠM VI HỌC BÙ LỖ HỔNG (ADAPTIVE MICRO-LESSON) KHI TRƯỢT Ở RANKED
         const microContainer = document.getElementById('report-micro-lesson-container');
-        if (!result.passed) {
+        if (!result.passed && !result.is_practice) {
             microContainer.style.display = 'block';
             loadAdaptiveMicroLesson(result.weakest_section);
         } else {

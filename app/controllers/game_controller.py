@@ -1261,11 +1261,14 @@ def generate_mock_exam():
 
     exam_payload = exam_engine.generate_mock_exam(band=band, num_questions=num_q, user_id=user_id)
 
-    # Lưu answer_key vào session để đối soát khi submit
+    # Lưu answer_key và is_practice vào session để đối soát khi submit
+    is_practice = bool(data.get('is_practice', False))
     session['current_exam_id'] = exam_payload['exam_id']
     session['current_exam_answer_key'] = exam_payload['answer_key']
+    session['current_exam_is_practice'] = is_practice
 
     safe_response = {k: v for k, v in exam_payload.items() if k != 'answer_key'}
+    safe_response['is_practice'] = is_practice
     return jsonify(safe_response), 200
 
 
@@ -1275,6 +1278,7 @@ def submit_mock_exam():
     data = request.get_json() or {}
     answers = data.get('answers', {})
     use_revive = data.get('use_revive', False)
+    is_practice = bool(data.get('is_practice', session.get('current_exam_is_practice', False)))
 
     user_id = session.get('user_id')
     if not user_id:
@@ -1298,37 +1302,45 @@ def submit_mock_exam():
         final_score = eval_result.get('final_score', 0.0)
         rp_change = 0
         revive_applied = False
+        is_practice = bool(data.get('is_practice', False))
+        eval_result['is_practice'] = is_practice
 
-        if final_score < 5.0: # THI TRƯỢT
-            if use_revive:
-                # Kiểm tra người dùng có Bình Hồi Sinh Thần Tốc không
-                revive_item = CosmeticItem.query.filter_by(item_effect='EXAM_REVIVE').first()
-                if revive_item:
-                    uc = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=revive_item.id).first()
-                    if uc and (uc.quantity or 0) > 0:
-                        uc.quantity -= 1
-                        revive_applied = True
-                        rp_change = 0
-            if not revive_applied:
-                penalty = 35 + ((user.consecutive_fails or 0) * 10) # Trượt liên tiếp bị trừ thêm điểm
-                user.academic_rp = max(0, (user.academic_rp or 500) - penalty)
-                rp_change = -penalty
-                user.consecutive_fails = (user.consecutive_fails or 0) + 1
-        elif final_score >= 8.0: # XUẤT SẮC
-            bonus = 35
-            user.academic_rp = (user.academic_rp or 500) + bonus
-            rp_change = bonus
-            user.consecutive_fails = 0
-        else: # QUA MÔN
-            user.academic_rp = (user.academic_rp or 500) + 15
-            rp_change = 15
-            user.consecutive_fails = 0
+        if is_practice:
+            eval_result['rp_change'] = 0
+            eval_result['revive_applied'] = False
+            eval_result['academic_rp'] = user.academic_rp
+            eval_result['diagnostic_advice'] = f"🛡️ [LƯỢT ĐẤU TẬP] Điểm thi: {final_score}/10 ({eval_result['percentage']}%). Bạn không bị trừ RP hay áp dụng phạt kỷ luật. Hãy xem lại các câu sai để tự tin hơn khi thi xếp hạng!"
+        else:
+            if final_score < 5.0: # THI TRƯỢT
+                if use_revive:
+                    # Kiểm tra người dùng có Bình Hồi Sinh Thần Tốc không
+                    revive_item = CosmeticItem.query.filter_by(item_effect='EXAM_REVIVE').first()
+                    if revive_item:
+                        uc = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=revive_item.id).first()
+                        if uc and (uc.quantity or 0) > 0:
+                            uc.quantity -= 1
+                            revive_applied = True
+                            rp_change = 0
+                if not revive_applied:
+                    penalty = 35 + ((user.consecutive_fails or 0) * 10) # Trượt liên tiếp bị trừ thêm điểm
+                    user.academic_rp = max(0, (user.academic_rp or 500) - penalty)
+                    rp_change = -penalty
+                    user.consecutive_fails = (user.consecutive_fails or 0) + 1
+            elif final_score >= 8.0: # XUẤT SẮC
+                bonus = 35
+                user.academic_rp = (user.academic_rp or 500) + bonus
+                rp_change = bonus
+                user.consecutive_fails = 0
+            else: # QUA MÔN
+                user.academic_rp = (user.academic_rp or 500) + 15
+                rp_change = 15
+                user.consecutive_fails = 0
 
-        eval_result['rp_change'] = rp_change
-        eval_result['revive_applied'] = revive_applied
-        eval_result['academic_rp'] = user.academic_rp
+            eval_result['rp_change'] = rp_change
+            eval_result['revive_applied'] = revive_applied
+            eval_result['academic_rp'] = user.academic_rp
 
-        log_feedback = f"[{eval_result['band_title']}] Điểm: {eval_result['final_score']}/10 ({eval_result['percentage']}%). RP: {('+' if rp_change >= 0 else '')}{rp_change}. {eval_result['diagnostic_advice']}"
+        log_feedback = f"[{'ĐẤU TẬP' if is_practice else eval_result['band_title']}] Điểm: {eval_result['final_score']}/10 ({eval_result['percentage']}%). RP: {('+' if rp_change >= 0 else '')}{rp_change}. {eval_result['diagnostic_advice']}"
         test_log = TestLog(
             user_id=user_id,
             score=eval_result['final_score'],
@@ -1340,12 +1352,9 @@ def submit_mock_exam():
         band_ranks = {'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6}
         current_user_band = getattr(user, 'current_band', 'A1')
 
-        # ĐIỀU KIỆN THĂNG BAND KHẮC NGHIỆT QUỐC TẾ:
-        # 1. Band mục tiêu phải cao hơn Band hiện tại.
-        # 2. Điểm tổng kết bài thi >= 8.5/10.0 (tương đương tỷ lệ đúng >= 85%).
-        # 3. Tiêu chí "Không Kỹ Năng Liệt": Toàn bộ 4 kỹ năng thành phần (Vocab, Grammar, Syntax, Writing) phải >= 6.5/10.0.
+        # ĐIỀU KIỆN THĂNG BAND KHẮC NGHIỆT QUỐC TẾ (Chỉ áp dụng ở Ranked mode):
         eval_result['band_upgraded'] = False
-        if band_ranks.get(achieved_band, 1) > band_ranks.get(current_user_band, 1):
+        if not is_practice and band_ranks.get(achieved_band, 1) > band_ranks.get(current_user_band, 1):
             subscores = eval_result.get('subscores') or {}
             weak_skills = [sec for sec, sc in subscores.items() if sc < 6.5]
             
@@ -1359,9 +1368,13 @@ def submit_mock_exam():
                 eval_result['new_band'] = achieved_band
 
         # CẬP NHẬT RANK HỌC THUẬT & KIỂM TRA THĂNG/GIÁNG HẠNG (PROMOTION / DEMOTION)
-        level_changed, new_rank = check_and_update_level(user_id)
-        eval_result['level_changed'] = level_changed
-        eval_result['current_level'] = user.current_level
+        if not is_practice:
+            level_changed, new_rank = check_and_update_level(user_id)
+            eval_result['level_changed'] = level_changed
+            eval_result['current_level'] = user.current_level
+        else:
+            eval_result['level_changed'] = False
+            eval_result['current_level'] = user.current_level
 
         db.session.commit()
 
@@ -1378,6 +1391,16 @@ def abandon_mock_exam():
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "Không tìm thấy người dùng!"}), 404
+
+    data = request.get_json() or {}
+    if data.get('is_practice', False) or session.get('current_exam_is_practice', False):
+        return jsonify({
+            "status": "practice_abandoned",
+            "penalty_rp": 0,
+            "demoted": False,
+            "new_rp": user.academic_rp if user.academic_rp is not None else 500,
+            "message": "Đã rời phòng thi thử, không bị trừ RP."
+        }), 200
 
     old_rank = user.current_level
     old_rp = user.academic_rp if user.academic_rp is not None else 500
