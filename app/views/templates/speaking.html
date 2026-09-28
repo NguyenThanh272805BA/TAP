@@ -60,6 +60,93 @@
         position: relative;
     }
 
+    /* NÚT BỘ LỌC VÀ CHUYỂN ĐỔI (PILL BUTTONS) CHUẨN CYBERPUNK */
+    .filter-pill {
+        background: rgba(15, 23, 42, 0.9) !important;
+        border: 1.5px solid var(--glass-border) !important;
+        color: #cbd5e1 !important;
+        padding: 7px 16px;
+        border-radius: 9999px;
+        font-family: var(--text-mono);
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        user-select: none;
+        outline: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+    .filter-pill:hover {
+        border-color: var(--neon-cyan) !important;
+        color: #fff !important;
+        background: rgba(6, 182, 212, 0.2) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(6, 182, 212, 0.35);
+    }
+    .filter-pill.active {
+        background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(14, 116, 144, 0.6) 100%) !important;
+        border-color: var(--neon-cyan) !important;
+        color: #fff !important;
+        font-weight: 800;
+        box-shadow: 0 0 16px rgba(6, 182, 212, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Style riêng cho nút nguồn từ */
+    #source-pill-all {
+        border-radius: 10px;
+        padding: 9px 18px;
+        font-size: 13px;
+    }
+    #source-pill-all.active {
+        background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(2, 132, 199, 0.7) 100%) !important;
+        border-color: var(--neon-cyan) !important;
+        color: #fff !important;
+        box-shadow: 0 0 18px rgba(6, 182, 212, 0.55);
+    }
+    #source-pill-my {
+        border-radius: 10px;
+        padding: 9px 18px;
+        font-size: 13px;
+    }
+    #source-pill-my.active {
+        background: linear-gradient(135deg, rgba(168, 85, 247, 0.4) 0%, rgba(217, 70, 239, 0.7) 100%) !important;
+        border-color: var(--neon-purple) !important;
+        color: #fff !important;
+        box-shadow: 0 0 18px rgba(168, 85, 247, 0.55);
+    }
+
+    /* Style riêng cho nút chọn tốc độ */
+    .speed-pill {
+        border-radius: 8px !important;
+        padding: 5px 12px !important;
+        font-size: 11px !important;
+    }
+    .speed-pill.active {
+        background: rgba(6, 182, 212, 0.25) !important;
+        border-color: var(--neon-cyan) !important;
+        color: var(--neon-cyan) !important;
+        box-shadow: 0 0 10px rgba(6, 182, 212, 0.35);
+    }
+
+    /* Style các nút Band (ALL, A1-C2) */
+    .band-pill {
+        min-width: 44px;
+        padding: 6px 14px !important;
+        border-radius: 8px !important;
+        font-size: 12px !important;
+        font-weight: 700;
+    }
+    .band-pill.active {
+        background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(14, 116, 144, 0.7) 100%) !important;
+        border-color: var(--neon-cyan) !important;
+        color: #fff !important;
+        box-shadow: 0 0 14px rgba(6, 182, 212, 0.55);
+    }
+
     /* Big Vocab Display Card */
     .word-stage-card {
         background: rgba(0, 0, 0, 0.5);
@@ -200,8 +287,8 @@
         <!-- Tốc độ đọc -->
         <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 11px; color: #94a3b8;">Tốc độ đọc:</span>
-            <button class="filter-pill active" id="speed-normal" onclick="setSpeechSpeed(1.0, this)" style="padding: 4px 10px; font-size: 11px;">1.0x Chuẩn</button>
-            <button class="filter-pill" id="speed-slow" onclick="setSpeechSpeed(0.8, this)" style="padding: 4px 10px; font-size: 11px;">0.8x Chậm</button>
+            <button class="filter-pill speed-pill active" id="speed-normal" onclick="setSpeechSpeed(1.0, this)">1.0x Chuẩn</button>
+            <button class="filter-pill speed-pill" id="speed-slow" onclick="setSpeechSpeed(0.8, this)">0.8x Chậm</button>
         </div>
     </div>
 
@@ -219,13 +306,13 @@
         <!-- Band Filter Pills -->
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
             <span style="font-size: 11px; font-family: var(--text-pixel); color: #94a3b8; margin-right: 4px;">BAND:</span>
-            <button class="filter-pill" id="band-pill-all" onclick="selectVocabBand('ALL', this)" style="padding: 6px 12px;">Tất Cả</button>
-            <button class="filter-pill active" id="band-pill-a1" onclick="selectVocabBand('A1', this)" style="padding: 6px 12px;">A1</button>
-            <button class="filter-pill" id="band-pill-a2" onclick="selectVocabBand('A2', this)" style="padding: 6px 12px;">A2</button>
-            <button class="filter-pill" id="band-pill-b1" onclick="selectVocabBand('B1', this)" style="padding: 6px 12px;">B1</button>
-            <button class="filter-pill" id="band-pill-b2" onclick="selectVocabBand('B2', this)" style="padding: 6px 12px;">B2</button>
-            <button class="filter-pill" id="band-pill-c1" onclick="selectVocabBand('C1', this)" style="padding: 6px 12px;">C1</button>
-            <button class="filter-pill" id="band-pill-c2" onclick="selectVocabBand('C2', this)" style="padding: 6px 12px;">C2</button>
+            <button class="filter-pill band-pill" id="band-pill-all" onclick="selectVocabBand('ALL', this)">Tất Cả</button>
+            <button class="filter-pill band-pill active" id="band-pill-a1" onclick="selectVocabBand('A1', this)">A1</button>
+            <button class="filter-pill band-pill" id="band-pill-a2" onclick="selectVocabBand('A2', this)">A2</button>
+            <button class="filter-pill band-pill" id="band-pill-b1" onclick="selectVocabBand('B1', this)">B1</button>
+            <button class="filter-pill band-pill" id="band-pill-b2" onclick="selectVocabBand('B2', this)">B2</button>
+            <button class="filter-pill band-pill" id="band-pill-c1" onclick="selectVocabBand('C1', this)">C1</button>
+            <button class="filter-pill band-pill" id="band-pill-c2" onclick="selectVocabBand('C2', this)">C2</button>
         </div>
     </div>
 
