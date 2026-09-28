@@ -191,8 +191,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             lockCheckinButton();
                         }
                         loadDailyQuests();
-                        loadDashboardLeaderboard();
-                        checkAndRunTutorial(data);
+                        if (typeof checkAndRunTutorial === 'function') {
+                            checkAndRunTutorial(data);
+                        }
                     }
 
                     const gachaStreak = document.getElementById("gacha-streak");

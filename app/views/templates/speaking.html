@@ -1,0 +1,707 @@
+{% extends "base.html" %}
+
+{% block title %}PHÒNG LUYỆN NÓI & PHÁT ÂM AI{% endblock %}
+
+{% block content %}
+<style>
+    /* SPEAKING STUDIO STYLES */
+    .speaking-hero {
+        background: linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border: 2px solid var(--neon-cyan);
+        border-radius: 18px;
+        padding: 30px 35px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 35px rgba(6, 182, 212, 0.2);
+    }
+    .speaking-tab-nav {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+    .speaking-tab-btn {
+        flex: 1;
+        min-width: 180px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 2px solid var(--glass-border);
+        color: #94a3b8;
+        padding: 14px 18px;
+        border-radius: 12px;
+        font-family: var(--text-pixel);
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .speaking-tab-btn:hover {
+        border-color: var(--neon-cyan);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+    .speaking-tab-btn.active {
+        background: rgba(6, 182, 212, 0.2);
+        border-color: var(--neon-cyan);
+        color: var(--neon-cyan);
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
+    }
+
+    .studio-card {
+        background: rgba(15, 23, 42, 0.9);
+        border: 1.5px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 28px;
+        position: relative;
+    }
+
+    /* Big Vocab Display Card */
+    .word-stage-card {
+        background: rgba(0, 0, 0, 0.5);
+        border: 2px solid var(--neon-cyan);
+        border-radius: 16px;
+        padding: 35px;
+        text-align: center;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Record Button Giant Pulsing */
+    .btn-record-main {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: 3px solid #fecaca;
+        color: #fff;
+        font-size: 32px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+        transition: all 0.25s ease;
+        user-select: none;
+    }
+    .btn-record-main:hover {
+        transform: scale(1.08);
+        box-shadow: 0 0 35px rgba(239, 68, 68, 0.8);
+    }
+    .btn-record-main.is-recording {
+        background: #991b1b;
+        animation: recordPulseAnim 1s infinite alternate;
+        border-color: #ef4444;
+    }
+    @keyframes recordPulseAnim {
+        0% { transform: scale(1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+        100% { transform: scale(1.15); box-shadow: 0 0 40px rgba(239, 68, 68, 1); }
+    }
+
+    .accuracy-meter-container {
+        margin-top: 20px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 18px 22px;
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .scenario-card {
+        background: rgba(0, 0, 0, 0.35);
+        border: 1.5px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+    }
+    .scenario-card:hover, .scenario-card.active {
+        border-color: var(--neon-cyan);
+        background: rgba(6, 182, 212, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .shadowing-line {
+        background: rgba(0,0,0,0.4);
+        border-left: 3px solid var(--neon-cyan);
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+</style>
+
+<!-- HERO HEADER -->
+<div class="speaking-hero">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="font-size: 26px;">🎙️</span>
+                <span class="pixel-title" style="color: var(--neon-cyan); font-size: 14px; letter-spacing: 1px;">
+                    AI SPEAKING STUDIO // PHÒNG LUYỆN NÓI & PHÁT ÂM CHUYÊN SÂU
+                </span>
+            </div>
+            <h1 style="font-size: 24px; font-weight: 800; color: #fff; margin: 0 0 8px 0;">
+                Tự Tin Phát Âm Tiếng Anh Chuẩn Bản Xứ
+            </h1>
+            <p style="font-size: 14px; color: #cbd5e1; margin: 0; max-width: 680px; line-height: 1.6;">
+                Không cần học thuộc lòng khô khan! Hãy nghe người bản ngữ đọc mẫu, bấm micro đọc lại để AI chấm điểm độ chuẩn xác, chỉ ra từng âm bạn đọc đúng hoặc cần chỉnh sửa ngay lập tức.
+            </p>
+        </div>
+
+        <!-- STATS BADGE -->
+        <div style="background: rgba(0,0,0,0.5); border: 1.5px solid var(--neon-cyan); border-radius: 12px; padding: 14px 20px; text-align: center;">
+            <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">PHIÊN NÓI HÔM NAY</div>
+            <div id="stat-words-count" style="font-size: 22px; font-family: var(--text-pixel); color: var(--pixel-green); font-weight: bold; margin: 4px 0;">0 TỪ</div>
+            <div id="stat-avg-score" style="font-size: 11px; color: var(--neon-cyan); font-family: var(--text-mono);">Độ khớp TB: 0%</div>
+        </div>
+    </div>
+</div>
+
+<!-- MODE NAVIGATION TABS -->
+<div class="speaking-tab-nav">
+    <button class="speaking-tab-btn active" id="tab-btn-vocab" onclick="switchSpeakingTab('vocab')">
+        <span>📖 1. Luyện Phát Âm Từ Vựng (A1 - C2)</span>
+    </button>
+    <button class="speaking-tab-btn" id="tab-btn-shadowing" onclick="switchSpeakingTab('shadowing')">
+        <span>💬 2. Nhại Giọng Hội Thoại (Shadowing)</span>
+    </button>
+    <button class="speaking-tab-btn" id="tab-btn-free" onclick="switchSpeakingTab('free')">
+        <span>🗣️ 3. Tự Do Nói & Thử Thách Micro</span>
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 1: LUYỆN PHÁT ÂM TỪ VỰNG THEO BAND -->
+<!-- ========================================================================= -->
+<div id="section-vocab" class="studio-card">
+    <!-- Band Filter Pills -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 25px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 12px; font-family: var(--text-pixel); color: #94a3b8;">CHỌN CẤP ĐỘ:</span>
+            <button class="filter-pill active" onclick="selectVocabBand('A1', this)">Band A1</button>
+            <button class="filter-pill" onclick="selectVocabBand('A2', this)">Band A2</button>
+            <button class="filter-pill" onclick="selectVocabBand('B1', this)">Band B1</button>
+            <button class="filter-pill" onclick="selectVocabBand('B2', this)">Band B2</button>
+            <button class="filter-pill" onclick="selectVocabBand('C1', this)">Band C1</button>
+            <button class="filter-pill" onclick="selectVocabBand('C2', this)">Band C2</button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 11px; color: #94a3b8;">Tốc độ đọc mẫu:</span>
+            <button class="filter-pill active" id="speed-normal" onclick="setSpeechSpeed(1.0, this)" style="padding: 4px 10px; font-size: 11px;">1.0x Chuẩn</button>
+            <button class="filter-pill" id="speed-slow" onclick="setSpeechSpeed(0.8, this)" style="padding: 4px 10px; font-size: 11px;">0.8x Chậm</button>
+        </div>
+    </div>
+
+    <!-- MAIN WORD STAGE -->
+    <div class="word-stage-card">
+        <div style="display: inline-block; padding: 4px 12px; border-radius: 9999px; background: rgba(6, 182, 212, 0.15); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-family: var(--text-mono); font-size: 12px; font-weight: bold; margin-bottom: 15px;" id="current-word-band">
+            BAND A1 • TỪ VỰNG CƠ BẢN
+        </div>
+
+        <div id="current-word-text" style="font-size: 42px; font-weight: 800; color: #fff; letter-spacing: 1px; margin-bottom: 6px;">
+            Comfortable
+        </div>
+
+        <div id="current-word-ipa" style="font-size: 18px; color: var(--neon-cyan); font-family: var(--text-mono); margin-bottom: 12px;">
+            /ˈkʌm.fɚ.tə.bəl/
+        </div>
+
+        <div id="current-word-meaning" style="font-size: 16px; color: #e2e8f0; margin-bottom: 18px; font-weight: 500;">
+            Tiện nghi, thoải mái, dễ chịu
+        </div>
+
+        <div style="background: rgba(255,255,255,0.04); border-radius: 10px; padding: 12px 18px; max-width: 600px; margin: 0 auto 25px auto;">
+            <span style="color: #94a3b8; font-size: 12px; display: block; margin-bottom: 4px;">Câu ví dụ thực tế:</span>
+            <div id="current-word-example" style="font-size: 15px; color: #fff; font-style: italic;">
+                "This sofa is very comfortable to sit on."
+            </div>
+        </div>
+
+        <!-- AUDIO & MIC BUTTON CONTROLS -->
+        <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <button class="pixel-btn" onclick="speakCurrentWord()" style="background: rgba(6, 182, 212, 0.2); border: 1.5px solid var(--neon-cyan); color: var(--neon-cyan); padding: 14px 24px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">🔊</span> NGHE PHÁT ÂM MẪU
+            </button>
+
+            <button class="btn-record-main" id="btn-record-word" onclick="toggleRecordCurrentWord()" title="Bấm để nói từ này vào Micro">
+                🎙️
+            </button>
+
+            <button class="pixel-btn" onclick="nextRandomWord()" style="background: rgba(255, 255, 255, 0.08); border: 1.5px solid var(--glass-border); color: #cbd5e1; padding: 14px 20px; font-size: 13px;">
+                TỪ TIẾP THEO ❯
+            </button>
+        </div>
+
+        <div id="record-status-hint" style="color: #94a3b8; font-size: 12px; margin-top: 15px; font-family: var(--text-mono);">
+            Nhấn vào nút Micro màu đỏ để bắt đầu đọc to từ trên
+        </div>
+    </div>
+
+    <!-- ACCURACY FEEDBACK DISPLAY -->
+    <div id="word-accuracy-meter" class="accuracy-meter-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 12px;">
+            <div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 2px;">GIỌNG ĐỌC CỦA BẠN:</div>
+                <div id="recognized-speech-text" style="font-size: 17px; font-weight: bold; color: #fff;">...</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">ĐỘ CHUẨN XÁC</div>
+                <div id="accuracy-score-number" style="font-size: 28px; font-family: var(--text-mono); font-weight: 800; color: var(--pixel-green);">
+                    --%
+                </div>
+            </div>
+        </div>
+
+        <div id="accuracy-progress-bar-bg" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
+            <div id="accuracy-progress-bar-fill" style="width: 0%; height: 100%; background: var(--pixel-green); transition: width 0.4s ease;"></div>
+        </div>
+
+        <div id="accuracy-verdict-label" style="font-size: 13px; font-weight: bold; color: var(--pixel-green);">
+            --
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 2: NHẠI GIỌNG HỘI THOẠI (SHADOWING) -->
+<!-- ========================================================================= -->
+<div id="section-shadowing" class="studio-card" style="display: none;">
+    <div style="margin-bottom: 20px;">
+        <h2 style="font-size: 18px; font-weight: 700; color: #fff; margin: 0 0 6px 0;">
+            Luyện Nói Theo Tình Huống Giao Tiếp Thực Tế (Shadowing)
+        </h2>
+        <div style="font-size: 13px; color: #94a3b8;">
+            Chọn một tình huống gần gũi bên dưới, nghe từng câu thoại và đọc nhại theo để rèn luyện ngữ điệu tự nhiên!
+        </div>
+    </div>
+
+    <!-- Scenarios Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 25px;">
+        <div class="scenario-card active" onclick="loadScenario(0, this)">
+            <div style="font-size: 24px; margin-bottom: 6px;">☕</div>
+            <strong style="color: #fff; font-size: 14px; display: block;">Chào Hỏi & Làm Quen</strong>
+            <span style="font-size: 11px; color: var(--pixel-green); font-family: var(--text-mono);">Band A1 • Cơ bản</span>
+        </div>
+        <div class="scenario-card" onclick="loadScenario(1, this)">
+            <div style="font-size: 24px; margin-bottom: 6px;">🍽️</div>
+            <strong style="color: #fff; font-size: 14px; display: block;">Gọi Món Tại Nhà Hàng</strong>
+            <span style="font-size: 11px; color: var(--neon-cyan); font-family: var(--text-mono);">Band A2 • Thường nhật</span>
+        </div>
+        <div class="scenario-card" onclick="loadScenario(2, this)">
+            <div style="font-size: 24px; margin-bottom: 6px;">✈️</div>
+            <strong style="color: #fff; font-size: 14px; display: block;">Check-in Sân Bay & Du Lịch</strong>
+            <span style="font-size: 11px; color: var(--neon-amber); font-family: var(--text-mono);">Band B1 • Thực tế</span>
+        </div>
+        <div class="scenario-card" onclick="loadScenario(3, this)">
+            <div style="font-size: 24px; margin-bottom: 6px;">💼</div>
+            <strong style="color: #fff; font-size: 14px; display: block;">Phỏng Vấn Xin Việc</strong>
+            <span style="font-size: 11px; color: var(--neon-purple); font-family: var(--text-mono);">Band B2 • Công sở</span>
+        </div>
+    </div>
+
+    <!-- Active Dialogue Workspace -->
+    <div id="shadowing-dialogue-box" style="background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 14px; padding: 22px;">
+        <!-- Injected via JS -->
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 3: TỰ DO NÓI & THỬ THÁCH MICRO -->
+<!-- ========================================================================= -->
+<div id="section-free" class="studio-card" style="display: none;">
+    <div style="margin-bottom: 20px;">
+        <h2 style="font-size: 18px; font-weight: 700; color: #fff; margin: 0 0 6px 0;">
+            Thử Thách Nói Tự Do (Free Speech Sandbox)
+        </h2>
+        <div style="font-size: 13px; color: #94a3b8;">
+            Bấm Micro và nói bất kỳ câu tiếng Anh nào bạn muốn. Hệ thống sẽ ghi nhận giọng nói và kiểm tra câu cho bạn!
+        </div>
+    </div>
+
+    <div style="text-align: center; padding: 30px; background: rgba(0,0,0,0.4); border: 2px dashed var(--glass-border); border-radius: 16px; margin-bottom: 25px;">
+        <button class="btn-record-main" id="btn-record-free" onclick="toggleFreeRecording()" style="margin-bottom: 15px;">
+            🎙️
+        </button>
+        <div id="free-record-status" style="font-size: 14px; color: #cbd5e1; font-weight: bold;">
+            Bấm Micro để bắt đầu nói tự do...
+        </div>
+        <div style="font-size: 12px; color: #64748b; margin-top: 6px;">
+            (Nói xong chỉ cần im lặng 1-2 giây hoặc bấm lại nút để dừng)
+        </div>
+    </div>
+
+    <div style="background: rgba(0,0,0,0.5); border: 1.5px solid var(--glass-border); border-radius: 12px; padding: 20px;">
+        <div style="font-size: 12px; color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold; margin-bottom: 8px;">
+            VĂN BẢN TIẾNG ANH NHẬN DIỆN ĐƯỢC:
+        </div>
+        <div id="free-speech-result" style="min-height: 60px; font-size: 16px; color: #fff; line-height: 1.6; font-family: var(--text-mono);">
+            Chưa có giọng nói nào được thu. Hãy bấm nút micro phía trên!
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // NGÂN HÀNG TỪ VỰNG LUYỆN NÓI MẪU THEO CÁC BẬC CEFR
+    const SPEAKING_VOCAB_BANK = {
+        'A1': [
+            { word: "Comfortable", ipa: "/ˈkʌm.fɚ.tə.bəl/", meaning: "Thoải mái, dễ chịu", example: "This sofa is very comfortable to sit on." },
+            { word: "Delicious", ipa: "/dɪˈlɪʃ.əs/", meaning: "Ngon miệng", example: "The food at this restaurant is delicious." },
+            { word: "Beautiful", ipa: "/ˈbjuː.t̬ə.fəl/", meaning: "Xinh đẹp, tuyệt vời", example: "It is a beautiful morning today." },
+            { word: "Family", ipa: "/ˈfæm.əl.i/", meaning: "Gia đình", example: "I love spending time with my family." },
+            { word: "Breakfast", ipa: "/ˈbrek.fəst/", meaning: "Bữa sáng", example: "I always have a healthy breakfast at seven." }
+        ],
+        'A2': [
+            { word: "Experience", ipa: "/ɪkˈspɪr.i.əns/", meaning: "Trải nghiệm, kinh nghiệm", example: "Traveling alone was an unforgettable experience." },
+            { word: "Recommend", ipa: "/ˌrek.əˈmend/", meaning: "Giới thiệu, khuyến nghị", example: "Can you recommend a good book to read?" },
+            { word: "Convenient", ipa: "/kənˈviː.ni.ənt/", meaning: "Thuận tiện, tiện lợi", example: "The subway station is very convenient for commuters." },
+            { word: "Celebrate", ipa: "/ˈsel.ə.breɪt/", meaning: "Kỷ niệm, ăn mừng", example: "We celebrated my birthday with a big cake." }
+        ],
+        'B1': [
+            { word: "Opportunity", ipa: "/ˌɑː.pɚˈtuː.nə.t̬i/", meaning: "Cơ hội thăng tiến", example: "Studying abroad provides a great opportunity to grow." },
+            { word: "Environment", ipa: "/ɪnˈvaɪ.rən.mənt/", meaning: "Môi trường sống", example: "We must protect the natural environment for future generations." },
+            { word: "Successful", ipa: "/səkˈses.fəl/", meaning: "Thành công", example: "Hard work is key to becoming successful." },
+            { word: "Communication", ipa: "/kəˌmjuː.nəˈkeɪ.ʃən/", meaning: "Giao tiếp, truyền thông", example: "Effective communication solves most misunderstandings." }
+        ],
+        'B2': [
+            { word: "Significant", ipa: "/sɪɡˈnɪf.ə.kənt/", meaning: "Đáng kể, quan trọng", example: "There is a significant difference between the two methods." },
+            { word: "Perspective", ipa: "/pɚˈspek.tɪv/", meaning: "Góc nhìn, quan điểm", example: "Traveling gives you a fresh perspective on life." },
+            { word: "Collaborate", ipa: "/kəˈlæb.ə.reɪt/", meaning: "Hợp tác làm việc", example: "Teams must collaborate closely to hit project deadlines." },
+            { word: "Distinguish", ipa: "/dɪˈstɪŋ.ɡwɪʃ/", meaning: "Phân biệt rạch ròi", example: "It is important to distinguish fact from opinion." }
+        ],
+        'C1': [
+            { word: "Comprehensive", ipa: "/ˌkɑːm.prəˈhen.sɪv/", meaning: "Toàn diện, sâu rộng", example: "The professor offered a comprehensive overview of the research." },
+            { word: "Sophisticated", ipa: "/səˈfɪs.tə.keɪ.t̬ɪd/", meaning: "Tinh vi, phức tạp, sành điệu", example: "Modern AI models use sophisticated algorithms." },
+            { word: "Unprecedented", ipa: "/ʌnˈpres.ə.den.t̬ɪd/", meaning: "Chưa từng có tiền lệ", example: "The global market experienced unprecedented volatility." }
+        ],
+        'C2': [
+            { word: "Ephemeral", ipa: "/ɪˈfem.ər.əl/", meaning: "Phù du, thoáng qua", example: "Fame can often be ephemeral in the digital age." },
+            { word: "Ubiquitous", ipa: "/juːˈbɪk.wə.t̬əs/", meaning: "Phổ biến khắp nơi", example: "Smartphones have become ubiquitous in modern society." },
+            { word: "Juxtaposition", ipa: "/ˌdʒʌk.stə.pəˈzɪʃ.ən/", meaning: "Sự đặt cạnh nhau đối chiếu", example: "The artist used juxtaposition to highlight cultural contrasts." }
+        ]
+    };
+
+    // HỘI THOẠI SHADOWING MẪU
+    const SHADOWING_SCENARIOS = [
+        {
+            title: "Chào hỏi & Làm quen (Band A1)",
+            lines: [
+                { speaker: "A", en: "Hi, nice to meet you! My name is Nam.", vi: "Chào bạn, rất vui được gặp bạn! Mình tên là Nam." },
+                { speaker: "B", en: "Hello Nam! I am Sarah. Where are you from?", vi: "Chào Nam! Mình là Sarah. Bạn đến từ đâu vậy?" },
+                { speaker: "A", en: "I am from Vietnam. Welcome to my city!", vi: "Mình đến từ Việt Nam. Chào mừng bạn đến thành phố của mình!" }
+            ]
+        },
+        {
+            title: "Gọi món tại nhà hàng (Band A2)",
+            lines: [
+                { speaker: "Phục vụ", en: "Good evening! Are you ready to order?", vi: "Chào quý khách! Quý khách đã sẵn sàng gọi món chưa ạ?" },
+                { speaker: "Khách", en: "Yes, I would like to try the grilled chicken salad, please.", vi: "Vâng, cho tôi một phần salad gà nướng nhé." },
+                { speaker: "Phục vụ", en: "Excellent choice! What would you like to drink?", vi: "Lựa chọn tuyệt vời! Quý khách muốn dùng đồ uống gì ạ?" }
+            ]
+        },
+        {
+            title: "Check-in sân bay (Band B1)",
+            lines: [
+                { speaker: "Nhân viên", en: "May I see your passport and flight booking, please?", vi: "Cho tôi kiểm tra hộ chiếu và mã đặt vé của bạn nhé?" },
+                { speaker: "Hành khách", en: "Here they are. Could I have a window seat if possible?", vi: "Đây ạ. Nếu được thì cho tôi ghế cạnh cửa sổ nhé?" },
+                { speaker: "Nhân viên", en: "Sure thing! Your boarding gate is number twelve.", vi: "Được chứ! Cửa lên máy bay của bạn là số mười hai." }
+            ]
+        },
+        {
+            title: "Phỏng vấn xin việc (Band B2)",
+            lines: [
+                { speaker: "Nhà tuyển dụng", en: "Can you tell me about your greatest professional strength?", vi: "Bạn có thể chia sẻ điểm mạnh chuyên môn lớn nhất của bạn không?" },
+                { speaker: "Ứng viên", en: "I excel at problem-solving and collaborating with cross-functional teams.", vi: "Tôi có thế mạnh giải quyết vấn đề và phối hợp tốt với các nhóm liên bộ phận." }
+            ]
+        }
+    ];
+
+    let currentBand = 'A1';
+    let currentWordIdx = 0;
+    let speechRate = 1.0;
+    let isWordRecording = false;
+    let isFreeRecording = false;
+
+    // Thống kê phiên
+    let sessionWordsSpoken = 0;
+    let sessionScores = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        renderCurrentWord();
+        loadScenario(0);
+    });
+
+    function switchSpeakingTab(tabKey) {
+        ['vocab', 'shadowing', 'free'].forEach(k => {
+            const sec = document.getElementById(`section-${k}`);
+            const btn = document.getElementById(`tab-btn-${k}`);
+            if (sec) sec.style.display = (k === tabKey) ? 'block' : 'none';
+            if (btn) {
+                if (k === tabKey) btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+        });
+    }
+
+    function selectVocabBand(band, btn) {
+        currentBand = band;
+        currentWordIdx = 0;
+        document.querySelectorAll('#section-vocab .filter-pill').forEach(p => {
+            if (['Band A1','Band A2','Band B1','Band B2','Band C1','Band C2'].includes(p.innerText.trim())) {
+                p.classList.remove('active');
+            }
+        });
+        btn.classList.add('active');
+        renderCurrentWord();
+    }
+
+    function setSpeechSpeed(rate, btn) {
+        speechRate = rate;
+        document.getElementById('speed-normal').classList.remove('active');
+        document.getElementById('speed-slow').classList.remove('active');
+        btn.classList.add('active');
+    }
+
+    function renderCurrentWord() {
+        const words = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
+        if (currentWordIdx >= words.length) currentWordIdx = 0;
+        const w = words[currentWordIdx];
+
+        document.getElementById('current-word-band').innerText = `BAND ${currentBand} • TỪ ${currentWordIdx + 1}/${words.length}`;
+        document.getElementById('current-word-text').innerText = w.word;
+        document.getElementById('current-word-ipa').innerText = w.ipa;
+        document.getElementById('current-word-meaning').innerText = w.meaning;
+        document.getElementById('current-word-example').innerText = `"${w.example}"`;
+
+        // Ẩn meter kết quả cũ
+        document.getElementById('word-accuracy-meter').style.display = 'none';
+        document.getElementById('record-status-hint').innerText = "Nhấn vào nút Micro màu đỏ để bắt đầu đọc to từ trên";
+        document.getElementById('btn-record-word').classList.remove('is-recording');
+        isWordRecording = false;
+    }
+
+    function nextRandomWord() {
+        const words = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
+        currentWordIdx = (currentWordIdx + 1) % words.length;
+        renderCurrentWord();
+    }
+
+    function speakCurrentWord() {
+        const words = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
+        const w = words[currentWordIdx];
+        if (window.TAPSpeech) {
+            window.TAPSpeech.speak(w.word, { rate: speechRate });
+        }
+    }
+
+    function toggleRecordCurrentWord() {
+        const btn = document.getElementById('btn-record-word');
+        const hint = document.getElementById('record-status-hint');
+        const words = SPEAKING_VOCAB_BANK[currentBand] || SPEAKING_VOCAB_BANK['A1'];
+        const targetWord = words[currentWordIdx].word;
+
+        if (isWordRecording) {
+            if (window.TAPSpeech) window.TAPSpeech.stopListening();
+            btn.classList.remove('is-recording');
+            isWordRecording = false;
+            hint.innerText = "Đã dừng thu âm.";
+            return;
+        }
+
+        if (!window.TAPSpeech || !window.TAPSpeech.isSTTSupported()) {
+            alert("Trình duyệt của bạn chưa hỗ trợ thu âm qua Web Speech API (Khuyên dùng Chrome/Edge).");
+            return;
+        }
+
+        isWordRecording = true;
+        btn.classList.add('is-recording');
+        hint.innerHTML = "<span style='color: #ef4444; font-weight: bold;'>● ĐANG NGHE...</span> Hãy đọc to: <strong>" + targetWord + "</strong>";
+
+        window.TAPSpeech.startListening({
+            onResult: (transcript, isFinal) => {
+                if (isFinal) {
+                    isWordRecording = false;
+                    btn.classList.remove('is-recording');
+                    hint.innerText = "Đã hoàn thành phân tích âm học!";
+                    displayWordEvaluation(targetWord, transcript);
+                }
+            },
+            onError: (err) => {
+                isWordRecording = false;
+                btn.classList.remove('is-recording');
+                hint.innerText = "Chưa nhận được âm thanh. Hãy thử lại!";
+            },
+            onEnd: () => {
+                isWordRecording = false;
+                btn.classList.remove('is-recording');
+            }
+        });
+    }
+
+    function displayWordEvaluation(target, spoken) {
+        const meter = document.getElementById('word-accuracy-meter');
+        const speechTextEl = document.getElementById('recognized-speech-text');
+        const scoreEl = document.getElementById('accuracy-score-number');
+        const barFill = document.getElementById('accuracy-progress-bar-fill');
+        const verdictEl = document.getElementById('accuracy-verdict-label');
+
+        const evalRes = window.TAPSpeech.evaluatePronunciation(target, spoken);
+
+        meter.style.display = 'block';
+        speechTextEl.innerText = `"${spoken}"`;
+        scoreEl.innerText = `${evalRes.score}%`;
+        scoreEl.style.color = evalRes.badgeColor;
+
+        barFill.style.width = `${evalRes.score}%`;
+        barFill.style.background = evalRes.badgeColor;
+
+        verdictEl.innerText = `★ Đánh giá: ${evalRes.label}`;
+        verdictEl.style.color = evalRes.badgeColor;
+
+        // Cập nhật stats
+        sessionWordsSpoken++;
+        sessionScores.push(evalRes.score);
+        updateSessionStats();
+    }
+
+    function updateSessionStats() {
+        const countEl = document.getElementById('stat-words-count');
+        const avgEl = document.getElementById('stat-avg-score');
+        countEl.innerText = `${sessionWordsSpoken} TỪ`;
+
+        if (sessionScores.length > 0) {
+            const avg = Math.round(sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length);
+            avgEl.innerText = `Độ khớp TB: ${avg}%`;
+        }
+    }
+
+    // =========================================================================
+    // SHADOWING CONVERSATIONS LOGIC
+    // =========================================================================
+    function loadScenario(idx, cardEl = null) {
+        if (cardEl) {
+            document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('active'));
+            cardEl.classList.add('active');
+        }
+
+        const sc = SHADOWING_SCENARIOS[idx];
+        const container = document.getElementById('shadowing-dialogue-box');
+        let html = `
+            <div style="font-size: 16px; font-weight: bold; color: var(--neon-cyan); margin-bottom: 15px; border-bottom: 1px dashed var(--glass-border); padding-bottom: 10px;">
+                ${sc.title}
+            </div>
+        `;
+
+        sc.lines.forEach((line, lIdx) => {
+            html += `
+            <div class="shadowing-line" id="line-box-${lIdx}">
+                <div style="flex: 1; min-width: 250px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span style="font-size: 11px; background: rgba(6,182,212,0.2); color: var(--neon-cyan); padding: 2px 6px; border-radius: 4px; font-family: var(--text-mono);">${line.speaker}</span>
+                        <strong style="color: #fff; font-size: 15px;">"${line.en}"</strong>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 13px;">${line.vi}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="tap-audio-btn" data-speech-text="${line.en.replace(/"/g, '&quot;')}" style="font-size: 11px; padding: 6px 12px;">
+                        🔊 Nghe Mẫu
+                    </button>
+                    <button class="tap-mic-btn" id="mic-line-${lIdx}" onclick="recordShadowingLine(${lIdx}, '${line.en.replace(/'/g, "\\'")}')" style="padding: 6px 12px; font-size: 11px;">
+                        🎙️ Nhại Lại
+                    </button>
+                    <span id="score-line-${lIdx}" style="display: none; font-size: 13px; font-weight: bold; font-family: var(--text-mono); padding: 4px 8px; border-radius: 6px;"></span>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function recordShadowingLine(lineIdx, targetSentence) {
+        const btn = document.getElementById(`mic-line-${lineIdx}`);
+        const scoreSpan = document.getElementById(`score-line-${lineIdx}`);
+        if (!window.TAPSpeech || !window.TAPSpeech.isSTTSupported()) {
+            alert("Trình duyệt chưa hỗ trợ thu âm Web Speech API.");
+            return;
+        }
+
+        btn.classList.add('is-recording');
+        btn.innerText = "Đang nghe...";
+
+        window.TAPSpeech.startListening({
+            onResult: (transcript, isFinal) => {
+                if (isFinal) {
+                    btn.classList.remove('is-recording');
+                    btn.innerText = "🎙️ Đọc Lại";
+                    const evalRes = window.TAPSpeech.evaluatePronunciation(targetSentence, transcript);
+                    scoreSpan.style.display = 'inline-block';
+                    scoreSpan.innerText = `${evalRes.score}%`;
+                    scoreSpan.style.color = evalRes.badgeColor;
+                    scoreSpan.style.border = `1px solid ${evalRes.badgeColor}`;
+                    scoreSpan.style.background = 'rgba(0,0,0,0.5)';
+                }
+            },
+            onError: () => {
+                btn.classList.remove('is-recording');
+                btn.innerText = "🎙️ Nhại Lại";
+            }
+        });
+    }
+
+    // =========================================================================
+    // FREE SPEAKING SANDBOX
+    // =========================================================================
+    function toggleFreeRecording() {
+        const btn = document.getElementById('btn-record-free');
+        const status = document.getElementById('free-record-status');
+        const resBox = document.getElementById('free-speech-result');
+
+        if (isFreeRecording) {
+            if (window.TAPSpeech) window.TAPSpeech.stopListening();
+            btn.classList.remove('is-recording');
+            isFreeRecording = false;
+            status.innerText = "Đã hoàn thành ghi nhận giọng nói.";
+            return;
+        }
+
+        if (!window.TAPSpeech || !window.TAPSpeech.isSTTSupported()) {
+            alert("Trình duyệt chưa hỗ trợ thu âm.");
+            return;
+        }
+
+        isFreeRecording = true;
+        btn.classList.add('is-recording');
+        status.innerHTML = "<span style='color: #ef4444;'>● ĐANG THU ÂM...</span> Hãy nói bất kỳ câu tiếng Anh nào bạn muốn!";
+        resBox.innerText = "...";
+
+        window.TAPSpeech.startListening({
+            onResult: (transcript, isFinal) => {
+                resBox.innerText = `"${transcript}"`;
+                if (isFinal) {
+                    isFreeRecording = false;
+                    btn.classList.remove('is-recording');
+                    status.innerText = "✓ Hoàn thành nhận diện!";
+                }
+            },
+            onError: () => {
+                isFreeRecording = false;
+                btn.classList.remove('is-recording');
+                status.innerText = "Không phát hiện âm thanh. Hãy thử lại!";
+            }
+        });
+    }
+</script>
+{% endblock %}

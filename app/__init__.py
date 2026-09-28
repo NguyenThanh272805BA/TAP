@@ -73,6 +73,11 @@ def create_app():
     def learn_page():
         return render_template('learn.html')
 
+    # 2.2. Phòng Luyện Nói & Phát Âm AI Chuyên Sâu (AI Speaking Studio)
+    @app.route('/speaking')
+    def speaking_page():
+        return render_template('speaking.html')
+
     # 3. Trung tâm Khảo thí CEFR (Lobby & Các phân hệ tách biệt)
     @app.route('/test')
     def test_page():

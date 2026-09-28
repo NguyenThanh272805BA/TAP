@@ -354,17 +354,11 @@
         const pillRanked = document.getElementById('pill-ranked');
         const pillPractice = document.getElementById('pill-practice');
         if (isPractice) {
-            pillRanked.className = 'exam-mode-pill';
-            pillPractice.className = 'exam-mode-pill active-practice';
-            if (window.showSuccess) {
-                window.showSuccess("Đã kích hoạt chế độ Đấu Tập! Bạn có thể làm bài thi thoải mái mà không lo bị trừ điểm RP hay tụt Rank.", "CHẾ ĐỘ ĐẤU TẬP");
-            }
+            if (pillRanked) pillRanked.className = 'exam-mode-pill';
+            if (pillPractice) pillPractice.className = 'exam-mode-pill active-practice';
         } else {
-            pillRanked.className = 'exam-mode-pill active-ranked';
-            pillPractice.className = 'exam-mode-pill';
-            if (window.showWarning) {
-                window.showWarning("Đã kích hoạt chế độ Khảo Thí Xếp Hạng! Điểm số sẽ tính vào Rank RP và áp dụng quy chế nghiêm ngặt.", "KHẢO THÍ XẾP HẠNG");
-            }
+            if (pillRanked) pillRanked.className = 'exam-mode-pill active-ranked';
+            if (pillPractice) pillPractice.className = 'exam-mode-pill';
         }
     }
 

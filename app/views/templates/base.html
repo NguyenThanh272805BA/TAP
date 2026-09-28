@@ -72,6 +72,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                     Khảo Thí CEFR
                 </a>
+                <a href="/speaking" class="nav-item" style="color: #67e8f9;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                    Phòng Luyện Nói AI
+                </a>
                 <a href="/arena" class="nav-item">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" y1="14" x2="9" y2="18"/><line x1="7" y1="17" x2="4" y2="20"/><line x1="3" y1="19" x2="5" y2="21"/></svg>
                     Đấu Trường AI
@@ -333,22 +337,17 @@
             });
         }
 
-        // Tự động chào hỏi và hiện bubble sau 2.5s
+        // Tải dữ liệu chẩn đoán ngầm, chỉ hiển thị bubble khi người dùng chủ động click hoặc chưa từng đóng
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                const bubble = document.getElementById('master-g-speech-bubble');
-                if (bubble) bubble.style.display = 'block';
-                // Nạp trước dữ liệu chẩn đoán
-                fetch('/api/ai/agent/diagnose')
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data && data.directive && data.directive.directive_advice) {
-                            const speechText = document.getElementById('master-g-speech-text');
-                            if (speechText) speechText.innerText = data.directive.directive_advice;
-                        }
-                    })
-                    .catch(() => {});
-            }, 2500);
+            fetch('/api/ai/agent/diagnose')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.directive && data.directive.directive_advice) {
+                        const speechText = document.getElementById('master-g-speech-text');
+                        if (speechText) speechText.innerText = data.directive.directive_advice;
+                    }
+                })
+                .catch(() => {});
         });
     </script>
 
