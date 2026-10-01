@@ -266,12 +266,16 @@
 
                 <!-- Progress Bar -->
                 <div style="margin-bottom: 14px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
-                        <span style="color: #cbd5e1;">Từ vựng mục tiêu đã làm chủ (Smart SRS):</span>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                        <span style="color: #cbd5e1;">Từ vựng mục tiêu Band đích (Smart SRS):</span>
                         <strong id="dash-agent-vocab-stat" style="color: var(--neon-cyan); font-family: var(--text-mono);">0 / 0 từ (0%)</strong>
                     </div>
-                    <div style="background: rgba(255, 255, 255, 0.08); height: 10px; border-radius: 5px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div style="background: rgba(255, 255, 255, 0.08); height: 10px; border-radius: 5px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 6px;">
                         <div id="dash-agent-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple)); transition: width 0.8s ease; box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8;">
+                        <span>🇪🇺 Chuẩn Châu Âu CEFR lũy kế:</span>
+                        <span id="dash-agent-cefr-stat" style="color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">0 / 1000 từ</span>
                     </div>
                 </div>
 
@@ -769,6 +773,8 @@
 
                     if (badge) badge.innerText = data.band_label || `${data.current_band} ➔ ${data.target_band}`;
                     if (vocabStat) vocabStat.innerText = `${data.mastered_vocabs} / ${data.required_vocabs} từ (${data.percent}%)`;
+                    const cefrStat = document.getElementById('dash-agent-cefr-stat');
+                    if (cefrStat) cefrStat.innerText = `${data.cumulative_mastered || 0} / ${data.cumulative_benchmark || 1000} từ (${data.cumulative_percent || 0}%)`;
                     if (bar) bar.style.width = `${data.percent}%`;
 
                     if (examPill) {

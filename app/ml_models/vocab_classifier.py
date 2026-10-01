@@ -1,6 +1,13 @@
 import os
+import sys
 import json
 from wordfreq import zipf_frequency
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 class VocabCEFRClassifier:
     """

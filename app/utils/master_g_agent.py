@@ -252,18 +252,54 @@ class MasterGPedagogicalAgent:
     # HỆ THỐNG TÍCH LŨY BAND ĐỊNH LƯỢNG THỰC CHẤT (BAND ACCUMULATION MODEL)
     # =========================================================================
     BAND_CONFIG = {
-        'A1': {'target': 'A2', 'required_vocabs': 120, 'required_grammars': 4, 'label': 'A1 ➔ A2 (Sơ Cấp)'},
-        'A2': {'target': 'B1', 'required_vocabs': 250, 'required_grammars': 6, 'label': 'A2 ➔ B1 (Trung Cấp Dưới)'},
-        'B1': {'target': 'B2', 'required_vocabs': 400, 'required_grammars': 8, 'label': 'B1 ➔ B2 (Trung Cấp Trên)'},
-        'B2': {'target': 'C1', 'required_vocabs': 600, 'required_grammars': 10, 'label': 'B2 ➔ C1 (Cao Cấp)'},
-        'C1': {'target': 'C2', 'required_vocabs': 800, 'required_grammars': 12, 'label': 'C1 ➔ C2 (Thành Thạo Bản Ngữ)'},
-        'C2': {'target': 'C2', 'required_vocabs': 1000, 'required_grammars': 15, 'label': 'C2 Master (Đỉnh Cao Ngôn Ngữ)'}
+        'A1': {
+            'target': 'A2',
+            'required_vocabs': 500,           # Số từ nạp thêm từ cấp trước (+500 - 700 từ A2)
+            'cumulative_benchmark': 1000,      # Tổng từ vựng tích lũy chuẩn CEFR (1.000 - 1.500 từ)
+            'required_grammars': 6,
+            'label': 'A1 ➔ A2 (Sơ Cấp - Elementary)'
+        },
+        'A2': {
+            'target': 'B1',
+            'required_vocabs': 1000,          # Số từ nạp thêm (+1.000 từ B1)
+            'cumulative_benchmark': 2000,      # Tổng từ vựng tích lũy chuẩn CEFR (2.000 - 2.500 từ)
+            'required_grammars': 10,
+            'label': 'A2 ➔ B1 (Trung Cấp - Intermediate)'
+        },
+        'B1': {
+            'target': 'B2',
+            'required_vocabs': 1500,          # Số từ nạp thêm (+1.500 từ B2)
+            'cumulative_benchmark': 3500,      # Tổng từ vựng tích lũy chuẩn CEFR (3.500 - 4.000 từ)
+            'required_grammars': 15,
+            'label': 'B1 ➔ B2 (Trung Cao Cấp - Upper-Intermediate)'
+        },
+        'B2': {
+            'target': 'C1',
+            'required_vocabs': 3500,          # Số từ nạp thêm (+3.000 - 4.000 từ C1)
+            'cumulative_benchmark': 7000,      # Tổng từ vựng tích lũy chuẩn CEFR (7.000 - 8.000 từ)
+            'required_grammars': 20,
+            'label': 'B2 ➔ C1 (Cao Cấp - Advanced)'
+        },
+        'C1': {
+            'target': 'C2',
+            'required_vocabs': 8000,          # Số từ nạp thêm (+7.000 - 8.000 từ C2)
+            'cumulative_benchmark': 15000,     # Tổng từ vựng tích lũy chuẩn CEFR (15.000 - 16.000+ từ)
+            'required_grammars': 25,
+            'label': 'C1 ➔ C2 (Tinh Thông - Mastery / Proficiency)'
+        },
+        'C2': {
+            'target': 'C2',
+            'required_vocabs': 8000,
+            'cumulative_benchmark': 16000,
+            'required_grammars': 30,
+            'label': 'C2 Master (Đỉnh Cao Ngôn Ngữ)'
+        }
     }
 
     def compute_band_accumulation_progress(self, user_id: int) -> Dict[str, Any]:
         """
         TÍNH TOÁN TIẾN ĐỘ TÍCH LŨY THỰC TẾ ĐỂ MỞ KHÓA BÀI THI THĂNG HẠNG BAND
-        Ngăn chặn ảo tưởng 'học 5 từ lên 1 band'. Đòi hỏi tích lũy lượng biến thành chất biến.
+        Áp dụng chuẩn khung năng lực Châu Âu (CEFR). Đòi hỏi tích lũy lượng biến thành chất biến.
         """
         user = User.query.get(user_id)
         if not user:
@@ -273,9 +309,10 @@ class MasterGPedagogicalAgent:
         cfg = self.BAND_CONFIG.get(current_band, self.BAND_CONFIG['A1'])
         target_band = cfg['target']
         required_vocabs = cfg['required_vocabs']
+        cumulative_benchmark = cfg.get('cumulative_benchmark', 1000)
         required_grammars = cfg['required_grammars']
 
-        # Đếm từ vựng thuộc target_band mà user ĐÃ THUỘC (DA_THUOC) qua Smart SRS
+        # 1. Đếm từ vựng thuộc target_band mà user ĐÃ THUỘC (DA_THUOC) qua Smart SRS
         mastered_vocabs = db.session.query(UserVocabulary).join(
             Vocabulary, UserVocabulary.vocab_id == Vocabulary.id
         ).filter(
@@ -284,7 +321,13 @@ class MasterGPedagogicalAgent:
             UserVocabulary.memorization_level == 'DA_THUOC'
         ).count()
 
-        # Đếm từ vựng thuộc target_band đang học (DANG_HOC hoặc CHUA_THUOC)
+        # 2. Đếm tổng vốn từ vựng tích lũy toàn diện (mọi cấp độ) mà user ĐÃ THUỘC
+        cumulative_mastered = db.session.query(UserVocabulary).filter(
+            UserVocabulary.user_id == user_id,
+            UserVocabulary.memorization_level == 'DA_THUOC'
+        ).count()
+
+        # 3. Đếm từ vựng thuộc target_band đang học (DANG_HOC hoặc CHUA_THUOC)
         learning_vocabs = db.session.query(UserVocabulary).join(
             Vocabulary, UserVocabulary.vocab_id == Vocabulary.id
         ).filter(
@@ -293,10 +336,10 @@ class MasterGPedagogicalAgent:
             UserVocabulary.memorization_level != 'DA_THUOC'
         ).count()
 
-        # Tổng số từ vựng của target_band có trong hệ thống
+        # 4. Tổng số từ vựng của target_band có trong hệ thống
         total_target_in_system = Vocabulary.query.filter_by(cefr_level=target_band).count()
 
-        # Ngữ pháp đã hoàn thành
+        # 5. Ngữ pháp đã hoàn thành
         grammar_done = UserMilestoneProgress.query.join(
             RoadmapMilestone, UserMilestoneProgress.milestone_id == RoadmapMilestone.id
         ).filter(
@@ -306,19 +349,23 @@ class MasterGPedagogicalAgent:
         ).count()
 
         percent = round(min(100.0, (mastered_vocabs / max(1, required_vocabs)) * 100), 1)
+        cumulative_percent = round(min(100.0, (cumulative_mastered / max(1, cumulative_benchmark)) * 100), 1)
         shortfall = max(0, required_vocabs - mastered_vocabs)
         is_exam_ready = (mastered_vocabs >= required_vocabs and grammar_done >= (required_grammars // 2))
 
         if not is_exam_ready:
             gatekeeper_verdict = (
-                f"Master G nhắn nhủ: Bạn đã làm chủ được {mastered_vocabs}/{required_vocabs} từ vựng mục tiêu của Band {target_band} ({percent}%). "
-                f"Để đảm bảo bạn tự tin bước vào kỳ thi thăng hạng và đạt kết quả tốt nhất ngay từ lần thi đầu, "
-                f"bạn hãy tích lũy thêm tối thiểu {shortfall} từ vựng nữa vào trí nhớ dài hạn nhé. Cố lên, bạn đang đi rất đúng hướng!"
+                f"Master G nhắn nhủ: Theo Khung Tham Chiếu Châu Âu (CEFR), để bứt phá lên Band {target_band}, "
+                f"bạn cần làm chủ thêm {shortfall} từ vựng mục tiêu (hiện tại: {mastered_vocabs}/{required_vocabs} từ, đạt {percent}%). "
+                f"Tổng vốn từ tích lũy của bạn đang đạt {cumulative_mastered}/{cumulative_benchmark} từ chuẩn CEFR. "
+                f"Hãy tiếp tục kiên trì rèn luyện hàng ngày để biến lượng thành chất và tự tin vượt qua kỳ thi nhé!"
             )
         else:
             gatekeeper_verdict = (
-                f"Master G chúc mừng: Xuất sắc! Bạn đã tích lũy đủ {mastered_vocabs} từ vựng và ngữ pháp nền tảng cho Band {target_band}. "
-                f"Cánh cửa kỳ thi thăng hạng đã chính thức mở khóa. Hãy tự tin bước vào phòng thi để khẳng định năng lực nhé!"
+                f"Master G chúc mừng: Xuất sắc! Bạn đã làm chủ {mastered_vocabs} từ vựng mục tiêu Band {target_band} "
+                f"(tổng tích lũy toàn diện đạt {cumulative_mastered}/{cumulative_benchmark} từ chuẩn CEFR) "
+                f"và hoàn thành xuất sắc các cấu trúc ngữ pháp nền tảng. "
+                f"Phòng thi thăng hạng Band {target_band} đã chính thức mở khóa. Hãy tự tin bước vào phòng thi để khẳng định năng lực nhé!"
             )
 
         return {
@@ -329,6 +376,9 @@ class MasterGPedagogicalAgent:
             "mastered_vocabs": mastered_vocabs,
             "learning_vocabs": learning_vocabs,
             "required_vocabs": required_vocabs,
+            "cumulative_mastered": cumulative_mastered,
+            "cumulative_benchmark": cumulative_benchmark,
+            "cumulative_percent": cumulative_percent,
             "grammar_done": grammar_done,
             "required_grammars": required_grammars,
             "percent": percent,
