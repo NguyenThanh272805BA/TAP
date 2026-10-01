@@ -257,63 +257,102 @@
     </div>
 </div>
 
-<!-- SECTION 3: BẢNG TRÌNH ĐỘ CEFR THỰC TẾ -->
+<!-- SECTION 3: BẢNG TRÌNH ĐỘ CEFR THỰC TẾ & CƠ CHẾ TÍNH BAND CỦA MASTER G -->
 <div id="bang-trinh-do-cefr" class="guide-section-card">
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
         <span style="font-size: 26px;">📊</span>
         <div>
-            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">3. Các Cấp Độ (Band CEFR) Nghĩa Là Gì Trong Thực Tế?</h2>
-            <div style="font-size: 13px; color: #94a3b8; margin-top: 3px;">Xem bạn đang ở đâu và mục tiêu tiếp theo là gì</div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0;">3. Chuẩn Năng Lực Châu Âu (CEFR) & Cơ Chế Tính Band Mới Của Master G</h2>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 3px;">Mô hình định lượng 2 tầng: Nạp từ mới theo cấp độ + Tích lũy dài hạn qua Smart SRS để mở khóa thi thăng hạng</div>
         </div>
     </div>
 
-    <p style="font-size: 14.5px; color: #cbd5e1; line-height: 1.7;">
-        Khung tham chiếu Châu Âu (CEFR) chia năng lực ngoại ngữ thành 6 bậc từ cơ bản đến cao cấp. Dưới đây là ý nghĩa thực tế của từng cấp độ:
+    <!-- HỘP GIẢI THÍCH CƠ CHẾ TRỌNG TÀI MASTER G -->
+    <div class="warning-box" style="border-left-color: var(--neon-amber); background: rgba(245, 158, 11, 0.08);">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span style="font-size: 20px;">🛡️</span>
+            <strong style="color: var(--neon-amber); font-size: 15px;">CƠ CHẾ TRỌNG TÀI SƯ PHẠM (BAND GATEKEEPER) — CHỐNG ẢO TƯỞNG THÔNG THẠO:</strong>
+        </div>
+        <div style="font-size: 13.8px; color: #cbd5e1; line-height: 1.65;">
+            Trong nhiều ứng dụng truyền thống, người học chỉ cần lướt qua 5–10 câu hỏi là được hệ thống tự động nhảy Band. Tại nền tảng TAP, <strong>Tác tử Sư phạm Master G</strong> đóng vai trò là Trọng tài Khắt khe nhằm đảm bảo <em>lượng đổi thì chất mới đổi</em>. Bạn <strong>không thể thi nhảy cóc</strong> nếu chưa đáp ứng đủ 2 tầng tích lũy:
+            <ul style="margin: 8px 0 0 0; padding-left: 20px; line-height: 1.7;">
+                <li><strong>Tầng 1 (Vốn từ Band đích):</strong> Phải làm chủ đủ số lượng từ vựng nạp thêm của cấp độ đó và được Smart SRS xác nhận đạt trạng thái <strong>ĐÃ THUỘC (DA_THUOC)</strong> trong trí nhớ dài hạn (A2 cần +500 từ, B1 cần +1.000 từ, B2 cần +1.500 từ...).</li>
+                <li><strong>Tầng 2 (Tổng tích lũy toàn diện):</strong> Tổng vốn từ vựng dài hạn tích lũy từ trước đến nay phải đạt chuẩn khung Châu Âu (A2: 1.000 từ, B1: 2.000 từ, B2: 3.500 từ, C1: 7.000 từ, C2: 15.000 từ).</li>
+                <li><strong>Điều kiện bổ trợ:</strong> Hoàn thành tối thiểu <strong>50%</strong> các điểm ngữ pháp trọng tâm của Band tương ứng trên Cây kỹ năng.</li>
+            </ul>
+            Khi thỏa mãn đầy đủ các điều kiện trên, <strong>Đồng hồ Master G trên Dashboard</strong> sẽ chuyển sang trạng thái xanh lá <em>"Sẵn sàng thi thăng hạng!"</em> và cánh cửa Phòng Khảo Thí (/test) mới chính thức mở khóa.
+        </div>
+    </div>
+
+    <p style="font-size: 14.5px; color: #cbd5e1; line-height: 1.7; margin-top: 18px;">
+        Dưới đây là <strong>Bảng Quy Chuẩn Định Lượng CEFR Châu Âu</strong> được tích hợp trực tiếp vào logic vận hành của Tác tử Master G:
     </p>
 
+    <!-- BẢNG ĐỊNH LƯỢNG CHUẨN CHÂU ÂU CEFR -->
     <div style="overflow-x: auto; margin-top: 15px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left;">
             <thead>
                 <tr style="border-bottom: 2px solid var(--neon-cyan); color: var(--neon-cyan);">
-                    <th style="padding: 12px 14px;">Trình độ (Band)</th>
-                    <th style="padding: 12px 14px;">Khả năng thực tế trong đời sống</th>
-                    <th style="padding: 12px 14px;">Lượng từ vựng</th>
-                    <th style="padding: 12px 14px;">Tương đương</th>
+                    <th style="padding: 12px 14px;">Cấp độ CEFR</th>
+                    <th style="padding: 12px 14px;">Tên trình độ</th>
+                    <th style="padding: 12px 14px;">Tổng từ vựng tích lũy (Chuẩn Châu Âu)</th>
+                    <th style="padding: 12px 14px;">Số từ cần nạp thêm từ cấp trước</th>
+                    <th style="padding: 12px 14px;">Đặc trưng vốn từ & Năng lực thực tế</th>
                 </tr>
             </thead>
             <tbody>
                 <tr style="border-bottom: 1px solid var(--glass-border);">
-                    <td style="padding: 14px; font-weight: 800; color: #38bdf8;">A1 - Khởi Động</td>
-                    <td style="padding: 14px; color: #e2e8f0;">Chào hỏi, giới thiệu tên tuổi, gọi món ăn, hỏi đường cơ bản.</td>
-                    <td style="padding: 14px; color: var(--neon-amber);">~ 500 từ cốt lõi</td>
-                    <td style="padding: 14px; color: #94a3b8;">Người mất gốc / mới học</td>
+                    <td style="padding: 14px; font-weight: 800; color: #38bdf8;">A1</td>
+                    <td style="padding: 14px; font-weight: 700; color: #e2e8f0;">Khởi đầu (Beginner)</td>
+                    <td style="padding: 14px; color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">500 – 800 từ</td>
+                    <td style="padding: 14px; color: #cbd5e1;">~500 – 800 (từ con số 0)</td>
+                    <td style="padding: 14px; color: #cbd5e1;">Từ vựng tối thiểu để chào hỏi, giới thiệu bản thân, số đếm, gia đình, đồ vật xung quanh.</td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--glass-border);">
-                    <td style="padding: 14px; font-weight: 800; color: var(--pixel-green);">A2 - Sơ Cấp</td>
-                    <td style="padding: 14px; color: #e2e8f0;">Mua sắm, hỏi giá, kể về sở thích, công việc hàng ngày, gia đình.</td>
-                    <td style="padding: 14px; color: var(--neon-amber);">~ 1.000 từ</td>
-                    <td style="padding: 14px; color: #94a3b8;">TOEIC 250 - 400</td>
+                    <td style="padding: 14px; font-weight: 800; color: var(--pixel-green);">A2</td>
+                    <td style="padding: 14px; font-weight: 700; color: #e2e8f0;">Sơ cấp (Elementary)</td>
+                    <td style="padding: 14px; color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">1.000 – 1.500 từ</td>
+                    <td style="padding: 14px; color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold;">+500 – 700 từ (từ A1)</td>
+                    <td style="padding: 14px; color: #cbd5e1;">Mua sắm, phương hướng, miêu tả thói quen, công việc đơn giản, ngữ cảnh quá khứ quen thuộc.</td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--glass-border);">
-                    <td style="padding: 14px; font-weight: 800; color: var(--neon-cyan);">B1 - Tự Tin Giao Tiếp</td>
-                    <td style="padding: 14px; color: #e2e8f0;">Tự tin đi du lịch nước ngoài, trò chuyện công sở cơ bản, xem phim có phụ đề.</td>
-                    <td style="padding: 14px; color: var(--neon-amber);">~ 2.000 từ</td>
-                    <td style="padding: 14px; color: #94a3b8;">IELTS 4.0 - 5.0 / TOEIC 500</td>
+                    <td style="padding: 14px; font-weight: 800; color: var(--neon-cyan);">B1</td>
+                    <td style="padding: 14px; font-weight: 700; color: #e2e8f0;">Trung cấp (Intermediate)</td>
+                    <td style="padding: 14px; color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">2.000 – 2.500 từ</td>
+                    <td style="padding: 14px; color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold;">+1.000 từ (từ A2)</td>
+                    <td style="padding: 14px; color: #cbd5e1;">Kể lại sự việc, trình bày ý kiến cá nhân, xử lý tình huống du lịch, kế hoạch tương lai.</td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--glass-border);">
-                    <td style="padding: 14px; font-weight: 800; color: var(--neon-purple);">B2 - Công Sở & Học Thuật</td>
-                    <td style="padding: 14px; color: #e2e8f0;">Thuyết trình dự án, tranh luận, viết email đàm phán hợp đồng trôi chảy.</td>
-                    <td style="padding: 14px; color: var(--neon-amber);">~ 4.000 từ</td>
-                    <td style="padding: 14px; color: #94a3b8;">IELTS 5.5 - 6.5 / TOEIC 750</td>
+                    <td style="padding: 14px; font-weight: 800; color: var(--neon-purple);">B2</td>
+                    <td style="padding: 14px; font-weight: 700; color: #e2e8f0;">Trung cao cấp (Upper-Intermediate)</td>
+                    <td style="padding: 14px; color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">3.500 – 4.000 từ</td>
+                    <td style="padding: 14px; color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold;">+1.500 từ (từ B1)</td>
+                    <td style="padding: 14px; color: #cbd5e1;">Các chủ đề trừu tượng, thảo luận xã hội/kỹ thuật cơ bản, dùng tốt cụm động từ (phrasal verbs) và thành ngữ quen thuộc.</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--glass-border);">
+                    <td style="padding: 14px; font-weight: 800; color: var(--neon-pink);">C1</td>
+                    <td style="padding: 14px; font-weight: 700; color: #e2e8f0;">Cao cấp (Advanced)</td>
+                    <td style="padding: 14px; color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">7.000 – 8.000 từ</td>
+                    <td style="padding: 14px; color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold;">+3.000 – 4.000 từ (từ B2)</td>
+                    <td style="padding: 14px; color: #cbd5e1;">Văn phong học thuật, chuyên ngành sâu, sắc thái nghĩa tinh tế (nuances), cụm cố định (collocations) phức tạp.</td>
                 </tr>
                 <tr>
-                    <td style="padding: 14px; font-weight: 800; color: var(--neon-pink);">C1 & C2 - Chuyên Gia</td>
-                    <td style="padding: 14px; color: #e2e8f0;">Sử dụng tiếng Anh linh hoạt, tự nhiên như người bản ngữ trong mọi hoàn cảnh.</td>
-                    <td style="padding: 14px; color: var(--neon-amber);">6.000+ từ</td>
-                    <td style="padding: 14px; color: #94a3b8;">IELTS 7.5 - 9.0</td>
+                    <td style="padding: 14px; font-weight: 800; color: #f43f5e;">C2</td>
+                    <td style="padding: 14px; font-weight: 700; color: #e2e8f0;">Thành thạo (Mastery / Proficiency)</td>
+                    <td style="padding: 14px; color: var(--neon-amber); font-family: var(--text-mono); font-weight: bold;">15.000 – 16.000+ từ</td>
+                    <td style="padding: 14px; color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold;">+7.000 – 8.000 từ (từ C1)</td>
+                    <td style="padding: 14px; color: #cbd5e1;">Tiệm cận hoặc tương đương người bản ngữ có học thức cao; hiểu các tầng nghĩa ẩn dụ, từ cổ, biệt ngữ văn hóa.</td>
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- MẸO HỌC ĐỂ NHANH ĐƯỢC THI -->
+    <div class="tip-box" style="margin-top: 20px;">
+        <strong>💡 Bí kíp để mở khóa kỳ thi thăng hạng nhanh nhất:</strong>
+        <p style="margin: 6px 0 0 0; line-height: 1.6;">
+            Hãy duy trì học từ vựng mới mỗi ngày trong <strong>Phòng Luyện Nói (/speaking)</strong> và đều đặn vào <strong>Nông trại (/farm)</strong> trả lời câu hỏi để chuyển từ vựng từ trạng thái <em>"Đang học"</em> sang <em>"ĐÃ THUỘC"</em>. Chỉ những từ đã thuộc vững chắc mới được Master G tính vào chỉ tiêu mở khóa phòng thi!
+        </p>
     </div>
 </div>
 
