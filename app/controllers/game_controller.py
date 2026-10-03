@@ -270,6 +270,131 @@ def get_speaking_words():
     }), 200
 
 
+@game_bp.route('/speaking/evaluate_audio', methods=['POST'])
+def evaluate_speaking_audio():
+    """
+    Nhận diện và đánh giá phát âm thông qua Audio file thực tế (PCM WAV) từ trình duyệt.
+    Giải quyết triệt để lỗi Brave Shields / Firefox / Safari chặn Google Web Speech API.
+    Sử dụng Gemini Multimodal Audio AI để nghe, phiên âm và chấm điểm phát âm chi tiết.
+    """
+    import io
+    import json
+    target = request.form.get('target', '').strip()
+    band = request.form.get('band', 'A1').strip().upper()
+
+    if not target:
+        return jsonify({"success": False, "error": "Thiếu từ hoặc câu mục tiêu cần đối soát!"}), 400
+
+    if 'audio' not in request.files:
+        return jsonify({"success": False, "error": "Không tìm thấy file ghi âm audio!"}), 400
+
+    audio_file = request.files['audio']
+    audio_bytes = audio_file.read()
+
+    if len(audio_bytes) < 100:
+        return jsonify({
+            "success": False, 
+            "error": "File ghi âm quá ngắn hoặc không có dữ liệu âm thanh! Hãy kiểm tra microphone và nói to hơn."
+        }), 400
+
+    # 1. Thử đánh giá bằng Gemini Multimodal Audio (Độ chính xác cao nhất)
+    try:
+        from app.utils.gemini_helper import key_manager
+        from google.genai import types
+
+        prompt = f"""
+You are an expert English phonetics coach and CEFR speaking examiner.
+The student was prompted to pronounce the target word or phrase: "{target}".
+Listen carefully to the attached audio file.
+
+Respond ONLY with a valid JSON object matching this exact schema:
+{{
+  "transcript": string (the exact English word(s) spoken by the student. If silence or unintelligible noise, return ""),
+  "score": integer (0 to 100 evaluating pronunciation accuracy, stress, and clarity relative to "{target}". 100 = native, 80-99 = clear & accurate, 50-79 = minor mispronunciation, <50 = wrong word or unintelligible),
+  "label": string (Vietnamese assessment title, e.g. "★ Xuất Sắc", "★ Rất Tốt", "★ Đạt Chuẩn", "★ Cần Cải Thiện", "★ Chưa Rõ Âm"),
+  "badge_color": string ('#22c55e' if score>=80 else '#06b6d4' if score>=65 else '#eab308' if score>=45 else '#ef4444'),
+  "advice": string (helpful phonetic feedback in Vietnamese explaining pronunciation, stress, or missing sounds),
+  "word_alignment": [
+    {{
+      "target": string,
+      "spoken": string,
+      "status": "correct" or "imperfect" or "wrong"
+    }}
+  ]
+}}
+"""
+        client = key_manager.get_current_client()
+        part = types.Part.from_bytes(data=audio_bytes, mime_type='audio/wav')
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[part, prompt],
+            config=types.GenerateContentConfig(
+                response_mime_type='application/json',
+                temperature=0.2
+            )
+        )
+
+        res_text = response.text.strip()
+        data = json.loads(res_text)
+
+        score = int(data.get('score', 0))
+        transcript = data.get('transcript', '').strip()
+        label = data.get('label', '★ Đạt Chuẩn')
+        badge_color = data.get('badge_color', '#22c55e' if score >= 80 else '#ef4444')
+        advice = data.get('advice', 'Hãy luyện tập thêm để phát âm tự nhiên hơn!')
+        word_alignment = data.get('word_alignment', [])
+
+        return jsonify({
+            "success": True,
+            "transcript": transcript,
+            "score": score,
+            "label": label,
+            "badgeColor": badge_color,
+            "advice": advice,
+            "wordAlignment": word_alignment,
+            "target": target
+        }), 200
+
+    except Exception as e:
+        print(f"[Speaking API] Gemini audio eval error: {e}")
+        # Fallback sử dụng SpeechRecognition thư viện nếu có
+        try:
+            import speech_recognition as sr
+            recognizer = sr.Recognizer()
+            audio_io = io.BytesIO(audio_bytes)
+            with sr.AudioFile(audio_io) as source:
+                audio_data = recognizer.record(source)
+                recognized_text = recognizer.recognize_google(audio_data, language='en-US')
+
+            clean_tgt = re.sub(r'[^a-zA-Z0-9\s]', '', target.lower()).strip()
+            clean_rec = re.sub(r'[^a-zA-Z0-9\s]', '', recognized_text.lower()).strip()
+
+            from difflib import SequenceMatcher
+            similarity = SequenceMatcher(None, clean_tgt, clean_rec).ratio()
+            score = int(similarity * 100)
+
+            label = "★ Xuất Sắc" if score >= 85 else ("★ Rất Tốt" if score >= 70 else ("★ Đạt Chuẩn" if score >= 50 else "★ Cần Luyện Thêm"))
+            badge_color = "#22c55e" if score >= 80 else ("#06b6d4" if score >= 65 else ("#eab308" if score >= 45 else "#ef4444"))
+            advice = f"Bạn đã đọc: '{recognized_text}'. Hãy chú ý ngữ điệu và trọng âm chuẩn của từ '{target}'."
+
+            return jsonify({
+                "success": True,
+                "transcript": recognized_text,
+                "score": score,
+                "label": label,
+                "badgeColor": badge_color,
+                "advice": advice,
+                "wordAlignment": [{"target": target, "spoken": recognized_text, "status": "correct" if score >= 70 else "imperfect"}],
+                "target": target
+            }), 200
+        except Exception as fallback_err:
+            print(f"[Speaking API] Fallback speech recognition error: {fallback_err}")
+            return jsonify({
+                "success": False,
+                "error": "Không thể xử lý âm thanh lúc này. Vui lòng nói to rõ hơn hoặc dùng ô nhập đối soát!"
+            }), 500
+
+
 @game_bp.route('/recommend', methods=['GET'])
 def get_ml_recommendations():
     user_id = session.get('user_id')

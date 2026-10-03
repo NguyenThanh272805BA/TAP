@@ -116,7 +116,8 @@ def evaluate():
     # -------------------------------------------------------------
     user = User.query.get(user_id)
     user_level = user.current_level if user else "Beginner"
-    gec_res = gec_engine.evaluate(user_input, user_level=user_level)
+    target_word = data.get('target') or data.get('target_word') or ''
+    gec_res = gec_engine.evaluate(user_input, user_level=user_level, target_word=target_word)
     # Ép kiểu float an toàn và lấy default để phòng trường hợp Fallback LLM trả về rỗng
     local_score = float(gec_res.get('score', 0.0))
     local_feedback = gec_res.get('feedback', 'Không có nhận xét từ hệ thống.')
@@ -292,40 +293,19 @@ def evaluate():
 
             else:
                 # -----------------------------------------------------------------
-                # CỔNG PHÂN LUỒNG THÔNG MINH (INTELLIGENT LOCAL-FIRST ESCALATION GATE)
+                # CHẾ ĐỘ CHẤM ĐIỂM TỰ CHỦ 100% CỤC BỘ (AUTONOMOUS LOCAL AI ENGINE)
+                # Độc lập hoàn toàn với LLM: Chấm điểm, bắt lỗi và nhận xét sư phạm
                 # -----------------------------------------------------------------
-                needs_llm = gec_res.get('needs_llm_escalation', False)
                 local_critique = gec_res.get('master_g_critique', local_feedback)
 
-                if not needs_llm:
-                    # 1. AI LOCAL XỬ LÝ TRỰC TIẾP (85-90% các trường hợp)
-                    # Sinh streaming mượt mà, độ trễ < 150ms, tiết kiệm 100% token LLM
-                    lines = local_critique.split('\n')
-                    for line in lines:
-                        chunk = line + "\n"
-                        full_ai_response += chunk
-                        yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
-                        time.sleep(0.015)
+                lines = local_critique.split('\n')
+                for line in lines:
+                    chunk = line + "\n"
+                    full_ai_response += chunk
+                    yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
+                    time.sleep(0.012)
 
-                    yield f"data: {json.dumps({'type': 'done', 'engine': 'local_brain'})}\n\n"
-                else:
-                    # 2. CHUYỂN GIAO CHO LLM KHI ĐỘ BẤT ĐỊNH CAO / OOD
-                    prompt = f"""
-                    Học viên nhập câu: "{user_input}"
-                    Điểm ngữ pháp hệ thống phân tích: {local_score}/10. Chi tiết: {local_feedback}
-                    Lý do chuyển tiếp: {gec_res.get('escalation_reason', 'Cấu trúc phức tạp')}
-                    
-                    Bạn là Master G - Cố vấn học thuật tiếng Anh uyên bác, tinh tế, ân cần nhưng sắc sảo.
-                    Hãy nhận xét tự nhiên, sâu sắc, giải thích rõ ràng nguyên nhân ngữ pháp và ngữ nghĩa bằng tiếng Việt dễ hiểu.
-                    Khen ngợi nỗ lực diễn đạt, chỉ rõ cách chỉnh sửa để câu văn đạt độ tự nhiên của người bản ngữ, và đề xuất câu chuẩn chỉnh.
-                    Xưng hô: Master G / bạn (không dùng ngươi, ta).
-                    Trả về text thuần túy, không dùng định dạng JSON.
-                    """
-                    for chunk in stream_gemini_response(prompt):
-                        full_ai_response += chunk
-                        yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
-
-                    yield f"data: {json.dumps({'type': 'done', 'engine': 'llm_escalation'})}\n\n"
+                yield f"data: {json.dumps({'type': 'done', 'engine': 'local_autonomous_brain'})}\n\n"
 
             new_log = TestLog(user_id=user_id, score=local_score, ai_feedback=full_ai_response)
             db.session.add(new_log)

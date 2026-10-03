@@ -276,12 +276,13 @@ class LocalCritiqueSynthesizer:
             "comment": comment
         }
 
-    def synthesize(self, user_input: str, gec_result: Dict, user_level: str = "Beginner") -> str:
+    def synthesize(self, user_input: str, gec_result: Dict, user_level: str = "Beginner", target_word: str = "") -> str:
         """
         Tổng hợp nhận xét cá nhân hóa theo phong cách Cố Vấn Ngôn Ngữ Master G:
         - Tự nhiên, ấm áp, thấu cảm, giàu giá trị sư phạm.
         - Xóa bỏ hoàn toàn định dạng hộp cứng nhắc [ĐÁNH GIÁ TỔNG QUAN].
         - Giải thích lỗi sai mạch lạc bằng tiếng Việt.
+        - Đánh giá khả năng vận dụng từ vựng mục tiêu (Target Word).
         """
         score = float(gec_result.get('score', 0.0))
         corrected_text = gec_result.get('corrected_text', user_input).strip()
@@ -307,6 +308,18 @@ class LocalCritiqueSynthesizer:
             opening,
             ""
         ]
+
+        # Kiểm tra từ vựng mục tiêu nếu có chỉ định
+        if target_word:
+            clean_tgt = target_word.strip().lower()
+            tokens_in_input = set(re.findall(r'\b[a-zA-Z]+\b', user_input.lower()))
+            is_target_used = any(clean_tgt in tok or tok in clean_tgt for tok in tokens_in_input) or (clean_tgt in user_input.lower())
+            if is_target_used:
+                output_parts.append(f"✨ VẬN DỤNG TỪ MỤC TIÊU: Xuất sắc! Bạn đã lồng ghép và áp dụng chuẩn xác từ '{target_word}' vào câu.")
+                output_parts.append("")
+            else:
+                output_parts.append(f"⚠️ LƯU Ý MỤC TIÊU: Câu của bạn hiện chưa xuất hiện từ vựng '{target_word}'. Hãy thử lồng ghép từ này để củng cố phản xạ ghi nhớ nhé!")
+                output_parts.append("")
 
         # 2. Chi tiết lỗi sai & phân tích sư phạm (nếu có lỗi)
         if is_fragment:

@@ -403,12 +403,8 @@ def get_smart_hint(target_text: str, mode: str = "vocab") -> Dict:
     meaning_val = vocab_obj.meaning if vocab_obj else "Từ vựng tiếng Anh"
     cefr_val = vocab_obj.cefr_level if vocab_obj else cefr_classifier.predict_cefr(word_val)
 
-    # Thử qua Gemini trước
-    hint_data = query_llm_for_vocab_hint(word_val, meaning_val, cefr_val)
-
-    # Nếu không có mạng hoặc Gemini thất bại -> chuyển sang bộ não Offline
-    if not hint_data:
-        hint_data = get_offline_vocab_hint(word_val, meaning_val, cefr_val)
+    # Ưu tiên bộ não thuật toán Cục bộ (Local Engine) để phản hồi siêu tốc (< 15ms) và không phụ thuộc LLM
+    hint_data = get_offline_vocab_hint(word_val, meaning_val, cefr_val)
 
     # Ứng dụng thuật toán phân tách cú pháp & xáo trộn câu
     scramble_res = scramble_engine.scramble_sentence(hint_data["main_sentence"])

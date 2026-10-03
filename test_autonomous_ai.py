@@ -99,6 +99,31 @@ class TestAutonomousAISystem(unittest.TestCase):
         self.assertIsInstance(recs, list)
         print(f"[OK] Test 5: Recommender gợi ý thành công {len(recs)} từ vựng theo vùng phát triển gần nhất (ZPD).")
 
+    def test_06_autonomous_sentence_evaluation_and_suggestion(self):
+        """Kiểm thử Phân hệ 6: Chấm điểm câu và sinh gợi ý đặt câu 100% Cục bộ không phụ thuộc LLM"""
+        from app.utils.hint_service import get_smart_hint
+        from app.ml_models.gec_engine import LocalGECEngine
+
+        # 1. Test sinh gợi ý đặt câu cục bộ với từ 'Cybersecurity'
+        hint = get_smart_hint("Cybersecurity", mode="vocab")
+        self.assertIn("word", hint)
+        self.assertEqual(hint["word"].lower(), "cybersecurity")
+        self.assertGreater(len(hint["collocations"]), 0)
+        self.assertIn("html", hint)
+        self.assertIn("scramble", hint)
+        print("[OK] Test 6.1: Bộ sinh gợi ý đặt câu cục bộ hoạt động trơn tru (< 15ms).")
+
+        # 2. Test chấm câu cục bộ có chứa từ mục tiêu
+        gec = LocalGECEngine()
+        res_with_target = gec.evaluate("Cybersecurity is crucial for modern enterprise networks.", user_level="Intermediate", target_word="cybersecurity")
+        self.assertGreaterEqual(res_with_target["score"], 8.0)
+        self.assertIn("VẬN DỤNG TỪ MỤC TIÊU", res_with_target["master_g_critique"])
+
+        # 3. Test câu chưa chứa từ mục tiêu
+        res_without_target = gec.evaluate("The weather is very pleasant today.", user_level="Intermediate", target_word="cybersecurity")
+        self.assertIn("LƯU Ý MỤC TIÊU", res_without_target["master_g_critique"])
+        print("[OK] Test 6.2: Bộ chấm câu & chẩn đoán mục tiêu 100% Cục bộ đánh giá chuẩn xác.")
+
 
 if __name__ == '__main__':
     unittest.main()

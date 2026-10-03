@@ -165,7 +165,7 @@ class LocalGECEngine:
                     return True
         return False
 
-    def evaluate(self, text: str, user_level: str = "Beginner") -> dict:
+    def evaluate(self, text: str, user_level: str = "Beginner", target_word: str = "") -> dict:
         """
         Phân tích ngữ pháp chuyên sâu:
         - Kiểm tra tính hoàn chỉnh của câu (câu trọn vẹn vs. cụm từ rời rạc / từ đơn lẻ)
@@ -299,7 +299,7 @@ class LocalGECEngine:
                 "is_fragment": is_fragment
             }
             synthesizer = get_critique_synthesizer()
-            master_g_critique = synthesizer.synthesize(clean_text, mock_res, user_level=user_level)
+            master_g_critique = synthesizer.synthesize(clean_text, mock_res, user_level=user_level, target_word=target_word)
 
             if len(error_details) == 0:
                 feedback = "Câu văn của bạn hoàn chỉnh và cấu trúc ngữ pháp chuẩn xác 100%."

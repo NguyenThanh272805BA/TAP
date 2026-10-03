@@ -199,6 +199,34 @@
         animation: fadeIn 0.3s ease;
     }
 
+    .audio-wave-container {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        height: 18px;
+    }
+    .wave-bar {
+        width: 3px;
+        height: 6px;
+        background: #ef4444;
+        border-radius: 2px;
+        animation: soundWave 0.7s ease-in-out infinite alternate;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+    @keyframes soundWave {
+        0% { height: 4px; }
+        100% { height: 18px; }
+    }
+    @media (max-width: 640px) {
+        #mirror-columns-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+
     .scenario-card {
         background: rgba(0, 0, 0, 0.35);
         border: 1.5px solid var(--glass-border);
@@ -374,27 +402,114 @@
         </div>
     </div>
 
-    <!-- ACCURACY FEEDBACK DISPLAY -->
-    <div id="word-accuracy-meter" class="accuracy-meter-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 12px;">
-            <div>
-                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 2px;">GIỌNG ĐỌC CỦA BẠN:</div>
-                <div id="recognized-speech-text" style="font-size: 17px; font-weight: bold; color: #fff;">...</div>
+    <!-- LIVE TRANSCRIPT & RECORDING BOX -->
+    <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid var(--neon-cyan); border-radius: 16px; padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 4px 25px rgba(6, 182, 212, 0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px dashed rgba(6, 182, 212, 0.3); padding-bottom: 8px;">
+            <div style="font-size: 13px; font-weight: 700; color: var(--neon-cyan); display: flex; align-items: center; gap: 8px;">
+                <span>🎙️</span> BĂNG GHI ÂM GIỌNG NÓI CỦA BẠN (LIVE TRANSCRIPT)
+                <div id="live-wave-indicator" class="audio-wave-container" style="display: none;">
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                    <span class="wave-bar"></span>
+                </div>
             </div>
-            <div style="text-align: right;">
-                <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">ĐỘ CHUẨN XÁC</div>
-                <div id="accuracy-score-number" style="font-size: 28px; font-family: var(--text-mono); font-weight: 800; color: var(--pixel-green);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span id="live-mic-badge" style="font-size: 11px; padding: 3px 10px; border-radius: 6px; background: rgba(255,255,255,0.08); color: #94a3b8; font-family: var(--text-mono); border: 1px solid var(--glass-border);">
+                    Micro Sẵn Sàng
+                </span>
+            </div>
+        </div>
+
+        <!-- Vùng hiển thị trực tiếp chữ người dùng nói -->
+        <div id="live-speech-transcript" style="font-size: 18px; font-weight: 700; color: #fff; min-height: 52px; display: flex; align-items: center; font-family: var(--text-mono); line-height: 1.5; word-break: break-word; background: rgba(0,0,0,0.35); padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+            <span style="color: #64748b; font-style: italic; font-weight: normal; font-size: 14px;">(Bấm nút micro đỏ phía trên và đọc to từ vựng, hệ thống sẽ ghi trực tiếp chữ vào đây...)</span>
+        </div>
+
+        <!-- Fallback: Ô nhập thử giọng đọc phòng trường hợp mic hỏng hoặc mất mạng -->
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 12px; color: #94a3b8;">Hoặc gõ thử từ phát âm:</span>
+            <input type="text" id="manual-spoken-input" placeholder="Gõ từ bạn vừa phát âm để đối soát..." 
+                   style="flex: 1; min-width: 200px; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 8px; padding: 7px 14px; color: #fff; font-size: 13px; font-family: var(--text-mono); outline: none;">
+            <button type="button" class="pixel-btn" onclick="testManualPronunciation()" 
+                    style="background: var(--neon-purple); color: #fff; padding: 7px 16px; font-size: 11px; font-weight: 700; border: 1.5px solid #000; cursor: pointer;">
+                🔍 ĐỐI SOÁT NGAY
+            </button>
+        </div>
+    </div>
+
+    <!-- BẢNG ĐỐI XỨNG & ĐỐI SOÁT PHÁT ÂM (PRONUNCIATION MIRROR MATRIX) -->
+    <div id="word-accuracy-meter" class="accuracy-meter-container" style="display: none; background: rgba(15, 23, 42, 0.95); border: 2px solid var(--pixel-green); border-radius: 16px; padding: 22px; box-shadow: 0 0 35px rgba(34, 197, 94, 0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1.5px dashed rgba(34, 197, 94, 0.35); padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">⚖️</span>
+                <span style="font-size: 15px; font-weight: 800; color: var(--pixel-green); letter-spacing: 0.5px;">
+                    BẢNG ĐỐI XỨNG PHÁT ÂM (PRONUNCIATION MIRROR)
+                </span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+                <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">ĐỘ CHUẨN XÁC:</span>
+                <div id="accuracy-score-number" style="font-size: 30px; font-family: var(--text-mono); font-weight: 800; color: var(--pixel-green);">
                     --%
                 </div>
             </div>
         </div>
 
-        <div id="accuracy-progress-bar-bg" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
+        <!-- 2 CỘT ĐỐI XỨNG -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;" id="mirror-columns-grid">
+            <!-- CỘT 1: MẪU CHUẨN MỤC TIÊU -->
+            <div style="background: rgba(6, 182, 212, 0.08); border: 1.5px solid var(--neon-cyan); border-radius: 12px; padding: 16px;">
+                <div style="font-size: 11px; font-family: var(--text-mono); color: var(--neon-cyan); font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>🎯</span> MẪU CHUẨN BẢN XỨ (TARGET)
+                </div>
+                <div id="mirror-target-text" style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 4px;">
+                    Comfortable
+                </div>
+                <div id="mirror-target-ipa" style="font-size: 14px; color: var(--neon-cyan); font-family: var(--text-mono); margin-bottom: 6px;">
+                    /ˈkʌm.fɚ.tə.bəl/
+                </div>
+                <div id="mirror-target-meaning" style="font-size: 13px; color: #cbd5e1; font-style: italic;">
+                    Tiện nghi, thoải mái, dễ chịu
+                </div>
+            </div>
+
+            <!-- CỘT 2: GIỌNG ĐỌC CỦA BẠN -->
+            <div id="mirror-spoken-card" style="background: rgba(34, 197, 94, 0.08); border: 1.5px solid var(--pixel-green); border-radius: 12px; padding: 16px;">
+                <div style="font-size: 11px; font-family: var(--text-mono); color: var(--pixel-green); font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>🗣️</span> BẠN ĐÃ PHÁT ÂM (YOUR SPOKEN)
+                </div>
+                <div id="mirror-spoken-text" style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 4px;">
+                    ...
+                </div>
+                <div id="mirror-match-status" style="font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--pixel-green);">
+                    Độ khớp cao
+                </div>
+                <div id="mirror-match-sub" style="font-size: 13px; color: #cbd5e1;">
+                    Nghe rõ ràng, đạt chuẩn
+                </div>
+            </div>
+        </div>
+
+        <!-- THANH TIẾN ĐỘ -->
+        <div id="accuracy-progress-bar-bg" style="width: 100%; height: 10px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1);">
             <div id="accuracy-progress-bar-fill" style="width: 0%; height: 100%; background: var(--pixel-green); transition: width 0.4s ease;"></div>
         </div>
 
-        <div id="accuracy-verdict-label" style="font-size: 13px; font-weight: bold; color: var(--pixel-green);">
-            --
+        <!-- ĐỐI SOÁT TỪNG TỪ -->
+        <div style="background: rgba(0,0,0,0.35); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.06);">
+            <div style="font-size: 11px; font-family: var(--text-mono); color: #94a3b8; font-weight: 700; margin-bottom: 8px;">
+                🔍 ĐỐI SOÁT TỪNG TỪ & ĐỘ KHỚP ÂM (WORD ALIGNMENT):
+            </div>
+            <div id="mirror-word-chips" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- LỜI KHUYÊN PHÁT ÂM -->
+        <div id="accuracy-verdict-box" style="padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.04); border-left: 3px solid var(--pixel-green); font-size: 13px; line-height: 1.5;">
+            <span style="font-weight: 700;" id="accuracy-verdict-label">★ Đánh giá: Rất Tốt</span>
+            <div id="accuracy-advice-text" style="color: #cbd5e1; font-size: 12px; margin-top: 3px;"></div>
         </div>
     </div>
 </div>
@@ -715,11 +830,35 @@
         document.getElementById('current-word-meaning').innerText = w.meaning;
         document.getElementById('current-word-example').innerText = `"${w.example || `Practice saying: '${w.word}'.`}"`;
 
-        // Ẩn meter kết quả cũ
-        document.getElementById('word-accuracy-meter').style.display = 'none';
+        // Ẩn meter kết quả cũ và reset khung ghi âm
+        const meter = document.getElementById('word-accuracy-meter');
+        if (meter) meter.style.display = 'none';
+
+        const liveTranscript = document.getElementById('live-speech-transcript');
+        if (liveTranscript) {
+            liveTranscript.innerHTML = '<span style="color: #64748b; font-style: italic; font-weight: normal; font-size: 14px;">(Bấm nút micro đỏ phía trên và đọc to từ vựng, hệ thống sẽ ghi trực tiếp chữ vào đây...)</span>';
+        }
+        const liveWave = document.getElementById('live-wave-indicator');
+        if (liveWave) liveWave.style.display = 'none';
+        const liveBadge = document.getElementById('live-mic-badge');
+        if (liveBadge) {
+            liveBadge.innerText = 'Micro Sẵn Sàng';
+            liveBadge.style.background = 'rgba(255,255,255,0.08)';
+            liveBadge.style.color = '#94a3b8';
+            liveBadge.style.borderColor = 'var(--glass-border)';
+        }
+        const manualInput = document.getElementById('manual-spoken-input');
+        if (manualInput) manualInput.value = '';
+
         document.getElementById('record-status-hint').innerText = "Nhấn vào nút Micro màu đỏ để bắt đầu đọc to từ trên";
-        document.getElementById('btn-record-word').classList.remove('is-recording');
+        const recBtn = document.getElementById('btn-record-word');
+        if (recBtn) {
+            recBtn.classList.remove('is-recording');
+            recBtn.innerHTML = "🎙️";
+            recBtn.title = "Bấm để nói từ này vào Micro";
+        }
         isWordRecording = false;
+        clearInterval(recordingCountdownTimer);
     }
 
     function prevWord() {
@@ -757,75 +896,330 @@
         }
     }
 
-    function toggleRecordCurrentWord() {
+    let recordingCountdownTimer = null;
+
+    let isEvaluatingAudio = false;
+
+    async function toggleRecordCurrentWord() {
         const btn = document.getElementById('btn-record-word');
         const hint = document.getElementById('record-status-hint');
+        const badge = document.getElementById('live-mic-badge');
+        const wave = document.getElementById('live-wave-indicator');
+        const transcriptEl = document.getElementById('live-speech-transcript');
         const targetWordObj = getCurrentTargetWord();
         const targetWord = targetWordObj ? targetWordObj.word : "English";
 
+        if (isEvaluatingAudio) return;
+
         if (isWordRecording) {
-            if (window.TAPSpeech) window.TAPSpeech.stopListening();
-            btn.classList.remove('is-recording');
-            isWordRecording = false;
-            hint.innerText = "Đã dừng thu âm.";
+            await stopWordRecordingManual();
             return;
         }
 
-        if (!window.TAPSpeech || !window.TAPSpeech.isSTTSupported()) {
-            alert("Trình duyệt của bạn chưa hỗ trợ thu âm qua Web Speech API (Khuyên dùng Chrome/Edge).");
+        if (!window.TAPSpeech || !window.TAPSpeech.isWavSupported()) {
+            alert("Trình duyệt của bạn chưa hỗ trợ truy cập Microphone. Vui lòng cho phép quyền truy cập Micro trên trình duyệt (hoặc dùng ô gõ thử đối soát bên dưới).");
             return;
         }
 
-        isWordRecording = true;
-        btn.classList.add('is-recording');
-        hint.innerHTML = "<span style='color: #ef4444; font-weight: bold;'>● ĐANG NGHE...</span> Hãy đọc to: <strong>" + targetWord + "</strong>";
+        // Bắt đầu phiên thu âm âm thanh thực
+        try {
+            isWordRecording = true;
+            btn.classList.add('is-recording');
+            btn.innerHTML = "⏹️";
+            btn.title = "Bấm để dừng thu âm và gửi AI chấm điểm";
 
-        window.TAPSpeech.startListening({
-            onResult: (transcript, isFinal) => {
-                if (isFinal) {
-                    isWordRecording = false;
-                    btn.classList.remove('is-recording');
-                    hint.innerText = "Đã hoàn thành phân tích âm học!";
-                    displayWordEvaluation(targetWord, transcript);
-                }
-            },
-            onError: (err) => {
-                isWordRecording = false;
-                btn.classList.remove('is-recording');
-                hint.innerText = "Chưa nhận được âm thanh. Hãy thử lại!";
-            },
-            onEnd: () => {
-                isWordRecording = false;
-                btn.classList.remove('is-recording');
+            if (wave) wave.style.display = 'inline-flex';
+            if (badge) {
+                badge.innerText = "● Đang Thu Âm Micro...";
+                badge.style.background = "rgba(239, 68, 68, 0.25)";
+                badge.style.color = "#ef4444";
+                badge.style.borderColor = "#ef4444";
             }
-        });
+
+            let remainingSec = 6;
+            hint.innerHTML = `<span style="color: #ef4444; font-weight: bold;" class="pulse-neon">● ĐANG GHI ÂM...</span> Hãy đọc to: <strong style="color: var(--neon-cyan); font-size: 16px;">"${targetWord}"</strong> (Còn lại <span id="record-countdown-sec" style="font-weight: 800; color: #facc15;">6</span>s • Bấm ⏹️ để dừng sớm)`;
+            transcriptEl.innerHTML = `<span style="color: var(--neon-amber);" class="typing-effect">🎙️ Microphone đang ghi âm... Hãy đọc to: "${targetWord}"...</span>`;
+
+            // Khởi động bộ ghi âm WAV Native (hoạt động độc lập, không bị Brave chặn)
+            await window.TAPSpeech.startWavRecording({
+                onVolume: (vol) => {
+                    const waveBars = document.querySelectorAll('#live-wave-indicator .wave-bar');
+                    waveBars.forEach((bar, idx) => {
+                        const h = Math.max(4, Math.min(24, (vol / 255) * 28 * (1 + (idx % 3) * 0.4)));
+                        bar.style.height = `${h}px`;
+                    });
+                }
+            });
+
+            // Nếu trình duyệt có hỗ trợ Web Speech song song, tận dụng để preview chữ (nếu lỗi thì bỏ qua)
+            if (window.TAPSpeech.startListening) {
+                try {
+                    window.TAPSpeech.startListening({
+                        lang: 'en-US',
+                        continuous: true,
+                        onResult: (previewText) => {
+                            if (previewText && isWordRecording) {
+                                transcriptEl.innerHTML = `<span style="color: #fff; font-weight: 700; font-size: 18px;">"${previewText}"</span>`;
+                            }
+                        },
+                        onError: (err) => {
+                            // Không ngắt thu âm nếu Web Speech API bị Brave Shields chặn
+                            console.log("[Speaking] Web Speech preview notice (harmless in Brave):", err);
+                        }
+                    });
+                } catch (e) {
+                    console.log("[Speaking] STT preview bypassed:", e);
+                }
+            }
+
+            // Đếm lùi an toàn 6 giây
+            clearInterval(recordingCountdownTimer);
+            recordingCountdownTimer = setInterval(async () => {
+                remainingSec--;
+                const secSpan = document.getElementById('record-countdown-sec');
+                if (secSpan) secSpan.innerText = remainingSec;
+                if (remainingSec <= 0) {
+                    clearInterval(recordingCountdownTimer);
+                    await stopWordRecordingManual();
+                }
+            }, 1000);
+
+        } catch (err) {
+            console.error("[Speaking] Mic start error:", err);
+            isWordRecording = false;
+            btn.classList.remove('is-recording');
+            btn.innerHTML = "🎙️";
+            if (wave) wave.style.display = 'none';
+            if (badge) {
+                badge.innerText = "Chưa cấp quyền Mic";
+                badge.style.background = "rgba(239, 68, 68, 0.2)";
+                badge.style.color = "#f87171";
+            }
+            hint.innerHTML = `<span style="color: #f87171;">Không thể mở Microphone. Hãy cấp quyền truy cập Mic trên thanh địa chỉ của trình duyệt!</span>`;
+            transcriptEl.innerHTML = `<span style="color: #f87171; font-size: 13px;">Micro bị chặn hoặc không khả dụng. Bạn có thể gõ từ vào ô bên dưới để đối soát!</span>`;
+        }
     }
 
-    function displayWordEvaluation(target, spoken) {
-        const meter = document.getElementById('word-accuracy-meter');
-        const speechTextEl = document.getElementById('recognized-speech-text');
-        const scoreEl = document.getElementById('accuracy-score-number');
-        const barFill = document.getElementById('accuracy-progress-bar-fill');
-        const verdictEl = document.getElementById('accuracy-verdict-label');
+    async function stopWordRecordingManual() {
+        clearInterval(recordingCountdownTimer);
+        if (!isWordRecording) return;
+        isWordRecording = false;
 
-        const evalRes = window.TAPSpeech.evaluatePronunciation(target, spoken);
+        const btn = document.getElementById('btn-record-word');
+        const hint = document.getElementById('record-status-hint');
+        const badge = document.getElementById('live-mic-badge');
+        const wave = document.getElementById('live-wave-indicator');
+        const transcriptEl = document.getElementById('live-speech-transcript');
+        const targetWordObj = getCurrentTargetWord();
+        const targetWord = targetWordObj ? targetWordObj.word : "English";
+
+        // Dừng STT Web Speech nếu có
+        if (window.TAPSpeech && window.TAPSpeech.stopListening) {
+            try { window.TAPSpeech.stopListening(); } catch (e) {}
+        }
+
+        // Lấy dữ liệu file âm thanh WAV thực tế
+        const wavBlob = window.TAPSpeech.stopWavRecording();
+
+        btn.classList.remove('is-recording');
+        btn.innerHTML = "⏳";
+        btn.title = "AI đang xử lý âm thanh...";
+        if (wave) wave.style.display = 'none';
+        if (badge) {
+            badge.innerText = "● Đang Phân Tích AI...";
+            badge.style.background = "rgba(6, 182, 212, 0.25)";
+            badge.style.color = "var(--neon-cyan)";
+            badge.style.borderColor = "var(--neon-cyan)";
+        }
+        hint.innerHTML = `<span style="color: var(--neon-cyan);" class="pulse-neon">⏳ Trợ lý AI đang lắng nghe và đối soát phát âm của bạn...</span>`;
+        transcriptEl.innerHTML = `<span style="color: #38bdf8;" class="typing-effect">Đang gửi file âm thanh lên Hệ thống AI đối soát...</span>`;
+
+        if (!wavBlob || wavBlob.size < 500) {
+            btn.innerHTML = "🎙️";
+            if (badge) {
+                badge.innerText = "Âm thanh quá ngắn";
+                badge.style.color = "#f87171";
+            }
+            hint.innerHTML = `<span style="color: #f87171;">Âm thanh quá ngắn. Hãy bấm Micro và đọc to, rõ ràng từ mục tiêu!</span>`;
+            transcriptEl.innerHTML = `<span style="color: #94a3b8; font-style: italic;">Chưa nhận được âm thanh. Hãy thử lại hoặc dùng ô nhập bên dưới!</span>`;
+            return;
+        }
+
+        isEvaluatingAudio = true;
+        try {
+            const result = await window.TAPSpeech.evaluateAudioBlob(wavBlob, targetWord, currentBand);
+            isEvaluatingAudio = false;
+            btn.innerHTML = "🎙️";
+            btn.title = "Bấm để đọc lại từ này";
+
+            if (result && result.success) {
+                if (badge) {
+                    badge.innerText = "✓ Hoàn Thành Đối Soát";
+                    badge.style.background = "rgba(34, 197, 94, 0.2)";
+                    badge.style.color = "#22c55e";
+                    badge.style.borderColor = "#22c55e";
+                }
+                const spokenText = result.transcript || targetWord;
+                transcriptEl.innerHTML = `<span style="color: var(--neon-cyan); font-weight: 700; font-size: 19px;">"${spokenText}"</span>`;
+                hint.innerText = "Đã hoàn thành! Bấm micro để đọc lại hoặc bấm [TIẾP THEO] để luyện từ mới.";
+
+                displayWordEvaluation(targetWord, spokenText, result);
+            } else {
+                throw new Error((result && result.error) || "Không thể phân tích file âm thanh");
+            }
+        } catch (err) {
+            console.error("[Speaking] Evaluation error:", err);
+            isEvaluatingAudio = false;
+            btn.innerHTML = "🎙️";
+            if (badge) {
+                badge.innerText = "Lỗi đối soát";
+                badge.style.color = "#f87171";
+            }
+            hint.innerHTML = `<span style="color: #f87171;">Hệ thống AI bận hoặc mất kết nối. Bạn có thể gõ từ vào ô đối soát thủ công bên dưới!</span>`;
+            transcriptEl.innerHTML = `<span style="color: #f87171; font-size: 13px;">Không thể gửi file âm thanh lúc này. Hãy kiểm tra kết nối mạng!</span>`;
+        }
+    }
+
+    function displayWordEvaluation(target, spoken, apiData = null) {
+        const meter = document.getElementById('word-accuracy-meter');
+        if (!meter) return;
 
         meter.style.display = 'block';
-        speechTextEl.innerText = `"${spoken}"`;
-        scoreEl.innerText = `${evalRes.score}%`;
-        scoreEl.style.color = evalRes.badgeColor;
 
-        barFill.style.width = `${evalRes.score}%`;
-        barFill.style.background = evalRes.badgeColor;
+        // 1. Cập nhật cột mục tiêu chuẩn
+        const targetObj = getCurrentTargetWord();
+        const rawIpa = (targetObj.ipa || '').trim();
+        const formattedIpa = rawIpa ? (rawIpa.startsWith('/') ? rawIpa : `/${rawIpa}/`) : `/${targetObj.word.toLowerCase()}/`;
 
-        verdictEl.innerText = `★ Đánh giá: ${evalRes.label}`;
-        verdictEl.style.color = evalRes.badgeColor;
+        document.getElementById('mirror-target-text').innerText = targetObj.word;
+        document.getElementById('mirror-target-ipa').innerText = formattedIpa;
+        document.getElementById('mirror-target-meaning').innerText = targetObj.meaning || '';
+
+        // 2. Cập nhật điểm và nhãn đánh giá
+        let score = 0;
+        let label = '★ Đạt Chuẩn';
+        let badgeColor = '#22c55e';
+        let advice = '';
+        let wordAlignment = [];
+
+        if (apiData && apiData.score !== undefined) {
+            score = apiData.score;
+            label = apiData.label || '★ Đạt Chuẩn';
+            badgeColor = apiData.badgeColor || (score >= 80 ? '#22c55e' : (score >= 50 ? '#f59e0b' : '#ef4444'));
+            advice = apiData.advice || '';
+            wordAlignment = apiData.wordAlignment || [];
+        } else {
+            // Fallback sang hàm tính toán cục bộ nếu không có apiData
+            const localEval = window.TAPSpeech.evaluatePronunciation(target, spoken);
+            score = localEval.score;
+            label = localEval.label;
+            badgeColor = localEval.badgeColor;
+            advice = localEval.advice;
+            if (localEval.targetWords) {
+                wordAlignment = localEval.targetWords.map(tw => ({
+                    target: tw.word,
+                    spoken: tw.word,
+                    status: tw.matched ? 'correct' : (tw.close ? 'imperfect' : 'wrong')
+                }));
+            }
+        }
+
+        // Cột bạn đã phát âm
+        const spokenCard = document.getElementById('mirror-spoken-card');
+        const spokenTextEl = document.getElementById('mirror-spoken-text');
+        const matchStatusEl = document.getElementById('mirror-match-status');
+        const matchSubEl = document.getElementById('mirror-match-sub');
+
+        spokenTextEl.innerText = `"${spoken}"`;
+        matchStatusEl.innerText = label;
+        matchStatusEl.style.color = badgeColor;
+
+        if (score >= 85) {
+            matchSubEl.innerText = "Phát âm rất xuất sắc, chuẩn xác ngữ âm và trọng âm!";
+        } else if (score >= 65) {
+            matchSubEl.innerText = "Phát âm rõ ràng, người bản xứ có thể hiểu tốt.";
+        } else if (score >= 45) {
+            matchSubEl.innerText = "Gần khớp, cần chú ý phụ âm cuối hoặc nhấn trọng âm.";
+        } else {
+            matchSubEl.innerText = "Âm chưa rõ hoặc lệch từ chuẩn. Hãy bấm [NGHE ĐỌC MẪU] và thử lại!";
+        }
+
+        if (spokenCard) {
+            spokenCard.style.borderColor = badgeColor;
+            spokenCard.style.boxShadow = `0 0 18px ${badgeColor}35`;
+        }
+
+        // 3. Cập nhật số điểm & thanh tiến độ
+        const scoreEl = document.getElementById('accuracy-score-number');
+        const barFill = document.getElementById('accuracy-progress-bar-fill');
+        scoreEl.innerText = `${score}%`;
+        scoreEl.style.color = badgeColor;
+        barFill.style.width = `${Math.min(100, Math.max(5, score))}%`;
+        barFill.style.background = badgeColor;
+
+        // 4. Cập nhật các chip đối soát từng từ / từng âm
+        const chipsContainer = document.getElementById('mirror-word-chips');
+        let chipsHtml = '';
+
+        if (wordAlignment && wordAlignment.length > 0) {
+            wordAlignment.forEach(item => {
+                const isCorrect = item.status === 'correct';
+                const isImperfect = item.status === 'imperfect';
+                const chipColor = isCorrect ? '#22c55e' : (isImperfect ? '#f59e0b' : '#ef4444');
+                const chipBg = isCorrect ? 'rgba(34, 197, 94, 0.15)' : (isImperfect ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)');
+                const icon = isCorrect ? '✓' : (isImperfect ? '≈' : '✕');
+                const note = isCorrect ? 'Chuẩn' : (isImperfect ? 'Gần khớp' : 'Cần sửa');
+                const spokenPart = (item.spoken && item.spoken !== item.target) ? ` [Bạn đọc: "${item.spoken}"]` : '';
+
+                chipsHtml += `
+                    <span style="background: ${chipBg}; border: 1.5px solid ${chipColor}; color: ${chipColor}; padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; font-family: var(--text-mono); display: inline-flex; align-items: center; gap: 6px;">
+                        <span>${icon}</span> <span>${item.target}</span> <small style="font-size: 11px; opacity: 0.85;">(${note}${spokenPart})</small>
+                    </span>
+                `;
+            });
+        } else {
+            chipsHtml = `<span style="color: #94a3b8; font-size: 13px;">Đã ghi nhận toàn văn: "${spoken}"</span>`;
+        }
+        chipsContainer.innerHTML = chipsHtml;
+
+        // 5. Lời khuyên Master G / AI Coach
+        const verdictLabel = document.getElementById('accuracy-verdict-label');
+        const adviceText = document.getElementById('accuracy-advice-text');
+        const verdictBox = document.getElementById('accuracy-verdict-box');
+        verdictLabel.innerText = `${label} (${score}%)`;
+        verdictLabel.style.color = badgeColor;
+        adviceText.innerText = advice || 'Hãy duy trì luyện tập hàng ngày để nói tiếng Anh lưu loát!';
+        if (verdictBox) verdictBox.style.borderLeftColor = badgeColor;
+
+        // Cuộn mượt để học viên thấy ngay kết quả
+        setTimeout(() => {
+            meter.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 120);
 
         // Cập nhật stats
         sessionWordsSpoken++;
-        sessionScores.push(evalRes.score);
+        sessionScores.push(score);
         updateSessionStats();
     }
+
+    function testManualPronunciation() {
+        const input = document.getElementById('manual-spoken-input');
+        const val = input ? input.value.trim() : '';
+        if (!val) {
+            alert("Vui lòng gõ từ bạn muốn đối soát phát âm.");
+            return;
+        }
+        const targetObj = getCurrentTargetWord();
+        const targetWord = targetObj ? targetObj.word : "English";
+
+        const transcriptEl = document.getElementById('live-speech-transcript');
+        if (transcriptEl) {
+            transcriptEl.innerHTML = `<span style="color: var(--neon-cyan); font-weight: 700;">"${val}"</span> <span style="font-size: 11px; color: #94a3b8;">(Nhập thử nghiệm thủ công)</span>`;
+        }
+
+        displayWordEvaluation(targetWord, val);
+    }
+
 
     function updateSessionStats() {
         const countEl = document.getElementById('stat-words-count');
@@ -880,35 +1274,91 @@
         container.innerHTML = html;
     }
 
-    function recordShadowingLine(lineIdx, targetSentence) {
+    let activeShadowingIdx = null;
+    let shadowingTimer = null;
+
+    async function recordShadowingLine(lineIdx, targetSentence) {
         const btn = document.getElementById(`mic-line-${lineIdx}`);
         const scoreSpan = document.getElementById(`score-line-${lineIdx}`);
-        if (!window.TAPSpeech || !window.TAPSpeech.isSTTSupported()) {
-            alert("Trình duyệt chưa hỗ trợ thu âm Web Speech API.");
+
+        // Nếu đang thu âm dòng này thì bấm lần nữa để dừng sớm
+        if (activeShadowingIdx === lineIdx) {
+            clearInterval(shadowingTimer);
+            activeShadowingIdx = null;
+            btn.classList.remove('is-recording');
+            btn.innerText = "⏳ Đang chấm...";
+            const wavBlob = window.TAPSpeech.stopWavRecording();
+            if (wavBlob && wavBlob.size >= 500) {
+                try {
+                    const res = await window.TAPSpeech.evaluateAudioBlob(wavBlob, targetSentence, 'B1');
+                    btn.innerText = "🎙️ Đọc Lại";
+                    scoreSpan.style.display = 'inline-block';
+                    scoreSpan.innerText = `${res.score}% (${res.label})`;
+                    scoreSpan.style.color = res.badgeColor;
+                    scoreSpan.style.border = `1px solid ${res.badgeColor}`;
+                    scoreSpan.style.background = 'rgba(0,0,0,0.5)';
+                    return;
+                } catch (e) {
+                    console.error("Shadowing eval err:", e);
+                }
+            }
+            btn.innerText = "🎙️ Nhại Lại";
             return;
         }
 
-        btn.classList.add('is-recording');
-        btn.innerText = "Đang nghe...";
+        if (!window.TAPSpeech || !window.TAPSpeech.isWavSupported()) {
+            alert("Trình duyệt chưa hỗ trợ truy cập Microphone.");
+            return;
+        }
 
-        window.TAPSpeech.startListening({
-            onResult: (transcript, isFinal) => {
-                if (isFinal) {
-                    btn.classList.remove('is-recording');
-                    btn.innerText = "🎙️ Đọc Lại";
-                    const evalRes = window.TAPSpeech.evaluatePronunciation(targetSentence, transcript);
-                    scoreSpan.style.display = 'inline-block';
-                    scoreSpan.innerText = `${evalRes.score}%`;
-                    scoreSpan.style.color = evalRes.badgeColor;
-                    scoreSpan.style.border = `1px solid ${evalRes.badgeColor}`;
-                    scoreSpan.style.background = 'rgba(0,0,0,0.5)';
-                }
-            },
-            onError: () => {
-                btn.classList.remove('is-recording');
-                btn.innerText = "🎙️ Nhại Lại";
+        // Bắt đầu thu âm dòng này
+        activeShadowingIdx = lineIdx;
+        btn.classList.add('is-recording');
+        let remaining = 6;
+        btn.innerText = `⏹️ (${remaining}s)`;
+
+        try {
+            await window.TAPSpeech.startWavRecording();
+        } catch (e) {
+            console.error("Mic start error:", e);
+            btn.classList.remove('is-recording');
+            btn.innerText = "🎙️ Nhại Lại";
+            activeShadowingIdx = null;
+            alert("Không thể truy cập Microphone. Vui lòng cấp quyền Micro trên trình duyệt!");
+            return;
+        }
+
+        clearInterval(shadowingTimer);
+        shadowingTimer = setInterval(async () => {
+            remaining--;
+            if (btn && activeShadowingIdx === lineIdx) {
+                btn.innerText = `⏹️ (${remaining}s)`;
             }
-        });
+            if (remaining <= 0) {
+                clearInterval(shadowingTimer);
+                if (activeShadowingIdx === lineIdx) {
+                    activeShadowingIdx = null;
+                    btn.classList.remove('is-recording');
+                    btn.innerText = "⏳ Đang chấm...";
+                    const wavBlob = window.TAPSpeech.stopWavRecording();
+                    if (wavBlob && wavBlob.size >= 500) {
+                        try {
+                            const res = await window.TAPSpeech.evaluateAudioBlob(wavBlob, targetSentence, 'B1');
+                            btn.innerText = "🎙️ Đọc Lại";
+                            scoreSpan.style.display = 'inline-block';
+                            scoreSpan.innerText = `${res.score}% (${res.label})`;
+                            scoreSpan.style.color = res.badgeColor;
+                            scoreSpan.style.border = `1px solid ${res.badgeColor}`;
+                            scoreSpan.style.background = 'rgba(0,0,0,0.5)';
+                            return;
+                        } catch (e) {
+                            console.error("Shadowing timeout eval err:", e);
+                        }
+                    }
+                    btn.innerText = "🎙️ Nhại Lại";
+                }
+            }
+        }, 1000);
     }
 
     // =========================================================================
@@ -937,21 +1387,38 @@
         status.innerHTML = "<span style='color: #ef4444;'>● ĐANG THU ÂM...</span> Hãy nói bất kỳ câu tiếng Anh nào bạn muốn!";
         resBox.innerText = "...";
 
+        let captured = '';
+
         window.TAPSpeech.startListening({
             onResult: (transcript, isFinal) => {
-                resBox.innerText = `"${transcript}"`;
+                if (transcript) {
+                    captured = transcript;
+                    resBox.innerText = `"${transcript}"`;
+                }
                 if (isFinal) {
                     isFreeRecording = false;
                     btn.classList.remove('is-recording');
                     status.innerText = "✓ Hoàn thành nhận diện!";
                 }
             },
-            onError: () => {
+            onError: (err, msg) => {
                 isFreeRecording = false;
                 btn.classList.remove('is-recording');
-                status.innerText = "Không phát hiện âm thanh. Hãy thử lại!";
+                status.innerText = msg || "Không phát hiện âm thanh. Hãy thử lại!";
+            },
+            onEnd: (finalTranscript) => {
+                isFreeRecording = false;
+                btn.classList.remove('is-recording');
+                const spoken = finalTranscript || captured;
+                if (spoken) {
+                    resBox.innerText = `"${spoken}"`;
+                    status.innerText = "✓ Hoàn thành nhận diện!";
+                } else {
+                    status.innerText = "Chưa phát hiện giọng nói. Hãy thử lại!";
+                }
             }
         });
     }
+
 </script>
 {% endblock %}

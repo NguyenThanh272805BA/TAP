@@ -607,7 +607,11 @@ function submitChallenge(modeParam) {
     fetch('/api/ai/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textValue, mode: currentMode })
+        body: JSON.stringify({ 
+            text: textValue, 
+            mode: currentMode,
+            target: (typeof currentPracticeTarget !== 'undefined' ? currentPracticeTarget : '')
+        })
     })
     .then(async response => {
         if (!response.ok) {
