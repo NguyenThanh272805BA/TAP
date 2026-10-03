@@ -231,84 +231,197 @@ def compute_user_competency_radar(user_id):
     2. Chuẩn Ngữ Pháp (Grammar): Độ chính xác các quy tắc ngữ pháp và chặng học thuật.
     3. Tốc Độ Phản Xạ (Fluency): Tốc độ xử lý ngôn ngữ trung bình (avg_response_time).
     4. Độ Bền Trí Nhớ (Retention): Khả năng lưu giữ dài hạn theo thuật toán FSRS.
-    5. Cú Pháp Câu (Syntax): Năng lực lắp ráp cấu trúc câu phức, câu chẻ & đảo ngữ.
+    5. Cú Pháp Câu (Syntax): Năng lực lắp ráp cấu trúc câu qua bài thi và chặng thử thách.
     6. Tính Kiên Trì (Grit): Kỷ luật học tập qua chuỗi Streak và thời gian rèn luyện.
     """
     user = User.query.get(user_id)
     if not user:
         return None
 
-    # 1. VỐN TỪ VỰNG (VOCABULARY - 0-100)
+    from app.models.user_grammar import UserGrammar
+    from app.models.roadmap import UserMilestoneProgress
+    from app.models.test import TestLog
+
     target_band = getattr(user, 'target_band', 'B2') or 'B2'
+    current_band = getattr(user, 'current_band', 'A1') or 'A1'
     band_benchmarks = {'A1': 20, 'A2': 50, 'B1': 100, 'B2': 200, 'C1': 350, 'C2': 500}
     benchmark_needed = band_benchmarks.get(target_band, 200)
-
     cefr_weights = {'A1': 1.0, 'A2': 1.2, 'B1': 1.5, 'B2': 2.0, 'C1': 2.5, 'C2': 3.0}
+
+    # 1. Quét dữ liệu học thuật thực tế
     user_vocabs = db.session.query(Vocabulary.cefr_level, UserVocabulary.memorization_level)\
         .join(UserVocabulary, UserVocabulary.vocab_id == Vocabulary.id)\
         .filter(UserVocabulary.user_id == user_id, UserVocabulary.memorization_level == 'DA_THUOC').all()
 
-    weighted_points = sum(cefr_weights.get(v[0], 1.0) for v in user_vocabs)
-    raw_vocab_score = (weighted_points / max(1, benchmark_needed)) * 100.0
-    vocab_score = round(max(20.0, min(100.0, raw_vocab_score + (len(user_vocabs) * 1.5))), 1)
-
-    # 2. ĐỘ CHUẨN NGỮ PHÁP (GRAMMAR - 0-100)
-    from app.models.user_grammar import UserGrammar
-    from app.models.roadmap import UserMilestoneProgress
+    unlocked_uv = UserVocabulary.query.filter_by(user_id=user_id, is_unlocked=True).all()
+    # Lọc những từ thực sự có tương tác/học tập (loại bỏ starter pack chưa đụng đến)
+    tested_uv = [
+        uv for uv in unlocked_uv
+        if (uv.memorization_level and uv.memorization_level != 'CHUA_THUOC')
+        or ((uv.fail_count or 0) > 0)
+        or ((uv.avg_response_time or 0) > 0)
+        or ((uv.previous_interval or 0) > 0)
+    ]
 
     user_grammars = UserGrammar.query.filter_by(user_id=user_id).all()
-    grammar_score = 35.0
-    if user_grammars:
-        mastered_g = sum(1 for g in user_grammars if g.mastery_status == 'DA_NAM_VUNG')
-        avg_g_score = sum(g.best_score for g in user_grammars) / len(user_grammars)
-        grammar_score = (mastered_g / len(user_grammars) * 50.0) + (avg_g_score * 5.0)
-
     completed_milestones = UserMilestoneProgress.query.filter_by(user_id=user_id, is_completed=True).count()
-    grammar_score += min(35.0, completed_milestones * 5.0)
-    grammar_score = round(max(25.0, min(100.0, grammar_score)), 1)
+    test_logs_count = TestLog.query.filter_by(user_id=user_id).count()
+    study_mins = getattr(user, 'study_time_minutes', 0) or 0
+    streak_count = getattr(user, 'streak_count', 0) or 0
+    arena_stage = getattr(user, 'arena_stage', 1) or 1
+    infinity_score = getattr(user, 'infinity_score', 0) or 0
 
-    # 3. TỐC ĐỘ PHẢN XẠ (FLUENCY - 0-100)
     avg_times = db.session.query(db.func.avg(UserVocabulary.avg_response_time))\
         .filter(UserVocabulary.user_id == user_id, UserVocabulary.avg_response_time > 0).scalar()
 
-    if avg_times and float(avg_times) > 0:
-        fluency_base = max(30.0, min(100.0, 110.0 - (float(avg_times) * 12.0)))
-    else:
-        fluency_base = 50.0
+    # Kiểm tra xem người dùng đã có bất kỳ hành vi học tập nào chưa
+    has_learning_activity = (
+        len(user_vocabs) > 0 or
+        len(tested_uv) > 0 or
+        len(user_grammars) > 0 or
+        completed_milestones > 0 or
+        test_logs_count > 0 or
+        study_mins > 0 or
+        streak_count > 0 or
+        infinity_score > 0 or
+        arena_stage > 1 or
+        (avg_times and float(avg_times) > 0)
+    )
 
-    arena_stage = getattr(user, 'arena_stage', 1) or 1
-    infinity_score = getattr(user, 'infinity_score', 0) or 0
-    arena_bonus = min(20.0, (arena_stage * 2.0) + (infinity_score / 50.0))
-    fluency_score = round(max(25.0, min(100.0, fluency_base + arena_bonus)), 1)
+    if not has_learning_activity:
+        # TRẠNG THÁI EMPTY STATE: TÀI KHOẢN MỚI CHƯA CÓ HOẠT ĐỘNG
+        dimensions = [
+            {
+                "key": "vocabulary",
+                "name": "Vốn Từ Vựng",
+                "english": "Vocabulary",
+                "score": 0.0,
+                "desc": f"Chưa học từ vựng nào. Hãy vào Lò Đúc để tích lũy {benchmark_needed} từ chuẩn Band {target_band}."
+            },
+            {
+                "key": "grammar",
+                "name": "Chuẩn Ngữ Pháp",
+                "english": "Grammar",
+                "score": 0.0,
+                "desc": "Chưa có dữ liệu làm bài ngữ pháp. Hãy hoàn thành các chặng thử thách trong Lộ Trình."
+            },
+            {
+                "key": "fluency",
+                "name": "Tốc Độ Phản Xạ",
+                "english": "Fluency",
+                "score": 0.0,
+                "desc": "Chưa ghi nhận thời gian phản xạ thực tế. Hãy thử sức trong Đấu Trường Arena hoặc Luyện Nói."
+            },
+            {
+                "key": "retention",
+                "name": "Độ Bền Trí Nhớ",
+                "english": "Retention",
+                "score": 0.0,
+                "desc": "Chưa kích hoạt thuật toán FSRS. Cần lưu giữ và ôn tập ít nhất 1 từ theo chu kỳ Spaced Repetition."
+            },
+            {
+                "key": "syntax",
+                "name": "Cú Pháp Câu",
+                "english": "Syntax",
+                "score": 0.0,
+                "desc": "Chưa làm bài kiểm tra cấu trúc câu. Hãy thi Placement Test hoặc thực hành lắp ráp câu."
+            },
+            {
+                "key": "grit",
+                "name": "Tính Kiên Trì",
+                "english": "Grit",
+                "score": 0.0,
+                "desc": "Chuỗi Streak 0 ngày & 0 phút học tập. Hãy duy trì thói quen học mỗi ngày."
+            }
+        ]
+
+        return {
+            "user_id": user.id,
+            "username": user.username,
+            "target_band": target_band,
+            "current_band": current_band,
+            "has_data": False,
+            "is_unranked": True,
+            "overall_score": 0.0,
+            "overall_grade": "N/A",
+            "grade_title": "Chưa Khảo Thí",
+            "grade_color": "#94a3b8",
+            "dimensions": dimensions,
+            "strongest": {"key": "none", "name": "Chưa xác định", "score": 0.0},
+            "weakest": {"key": "none", "name": "Chưa xác định", "score": 0.0},
+            "pedagogical_advice": "Chào mừng tân binh! Hãy hoàn thành Bài Khảo Thí Đầu Vào (Placement Test) để hệ thống đo lường và kích hoạt Ma Trận Năng Lực 6 Chiều của bạn."
+        }
+
+    # NẾU ĐÃ CÓ DỮ LIỆU HOẠT ĐỘNG THẬT -> TÍNH TOÁN MINH BẠCH, KHÔNG GÁN ĐIỂM SÀN ẢO
+
+    # 1. VỐN TỪ VỰNG (VOCABULARY - 0-100)
+    weighted_points = sum(cefr_weights.get(v[0], 1.0) for v in user_vocabs)
+    raw_vocab_score = (weighted_points / max(1, benchmark_needed)) * 100.0
+    vocab_score = round(min(100.0, raw_vocab_score), 1)
+
+    # 2. ĐỘ CHUẨN NGỮ PHÁP (GRAMMAR - 0-100)
+    grammar_score = 0.0
+    if user_grammars:
+        mastered_g = sum(1 for g in user_grammars if g.mastery_status == 'DA_NAM_VUNG')
+        avg_g_score = sum(g.best_score for g in user_grammars) / len(user_grammars)
+        grammar_score = (mastered_g / len(user_grammars) * 55.0) + (avg_g_score * 4.5)
+
+    if completed_milestones > 0:
+        grammar_score += min(35.0, completed_milestones * 5.0)
+
+    grammar_score = round(min(100.0, grammar_score), 1)
+
+    # 3. TỐC ĐỘ PHẢN XẠ (FLUENCY - 0-100)
+    fluency_score = 0.0
+    if avg_times and float(avg_times) > 0:
+        avg_sec = float(avg_times)
+        fluency_base = max(15.0, min(100.0, 115.0 - (avg_sec * 15.0)))
+        arena_bonus = min(15.0, (max(0, arena_stage - 1) * 2.0) + (infinity_score / 100.0))
+        fluency_score = round(min(100.0, fluency_base + arena_bonus), 1)
+        fluency_desc = f"Tốc độ phản xạ thực tế {round(avg_sec, 2)}s/từ (Ải Đấu Trường: {arena_stage})."
+    elif arena_stage > 1 or infinity_score > 0:
+        fluency_score = round(min(60.0, ((arena_stage - 1) * 6.0) + (infinity_score / 50.0)), 1)
+        fluency_desc = f"Ghi nhận từ Đấu Trường (Ải {arena_stage}, Kỷ lục Vô cực: {infinity_score}đ)."
+    else:
+        fluency_desc = "Chưa ghi nhận thời gian phản xạ câu hỏi thực tế."
 
     # 4. ĐỘ BỀN TRÍ NHỚ (RETENTION - FSRS - 0-100)
-    unlocked_uv = UserVocabulary.query.filter_by(user_id=user_id, is_unlocked=True).all()
-    if unlocked_uv:
-        zero_fails = sum(1 for uv in unlocked_uv if (uv.fail_count or 0) == 0)
-        retention_ratio = zero_fails / len(unlocked_uv)
-        avg_interval = sum(uv.previous_interval or 0.0 for uv in unlocked_uv) / len(unlocked_uv)
+    if tested_uv:
+        zero_fails = sum(1 for uv in tested_uv if (uv.fail_count or 0) == 0)
+        retention_ratio = zero_fails / len(tested_uv)
+        avg_interval = sum(uv.previous_interval or 0.0 for uv in tested_uv) / len(tested_uv)
         interval_bonus = min(35.0, (avg_interval / 72.0) * 35.0)
-        retention_score = round(max(20.0, min(100.0, (retention_ratio * 65.0) + interval_bonus)), 1)
+        retention_score = round(min(100.0, (retention_ratio * 65.0) + interval_bonus), 1)
+        retention_desc = f"Độ bền trí nhớ FSRS: {round(retention_ratio * 100, 1)}% ghi nhớ tốt trên {len(tested_uv)} từ đã luyện."
     else:
-        retention_score = 40.0
+        retention_score = 0.0
+        retention_desc = "Chưa có từ vựng nào trong chu kỳ Spaced Repetition."
 
     # 5. CÚ PHÁP CÂU (SYNTAX - 0-100)
-    band_syntax_base = {'A1': 35.0, 'A2': 50.0, 'B1': 68.0, 'B2': 82.0, 'C1': 92.0, 'C2': 98.0}
-    current_band = getattr(user, 'current_band', 'A1') or 'A1'
-    base_syntax = band_syntax_base.get(current_band, 35.0)
-
-    best_scores = db.session.query(db.func.avg(UserMilestoneProgress.best_score))\
+    latest_test = TestLog.query.filter_by(user_id=user_id).order_by(TestLog.created_at.desc()).first()
+    best_milestone_scores = db.session.query(db.func.avg(UserMilestoneProgress.best_score))\
         .filter_by(user_id=user_id).scalar()
-    if best_scores and float(best_scores) > 0:
-        syntax_score = round(max(25.0, min(100.0, (base_syntax * 0.7) + (float(best_scores) * 3.5))), 1)
+
+    syntax_score = 0.0
+    test_pts = (latest_test.score * 10.0) if (latest_test and latest_test.score is not None) else 0.0
+    ms_pts = (float(best_milestone_scores) * 10.0) if (best_milestone_scores and float(best_milestone_scores) > 0) else 0.0
+
+    if test_pts > 0 and ms_pts > 0:
+        syntax_score = round(min(100.0, (test_pts * 0.5) + (ms_pts * 0.5)), 1)
+    elif test_pts > 0:
+        syntax_score = round(min(100.0, test_pts), 1)
+    elif ms_pts > 0:
+        syntax_score = round(min(100.0, ms_pts), 1)
+
+    if syntax_score > 0:
+        syntax_desc = f"Năng lực cú pháp đạt {syntax_score}đ qua bài thi và chặng thử thách."
     else:
-        syntax_score = round(max(25.0, base_syntax), 1)
+        syntax_desc = "Chưa hoàn thành bài kiểm tra hoặc thử thách lắp ráp câu."
 
     # 6. TÍNH KIÊN TRÌ (GRIT - 0-100)
-    streak_points = min(50.0, (user.streak_count or 0) * 8.0)
-    study_mins = user.study_time_minutes or 0
+    streak_points = min(50.0, streak_count * 7.0)
     time_points = min(50.0, (study_mins / 90.0) * 50.0)
-    grit_score = round(max(20.0, min(100.0, streak_points + time_points)), 1)
+    grit_score = round(min(100.0, streak_points + time_points), 1)
 
     dimensions = [
         {
@@ -316,42 +429,42 @@ def compute_user_competency_radar(user_id):
             "name": "Vốn Từ Vựng",
             "english": "Vocabulary",
             "score": vocab_score,
-            "desc": f"Độ dày kho từ ({len(user_vocabs)} từ đã thuộc) so với Target Band {target_band}."
+            "desc": f"Đã nắm vững {len(user_vocabs)}/{benchmark_needed} từ vựng mục tiêu Band {target_band}."
         },
         {
             "key": "grammar",
             "name": "Chuẩn Ngữ Pháp",
             "english": "Grammar",
             "score": grammar_score,
-            "desc": f"Độ chính xác quy tắc, mệnh đề và mức độ qua ải học thuật."
+            "desc": f"Đã học {len(user_grammars)} quy tắc, vượt qua {completed_milestones} chặng học thuật."
         },
         {
             "key": "fluency",
             "name": "Tốc Độ Phản Xạ",
             "english": "Fluency",
             "score": fluency_score,
-            "desc": f"Tốc độ phản xạ từ vựng và xử lý câu trong tình huống thực tế."
+            "desc": fluency_desc
         },
         {
             "key": "retention",
             "name": "Độ Bền Trí Nhớ",
             "english": "Retention",
             "score": retention_score,
-            "desc": f"Khả năng duy trì trí nhớ dài hạn theo Spaced Repetition FSRS."
+            "desc": retention_desc
         },
         {
             "key": "syntax",
             "name": "Cú Pháp Câu",
             "english": "Syntax",
             "score": syntax_score,
-            "desc": f"Năng lực sắp đặt khối từ, câu phức và câu đảo ngữ theo chuẩn CEFR."
+            "desc": syntax_desc
         },
         {
             "key": "grit",
             "name": "Tính Kiên Trì",
             "english": "Grit",
             "score": grit_score,
-            "desc": f"Kỷ luật học tập qua chuỗi Streak {user.streak_count} ngày và {study_mins} phút rèn luyện."
+            "desc": f"Kỷ luật học tập qua chuỗi Streak {streak_count} ngày và {study_mins} phút rèn luyện."
         }
     ]
 
@@ -369,29 +482,33 @@ def compute_user_competency_radar(user_id):
         overall_grade = "A"
         grade_title = "Thành Thạo Tiên Tiến"
         grade_color = "var(--pixel-green)"
-    elif overall_score >= 55:
+    elif overall_score >= 50:
         overall_grade = "B"
         grade_title = "Vững Vàng Căn Bản"
         grade_color = "var(--neon-amber)"
-    elif overall_score >= 40:
+    elif overall_score >= 30:
         overall_grade = "C"
         grade_title = "Đang Rèn Luyện"
         grade_color = "#94a3b8"
-    else:
+    elif overall_score > 0:
         overall_grade = "D"
         grade_title = "Tân Binh Tiềm Năng"
         grade_color = "#ef4444"
+    else:
+        overall_grade = "N/A"
+        grade_title = "Chưa Khảo Thí"
+        grade_color = "#94a3b8"
 
     sorted_dims = sorted(dimensions, key=lambda d: d["score"])
     weakest = sorted_dims[0]
     strongest = sorted_dims[-1]
 
     advice_map = {
-        "vocabulary": f"Kho từ vựng hiện tại ({len(user_vocabs)} từ) cần bổ sung thêm để bắt kịp Target Band {target_band}. Hãy tích cực tham gia Lò Đúc để nạp 10 từ mới mỗi ngày.",
-        "grammar": "Độ chuẩn ngữ pháp còn dao động. Hãy ôn lại các chuyên đề thì và cấu trúc câu điều kiện qua các bài Vi Học 30s trước khi thi chặng.",
-        "fluency": "Bạn có nền tảng tốt nhưng tốc độ xử lý còn ngập ngừng. Hãy vào Đấu Trường Gacha Arena rèn phản xạ dưới 2.5s/từ.",
-        "retention": "Tỷ lệ quên từ sau 48h còn khá cao. Bạn nên tận dụng tính năng Ôn Tập Spaced Repetition vào 'khung giờ vàng' mỗi sáng.",
-        "syntax": "Cú pháp câu phức và câu chẻ còn lúng túng. Hãy thực hiện thêm các thử thách Lắp Ráp Cú Pháp trong Lộ Trình để hình thành phản xạ bản ngữ.",
+        "vocabulary": f"Kho từ vựng hiện tại ({len(user_vocabs)}/{benchmark_needed} từ) cần bổ sung thêm. Hãy tích cực tham gia Lò Đúc để nạp 10 từ mới mỗi ngày.",
+        "grammar": "Độ chuẩn ngữ pháp còn dao động. Hãy ôn lại các chuyên đề thì và cấu trúc câu qua các bài Vi Học 30s.",
+        "fluency": "Tốc độ xử lý còn ngập ngừng. Hãy vào Đấu Trường Gacha Arena rèn phản xạ dưới 2.0s/từ.",
+        "retention": "Tỷ lệ quên từ sau 48h còn khá cao. Bạn nên tận dụng tính năng Ôn Tập Spaced Repetition vào mỗi sáng.",
+        "syntax": "Cú pháp câu còn lúng túng. Hãy thực hiện thêm các thử thách Lắp Ráp Cú Pháp trong Lộ Trình để hình thành phản xạ bản ngữ.",
         "grit": f"Tính kỷ luật rèn luyện cần được duy trì đều đặn. Hãy duy trì chuỗi Streak điểm danh và rèn luyện ít nhất 15 phút mỗi ngày."
     }
     pedagogical_advice = advice_map.get(weakest["key"], "Hãy tiếp tục cân bằng và nâng cao toàn diện 6 trục năng lực!")
@@ -401,6 +518,8 @@ def compute_user_competency_radar(user_id):
         "username": user.username,
         "target_band": target_band,
         "current_band": current_band,
+        "has_data": True,
+        "is_unranked": False,
         "overall_score": overall_score,
         "overall_grade": overall_grade,
         "grade_title": grade_title,

@@ -694,10 +694,25 @@ def init_story():
 
 @ai_bp.route('/hint', methods=['POST'])
 def get_hint():
+    data = request.get_json(silent=True) or {}
+    target = data.get('target') or data.get('word') or data.get('targetText') or ''
+    mode = data.get('mode', 'vocab')
+
+    from app.utils.hint_service import get_smart_hint, get_offline_vocab_hint, render_hint_html
     try:
-        return jsonify({"hint": call_gemini_with_retry("Cho 1 câu tiếng Anh gợi ý điền vào chỗ trống.")}), 200
-    except:
-        return jsonify({"hint": "Tự suy nghĩ đi!"}), 200
+        hint_res = get_smart_hint(target, mode=mode)
+        return jsonify(hint_res), 200
+    except Exception as e:
+        print(f"[AI CONTROLLER] Lỗi get_hint: {e}")
+        try:
+            fallback_data = get_offline_vocab_hint(target or "Vocabulary")
+            fallback_data["scramble"] = {"shuffled_chunks": [target or "Vocabulary"]}
+            fallback_data["html"] = render_hint_html(fallback_data)
+            fallback_data["hint"] = fallback_data.get("main_sentence", "Hãy thử đặt câu với từ này.")
+            return jsonify(fallback_data), 200
+        except Exception:
+            return jsonify({"hint": "Hãy thử đặt một câu hoàn chỉnh với từ vựng này.", "html": "<div style='color: var(--neon-amber);'>Hãy thử đặt một câu hoàn chỉnh với từ vựng này.</div>"}), 200
+
 
 
 @ai_bp.route('/agent/diagnose', methods=['GET', 'POST'])

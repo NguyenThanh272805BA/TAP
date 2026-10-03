@@ -246,3 +246,66 @@ class LocalScrambleEngine:
             "original_sentence": original_sentence,
             "message": f"⚠️ Trật tự chưa chuẩn! Câu đúng: \"{original_sentence}\""
         }
+
+    def scramble_sentence(self, sentence: str) -> Dict:
+        """
+        Sử dụng thuật toán phân tách cú pháp & xáo trộn Fisher-Yates để tạo mảnh ghép câu
+        từ một câu văn hoàn chỉnh chứa từ vựng hoặc cấu trúc mục tiêu.
+        """
+        if not sentence or not sentence.strip():
+            return {
+                "original_sentence": "",
+                "chunks": [],
+                "shuffled_chunks": [],
+                "chunk_count": 0
+            }
+
+        clean_sentence = sentence.strip()
+        # Chuẩn hóa dấu câu cuối
+        ending_punct = ""
+        if clean_sentence and clean_sentence[-1] in ".!?":
+            ending_punct = clean_sentence[-1]
+            body_text = clean_sentence[:-1]
+        else:
+            body_text = clean_sentence
+
+        tokens = body_text.split()
+        if len(tokens) <= 4:
+            chunks = tokens.copy()
+        else:
+            # Gom các cụm từ ngắn lại theo ngữ đoạn tự nhiên
+            chunks = []
+            i = 0
+            glue_words = {
+                'to', 'in', 'on', 'at', 'is', 'was', 'are', 'were', 'the', 'a', 'an', 
+                'too', 'very', 'his', 'her', 'my', 'their', 'our', 'its', 'for', 'with', 
+                'from', 'by', 'that', 'this', 'not', 'have', 'has', 'had', 'been'
+            }
+            while i < len(tokens):
+                tok_len = len(tokens[i])
+                tok_lower = tokens[i].lower()
+                # Nếu từ ngắn hoặc thuộc tập từ nối thì gom cùng từ kế tiếp
+                if i + 1 < len(tokens) and (tok_len <= 3 or tok_lower in glue_words):
+                    chunks.append(f"{tokens[i]} {tokens[i+1]}")
+                    i += 2
+                else:
+                    chunks.append(tokens[i])
+                    i += 1
+
+        # Gắn lại dấu câu cuối vào mảnh ghép cuối nếu có
+        if ending_punct and chunks:
+            chunks[-1] = chunks[-1] + ending_punct
+
+        shuffled_chunks = chunks.copy()
+        attempts = 0
+        while " ".join(shuffled_chunks).lower() == " ".join(chunks).lower() and attempts < 10 and len(chunks) > 1:
+            random.shuffle(shuffled_chunks)
+            attempts += 1
+
+        return {
+            "original_sentence": clean_sentence,
+            "chunks": chunks,
+            "shuffled_chunks": shuffled_chunks,
+            "chunk_count": len(chunks)
+        }
+

@@ -645,16 +645,19 @@
         const dataPts = [];
         const markerCircles = [];
         const labelsHtml = [];
+        const hasData = dimensions.some(dim => (dim.score || 0) > 0);
 
         dimensions.forEach((dim, i) => {
             const angle = startAngle + i * angleStep;
-            const val = Math.max(10, Math.min(100, dim.score || 0));
-            const dataR = R * (val / 100);
+            const val = Math.max(0, Math.min(100, dim.score || 0));
+            const dataR = hasData ? R * (val / 100) : 0;
             const dx = cx + dataR * Math.cos(angle);
             const dy = cy + dataR * Math.sin(angle);
             dataPts.push(`${dx.toFixed(1)},${dy.toFixed(1)}`);
 
-            markerCircles.push(`<circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="${isCompact ? 3.5 : 4.5}" fill="var(--neon-cyan)" stroke="#000" stroke-width="2" />`);
+            if (hasData && val > 0) {
+                markerCircles.push(`<circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="${isCompact ? 3.5 : 4.5}" fill="var(--neon-cyan)" stroke="#000" stroke-width="2" />`);
+            }
 
             const labelR = R + (isCompact ? 16 : 24);
             const lx = cx + labelR * Math.cos(angle);
@@ -666,7 +669,7 @@
             }
 
             const fontSize = isCompact ? '10px' : '11px';
-            const labelText = isCompact ? `${dim.name} (${dim.score})` : `${dim.name}`;
+            const labelText = isCompact ? `${dim.name} (${dim.score}đ)` : `${dim.name}`;
             const scoreSubtext = isCompact ? '' : `<tspan x="${lx.toFixed(1)}" dy="13" font-size="10px" fill="var(--neon-cyan)" font-weight="800">${dim.score}đ</tspan>`;
 
             labelsHtml.push(`
@@ -676,6 +679,14 @@
                 </text>
             `);
         });
+
+        const polygonHtml = hasData ? 
+            `<polygon points="${dataPts.join(' ')}" fill="url(#dashRadarFillGrad)" stroke="var(--neon-cyan)" stroke-width="${isCompact ? 2 : 2.5}" filter="url(#dashRadarGlow)" />` :
+            `<g>
+                <circle cx="${cx}" cy="${cy}" r="${R * 0.42}" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(103, 232, 249, 0.3)" stroke-width="1.5" stroke-dasharray="3,3" />
+                <text x="${cx}" y="${cy - 4}" text-anchor="middle" fill="var(--neon-cyan)" font-size="11px" font-family="var(--text-mono)" font-weight="bold">CHƯA KHẢO THÍ</text>
+                <text x="${cx}" y="${cy + 12}" text-anchor="middle" fill="#94a3b8" font-size="9px" font-family="var(--text-mono)">0.0 / 100 ĐIỂM</text>
+            </g>`;
 
         return `
         <svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: ${width}px; height: auto; overflow: visible;">
@@ -692,7 +703,7 @@
             </defs>
             ${ringPolygonsHtml}
             ${spokesHtml}
-            <polygon points="${dataPts.join(' ')}" fill="url(#dashRadarFillGrad)" stroke="var(--neon-cyan)" stroke-width="${isCompact ? 2 : 2.5}" filter="url(#dashRadarGlow)" />
+            ${polygonHtml}
             ${markerCircles.join('')}
             ${labelsHtml.join('')}
         </svg>`;
@@ -714,9 +725,21 @@
                 const sEl = document.getElementById('dash-strongest-label');
                 const wEl = document.getElementById('dash-weakest-label');
                 const aEl = document.getElementById('dash-pedagogical-advice');
-                if (sEl) sEl.innerText = `${data.strongest.name} (${data.strongest.score}đ)`;
-                if (wEl) wEl.innerText = `${data.weakest.name} (${data.weakest.score}đ)`;
-                if (aEl) aEl.innerText = data.pedagogical_advice;
+                
+                if (data.is_unranked || !data.has_data) {
+                    if (sEl) sEl.innerText = "Chưa có dữ liệu";
+                    if (wEl) wEl.innerText = "Chưa có dữ liệu";
+                    if (aEl) {
+                        aEl.innerHTML = `<div>${data.pedagogical_advice}</div>
+                        <div style="margin-top: 10px;">
+                            <a href="/test/placement" class="pixel-btn" style="display: inline-block; background: var(--neon-pink); color: #fff; font-size: 11px; padding: 7px 14px; text-decoration: none; border: 2px solid #000; box-shadow: 0 3px 0 #000;">LÀM BÀI TEST ĐẦU VÀO NGAY ▶</a>
+                        </div>`;
+                    }
+                } else {
+                    if (sEl) sEl.innerText = `${data.strongest.name} (${data.strongest.score}đ)`;
+                    if (wEl) wEl.innerText = `${data.weakest.name} (${data.weakest.score}đ)`;
+                    if (aEl) aEl.innerText = data.pedagogical_advice;
+                }
 
                 const svgContainer = document.getElementById('dash-radar-svg-container');
                 if (svgContainer) {

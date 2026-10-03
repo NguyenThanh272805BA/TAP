@@ -188,16 +188,19 @@
         const dataPts = [];
         const markerCircles = [];
         const labelsHtml = [];
+        const hasData = dimensions.some(dim => (dim.score || 0) > 0);
 
         dimensions.forEach((dim, i) => {
             const angle = startAngle + i * angleStep;
-            const val = Math.max(10, Math.min(100, dim.score || 0));
-            const dataR = R * (val / 100);
+            const val = Math.max(0, Math.min(100, dim.score || 0));
+            const dataR = hasData ? R * (val / 100) : 0;
             const dx = cx + dataR * Math.cos(angle);
             const dy = cy + dataR * Math.sin(angle);
             dataPts.push(`${dx.toFixed(1)},${dy.toFixed(1)}`);
 
-            markerCircles.push(`<circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="${isCompact ? 3.5 : 5}" fill="var(--neon-cyan)" stroke="#000" stroke-width="2" />`);
+            if (hasData && val > 0) {
+                markerCircles.push(`<circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="${isCompact ? 3.5 : 5}" fill="var(--neon-cyan)" stroke="#000" stroke-width="2" />`);
+            }
 
             const labelR = R + (isCompact ? 18 : 28);
             const lx = cx + labelR * Math.cos(angle);
@@ -209,7 +212,7 @@
             }
 
             const fontSize = isCompact ? '10px' : '11px';
-            const labelText = isCompact ? `${dim.name} (${dim.score})` : `${dim.name}`;
+            const labelText = isCompact ? `${dim.name} (${dim.score}đ)` : `${dim.name}`;
             const scoreSubtext = isCompact ? '' : `<tspan x="${lx.toFixed(1)}" dy="14" font-size="11px" fill="var(--neon-cyan)" font-weight="800">${dim.score}đ</tspan>`;
 
             labelsHtml.push(`
@@ -219,6 +222,14 @@
                 </text>
             `);
         });
+
+        const polygonHtml = hasData ? 
+            `<polygon points="${dataPts.join(' ')}" fill="url(#radarFillGrad)" stroke="var(--neon-cyan)" stroke-width="${isCompact ? 2 : 2.5}" filter="url(#radarGlow)" />` :
+            `<g>
+                <circle cx="${cx}" cy="${cy}" r="${R * 0.42}" fill="rgba(15, 23, 42, 0.9)" stroke="rgba(103, 232, 249, 0.3)" stroke-width="1.5" stroke-dasharray="3,3" />
+                <text x="${cx}" y="${cy - 4}" text-anchor="middle" fill="var(--neon-cyan)" font-size="12px" font-family="var(--text-mono)" font-weight="bold">CHƯA KHẢO THÍ</text>
+                <text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="#94a3b8" font-size="10px" font-family="var(--text-mono)">0.0 / 100 ĐIỂM</text>
+            </g>`;
 
         return `
         <svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: ${width}px; height: auto; overflow: visible;">
@@ -235,7 +246,7 @@
             </defs>
             ${ringPolygonsHtml}
             ${spokesHtml}
-            <polygon points="${dataPts.join(' ')}" fill="url(#radarFillGrad)" stroke="var(--neon-cyan)" stroke-width="${isCompact ? 2 : 2.5}" filter="url(#radarGlow)" />
+            ${polygonHtml}
             ${markerCircles.join('')}
             ${labelsHtml.join('')}
         </svg>`;
@@ -257,8 +268,13 @@
 
                 // Scores & Advice
                 document.getElementById('radar-overall-score').innerText = data.overall_score.toFixed(1);
-                document.getElementById('radar-strongest-label').innerText = `${data.strongest.name} (${data.strongest.score}đ)`;
-                document.getElementById('radar-weakest-label').innerText = `${data.weakest.name} (${data.weakest.score}đ)`;
+                if (data.is_unranked || !data.has_data) {
+                    document.getElementById('radar-strongest-label').innerText = "Chưa có dữ liệu";
+                    document.getElementById('radar-weakest-label').innerText = "Chưa có dữ liệu";
+                } else {
+                    document.getElementById('radar-strongest-label').innerText = `${data.strongest.name} (${data.strongest.score}đ)`;
+                    document.getElementById('radar-weakest-label').innerText = `${data.weakest.name} (${data.weakest.score}đ)`;
+                }
                 document.getElementById('radar-pedagogical-advice').innerText = data.pedagogical_advice;
 
                 // Render SVG

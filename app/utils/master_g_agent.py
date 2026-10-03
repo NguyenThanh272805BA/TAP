@@ -110,6 +110,9 @@ class MasterGPedagogicalAgent:
             return state
 
         radar = state.get("radar", {})
+        has_data = radar.get("has_data", True)
+        is_unranked = radar.get("is_unranked", False)
+
         weakest = radar.get("weakest", {"key": "grammar", "name": "Chuẩn Ngữ Pháp", "score": 40.0})
         strongest = radar.get("strongest", {"key": "vocabulary", "name": "Vốn Từ Vựng", "score": 75.0})
         weakest_key = weakest.get("key", "grammar")
@@ -123,7 +126,11 @@ class MasterGPedagogicalAgent:
         # ----------------------------------------------------
         # RA QUYẾT ĐỊNH CHẾ ĐỘ SƯ PHẠM (REGIME CLASSIFICATION)
         # ----------------------------------------------------
-        if consecutive_fails >= 2 or weakest_score < 45.0:
+        if not has_data or is_unranked:
+            regime = "INITIAL_ONBOARDING"
+            regime_title = "CHÀO MỪNG TÂN BINH: KHỞI TẠO MA TRẬN NĂNG LỰC"
+            priority_action = "Hoàn thành Bài Khảo Thí Đầu Vào (Placement Test) để thiết lập hồ sơ học thuật."
+        elif consecutive_fails >= 2 or (weakest_score < 45.0 and weakest_key != "none"):
             regime = "CRITICAL_REMEDIAL"
             regime_title = "CẢNH BÁO NGUY CƠ: BÙ LỖ HỔNG HỌC THUẬT KHẨN CẤP"
             priority_action = "Tập trung giải cứu kỹ năng yếu nhất trước khi tiếp tục leo Rank."
@@ -145,39 +152,49 @@ class MasterGPedagogicalAgent:
         # ----------------------------------------------------
         prescribed_tasks = []
 
-        # 1. Nhiệm vụ khắc phục kỹ năng yếu nhất
-        if weakest_key in ['syntax', 'grammar']:
-            # Gọi Brain Scramble / Grammar Quiz
-            sample_grammar = Grammar.query.filter_by(cefr_level=current_band).first()
-            if not sample_grammar:
-                sample_grammar = Grammar.query.first()
-            
-            syntax_puzzle = None
-            if sample_grammar:
-                syntax_puzzle = self.scramble_engine.generate_syntax_scramble(sample_grammar.id)
+        if regime == "INITIAL_ONBOARDING":
+            prescribed_tasks.append({
+                "type": "ONBOARDING_PLACEMENT",
+                "title": "Khảo Thí Xếp Lớp Đầu Vào (Placement Test)",
+                "reason": "Kích hoạt Ma Trận Năng Lực 6 Chiều và xác định Band xuất phát chính xác.",
+                "payload": None,
+                "action_url": "/test/placement",
+                "reward_rp": 50
+            })
+        else:
+            # 1. Nhiệm vụ khắc phục kỹ năng yếu nhất
+            if weakest_key in ['syntax', 'grammar']:
+                # Gọi Brain Scramble / Grammar Quiz
+                sample_grammar = Grammar.query.filter_by(cefr_level=current_band).first()
+                if not sample_grammar:
+                    sample_grammar = Grammar.query.first()
+                
+                syntax_puzzle = None
+                if sample_grammar:
+                    syntax_puzzle = self.scramble_engine.generate_syntax_scramble(sample_grammar.id)
 
-            prescribed_tasks.append({
-                "type": "SYNTAX_ASSEMBLY_RESCUE",
-                "title": f"Phục hồi Cú pháp ({weakest['name']})",
-                "reason": f"Chỉ số {weakest['name']} hiện tại đang ở mức {weakest_score}đ.",
-                "payload": syntax_puzzle,
-                "reward_rp": 25,
-                "target_grammar": sample_grammar.structure if sample_grammar else "S + V + O"
-            })
-        elif weakest_key in ['vocabulary', 'retention']:
-            # Gợi ý bài tập từ vựng hoặc củng cố SRS
-            target_v = state["due_vocabs"][0] if state["due_vocabs"] else None
-            word_puzzle = None
-            if target_v:
-                word_puzzle = self.scramble_engine.generate_word_scramble(target_v["id"])
-            
-            prescribed_tasks.append({
-                "type": "VOCAB_RETENTION_RESCUE",
-                "title": f"Gỡ Bom Trí Nhớ: {target_v['word'] if target_v else 'Từ Vựng Cốt Lõi'}",
-                "reason": "Chỉ số độ bền trí nhớ cần được gia cố theo đường cong lãng quên.",
-                "payload": word_puzzle,
-                "reward_rp": 20
-            })
+                prescribed_tasks.append({
+                    "type": "SYNTAX_ASSEMBLY_RESCUE",
+                    "title": f"Phục hồi Cú pháp ({weakest['name']})",
+                    "reason": f"Chỉ số {weakest['name']} hiện tại đang ở mức {weakest_score}đ.",
+                    "payload": syntax_puzzle,
+                    "reward_rp": 25,
+                    "target_grammar": sample_grammar.structure if sample_grammar else "S + V + O"
+                })
+            elif weakest_key in ['vocabulary', 'retention']:
+                # Gợi ý bài tập từ vựng hoặc củng cố SRS
+                target_v = state["due_vocabs"][0] if state["due_vocabs"] else None
+                word_puzzle = None
+                if target_v:
+                    word_puzzle = self.scramble_engine.generate_word_scramble(target_v["id"])
+                
+                prescribed_tasks.append({
+                    "type": "VOCAB_RETENTION_RESCUE",
+                    "title": f"Gỡ Bom Trí Nhớ: {target_v['word'] if target_v else 'Từ Vựng Cốt Lõi'}",
+                    "reason": "Chỉ số độ bền trí nhớ cần được gia cố theo đường cong lãng quên.",
+                    "payload": word_puzzle,
+                    "reward_rp": 20
+                })
 
         # 2. Nhiệm vụ ôn tập Smart SRS nếu có từ đến hạn
         if state["due_vocabs"]:
@@ -194,7 +211,12 @@ class MasterGPedagogicalAgent:
         # ----------------------------------------------------
         user_tier = self.critique_synthesizer.normalize_user_level(state["current_rank"])
         
-        if regime == "CRITICAL_REMEDIAL":
+        if regime == "INITIAL_ONBOARDING":
+            advice_msg = (
+                "Master G chào mừng tân binh! Hiện tại Ma Trận Năng Lực của bạn đang ở trạng thái chờ kích hoạt (0đ). "
+                "Hãy hoàn thành Bài Khảo Thí Đầu Vào (Placement Test) để hệ thống đo lường chính xác các chỉ số phản xạ và ngữ pháp của riêng bạn nhé!"
+            )
+        elif regime == "CRITICAL_REMEDIAL":
             advice_msg = (
                 f"Master G lưu ý bạn: Kỹ năng '{weakest['name']}' của bạn đang cần được gia cố thêm ({weakest_score}đ). "
                 f"Trong việc học ngôn ngữ, việc xây chắc nền móng trước khi bứt phá là yếu tố quyết định. "

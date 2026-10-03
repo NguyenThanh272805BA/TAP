@@ -456,29 +456,59 @@ function switchFeature(featureName) {
     initKeyboardShortcuts();
 }
 
-function requestAIHint(mode) {
+function requestAIHint(mode, targetParam) {
     const hintBox = document.getElementById("ai-hint-box");
     if (!hintBox) return;
 
+    const target = targetParam || '';
+
     hintBox.style.display = "block";
-    hintBox.innerHTML = "<span class='pulse-neon'>Đang kết nối Neural Network lấy gợi ý...</span>";
+    hintBox.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; color: var(--neon-amber); padding: 4px;">
+            <span class="pulse-neon">⚡</span>
+            <span class="typing-effect">Đang kết nối Neural Network lấy gợi ý cho "${target || mode}"...</span>
+        </div>
+    `;
 
     fetch('/api/ai/hint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: mode })
+        body: JSON.stringify({ mode: mode, target: target })
     })
     .then(res => res.json())
     .then(data => {
-        hintBox.innerHTML = data.hint;
-        setTimeout(() => {
-            hintBox.style.display = "none";
-        }, 12000);
+        if (data.html) {
+            hintBox.innerHTML = data.html;
+        } else if (data.hint) {
+            hintBox.innerHTML = typeof formatAIFeedback === 'function' ? formatAIFeedback(data.hint) : data.hint;
+        } else {
+            hintBox.innerHTML = "<span style='color: var(--neon-amber);'>Không có gợi ý khả dụng.</span>";
+        }
     })
     .catch(() => {
         hintBox.innerHTML = "<span style='color: var(--neon-pink);'>Lỗi truy xuất hệ thống Gợi ý!</span>";
     });
 }
+
+function insertChunkToInput(chunkText) {
+    const userInput = document.getElementById("userInput");
+    if (!userInput) return;
+    const currentVal = userInput.value.trim();
+    if (!currentVal) {
+        userInput.value = chunkText;
+    } else {
+        userInput.value = currentVal + " " + chunkText;
+    }
+    userInput.focus();
+}
+
+function applyTemplateToInput(sentenceText) {
+    const userInput = document.getElementById("userInput");
+    if (!userInput) return;
+    userInput.value = sentenceText;
+    userInput.focus();
+}
+
 
 function updateChibeEmotion(score) {
     const chibiCharacter = document.querySelector(".character");
@@ -556,6 +586,12 @@ function submitChallenge(modeParam) {
 
     userInputField.disabled = true; // Khóa an toàn chống spam click
     aiResponseBox.style.display = "block";
+    const practiceScrollBody = document.getElementById("practice-modal-scrollable-body");
+    if (practiceScrollBody) {
+        setTimeout(() => {
+            practiceScrollBody.scrollTo({ top: practiceScrollBody.scrollHeight, behavior: 'smooth' });
+        }, 50);
+    }
     aiFeedbackDiv.innerHTML = `
         <div id="aiFeedbackLoading" class="pulse-neon" style="color: var(--neon-cyan); font-size: 14px; margin-bottom: 10px;">
             <span class="typing-effect">🤖 Master G đang chấm điểm & phân tích câu ngữ pháp...</span>
@@ -613,6 +649,10 @@ function submitChallenge(modeParam) {
                             accumulatedText += data.text;
                             textBox.innerHTML = renderStructuredFeedback(accumulatedText);
                             textBox.parentNode.scrollTop = textBox.parentNode.scrollHeight;
+                            const scrollParent = document.getElementById("practice-modal-scrollable-body");
+                            if (scrollParent) {
+                                scrollParent.scrollTop = scrollParent.scrollHeight;
+                            }
                         }
                         else if (data.type === 'levelup') {
                             triggerFireworksEffect();

@@ -1242,8 +1242,15 @@
 
     function loadFarmState() {
         fetch('/api/game/farm/state')
-            .then(res => res.json())
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = '/auth';
+                    return null;
+                }
+                return res.json();
+            })
             .then(data => {
+                if (!data) return;
                 if (data.status === 'success') {
                     farmState = data;
                     renderFarmUI();
@@ -1657,6 +1664,8 @@
             }
         })
         .catch(err => alert("Lỗi kết nối gieo hạt: " + err.message));
+    }
+
     let currentSrsQuizData = null;
     let srsQuizStartTime = null;
 

@@ -313,6 +313,26 @@
         color: #0f172a !important;
     }
 
+    /* Thanh cuộn mượt cho khung Luyện Đặt Câu & Nhận xét AI */
+    #practice-modal-scrollable-body::-webkit-scrollbar {
+        width: 6px;
+    }
+    #practice-modal-scrollable-body::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 4px;
+    }
+    #practice-modal-scrollable-body::-webkit-scrollbar-thumb {
+        background: var(--neon-pink);
+        border-radius: 4px;
+    }
+    #practice-modal-scrollable-body::-webkit-scrollbar-thumb:hover {
+        background: #f472b6;
+    }
+    body.clean-mode #practice-modal-scrollable-body::-webkit-scrollbar-track,
+    body.theme-light #practice-modal-scrollable-body::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+
     /* Filter Pills */
     .filter-pill {
         padding: 6px 14px;
@@ -654,16 +674,25 @@
 </div>
 
 <!-- MODAL THỰC HÀNH ĐẶT CÂU VỚI AI (POPUP TẬP TRUNG) -->
-<div id="practice-sentence-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 99999; justify-content: center; align-items: center;">
-    <div class="learn-modal-box" style="background: rgba(15, 23, 42, 0.98); border: 2.5px solid #000; border-radius: 16px; box-shadow: 0 8px 0 #000; padding: 25px; max-width: 650px; width: 92%; display: flex; flex-direction: column; position: relative;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
+<div id="practice-sentence-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); z-index: 99999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; overflow-y: auto;">
+    <div class="learn-modal-box" style="background: rgba(15, 23, 42, 0.98); border: 2.5px solid #000; border-radius: 16px; box-shadow: 0 10px 35px rgba(0,0,0,0.9), 0 0 25px rgba(244, 114, 182, 0.25); padding: 22px 24px; max-width: 680px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; position: relative; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px; flex-shrink: 0;">
             <div class="pixel-title" id="practice-modal-title" style="color: var(--neon-pink); font-size: 16px; margin: 0;">LUYỆN ĐẶT CÂU VỚI AI</div>
-            <button class="pixel-btn" onclick="closePracticeModal()" style="background: #ef4444; border: 2px solid #000; box-shadow: 0 3px 0 #000; padding: 6px 12px; font-size: 10px;">[ ĐÓNG ]</button>
+            <button class="pixel-btn" onclick="closePracticeModal()" style="background: #ef4444; border: 2px solid #000; box-shadow: 0 3px 0 #000; padding: 6px 12px; font-size: 10px; cursor: pointer;">[ ĐÓNG ]</button>
         </div>
-        <div id="practice-workspace" style="display: flex; flex-direction: column; gap: 10px;"></div>
-        <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border-color: var(--neon-pink); margin-top: 15px; padding: 16px;">
-            <div class="pixel-title" style="color: var(--neon-pink); margin-bottom: 8px; font-size: 12px;">MASTER_G FEEDBACK:</div>
-            <div id="aiFeedback" class="pixel-text" style="font-size: 14px; color: #fff; line-height: 1.6;"></div>
+        
+        <!-- VÙNG NỘI DUNG CUỘN ĐƯỢC KHI CÓ NHẬN XÉT DÀI -->
+        <div id="practice-modal-scrollable-body" style="overflow-y: auto; flex-grow: 1; padding-right: 6px; display: flex; flex-direction: column; gap: 14px;">
+            <div id="practice-workspace" style="display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;"></div>
+            <div class="ai-dialog-box" id="aiResponseBox" style="display: none; border: 2px solid var(--neon-pink); border-radius: 14px; background: rgba(15, 23, 42, 0.92); margin-top: 5px; padding: 18px; box-shadow: 0 4px 20px rgba(244, 114, 182, 0.15); flex-shrink: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed rgba(244, 114, 182, 0.35); padding-bottom: 8px;">
+                    <div class="pixel-title" style="color: var(--neon-pink); font-size: 13px; margin: 0; display: flex; align-items: center; gap: 6px;">
+                        <span>🤖</span> MASTER_G FEEDBACK:
+                    </div>
+                    <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">[Cuộn xuống để xem toàn bộ]</span>
+                </div>
+                <div id="aiFeedback" class="pixel-text" style="font-size: 14px; color: #fff; line-height: 1.6; word-break: break-word;"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -1883,24 +1912,33 @@
     }
 
     // =========================================================================
+    // =========================================================================
     // PHÂN HỆ THỰC HÀNH: LUYỆN ĐẶT CÂU VỚI AI (MODAL POPUP)
     // =========================================================================
 
+    let currentPracticeMode = 'vocab';
+    let currentPracticeTarget = '';
+
     function openBattleZone(mode, targetText) {
+        currentPracticeMode = mode;
+        currentPracticeTarget = targetText || '';
+
         const modal = document.getElementById("practice-sentence-modal");
         modal.style.display = "flex";
         document.getElementById("practice-modal-title").innerText = `THỰC HÀNH // MỤC TIÊU: ${targetText.toUpperCase()}`;
 
         let placeholder = mode === 'vocab' ? `Đặt một câu tiếng Anh có chứa từ '${targetText}'...` : `Viết câu sử dụng cấu trúc '${targetText}'...`;
 
+        const escapedTarget = (targetText || '').replace(/'/g, "\\'");
+
         document.getElementById("practice-workspace").innerHTML = `
             <div class="pixel-text" style="font-size: 14px; margin-bottom: 4px; color: var(--neon-cyan);">HÃY CHỨNG MINH KỸ NĂNG CỦA BẠN:</div>
-            <textarea id="userInput" style="width: 100%; min-height: 110px; background: rgba(0,0,0,0.6); border: 2px solid #000; box-shadow: 0 3px 0 #000; color: #fff; padding: 14px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: none; box-sizing: border-box;" placeholder="${placeholder}"></textarea>
+            <textarea id="userInput" style="width: 100%; min-height: 100px; background: rgba(0,0,0,0.6); border: 2px solid #000; box-shadow: 0 3px 0 #000; color: #fff; padding: 14px; font-family: var(--text-mono); font-size: 15px; border-radius: 12px; resize: vertical; box-sizing: border-box;" placeholder="${placeholder}"></textarea>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
                 <button class="pixel-btn" onclick="submitChallenge('${mode}')" style="flex: 1; background: var(--neon-pink); padding: 12px; font-size: 11px;">GỬI CHO AI CHẤM (ENTER)</button>
-                <button class="pixel-btn" onclick="requestAIHint('${mode}')" style="background: rgba(0,0,0,0.5); border: 2px solid #000; box-shadow: 0 3px 0 #000; color: var(--neon-amber); padding: 12px; font-size: 11px;">💡 GỢI Ý</button>
+                <button class="pixel-btn" onclick="requestAIHint('${mode}', '${escapedTarget}')" style="background: rgba(0,0,0,0.5); border: 2px solid #000; box-shadow: 0 3px 0 #000; color: var(--neon-amber); padding: 12px; font-size: 11px; cursor: pointer;">💡 GỢI Ý ĐẶT CÂU</button>
             </div>
-            <div id="ai-hint-box" style="display: none; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--neon-amber); color: #fff; font-size: 13px; margin-top: 10px;"></div>
+            <div id="ai-hint-box" style="display: none; padding: 14px 16px; border-radius: 12px; background: rgba(15, 23, 42, 0.95); border: 2px solid rgba(245, 158, 11, 0.45); color: #fff; font-size: 13px; margin-top: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);"></div>
         `;
         document.getElementById("aiResponseBox").style.display = "none";
 
@@ -1915,14 +1953,73 @@
         document.getElementById("practice-sentence-modal").style.display = "none";
     }
 
-    function requestAIHint(mode) {
+    function requestAIHint(modeParam, targetParam) {
         const hintBox = document.getElementById("ai-hint-box");
+        if (!hintBox) return;
+
+        const mode = modeParam || currentPracticeMode || 'vocab';
+        const target = targetParam || currentPracticeTarget || '';
+
         hintBox.style.display = "block";
-        hintBox.innerHTML = "<span class='typing-effect'>Master G đang suy nghĩ gợi ý...</span>";
-        fetch('/api/ai/hint', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ mode: mode }) })
-            .then(res => res.json())
-            .then(data => { hintBox.innerHTML = data.hint; })
-            .catch(err => { hintBox.innerHTML = "Không thể lấy gợi ý lúc này."; });
+        hintBox.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; color: var(--neon-amber); padding: 6px 4px;">
+                <div class="pulse-neon" style="font-size: 16px;">⚡</div>
+                <span class="typing-effect" style="font-size: 13px; font-weight: 500;">Master G đang phân tích cú pháp & thuật toán trật tự câu cho "${target}"...</span>
+            </div>
+        `;
+
+        fetch('/api/ai/hint', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ mode: mode, target: target })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.html) {
+                hintBox.innerHTML = data.html;
+            } else if (data.hint) {
+                hintBox.innerHTML = cleanHintFormatting(data.hint);
+            } else {
+                hintBox.innerHTML = '<span style="color: var(--neon-amber);">Chưa có dữ liệu gợi ý cho mục tiêu này.</span>';
+            }
+            // Tự động cuộn mượt để thấy toàn bộ khung gợi ý
+            const scrollBody = document.getElementById("practice-modal-scrollable-body");
+            if (scrollBody) {
+                setTimeout(() => {
+                    hintBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 80);
+            }
+        })
+        .catch(err => {
+            hintBox.innerHTML = "<span style='color: var(--neon-pink);'>Không thể truy xuất hệ thống Gợi ý lúc này!</span>";
+        });
     }
+
+    function insertChunkToInput(chunkText) {
+        const userInput = document.getElementById("userInput");
+        if (!userInput) return;
+        const currentVal = userInput.value.trim();
+        if (!currentVal) {
+            userInput.value = chunkText;
+        } else {
+            userInput.value = currentVal + " " + chunkText;
+        }
+        userInput.focus();
+    }
+
+    function applyTemplateToInput(sentenceText) {
+        const userInput = document.getElementById("userInput");
+        if (!userInput) return;
+        userInput.value = sentenceText;
+        userInput.focus();
+    }
+
+    function cleanHintFormatting(text) {
+        if (!text) return "";
+        let clean = text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #67e8f9;">$1</strong>');
+        clean = clean.replace(/\*([^*\n]+)\*/g, '<em style="color: #cbd5e1;">$1</em>');
+        return clean.replace(/\n/g, '<br>');
+    }
+
 </script>
 {% endblock %}
