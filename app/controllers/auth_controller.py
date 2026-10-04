@@ -97,7 +97,11 @@ def get_current_user_profile():
         "equipped_frame": getattr(user, 'equipped_frame', 'frame-default'),
         "equipped_title": getattr(user, 'equipped_title', 'Tân Binh Ngơ Ngác'),
         "target_band": getattr(user, 'target_band', 'B2'),
-        "current_band": getattr(user, 'current_band', 'A1')
+        "current_band": getattr(user, 'current_band', 'A1'),
+        "arena_stage": getattr(user, 'arena_stage', 1) or 1,
+        "infinity_score": getattr(user, 'infinity_score', 0) or 0,
+        "academic_rp": getattr(user, 'academic_rp', 0) or 0,
+        "study_time_minutes": getattr(user, 'study_time_minutes', 0) or 0
     }), 200
 
 
@@ -122,7 +126,11 @@ def get_user_by_id(user_id):
         "equipped_frame": getattr(user, 'equipped_frame', 'frame-default'),
         "equipped_title": getattr(user, 'equipped_title', 'Tân Binh Ngơ Ngác'),
         "target_band": getattr(user, 'target_band', 'B2'),
-        "current_band": getattr(user, 'current_band', 'A1')
+        "current_band": getattr(user, 'current_band', 'A1'),
+        "arena_stage": getattr(user, 'arena_stage', 1) or 1,
+        "infinity_score": getattr(user, 'infinity_score', 0) or 0,
+        "academic_rp": getattr(user, 'academic_rp', 0) or 0,
+        "study_time_minutes": getattr(user, 'study_time_minutes', 0) or 0
     }), 200
 
 

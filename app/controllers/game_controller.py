@@ -524,6 +524,8 @@ def gacha_roll():
         timer = max(3.0, base_time - ((user.arena_stage or 1) * 0.2))
     else:
         timer = random.uniform(5.0, 10.0)
+        if data.get('reset_streak') or data.get('current_streak', 0) == 0:
+            session['arena_infinity_streak'] = 0
 
     # BẢO MẬT: Đặt đồng hồ đếm giờ ngay tại Server để chặn Hacker sửa response_time_ms
     session['gacha_start_time'] = time.time()
@@ -548,7 +550,10 @@ def gacha_verify():
     user_answer = data.get('answer') or data.get('selected', '')
     is_timeout = data.get('timeout', False) or (user_answer == "TIMEOUT_NO_ANSWER")
     mode = data.get('mode', 'stage')
-    current_gacha_streak = data.get('current_streak', 0)
+    try:
+        current_gacha_streak = int(data.get('current_streak', 0) or 0)
+    except (ValueError, TypeError):
+        current_gacha_streak = 0
 
     user_id = session.get('user_id')
     if not user_id:
@@ -592,12 +597,21 @@ def gacha_verify():
     current_avg = uv.avg_response_time if uv.avg_response_time is not None else 0.0
     current_prev_interval = uv.previous_interval if uv.previous_interval is not None else 0.0
 
+    if mode == 'infinity':
+        server_streak = session.get('arena_infinity_streak', 0)
+        current_gacha_streak = max(current_gacha_streak, server_streak)
+
     if not is_correct:
         uv.fail_count = current_fail + 1
+        ended_streak = current_gacha_streak
         current_gacha_streak = 0
+        if mode == 'infinity':
+            session['arena_infinity_streak'] = 0
     else:
         uv.fail_count = current_fail
         current_gacha_streak += 1
+        if mode == 'infinity':
+            session['arena_infinity_streak'] = current_gacha_streak
 
     time_sec = actual_time_ms / 1000.0
     uv.avg_response_time = time_sec if current_avg == 0.0 else (current_avg + time_sec) / 2
@@ -627,7 +641,7 @@ def gacha_verify():
 
     elif mode == 'infinity':
         if is_correct:
-            game_message = f"[ KABOOM ] Chuỗi Combo: {current_gacha_streak}"
+            game_message = f"[ KABOOM ] Chuỗi Combo: {current_gacha_streak} 🔥"
             if current_gacha_streak > (user.infinity_score or 0):
                 user.infinity_score = current_gacha_streak
 
@@ -635,7 +649,7 @@ def gacha_verify():
             if achieved:
                 game_message += f" | 🏆 +{len(achieved)} THÀNH TỰU!"
         else:
-            game_message = f"[ GAME OVER ] Dừng lại ở điểm: {current_gacha_streak}"
+            game_message = f"[ GAME OVER ] Dừng lại ở chuỗi: {ended_streak} combo!"
             is_game_over = True
 
     db.session.commit()

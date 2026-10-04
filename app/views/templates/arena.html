@@ -303,10 +303,10 @@
         document.getElementById("start-screen").style.display = "none";
         document.getElementById("arena-screen").style.display = "block";
         document.getElementById("result-box").style.display = "none";
-        rollNewChallenge();
+        rollNewChallenge(true);
     }
 
-    function rollNewChallenge() {
+    function rollNewChallenge(isReset = false) {
         document.getElementById("result-box").style.display = "none";
         document.getElementById("btn-next").style.display = "block";
         document.getElementById("btn-exit").style.display = "none";
@@ -315,7 +315,11 @@
         fetch('/api/game/gacha/roll', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ mode: currentMode })
+            body: JSON.stringify({ 
+                mode: currentMode,
+                reset_streak: isReset,
+                current_streak: infinityScore
+            })
         })
         .then(res => {
             if (!res.ok) throw new Error("HTTP " + res.status);
@@ -401,6 +405,7 @@
                 selected: chosen,
                 answer: chosen,
                 mode: currentMode,
+                current_streak: infinityScore,
                 response_time: parseFloat(responseTime)
             })
         })
@@ -410,8 +415,8 @@
             const meaning = data.correct_meaning || (isCorrect ? chosen : "Không rõ");
             const msg = data.msg || data.message || "";
             const isGameOver = (data.game_over !== undefined) ? data.game_over : (data.is_game_over || false);
-            handleResult(isCorrect, meaning, msg, isGameOver, data.stage_completed);
-            fetchUserData(); // Cập nhật xu
+            handleResult(isCorrect, meaning, msg, isGameOver, data.stage_completed, data);
+            fetchUserData(); // Cập nhật xu & stats
         })
         .catch(err => {
             alert("Lỗi xác thực: " + err.message);
@@ -430,6 +435,7 @@
                 answer: "TIMEOUT_NO_ANSWER",
                 timeout: true,
                 mode: currentMode,
+                current_streak: infinityScore,
                 response_time: maxTime
             })
         })
@@ -437,7 +443,8 @@
         .then(data => {
             const meaning = data.correct_meaning || "Không rõ";
             const isGameOver = (data.game_over !== undefined) ? data.game_over : (data.is_game_over || false);
-            handleResult(false, meaning, "HẾT THỜI GIAN!", isGameOver, false);
+            const msg = data.msg || data.message || "HẾT THỜI GIAN!";
+            handleResult(false, meaning, msg, isGameOver, false, data);
             fetchUserData();
         })
         .catch(err => {
@@ -445,7 +452,7 @@
         });
     }
 
-    function handleResult(isCorrect, correctMeaning, msg, gameOver, stageCompleted) {
+    function handleResult(isCorrect, correctMeaning, msg, gameOver, stageCompleted, data = {}) {
         const box = document.getElementById("result-box");
         const msgDiv = document.getElementById("result-msg");
         box.style.display = "block";
@@ -454,7 +461,13 @@
             box.style.borderColor = "var(--pixel-green)";
             msgDiv.style.color = "var(--pixel-green)";
             msgDiv.innerText = `✓ CHÍNH XÁC! ${msg}`;
-            if (currentMode === 'infinity') infinityScore++;
+            if (currentMode === 'infinity') {
+                infinityScore = (data && data.new_streak !== undefined) ? data.new_streak : (infinityScore + 1);
+                const statInf = document.getElementById("arena-stat-infinity");
+                if (statInf && data && data.infinity_score !== undefined) {
+                    statInf.innerText = data.infinity_score + " pts";
+                }
+            }
 
             if (stageCompleted) {
                 msgDiv.innerText = `🎉 XUẤT SẮC! ${msg}`;
@@ -465,6 +478,10 @@
             box.style.borderColor = "#ef4444";
             msgDiv.style.color = "#ef4444";
             msgDiv.innerText = `✗ SAI RỒI! Đáp án đúng: "${correctMeaning}". ${msg}`;
+
+            if (currentMode === 'infinity') {
+                infinityScore = 0;
+            }
 
             if (gameOver) {
                 document.getElementById("btn-next").style.display = "none";
@@ -478,7 +495,6 @@
         document.getElementById("arena-screen").style.display = "none";
         document.getElementById("result-box").style.display = "none";
         document.getElementById("start-screen").style.display = "block";
-        loadLeaderboard();
         fetchUserData();
     }
 </script>
