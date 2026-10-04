@@ -38,7 +38,18 @@ def get_offline_vocab_hint(word: str, meaning: str = "", cefr: str = "B1") -> Di
     """
     clean_w = word.strip()
     w_lower = clean_w.lower()
-    clean_m = clean_str(meaning) or "Từ vựng mục tiêu"
+    clean_m = clean_str(meaning)
+    if not clean_m or clean_m == "Từ vựng mục tiêu":
+        try:
+            v_match = Vocabulary.query.filter(db.func.lower(Vocabulary.word) == w_lower).first()
+            if v_match and v_match.meaning:
+                clean_m = clean_str(v_match.meaning)
+                if v_match.cefr_level:
+                    cefr = v_match.cefr_level
+        except Exception:
+            pass
+    if not clean_m:
+        clean_m = "Từ vựng mục tiêu"
 
     # Kho từ vựng mẫu phổ biến được biên soạn chuyên sâu
     curated_knowledge = {
@@ -249,6 +260,10 @@ def generate_grammar_hint(target_text: str) -> Dict:
         "tip": f"Áp dụng chính xác quy tắc: {explanation}",
         "scramble": scramble_res
     }
+
+
+# Bí danh tương thích cho hệ thống gợi ý ngữ pháp offline
+get_offline_grammar_hint = generate_grammar_hint
 
 
 def render_hint_html(data: Dict) -> str:

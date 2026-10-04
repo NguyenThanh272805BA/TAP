@@ -214,40 +214,89 @@ class LocalGECEngine:
             if len(raw_tokens) <= 1:
                 is_fragment = True
                 single_word = raw_tokens[0] if raw_tokens else clean_text
+                
+                # Truy xuất câu mẫu chuẩn từ bộ não gợi ý offline (Hint Service)
+                smart_sentence = ""
+                try:
+                    from app.utils.hint_service import get_offline_vocab_hint
+                    v_hint = get_offline_vocab_hint(target_word or single_word)
+                    smart_sentence = v_hint.get("main_sentence", "")
+                except Exception:
+                    smart_sentence = ""
+
+                suggested_replacements = []
+                if smart_sentence:
+                    suggested_replacements.append(smart_sentence)
+                suggested_replacements.extend([
+                    f"Understanding {single_word} is very important for our study.",
+                    f"I want to learn more about {single_word}."
+                ])
+
                 error_details.append({
                     "rule_id": "SINGLE_WORD_INPUT",
                     "message": "Câu chưa hoàn chỉnh: Bạn mới chỉ nhập một từ đơn lẻ. Nhiệm vụ yêu cầu đặt một câu trọn vẹn (có đầy đủ Chủ ngữ và Vị ngữ).",
                     "offset": 0,
                     "error_length": len(clean_text),
                     "context": clean_text,
-                    "replacements": [f"I learned about {single_word} today.", f"This is a {single_word}."],
+                    "replacements": suggested_replacements[:2],
                     "category": "GRAMMAR"
                 })
                 total_penalty += 7.0
-                corrected = f"This is a {single_word}."
+                corrected = smart_sentence if smart_sentence else f"Understanding {single_word} is essential."
 
             # Trường hợp B: Cụm từ ngắn (2-4 từ) hoặc câu không hề có bất kỳ động từ nào
             elif not has_verb:
                 is_fragment = True
+                phrase_core = clean_text.rstrip('.?!')
+                phrase_lower = phrase_core.lower()
+
+                # Khai thác bộ não gợi ý offline dựa trên target_word hoặc cụm từ
+                smart_example = ""
+                try:
+                    from app.utils.hint_service import get_offline_vocab_hint
+                    lookup_key = target_word if target_word else (raw_tokens[0] if raw_tokens else clean_text)
+                    v_hint = get_offline_vocab_hint(lookup_key)
+                    smart_example = v_hint.get("main_sentence", "")
+                except Exception:
+                    smart_example = ""
+
+                # Sinh các câu hoàn chỉnh tự nhiên theo hình thái cú pháp của cụm từ
+                if smart_example and (target_word and target_word.lower() in smart_example.lower()):
+                    natural_corrected = smart_example
+                    replacement_examples = [
+                        smart_example,
+                        f"Understanding {phrase_lower} is essential for our development."
+                    ]
+                elif phrase_lower.startswith(('in ', 'on ', 'at ', 'during ', 'after ', 'before ', 'by ', 'with ')):
+                    natural_corrected = f"We usually practice English {phrase_lower}."
+                    replacement_examples = [
+                        f"We usually practice English {phrase_lower}.",
+                        f"{phrase_core.capitalize()}, I like to focus on my personal projects."
+                    ]
+                elif phrase_lower.startswith(('the ', 'a ', 'an ', 'this ', 'that ')):
+                    natural_corrected = f"{phrase_core} plays an important role in our life."
+                    replacement_examples = [
+                        f"{phrase_core} plays an important role in our life.",
+                        f"We need to evaluate {phrase_lower} with great care."
+                    ]
+                else:
+                    natural_corrected = f"It is very important to understand {phrase_lower}."
+                    replacement_examples = [
+                        f"It is very important to understand {phrase_lower}.",
+                        f"Developing {phrase_lower} requires consistent practice every day."
+                    ]
+
                 error_details.append({
                     "rule_id": "SENTENCE_FRAGMENT",
                     "message": "Cụm từ chưa thành câu (Sentence Fragment): Bạn mới chỉ nhập một cụm từ rời rạc, thiếu động từ chính (vị ngữ) để cấu thành một câu tiếng Anh hoàn chỉnh.",
                     "offset": 0,
                     "error_length": len(clean_text),
                     "context": clean_text,
-                    "replacements": [
-                        f"The {clean_text.lower().rstrip('.')} occurs rapidly.",
-                        f"Scientists observed a {clean_text.lower().rstrip('.')}."
-                    ],
+                    "replacements": replacement_examples[:2],
                     "category": "GRAMMAR"
                 })
                 total_penalty += 6.0
-                # Gợi ý một câu hoàn chỉnh mẫu chứa cụm từ đó
-                phrase_core = clean_text.rstrip('.?!')
-                if phrase_core.lower().startswith(('the ', 'a ', 'an ', 'this ', 'that ')):
-                    corrected = f"{phrase_core} occurs rapidly."
-                else:
-                    corrected = f"The {phrase_core.lower()} occurs in the experiment."
+                corrected = natural_corrected
 
             # 3. Phân tích các lỗi từ LanguageTool
             for m in matches:

@@ -541,18 +541,30 @@ function renderStructuredFeedback(rawText) {
         '<div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 5px 12px; border-radius: 8px; font-weight: 700; font-size: 13px; margin-bottom: 10px;">$1</div>');
 
     // Section headers
+    clean = clean.replace(/(🎯\s*CHẨN ĐOÁN MỤC TIÊU CỐT LÕI[^\n]*:?)/g, 
+        '<div style="color: var(--neon-cyan); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.5px; border-bottom: 1px dashed rgba(56, 189, 248, 0.3); padding-bottom: 4px;">$1</div>');
+    clean = clean.replace(/(📖\s*Câu mẫu chuẩn ngữ cảnh[^\n]*:?)/g, 
+        '<div style="color: var(--neon-amber); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.4px;">$1</div>');
+    clean = clean.replace(/(🔗\s*Cụm từ hay đi kèm[^\n]*:?)/g, 
+        '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.4px;">$1</div>');
     clean = clean.replace(/(🔍\s*Những điểm cần lưu ý[^\n]*:?)/g, 
         '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
     clean = clean.replace(/(🔍\s*Điểm cốt lõi cần lưu ý[^\n]*:?)/g, 
         '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
     clean = clean.replace(/(✨\s*Điểm sáng trong câu[^\n]*:?)/g, 
         '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+    clean = clean.replace(/(✨\s*Vận dụng mục tiêu[^\n]*:?)/g, 
+        '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 6px; margin-bottom: 4px; font-size: 12px;">$1</div>');
+    clean = clean.replace(/(⚠️\s*Lưu ý mục tiêu[^\n]*:?)/g, 
+        '<div style="color: var(--neon-amber); font-weight: 700; margin-top: 6px; margin-bottom: 4px; font-size: 12px;">$1</div>');
     clean = clean.replace(/(💡\s*Phiên bản chuẩn chỉnh đề xuất[^\n]*:?)/g, 
         '<div style="color: var(--neon-amber); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
     clean = clean.replace(/(💡\s*Câu văn hoàn thiện[^\n]*:?)/g, 
         '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
     clean = clean.replace(/(🚀\s*Lời khuyên phát triển từ Master G[^\n]*:?)/g, 
-        '<div style="color: var(--neon-purple); font-weight: 700; margin-top: 12px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+        '<div style="color: var(--neon-purple); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 13px; letter-spacing: 0.3px;">$1</div>');
+    clean = clean.replace(/(💡\s*Cấu trúc gợi ý[^\n]*:?)/g, 
+        '<div style="color: var(--neon-cyan); font-weight: 600; margin-top: 4px; margin-bottom: 4px; font-size: 12px;">$1</div>');
 
     // Backward-compatibility with older bracketed headers
     clean = clean.replace(/\[ĐÁNH GIÁ TỔNG QUAN\]/g, '<div style="color: var(--neon-cyan); font-weight: 700; margin-top: 10px; margin-bottom: 4px; font-size: 13px;">[ ĐÁNH GIÁ TỔNG QUAN ]</div>');

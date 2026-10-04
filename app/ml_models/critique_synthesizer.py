@@ -278,11 +278,12 @@ class LocalCritiqueSynthesizer:
 
     def synthesize(self, user_input: str, gec_result: Dict, user_level: str = "Beginner", target_word: str = "") -> str:
         """
-        Tổng hợp nhận xét cá nhân hóa theo phong cách Cố Vấn Ngôn Ngữ Master G:
+        Tổng hợp nhận xét chuyên sâu theo phong cách Cố Vấn Ngôn Ngữ Master G:
         - Tự nhiên, ấm áp, thấu cảm, giàu giá trị sư phạm.
-        - Xóa bỏ hoàn toàn định dạng hộp cứng nhắc [ĐÁNH GIÁ TỔNG QUAN].
-        - Giải thích lỗi sai mạch lạc bằng tiếng Việt.
-        - Đánh giá khả năng vận dụng từ vựng mục tiêu (Target Word).
+        - Khai thác 100% bộ não gợi ý offline (Hint Service & Collocations) để phân tích mục tiêu.
+        - Chẩn đoán từ loại, cấp độ CEFR, cấu trúc ngữ pháp và nghĩa tiếng Việt.
+        - Cung cấp câu mẫu chuẩn mực ngữ cảnh kèm dịch nghĩa, triệt tiêu hoàn toàn ví dụ cứng nhắc.
+        - Gợi ý cụm từ collocations tự nhiên và hướng dẫn nâng cấp theo bậc trình độ (A1-C2).
         """
         score = float(gec_result.get('score', 0.0))
         corrected_text = gec_result.get('corrected_text', user_input).strip()
@@ -309,29 +310,65 @@ class LocalCritiqueSynthesizer:
             ""
         ]
 
-        # Kiểm tra từ vựng mục tiêu nếu có chỉ định
-        if target_word:
-            clean_tgt = target_word.strip().lower()
+        # 2. Khai thác dữ liệu gợi ý Offline từ Hint Service
+        hint_data = None
+        target_focus = (target_word or "").strip()
+
+        # Nếu không có target_word rõ ràng, tự động trích xuất từ vựng trọng tâm từ câu
+        if not target_focus:
+            raw_tokens = [w.strip('.,!?"\'()[]{}:;') for w in user_input.split()]
+            meaningful_tokens = [w for w in raw_tokens if len(w) >= 3 and w.lower() not in {
+                'this', 'that', 'they', 'them', 'have', 'with', 'from', 'what', 'when', 'where', 'there', 'here', 'will', 'some'
+            }]
+            if meaningful_tokens:
+                # Ưu tiên từ có CEFR cao nhất
+                meaningful_tokens.sort(key=lambda t: self.cefr_classifier.predict_cefr(t), reverse=True)
+                target_focus = meaningful_tokens[0]
+
+        if target_focus:
+            try:
+                from app.utils.hint_service import get_offline_vocab_hint, generate_grammar_hint
+                grammar_indicators = {'present', 'past', 'future', 'continuous', 'perfect', 'passive', 'conditional', 'inversion', 'gerund', 'clause'}
+                if any(ind in target_focus.lower() for ind in grammar_indicators):
+                    hint_data = generate_grammar_hint(target_focus)
+                else:
+                    hint_data = get_offline_vocab_hint(target_focus)
+            except Exception as e:
+                hint_data = None
+
+        # 3. Chẩn đoán Mục tiêu Cốt lõi (Target Core Mastery)
+        if hint_data and target_focus:
+            tgt_word = hint_data.get('word', target_focus)
+            tgt_meaning = hint_data.get('meaning', '')
+            tgt_pos = hint_data.get('pos', 'Từ vựng')
+            tgt_cefr = hint_data.get('cefr', 'B1')
+
+            clean_tgt = target_focus.lower()
             tokens_in_input = set(re.findall(r'\b[a-zA-Z]+\b', user_input.lower()))
             is_target_used = any(clean_tgt in tok or tok in clean_tgt for tok in tokens_in_input) or (clean_tgt in user_input.lower())
-            if is_target_used:
-                output_parts.append(f"✨ VẬN DỤNG TỪ MỤC TIÊU: Xuất sắc! Bạn đã lồng ghép và áp dụng chuẩn xác từ '{target_word}' vào câu.")
-                output_parts.append("")
-            else:
-                output_parts.append(f"⚠️ LƯU Ý MỤC TIÊU: Câu của bạn hiện chưa xuất hiện từ vựng '{target_word}'. Hãy thử lồng ghép từ này để củng cố phản xạ ghi nhớ nhé!")
-                output_parts.append("")
 
-        # 2. Chi tiết lỗi sai & phân tích sư phạm (nếu có lỗi)
+            output_parts.append("🎯 CHẨN ĐOÁN MỤC TIÊU CỐT LÕI:")
+            output_parts.append(f"• Từ/Cấu trúc: {tgt_word} [{tgt_cefr}] - {tgt_pos}")
+            if tgt_meaning and tgt_meaning != "Từ vựng mục tiêu":
+                output_parts.append(f"• Giải nghĩa: {tgt_meaning}")
+
+            if target_word:
+                if is_target_used:
+                    output_parts.append(f"✨ Vận dụng mục tiêu: Xuất sắc! Bạn đã lồng ghép chuẩn xác '{target_word}' vào câu.")
+                else:
+                    output_parts.append(f"⚠️ Lưu ý mục tiêu: Câu của bạn hiện chưa xuất hiện '{target_word}'. Hãy thử áp dụng cấu trúc đề xuất bên dưới để hoàn thành bài tập nhé!")
+            output_parts.append("")
+
+        # 4. Chi tiết lỗi sai & phân tích sư phạm
         if is_fragment:
             output_parts.append("🔍 Điểm cốt lõi cần lưu ý:")
             output_parts.append(
-                f"Nội dung bạn nhập vào ('{user_input}') hiện mới là một cụm từ rời rạc chứ chưa phải câu hoàn chỉnh. "
-                f"Trong tiếng Anh, một câu chuẩn bắt buộc phải có đầy đủ Chủ ngữ (Subject) và Động từ chính (Verb) để diễn đạt một ý nghĩ trọn vẹn."
+                f"Nội dung bạn nhập ('{user_input}') hiện mới là một cụm từ rời rạc / từ đơn lẻ, chưa cấu thành một câu hoàn chỉnh. "
+                f"Trong tiếng Anh, một câu chuẩn bắt buộc phải có đầy đủ Chủ ngữ (Subject) và Động từ vị ngữ chính (Verb) để diễn đạt một thông điệp trọn vẹn."
             )
             output_parts.append("")
         elif errors:
             output_parts.append(f"🔍 Những điểm cần lưu ý ({len(errors)} điểm):")
-            # Beginner: Ưu tiên hiển thị lỗi ngữ pháp cốt lõi, tránh làm học viên ngợp
             displayed_errors = errors
             if user_tier == 'BEGINNER':
                 grammar_core = [e for e in errors if e.get('category') != 'STYLE']
@@ -346,7 +383,7 @@ class LocalCritiqueSynthesizer:
             output_parts.append("• Cấu trúc câu chuẩn xác 100%, các thành phần câu liên kết chặt chẽ và truyền tải ý tứ rất mạch lạc.")
             output_parts.append("")
 
-        # 3. Phiên bản đề xuất chuẩn chỉnh (nếu có sự thay đổi)
+        # 5. Phiên bản đề xuất & Câu mẫu chuẩn ngữ cảnh (Showcase Example)
         if corrected_text and corrected_text.strip().lower() != user_input.strip().lower():
             output_parts.append("💡 Phiên bản chuẩn chỉnh đề xuất:")
             output_parts.append(f'"{corrected_text}"')
@@ -356,13 +393,43 @@ class LocalCritiqueSynthesizer:
             output_parts.append(f'"{user_input}"')
             output_parts.append("")
 
-        # 4. Lời khuyên nâng cấp từ Master G (Pedagogical Upgrade)
+        # Đưa ra câu ví dụ mẫu chuẩn ngữ cảnh từ Hint Service (Offline)
+        if hint_data and hint_data.get('main_sentence'):
+            main_sen = hint_data.get('main_sentence')
+            main_vi = hint_data.get('main_sentence_vi', '')
+            output_parts.append("📖 Câu mẫu chuẩn ngữ cảnh (Showcase Example):")
+            output_parts.append(f'• "{main_sen}"')
+            if main_vi:
+                output_parts.append(f'  ➔ Dịch nghĩa: {main_vi}')
+            output_parts.append("")
+
+        # 6. Kho cụm từ hay đi kèm (Collocations)
+        collocations = (hint_data.get('collocations') if hint_data else []) or []
+        if collocations:
+            output_parts.append("🔗 Cụm từ hay đi kèm (Collocations nên dùng):")
+            for c in collocations[:4]:
+                if isinstance(c, dict):
+                    c_text = c.get('collocation') or c.get('text', '')
+                    c_mean = c.get('meaning', '')
+                    disp = f"{c_text} ({c_mean})" if c_mean else c_text
+                else:
+                    disp = str(c)
+                if disp and disp != "undefined":
+                    output_parts.append(f"• {disp}")
+            output_parts.append("")
+
+        # 7. Lời khuyên nâng cấp từ Master G (Pedagogical Upgrade)
         vocab_analysis = self._analyze_vocabulary_sophistication(user_input, user_tier, is_fragment=is_fragment)
         output_parts.append("🚀 Lời khuyên phát triển từ Master G:")
+
+        formula = hint_data.get('formula') if hint_data else ""
+        if formula:
+            output_parts.append(f"💡 Cấu trúc gợi ý: {formula}")
+
         if is_fragment:
             output_parts.append(
-                "Để biến cụm từ này thành một câu trọn vẹn, hãy thử gắn thêm một hành động hoặc trạng thái cụ thể. "
-                "Ví dụ: 'The chemical reaction occurs rapidly in the laboratory.'"
+                "Để biến cụm từ thành một câu hoàn chỉnh, hãy áp dụng mô hình S + V (+ O): "
+                "bổ sung một chủ thể thực hiện hành động hoặc một trạng thái cụ thể."
             )
         elif user_tier == 'BEGINNER':
             if errors:
@@ -386,7 +453,10 @@ class LocalCritiqueSynthesizer:
                 "Sự phối hợp tinh tế giữa câu ngắn và câu ghép phức sẽ tạo nên một phong cách hành văn đầy sức thuyết phục."
             )
 
-        # Nhận xét từ vựng nếu có
+        tip = hint_data.get('tip') if hint_data else ""
+        if tip:
+            output_parts.append(f"• Mẹo: {tip}")
+
         if vocab_analysis["comment"]:
             output_parts.append(f"• Vốn từ: {vocab_analysis['comment']}")
 
