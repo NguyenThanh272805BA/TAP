@@ -278,12 +278,12 @@ class LocalCritiqueSynthesizer:
 
     def synthesize(self, user_input: str, gec_result: Dict, user_level: str = "Beginner", target_word: str = "") -> str:
         """
-        Tổng hợp nhận xét chuyên sâu theo phong cách Cố Vấn Ngôn Ngữ Master G:
-        - Tự nhiên, ấm áp, thấu cảm, giàu giá trị sư phạm.
-        - Khai thác 100% bộ não gợi ý offline (Hint Service & Collocations) để phân tích mục tiêu.
-        - Chẩn đoán từ loại, cấp độ CEFR, cấu trúc ngữ pháp và nghĩa tiếng Việt.
-        - Cung cấp câu mẫu chuẩn mực ngữ cảnh kèm dịch nghĩa, triệt tiêu hoàn toàn ví dụ cứng nhắc.
-        - Gợi ý cụm từ collocations tự nhiên và hướng dẫn nâng cấp theo bậc trình độ (A1-C2).
+        Tổng hợp nhận xét tinh gọn, tập trung chuẩn xác vào 5 phân mục cốt lõi:
+        1. Chấm điểm & Nhận xét tổng quan
+        2. Chỉ ra lỗi sai hoặc đề xuất cải tiến
+        3. Câu mẫu chuẩn ngữ cảnh
+        4. Cụm từ hay đi kèm (Collocations)
+        5. Lời khuyên phát triển
         """
         score = float(gec_result.get('score', 0.0))
         corrected_text = gec_result.get('corrected_text', user_input).strip()
@@ -292,36 +292,15 @@ class LocalCritiqueSynthesizer:
         tier = self._determine_tier(score)
         user_tier = self.normalize_user_level(user_level)
 
-        # 1. Lời mở đầu Master G đồng hành
-        level_openings = self.LEVEL_ADAPTIVE_OPENINGS.get(user_tier, self.LEVEL_ADAPTIVE_OPENINGS['BEGINNER'])
-        opening_pool = level_openings.get(tier, level_openings['average'])
-        opening = random.choice(opening_pool)
-
-        tier_title = {
-            'BEGINNER': 'Sơ Cấp',
-            'INTERMEDIATE': 'Trung Cấp',
-            'ADVANCED': 'Cao Cấp'
-        }.get(user_tier, 'Người Học')
-
-        output_parts = [
-            f"**ĐÁNH GIÁ MASTER G: {score}/10 ĐIỂM ({tier_title.upper()})**",
-            "",
-            opening,
-            ""
-        ]
-
-        # 2. Khai thác dữ liệu gợi ý Offline từ Hint Service
+        # Khai thác dữ liệu gợi ý Offline từ Hint Service
         hint_data = None
         target_focus = (target_word or "").strip()
-
-        # Nếu không có target_word rõ ràng, tự động trích xuất từ vựng trọng tâm từ câu
         if not target_focus:
             raw_tokens = [w.strip('.,!?"\'()[]{}:;') for w in user_input.split()]
             meaningful_tokens = [w for w in raw_tokens if len(w) >= 3 and w.lower() not in {
                 'this', 'that', 'they', 'them', 'have', 'with', 'from', 'what', 'when', 'where', 'there', 'here', 'will', 'some'
             }]
             if meaningful_tokens:
-                # Ưu tiên từ có CEFR cao nhất
                 meaningful_tokens.sort(key=lambda t: self.cefr_classifier.predict_cefr(t), reverse=True)
                 target_focus = meaningful_tokens[0]
 
@@ -333,77 +312,57 @@ class LocalCritiqueSynthesizer:
                     hint_data = generate_grammar_hint(target_focus)
                 else:
                     hint_data = get_offline_vocab_hint(target_focus)
-            except Exception as e:
+            except Exception:
                 hint_data = None
 
-        # 3. Chẩn đoán Mục tiêu Cốt lõi (Target Core Mastery)
-        if hint_data and target_focus:
-            tgt_word = hint_data.get('word', target_focus)
-            tgt_meaning = hint_data.get('meaning', '')
-            tgt_pos = hint_data.get('pos', 'Từ vựng')
-            tgt_cefr = hint_data.get('cefr', 'B1')
+        level_openings = self.LEVEL_ADAPTIVE_OPENINGS.get(user_tier, self.LEVEL_ADAPTIVE_OPENINGS['BEGINNER'])
+        opening_pool = level_openings.get(tier, level_openings['average'])
+        opening = random.choice(opening_pool)
 
-            clean_tgt = target_focus.lower()
-            tokens_in_input = set(re.findall(r'\b[a-zA-Z]+\b', user_input.lower()))
-            is_target_used = any(clean_tgt in tok or tok in clean_tgt for tok in tokens_in_input) or (clean_tgt in user_input.lower())
+        tier_title = {
+            'BEGINNER': 'Sơ Cấp',
+            'INTERMEDIATE': 'Trung Cấp',
+            'ADVANCED': 'Cao Cấp'
+        }.get(user_tier, 'Người Học')
 
-            output_parts.append("**CHẨN ĐOÁN MỤC TIÊU CỐT LÕI**")
-            output_parts.append(f"• Từ/Cấu trúc: {tgt_word} [{tgt_cefr}] - {tgt_pos}")
-            if tgt_meaning and tgt_meaning != "Từ vựng mục tiêu":
-                output_parts.append(f"• Giải nghĩa: {tgt_meaning}")
+        output_parts = []
 
-            if target_word:
-                if is_target_used:
-                    output_parts.append(f"**Vận dụng mục tiêu:** Xuất sắc! Bạn đã lồng ghép chuẩn xác '{target_word}' vào câu.")
-                else:
-                    output_parts.append(f"**Lưu ý mục tiêu:** Câu của bạn hiện chưa xuất hiện '{target_word}'. Hãy thử áp dụng cấu trúc đề xuất bên dưới để hoàn thành bài tập nhé!")
-            output_parts.append("")
+        # 1. CHẤM ĐIỂM
+        output_parts.append(f"**CHẤM ĐIỂM: {score}/10 ĐIỂM ({tier_title.upper()})**")
+        output_parts.append(opening)
 
-        # 4. Chi tiết lỗi sai & phân tích sư phạm
+        # 2. CHỈ RA LỖI SAI HOẶC ĐỀ XUẤT CẢI TIẾN
+        output_parts.append("**CHỈ RA LỖI SAI HOẶC ĐỀ XUẤT CẢI TIẾN**")
         if is_fragment:
-            output_parts.append("**ĐIỂM CỐT LÕI CẦN LƯU Ý**")
-            output_parts.append(
-                f"Nội dung bạn nhập ('{user_input}') hiện mới là một cụm từ rời rạc / từ đơn lẻ, chưa cấu thành một câu hoàn chỉnh. "
-                f"Trong tiếng Anh, một câu chuẩn bắt buộc phải có đầy đủ Chủ ngữ (Subject) và Động từ vị ngữ chính (Verb) để diễn đạt một thông điệp trọn vẹn."
-            )
-            output_parts.append("")
+            output_parts.append(f"• Nội dung ('{user_input}') mới là cụm từ rời rạc, thiếu động từ vị ngữ để cấu thành một câu hoàn chỉnh.")
+            if corrected_text:
+                output_parts.append(f"• Câu hoàn chỉnh đề xuất: \"{corrected_text}\"")
         elif errors:
-            output_parts.append(f"**NHỮNG ĐIỂM CẦN LƯU Ý ({len(errors)} ĐIỂM)**")
             displayed_errors = errors
             if user_tier == 'BEGINNER':
                 grammar_core = [e for e in errors if e.get('category') != 'STYLE']
                 displayed_errors = grammar_core if grammar_core else errors
 
-            for err in displayed_errors[:4]:
+            for err in displayed_errors[:3]:
                 explanation = self.explain_error_pedagogically(err, user_input)
                 output_parts.append(f"• {explanation}")
-            output_parts.append("")
+
+            if corrected_text and corrected_text.strip().lower() != user_input.strip().lower():
+                output_parts.append(f"• Câu chuẩn chỉnh đề xuất: \"{corrected_text}\"")
         else:
-            output_parts.append("**ĐIỂM SÁNG TRONG CÂU**")
-            output_parts.append("• Cấu trúc câu chuẩn xác 100%, các thành phần câu liên kết chặt chẽ và truyền tải ý tứ rất mạch lạc.")
-            output_parts.append("")
+            output_parts.append("• Cấu trúc câu chuẩn xác 100%, diễn đạt tự nhiên và mạch lạc.")
+            output_parts.append(f"• Câu hoàn thiện: \"{user_input}\"")
 
-        # 5. Phiên bản đề xuất & Câu mẫu chuẩn ngữ cảnh (Showcase Example)
-        if corrected_text and corrected_text.strip().lower() != user_input.strip().lower():
-            output_parts.append("**PHIÊN BẢN CHUẨN CHỈNH ĐỀ XUẤT**")
-            output_parts.append(f'"{corrected_text}"')
-            output_parts.append("")
-        elif not errors and not is_fragment:
-            output_parts.append("**CÂU VĂN HOÀN THIỆN**")
-            output_parts.append(f'"{user_input}"')
-            output_parts.append("")
-
-        # Đưa ra câu ví dụ mẫu chuẩn ngữ cảnh từ Hint Service (Offline)
+        # 3. CÂU MẪU
         if hint_data and hint_data.get('main_sentence'):
             main_sen = hint_data.get('main_sentence')
             main_vi = hint_data.get('main_sentence_vi', '')
-            output_parts.append("**CÂU MẪU CHUẨN NGỮ CẢNH (SHOWCASE EXAMPLE)**")
-            output_parts.append(f'• "{main_sen}"')
+            output_parts.append("**CÂU MẪU CHUẨN NGỮ CẢNH**")
+            output_parts.append(f"• \"{main_sen}\"")
             if main_vi:
-                output_parts.append(f'  ➔ Dịch nghĩa: {main_vi}')
-            output_parts.append("")
+                output_parts.append(f"  ➔ Dịch nghĩa: {main_vi}")
 
-        # 6. Kho cụm từ hay đi kèm (Collocations)
+        # 4. CỤM TỪ HAY ĐI KÈM
         collocations = (hint_data.get('collocations') if hint_data else []) or []
         if collocations:
             output_parts.append("**CỤM TỪ HAY ĐI KÈM (COLLOCATIONS)**")
@@ -416,49 +375,28 @@ class LocalCritiqueSynthesizer:
                     disp = str(c)
                 if disp and disp != "undefined":
                     output_parts.append(f"• {disp}")
-            output_parts.append("")
 
-        # 7. Lời khuyên nâng cấp từ Master G (Pedagogical Upgrade)
-        vocab_analysis = self._analyze_vocabulary_sophistication(user_input, user_tier, is_fragment=is_fragment)
-        output_parts.append("**LỜI KHUYÊN PHÁT TRIỂN TỪ MASTER G**")
-
+        # 5. LỜI KHUYÊN PHÁT TRIỂN
+        output_parts.append("**LỜI KHUYÊN PHÁT TRIỂN**")
         formula = hint_data.get('formula') if hint_data else ""
         if formula:
-            output_parts.append(f"**Cấu trúc gợi ý:** {formula}")
+            output_parts.append(f"• Cấu trúc gợi ý: {formula}")
 
         if is_fragment:
-            output_parts.append(
-                "Để biến cụm từ thành một câu hoàn chỉnh, hãy áp dụng mô hình S + V (+ O): "
-                "bổ sung một chủ thể thực hiện hành động hoặc một trạng thái cụ thể."
-            )
+            output_parts.append("• Áp dụng mô hình S + V (+ O): bổ sung chủ thể và hành động cụ thể để câu trọn vẹn ý.")
         elif user_tier == 'BEGINNER':
             if errors:
-                output_parts.append(
-                    "Hãy luôn ghi nhớ quy tắc trục xương sống: Chủ ngữ + Động từ + Tân ngữ (S-V-O). "
-                    "Khi viết, chỉ cần dừng lại 2 giây kiểm tra xem động từ đã chia đúng theo chủ ngữ chưa là câu sẽ luôn chuẩn chỉnh."
-                )
+                output_parts.append("• Ghi nhớ trục S-V-O: Dành 2 giây kiểm tra chia động từ theo chủ ngữ là câu sẽ luôn chuẩn.")
             else:
-                output_parts.append(
-                    "Bạn đã nắm rất vững cấu trúc câu nền tảng! Khi đã quen tay, hãy thử mở rộng câu bằng cách thêm từ nối (because, so, and) "
-                    "hoặc bổ sung trạng từ chỉ thời gian, nơi chốn để câu giàu thông tin hơn nhé."
-                )
+                output_parts.append("• Nắm vững cấu trúc nền tảng! Thử thêm liên từ (because, so, and) hoặc trạng từ để câu phong phú hơn.")
         elif user_tier == 'INTERMEDIATE':
-            output_parts.append(
-                "Để câu văn thêm chiều sâu, hãy thử kết hợp các liên từ phụ thuộc (although, whereas, while...) "
-                "hoặc sử dụng mệnh đề quan hệ rút gọn. Điều này sẽ giúp câu văn của bạn đạt phong cách tự nhiên chuẩn B2."
-            )
+            output_parts.append("• Kết hợp liên từ phụ thuộc (although, while...) hoặc mệnh đề quan hệ rút gọn để câu đạt chuẩn B2 tự nhiên.")
         else:  # ADVANCED
-            output_parts.append(
-                "Ở cấp độ này, hãy chú ý tăng cường các collocations học thuật và nhịp điệu của câu. "
-                "Sự phối hợp tinh tế giữa câu ngắn và câu ghép phức sẽ tạo nên một phong cách hành văn đầy sức thuyết phục."
-            )
+            output_parts.append("• Chú ý biến đổi cấu trúc linh hoạt và lồng ghép collocations học thuật để nhịp điệu thêm sắc sảo.")
 
         tip = hint_data.get('tip') if hint_data else ""
         if tip:
-            output_parts.append(f"**Mẹo ghi nhớ:** {tip}")
-
-        if vocab_analysis["comment"]:
-            output_parts.append(f"**Vốn từ:** {vocab_analysis['comment']}")
+            output_parts.append(f"• Mẹo: {tip}")
 
         return "\n".join(output_parts)
 

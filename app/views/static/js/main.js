@@ -536,60 +536,47 @@ function renderStructuredFeedback(rawText) {
     if (!rawText) return "";
     let clean = rawText;
 
-    // Header badge (ĐÁNH GIÁ MASTER G / Master G Cố Vấn) - In đậm & to hơn 20%
-    clean = clean.replace(/^(?:\*{2})?(?:🎯\s*)?(?:ĐÁNH GIÁ\s+)?(Master G\s*Cố Vấn[^\n*]*|ĐÁNH GIÁ MASTER G[^\n*]*)(?:\*{2})?/gmi, 
-        '<div style="display: inline-flex; align-items: center; background: rgba(56, 189, 248, 0.15); border: 1.5px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 1.2em; margin-bottom: 12px; letter-spacing: 0.5px;">$1</div>');
+    // Header badge (CHẤM ĐIỂM: ...) - In đậm & to hơn 20%
+    clean = clean.replace(/^(?:\*{2})?(?:🎯\s*)?(CHẤM ĐIỂM[^\n*]*|ĐÁNH GIÁ MASTER G[^\n*]*|Master G\s*Cố Vấn[^\n*]*)(?:\*{2})?/gmi, 
+        '<div style="display: inline-flex; align-items: center; background: rgba(56, 189, 248, 0.15); border: 1.5px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 1.2em; margin-bottom: 6px; letter-spacing: 0.5px;">$1</div>');
 
-    // Section headers - In đậm và to hơn 20% so với nội dung (font-size: 1.2em; font-weight: 700;)
+    // Section headers - In đậm và to hơn 20% so với nội dung (font-size: 1.2em; font-weight: 700; margin chặt chẽ)
     const makeHeader = (textMatch, color, hasBorder = false) => {
-        const borderStyle = hasBorder ? ` border-bottom: 1.5px solid ${color}40; padding-bottom: 4px;` : '';
-        return `<div style="color: ${color}; font-weight: 700; font-size: 1.2em; margin-top: 16px; margin-bottom: 8px; letter-spacing: 0.4px; line-height: 1.4;${borderStyle}">${textMatch}</div>`;
+        const borderStyle = hasBorder ? ` border-bottom: 1px solid ${color}40; padding-bottom: 2px;` : '';
+        return `<div style="color: ${color}; font-weight: 700; font-size: 1.2em; margin-top: 10px; margin-bottom: 3px; letter-spacing: 0.4px; line-height: 1.35;${borderStyle}">${textMatch}</div>`;
     };
 
-    clean = clean.replace(/^(?:\*{2})?(?:🎯\s*)?(CHẨN ĐOÁN MỤC TIÊU CỐT LÕI[^\n*]*:?)(?:\*{2})?/gmi, 
-        (_, p1) => makeHeader(p1, 'var(--neon-cyan)', true));
+    clean = clean.replace(/^(?:\*{2})?(?:🔍\s*)?(CHỈ RA LỖI SAI HOẶC ĐỀ XUẤT CẢI TIẾN[^\n*]*:?)(?:\*{2})?/gmi, 
+        (_, p1) => makeHeader(p1, 'var(--neon-pink)', true));
     clean = clean.replace(/^(?:\*{2})?(?:📖\s*)?(CÂU MẪU CHUẨN NGỮ CẢNH[^\n*]*:?)(?:\*{2})?/gmi, 
         (_, p1) => makeHeader(p1, 'var(--neon-amber)'));
     clean = clean.replace(/^(?:\*{2})?(?:🔗\s*)?(CỤM TỪ HAY ĐI KÈM[^\n*]*:?)(?:\*{2})?/gmi, 
         (_, p1) => makeHeader(p1, 'var(--neon-pink)'));
-    clean = clean.replace(/^(?:\*{2})?(?:🔍\s*)?(NHỮNG ĐIỂM CẦN LƯU Ý[^\n*]*:?)(?:\*{2})?/gmi, 
-        (_, p1) => makeHeader(p1, 'var(--neon-pink)'));
-    clean = clean.replace(/^(?:\*{2})?(?:🔍\s*)?(ĐIỂM CỐT LÕI CẦN LƯU Ý[^\n*]*:?)(?:\*{2})?/gmi, 
-        (_, p1) => makeHeader(p1, 'var(--neon-pink)'));
+    clean = clean.replace(/^(?:\*{2})?(?:🚀\s*)?(LỜI KHUYÊN PHÁT TRIỂN[^\n*]*:?)(?:\*{2})?/gmi, 
+        (_, p1) => makeHeader(p1, 'var(--neon-purple)'));
+
+    // Backward-compatibility with older/transitional headers
+    clean = clean.replace(/^(?:\*{2})?(?:🎯\s*)?(CHẨN ĐOÁN MỤC TIÊU CỐT LÕI[^\n*]*:?)(?:\*{2})?/gmi, 
+        (_, p1) => makeHeader(p1, 'var(--neon-cyan)', true));
     clean = clean.replace(/^(?:\*{2})?(?:✨\s*)?(ĐIỂM SÁNG TRONG CÂU[^\n*]*:?)(?:\*{2})?/gmi, 
         (_, p1) => makeHeader(p1, 'var(--pixel-green)'));
     clean = clean.replace(/^(?:\*{2})?(?:💡\s*)?(PHIÊN BẢN CHUẨN CHỈNH ĐỀ XUẤT[^\n*]*:?)(?:\*{2})?/gmi, 
         (_, p1) => makeHeader(p1, 'var(--neon-amber)'));
     clean = clean.replace(/^(?:\*{2})?(?:💡\s*)?(CÂU VĂN HOÀN THIỆN[^\n*]*:?)(?:\*{2})?/gmi, 
         (_, p1) => makeHeader(p1, 'var(--pixel-green)'));
-    clean = clean.replace(/^(?:\*{2})?(?:🚀\s*)?(LỜI KHUYÊN PHÁT TRIỂN TỪ MASTER G[^\n*]*:?)(?:\*{2})?/gmi, 
-        (_, p1) => makeHeader(p1, 'var(--neon-purple)'));
+    clean = clean.replace(/^(?:\*{2})?(?:🔍\s*)?(NHỮNG ĐIỂM CẦN LƯU Ý[^\n*]*:?)(?:\*{2})?/gmi, 
+        (_, p1) => makeHeader(p1, 'var(--neon-pink)'));
+    clean = clean.replace(/^(?:\*{2})?(?:🔍\s*)?(ĐIỂM CỐT LÕI CẦN LƯU Ý[^\n*]*:?)(?:\*{2})?/gmi, 
+        (_, p1) => makeHeader(p1, 'var(--neon-pink)'));
 
-    // Sub-labels (In đậm)
-    clean = clean.replace(/^(?:\*{2})?(?:✨\s*)?(Vận dụng mục tiêu:?)(?:\*{2})?/gmi, 
-        '<strong style="color: var(--pixel-green); font-size: 1.05em; display: inline-block; margin-top: 4px;">$1</strong>');
-    clean = clean.replace(/^(?:\*{2})?(?:⚠️\s*)?(Lưu ý mục tiêu:?)(?:\*{2})?/gmi, 
-        '<strong style="color: var(--neon-amber); font-size: 1.05em; display: inline-block; margin-top: 4px;">$1</strong>');
-    clean = clean.replace(/^(?:\*{2})?(?:💡\s*)?(Cấu trúc gợi ý:?)(?:\*{2})?/gmi, 
-        '<strong style="color: var(--neon-cyan); font-size: 1.05em; display: inline-block; margin-top: 4px;">$1</strong>');
-    clean = clean.replace(/^(?:\*{2})?(Mẹo ghi nhớ:?|Mẹo:?)(?:\*{2})?/gmi, 
-        '<strong style="color: #cbd5e1; font-size: 1.05em; display: inline-block; margin-top: 4px;">$1</strong>');
-    clean = clean.replace(/^(?:\*{2})?(Vốn từ:?)(?:\*{2})?/gmi, 
-        '<strong style="color: #67e8f9; font-size: 1.05em; display: inline-block; margin-top: 4px;">$1</strong>');
-
-    // Backward-compatibility with older bracketed headers
-    clean = clean.replace(/\[ĐÁNH GIÁ TỔNG QUAN\]/g, '<div style="color: var(--neon-cyan); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 1.2em;">[ ĐÁNH GIÁ TỔNG QUAN ]</div>');
-    clean = clean.replace(/\[CHI TIẾT LỖI SAI & PHÂN TÍCH\]/g, '<div style="color: var(--neon-pink); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 1.2em;">[ CHI TIẾT LỖI SAI & PHÂN TÍCH ]</div>');
-    clean = clean.replace(/\[CÂU CHUẨN ĐỀ XUẤT\]/g, '<div style="color: var(--pixel-green); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 1.2em;">[ CÂU CHUẨN ĐỀ XUẤT ]</div>');
-    clean = clean.replace(/\[GÓP Ý & HƯỚNG DẪN HOÀN THIỆN\]/g, '<div style="color: var(--neon-amber); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 1.2em;">[ GÓP Ý & HƯỚNG DẪN HOÀN THIỆN ]</div>');
-    clean = clean.replace(/\[NĂNG LỰC TỪ VỰNG & CEFR\]/g, '<div style="color: var(--neon-purple); font-weight: 700; margin-top: 14px; margin-bottom: 6px; font-size: 1.2em;">[ NĂNG LỰC TỪ VỰNG & CEFR ]</div>');
-
-    // Rich markdown formatting (Bold, Italic, Bullet points)
+    // Rich markdown formatting (Bold, Italic, Bullet points - khoảng cách gọn gàng)
     clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #67e8f9; font-weight: 600;">$1</strong>');
     clean = clean.replace(/\*([^*\n]+)\*/g, '<em style="color: #f1f5f9;">$1</em>');
-    clean = clean.replace(/^•\s+(.*)/gm, '<div style="padding-left: 10px; margin-bottom: 4px; line-height: 1.5;"><span style="color: var(--neon-cyan); margin-right: 6px;">•</span>$1</div>');
+    clean = clean.replace(/^•\s+(.*)/gm, '<div style="padding-left: 6px; margin-bottom: 2px; line-height: 1.35;"><span style="color: var(--neon-cyan); margin-right: 5px;">•</span>$1</div>');
 
-    return clean.replace(/\n/g, '<br>');
+    // Nén chặt khoảng cách giữa các dòng, không để thưa
+    clean = clean.replace(/\n{2,}/g, '\n');
+    return clean.replace(/\n/g, '<div style="height: 3px;"></div>');
 }
 
 function submitChallenge(modeParam) {
@@ -619,8 +606,8 @@ function submitChallenge(modeParam) {
         <div id="aiFeedbackLoading" class="pulse-neon" style="color: var(--neon-cyan); font-size: 14px; margin-bottom: 10px;">
             <span class="typing-effect">🤖 Master G đang chấm điểm & phân tích câu ngữ pháp...</span>
         </div>
-        <div id="aiFeedbackScore" style="display:none; font-family: var(--text-pixel); margin-bottom: 10px;"></div>
-        <div id="aiFeedbackText" style="line-height: 1.6; color: inherit; font-family: var(--text-main); font-size:16px;"></div>
+        <div id="aiFeedbackScore" style="display:none; font-family: var(--text-pixel); margin-bottom: 8px;"></div>
+        <div id="aiFeedbackText" style="line-height: 1.38; color: inherit; font-family: var(--text-main); font-size:15px;"></div>
     `;
     const loadingBox = document.getElementById('aiFeedbackLoading');
     const scoreBox = document.getElementById('aiFeedbackScore');
