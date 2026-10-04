@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}PHÒNG THI THỬ CEFR TẬP TRUNG{% endblock %}
+{% block title %}PHÒNG KIỂM TRA & THI THỬ{% endblock %}
 
 {% block content %}
 <style>
@@ -230,8 +230,8 @@
             Được phân tích tự động bằng Hệ thống AI Local Chẩn đoán Sư phạm
         </div>
 
-        <!-- Thẻ Tổng Quan Điểm Số -->
-        <div style="background: rgba(0,0,0,0.5); border: 2px solid var(--pixel-green); border-radius: 16px; padding: 25px; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; text-align: center; align-items: center;">
+        <!-- Thẻ Tổng Quan Điểm Số (4 Trục) -->
+        <div style="background: rgba(0,0,0,0.5); border: 2px solid var(--pixel-green); border-radius: 16px; padding: 25px; margin-bottom: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; text-align: center; align-items: center;">
             <div>
                 <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">ĐIỂM SỐ TỔNG</div>
                 <div id="report-final-score" style="font-size: 40px; font-weight: 800; font-family: var(--text-mono); color: var(--pixel-green);">0 / 10</div>
@@ -242,6 +242,12 @@
                 <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">BAND NĂNG LỰC ƯỚC TÍNH</div>
                 <div id="report-estimated-band" style="font-size: 40px; font-weight: 800; font-family: var(--text-mono); color: var(--neon-cyan);">A1</div>
                 <div id="report-band-title" style="font-size: 12px; color: var(--neon-cyan); font-weight: bold;">CĂN BẢN</div>
+            </div>
+
+            <div>
+                <div style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 5px;">ĐIỂM RANK HỌC THUẬT</div>
+                <div id="report-rp-reward" style="font-size: 36px; font-weight: 800; font-family: var(--text-mono); color: var(--neon-cyan);">+0 RP</div>
+                <div id="report-rp-label" style="font-size: 12px; color: #94a3b8;">ĐIỂM LEO RANK</div>
             </div>
 
             <div>
@@ -324,7 +330,7 @@
         <!-- Hành Động Sau Khi Xem Báo Cáo -->
         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
             <button class="pixel-btn" onclick="window.location.href='/test'" style="background: var(--neon-cyan); color: #000; padding: 14px 28px; font-weight: bold;">
-                TRỞ VỀ TRUNG TÂM KHẢO THÍ
+                TRỞ VỀ TRUNG TÂM THI THỬ
             </button>
             <button class="pixel-btn" onclick="location.reload()" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-pink); color: var(--neon-pink); padding: 14px 25px;">
                 LÀM LẠI ĐỀ THI NÀY
@@ -412,7 +418,7 @@
         .catch(err => {
             document.getElementById('exam-loading-screen').innerHTML = `
                 <div style="color: #ef4444; font-size: 16px; margin-bottom: 15px;">[LỖI]: ${err.message || 'Không thể kết nối máy chủ.'}</div>
-                <button class="pixel-btn" onclick="window.location.href='/test'" style="background: var(--neon-cyan); color: #000; padding: 10px 20px;">QUAY VỀ TRUNG TÂM KHẢO THÍ</button>
+                <button class="pixel-btn" onclick="window.location.href='/test'" style="background: var(--neon-cyan); color: #000; padding: 10px 20px;">QUAY VỀ TRUNG TÂM THI THỬ</button>
             `;
         });
     }
@@ -486,116 +492,189 @@
         }
     }
 
-    function renderCurrentQuestion() {
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function speakCurrentQuestionPrompt(btn) {
+        if (!currentMockExam || !currentMockExam.questions) return;
         const q = currentMockExam.questions[currentQuestionIdx];
-        document.getElementById('current-q-num').innerText = currentQuestionIdx + 1;
+        if (!q || !q.prompt) return;
+        let textToSpeak = q.prompt;
+        const matchQuote = q.prompt.match(/"([^"]+)"/);
+        if (matchQuote && matchQuote[1]) {
+            textToSpeak = matchQuote[1].replace(/\[\s*_{2,}\s*\]/g, 'blank');
+        }
+        if (window.TAPSpeech && window.TAPSpeech.speak) {
+            window.TAPSpeech.speak(textToSpeak, { element: btn });
+        }
+    }
 
-        const typeLabels = {
-            'mcq_vocab': 'TRẮC NGHIỆM TỪ VỰNG NGỮ CẢNH',
-            'multiple_choice': 'TRẮC NGHIỆM NGỮ CẢNH',
-            'error_spotting': 'NHẬN DIỆN & SỬA LỖI SAI',
-            'error_correction': 'PHÁT HIỆN & SỬA LỖI',
-            'syntax_scramble': 'LẮP RÁP CÚ PHÁP CÂU',
-            'scramble': 'SẮP XẾP CÚ PHÁP',
-            'writing_challenge': 'TỰ LUẬN VIẾT CÂU THỰC CHIẾN',
-            'writing': 'TỰ LUẬN VIẾT CÂU'
-        };
-        document.getElementById('question-type-badge').innerText = typeLabels[q.type] || q.type.toUpperCase();
+    function startShadowingCurrentQuestion() {
+        if (!currentMockExam || !currentMockExam.questions) return;
+        const q = currentMockExam.questions[currentQuestionIdx];
+        if (!q || !q.prompt) return;
+        let textToShadow = q.prompt;
+        const matchQuote = q.prompt.match(/"([^"]+)"/);
+        if (matchQuote && matchQuote[1]) {
+            textToShadow = matchQuote[1].replace(/\[\s*_{2,}\s*\]/g, '');
+        }
+        startShadowingPractice(q.id, textToShadow);
+    }
 
-        const bandVal = q.band || q.cefr_level || 'A1';
-        const cefrBadge = document.getElementById('question-cefr-badge');
-        cefrBadge.innerText = `BAND ${bandVal}`;
-        cefrBadge.className = `cefr-badge ${bandVal.toLowerCase()}`;
+    function renderCurrentQuestion() {
+        try {
+            if (!currentMockExam || !currentMockExam.questions || !currentMockExam.questions.length) return;
+            const q = currentMockExam.questions[currentQuestionIdx];
+            if (!q) return;
 
-        const cleanPromptForSpeech = (q.prompt || '').replace(/[\r\n]+/g, ' ').replace(/'/g, "\\'");
-        let contentHtml = `
-            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 20px;">
-                <div style="font-size: 16px; color: #fff; line-height: 1.6; font-weight: 500; white-space: pre-wrap; flex: 1;">${q.prompt}</div>
-                <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
-                    <button class="btn-speak-audio" onclick="TAPSpeech.speak('${cleanPromptForSpeech}', { element: this })" title="Nghe phát âm bản xứ (TTS)">
-                        <span class="speaker-icon">🔊</span>
-                        <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
-                        <span>Nghe</span>
-                    </button>
-                    <button class="tap-mic-btn" id="mic-btn-${q.id}" onclick="startShadowingPractice('${q.id}', '${cleanPromptForSpeech}')" title="Luyện đọc theo / Shadowing">
-                        <span>🎙️</span>
-                        <span id="mic-text-${q.id}">Luyện Nói</span>
-                    </button>
-                </div>
-            </div>
-            <div id="pronun-box-${q.id}" class="pronun-feedback-box" style="display: none;"></div>
-        `;
+            const card = document.getElementById('question-card');
+            if (!card) return;
 
-        if (q.type === 'writing_challenge' || q.type === 'writing') {
-            contentHtml += `
-                <div style="margin-top: 15px;">
-                    <div style="font-size: 12px; color: var(--neon-amber); margin-bottom: 10px; font-family: var(--text-mono);">
-                        💡 Yêu cầu: Viết một câu hoàn chỉnh có Chủ ngữ và Vị ngữ. AI Local Master G sẽ phân tích ngữ pháp và từ vựng ngay khi nộp bài.
-                    </div>
-                    <label style="display: block; font-size: 13px; color: var(--neon-pink); margin-bottom: 8px; font-family: var(--text-mono);">
-                        > CÂU TRẢ LỜI TỰ LUẬN CỦA BẠN:
-                    </label>
-                    <textarea id="user-answer-${q.id}" class="auth-input" style="width: 100%; min-height: 120px; padding: 14px; font-size: 15px; resize: none; margin-bottom: 0; font-family: var(--text-mono);" placeholder="Nhập câu tiếng Anh hoàn chỉnh theo yêu cầu đề bài..." oninput="onTextInputChange('${q.id}', this.value)">${savedAnswer}</textarea>
-                </div>`;
-        } else if (q.type === 'syntax_scramble' || q.type === 'scramble') {
-            // TƯƠNG TÁC GHÉP CHỮ HAI CHIỀU (BẤM LÊN / BẤM XUỐNG)
-            contentHtml += `
-                <div style="margin-top: 15px;">
-                    <div style="font-size: 12px; color: var(--neon-amber); margin-bottom: 15px; font-family: var(--text-mono); background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--neon-amber); padding: 8px 12px; border-radius: 6px;">
-                        💡 <strong>Thao tác ghép chữ:</strong> Bấm vào ô chữ bên dưới để <strong>đưa lên</strong> câu ghép. Bấm vào chữ trên câu ghép để <strong>bỏ xuống</strong> lại ngân hàng từ.
-                    </div>
+            const savedAnswer = userMockAnswers[q.id.toString()] || '';
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; font-size: 12px; color: var(--neon-cyan); margin-bottom: 8px; font-family: var(--text-mono); font-weight: bold;">
-                            > CÂU ĐÃ GHÉP CỦA BẠN (Bấm vào từ bất kỳ để gỡ xuống):
-                        </label>
-                        <div id="scramble-slots-${q.id}" class="scramble-slots-row" style="min-height: 60px; border: 2px dashed var(--neon-cyan); background: rgba(0,0,0,0.4); border-radius: 12px; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
-                    </div>
+            const numEl = document.getElementById('current-q-num');
+            if (numEl) numEl.innerText = currentQuestionIdx + 1;
 
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-size: 12px; color: #94a3b8; margin-bottom: 8px; font-family: var(--text-mono);">
-                            > NGÂN HÀNG TỪ / CỤM TỪ (Bấm vào từ để đưa lên câu):
-                        </label>
-                        <div id="scramble-pool-${q.id}" class="scramble-pool-row" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
-                    </div>
+            const typeLabels = {
+                'mcq_vocab': 'TRẮC NGHIỆM TỪ VỰNG NGỮ CẢNH',
+                'multiple_choice': 'TRẮC NGHIỆM NGỮ CẢNH',
+                'error_spotting': 'NHẬN DIỆN & SỬA LỖI SAI',
+                'error_correction': 'PHÁT HIỆN & SỬA LỖI',
+                'syntax_scramble': 'LẮP RÁP CÚ PHÁP CÂU',
+                'scramble': 'SẮP XẾP CÚ PHÁP',
+                'writing_challenge': 'TỰ LUẬN VIẾT CÂU THỰC CHIẾN',
+                'writing': 'TỰ LUẬN VIẾT CÂU'
+            };
+            const typeBadge = document.getElementById('question-type-badge');
+            if (typeBadge) typeBadge.innerText = typeLabels[q.type] || (q.type ? q.type.toUpperCase() : 'TRẮC NGHIỆM');
 
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button class="pixel-btn" onclick="clearScrambleAnswer('${q.id}')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #94a3b8; font-size: 11px; padding: 8px 16px;">
-                            ↺ XÓA HẾT ĐÁP ÁN (LÀM LẠI)
+            const bandVal = q.band || q.cefr_level || 'A1';
+            const cefrBadge = document.getElementById('question-cefr-badge');
+            if (cefrBadge) {
+                cefrBadge.innerText = `BAND ${bandVal}`;
+                cefrBadge.className = `cefr-badge ${bandVal.toLowerCase()}`;
+            }
+
+            let contentHtml = `
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 20px;">
+                    <div style="font-size: 16px; color: #fff; line-height: 1.6; font-weight: 500; white-space: pre-wrap; flex: 1;">${escapeHtml(q.prompt)}</div>
+                    <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
+                        <button class="btn-speak-audio" onclick="speakCurrentQuestionPrompt(this)" title="Nghe phát âm bản xứ (TTS)">
+                            <span class="speaker-icon">🔊</span>
+                            <span class="wave-container"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>
+                            <span>Nghe</span>
+                        </button>
+                        <button class="tap-mic-btn" id="mic-btn-${q.id}" onclick="startShadowingCurrentQuestion()" title="Luyện đọc theo / Shadowing">
+                            <span>🎙️</span>
+                            <span id="mic-text-${q.id}">Luyện Nói</span>
                         </button>
                     </div>
-                </div>`;
-        } else {
-            // MCQ, Error Spotting with Options
-            contentHtml += `<div style="display: flex; flex-direction: column; gap: 10px;">`;
-            (q.options || []).forEach((opt, oIdx) => {
-                const isSelected = (savedAnswer === opt);
-                const letter = ['A', 'B', 'C', 'D'][oIdx] || (oIdx + 1);
+                </div>
+                <div id="pronun-box-${q.id}" class="pronun-feedback-box" style="display: none;"></div>
+            `;
+
+            if (q.type === 'writing_challenge' || q.type === 'writing') {
                 contentHtml += `
-                    <button class="exam-option-btn ${isSelected ? 'selected' : ''}" onclick="selectOptionAnswer('${q.id}', '${opt.replace(/'/g, "\\'")}', this)">
-                        <span class="option-letter-box">${letter}</span>
-                        <span style="font-size: 14px; font-weight: 600; line-height: 1.4;">${opt}</span>
-                    </button>`;
-            });
-            contentHtml += `</div>`;
+                    <div style="margin-top: 15px;">
+                        <div style="font-size: 12px; color: var(--neon-amber); margin-bottom: 10px; font-family: var(--text-mono);">
+                            💡 Yêu cầu: Viết một câu hoàn chỉnh có Chủ ngữ và Vị ngữ. AI Local Master G sẽ phân tích ngữ pháp và từ vựng ngay khi nộp bài.
+                        </div>
+                        <label style="display: block; font-size: 13px; color: var(--neon-pink); margin-bottom: 8px; font-family: var(--text-mono);">
+                            > CÂU TRẢ LỜI TỰ LUẬN CỦA BẠN:
+                        </label>
+                        <textarea id="user-answer-${q.id}" class="auth-input" style="width: 100%; min-height: 120px; padding: 14px; font-size: 15px; resize: none; margin-bottom: 0; font-family: var(--text-mono);" placeholder="Nhập câu tiếng Anh hoàn chỉnh theo yêu cầu đề bài..." oninput="onTextInputChange('${q.id}', this.value)">${escapeHtml(savedAnswer)}</textarea>
+                    </div>`;
+            } else if (q.type === 'syntax_scramble' || q.type === 'scramble') {
+                // TƯƠNG TÁC GHÉP CHỮ HAI CHIỀU (BẤM LÊN / BẤM XUỐNG)
+                contentHtml += `
+                    <div style="margin-top: 15px;">
+                        <div style="font-size: 12px; color: var(--neon-amber); margin-bottom: 15px; font-family: var(--text-mono); background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--neon-amber); padding: 8px 12px; border-radius: 6px;">
+                            💡 <strong>Thao tác ghép chữ:</strong> Bấm vào ô chữ bên dưới để <strong>đưa lên</strong> câu ghép. Bấm vào chữ trên câu ghép để <strong>bỏ xuống</strong> lại ngân hàng từ.
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-size: 12px; color: var(--neon-cyan); margin-bottom: 8px; font-family: var(--text-mono); font-weight: bold;">
+                                > CÂU ĐÃ GHÉP CỦA BẠN (Bấm vào từ bất kỳ để gỡ xuống):
+                            </label>
+                            <div id="scramble-slots-${q.id}" class="scramble-slots-row" style="min-height: 60px; border: 2px dashed var(--neon-cyan); background: rgba(0,0,0,0.4); border-radius: 12px; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 12px; color: #94a3b8; margin-bottom: 8px; font-family: var(--text-mono);">
+                                > NGÂN HÀNG TỪ / CỤM TỪ (Bấm vào từ để đưa lên câu):
+                            </label>
+                            <div id="scramble-pool-${q.id}" class="scramble-pool-row" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="pixel-btn" onclick="clearScrambleAnswer('${q.id}')" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #94a3b8; font-size: 11px; padding: 8px 16px;">
+                                ↺ XÓA HẾT ĐÁP ÁN (LÀM LẠI)
+                            </button>
+                        </div>
+                    </div>`;
+            } else {
+                // MCQ, Error Spotting with Options
+                contentHtml += `<div style="display: flex; flex-direction: column; gap: 10px;">`;
+                (q.options || []).forEach((opt, oIdx) => {
+                    const isSelected = (savedAnswer === opt);
+                    const letter = ['A', 'B', 'C', 'D'][oIdx] || (oIdx + 1);
+                    contentHtml += `
+                        <button class="exam-option-btn ${isSelected ? 'selected' : ''}" onclick="selectOptionIndex(${oIdx})" data-opt-idx="${oIdx}">
+                            <span class="option-letter-box">${letter}</span>
+                            <span style="font-size: 14px; font-weight: 600; line-height: 1.4;">${escapeHtml(opt)}</span>
+                        </button>`;
+                });
+                contentHtml += `</div>`;
+            }
+
+            card.innerHTML = contentHtml;
+
+            // Nếu là dạng ghép chữ thì kích hoạt logic tiles
+            if (q.type === 'syntax_scramble' || q.type === 'scramble') {
+                setupScrambleUI(q, savedAnswer);
+            }
+
+            // Cập nhật trạng thái nút điều hướng
+            const prevBtn = document.getElementById('btn-prev-q');
+            if (prevBtn) prevBtn.disabled = (currentQuestionIdx === 0);
+            const nextBtn = document.getElementById('btn-next-q');
+            if (nextBtn) nextBtn.disabled = (currentQuestionIdx === currentMockExam.questions.length - 1);
+        } catch (err) {
+            console.error("Lỗi hiển thị câu hỏi:", err);
+            const card = document.getElementById('question-card');
+            if (card) {
+                card.innerHTML = `<div style="color: #ef4444; padding: 20px;">Lỗi hiển thị câu hỏi: ${err.message}</div>`;
+            }
         }
+    }
 
-        card.innerHTML = contentHtml;
-
-        // Nếu là dạng ghép chữ thì kích hoạt logic tiles
-        if (q.type === 'syntax_scramble' || q.type === 'scramble') {
-            setupScrambleUI(q, savedAnswer);
-        }
-
-        // Cập nhật trạng thái nút điều hướng
-        document.getElementById('btn-prev-q').disabled = (currentQuestionIdx === 0);
-        document.getElementById('btn-next-q').disabled = (currentQuestionIdx === currentMockExam.questions.length - 1);
+    function selectOptionIndex(optIdx) {
+        if (!currentMockExam || !currentMockExam.questions) return;
+        const q = currentMockExam.questions[currentQuestionIdx];
+        if (!q || !q.options || !q.options[optIdx]) return;
+        const opt = q.options[optIdx];
+        userMockAnswers[q.id.toString()] = opt;
+        document.querySelectorAll('.exam-option-btn').forEach((b, idx) => {
+            if (idx === optIdx) {
+                b.classList.add('selected');
+            } else {
+                b.classList.remove('selected');
+            }
+        });
+        renderQuestionPalette();
     }
 
     function selectOptionAnswer(qId, opt, btn) {
         userMockAnswers[qId.toString()] = opt;
         document.querySelectorAll('.exam-option-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
+        if (btn) btn.classList.add('selected');
         renderQuestionPalette();
     }
 
@@ -785,70 +864,192 @@
         });
     }
 
-    function startShadowingPractice(qId, targetText) {
+    let activeShadowingBlob = null;
+    let currentShadowingTarget = '';
+    let shadowingLiveTranscript = '';
+
+    async function startShadowingPractice(qId, targetText) {
         const micBtn = document.getElementById(`mic-btn-${qId}`);
         const micText = document.getElementById(`mic-text-${qId}`);
         const box = document.getElementById(`pronun-box-${qId}`);
         if (!micBtn || !box) return;
 
+        // Nếu đang thu âm -> dừng lại và chấm điểm
         if (isRecordingSpeech) {
-            TAPSpeech.stopListening();
-            isRecordingSpeech = false;
-            micBtn.classList.remove('is-recording');
-            if (micText) micText.innerText = 'Luyện Nói';
+            stopShadowingAndEvaluate();
             return;
         }
 
-        isRecordingSpeech = true;
-        micBtn.classList.add('is-recording');
-        if (micText) micText.innerText = 'Đang Nghe...';
+        currentShadowingTarget = targetText || '';
+        shadowingLiveTranscript = '';
 
+        try {
+            box.style.display = 'flex';
+            box.style.flexDirection = 'column';
+            box.style.gap = '10px';
+            box.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ef4444; animation: micRecordingPulse 0.8s infinite alternate; box-shadow: 0 0 10px #ef4444;"></span>
+                        <span style="color: #fff; font-size: 13px; font-weight: 500;">
+                            Đang thu âm... Hãy đọc to câu tiếng Anh trên!
+                        </span>
+                    </div>
+                    <button class="pixel-btn" onclick="stopShadowingAndEvaluate()" style="background: var(--pixel-green); color: #000; font-size: 12px; font-weight: bold; padding: 6px 16px; box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);">
+                        ✓ XONG & CHẤM ĐIỂM
+                    </button>
+                </div>
+                <div id="shadowing-live-text-${qId}" style="font-size: 13px; color: var(--neon-cyan); min-height: 18px; font-family: var(--text-mono);">
+                    🎙️ Đang lắng nghe âm thanh từ microphone...
+                </div>
+            `;
+
+            isRecordingSpeech = true;
+            micBtn.classList.add('is-recording');
+            if (micText) micText.innerText = 'Dừng & Chấm';
+
+            // 1. Khởi động Web Audio Native WAV Recorder (tương thích 100% Brave Browser, Chrome, Firefox, Edge)
+            await window.TAPSpeech.startWavRecording();
+
+            // 2. Chạy Web Speech API song song nếu trình duyệt có hỗ trợ để hiện live text preview
+            if (window.TAPSpeech && window.TAPSpeech.startListening) {
+                try {
+                    window.TAPSpeech.startListening({
+                        lang: 'en-US',
+                        continuous: true,
+                        onResult: (text) => {
+                            if (text) {
+                                shadowingLiveTranscript = text;
+                                const liveEl = document.getElementById(`shadowing-live-text-${qId}`);
+                                if (liveEl) {
+                                    liveEl.innerHTML = `Giọng nhận diện được: <strong style="color: #fff;">"${escapeHtml(text)}"</strong>`;
+                                }
+                            }
+                        },
+                        onError: (err) => {
+                            // Brave chặn ngầm Google Speech API - KHÔNG ngắt thu âm, WAV Native vẫn đang ghi âm bình thường!
+                            console.log("[Shadowing] Web Speech preview note (safe to ignore in Brave):", err);
+                        }
+                    });
+                } catch (e) {
+                    console.log("[Shadowing] Live STT bypassed:", e);
+                }
+            }
+        } catch (err) {
+            console.error("Lỗi khởi động Microphone:", err);
+            isRecordingSpeech = false;
+            micBtn.classList.remove('is-recording');
+            if (micText) micText.innerText = 'Luyện Nói';
+
+            let guideMsg = "Không thể truy cập Microphone.";
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                guideMsg = "⚠️ Trình duyệt (Brave / Chrome) đang chặn Microphone.<br>👉 <strong>Cách xử lý:</strong> Bấm vào biểu tượng <strong>Ổ khóa / Micro</strong> trên thanh URL trình duyệt (bên trái '127.0.0.1:5000') và chọn <strong>Cho phép (Allow)</strong> cho Microphone, sau đó bấm thử lại!";
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                guideMsg = "⚠️ Không tìm thấy thiết bị Microphone trên máy tính của bạn.";
+            } else {
+                guideMsg = `⚠️ Lỗi Microphone: ${err.message || 'Chưa được cấp quyền truy cập'}.`;
+            }
+
+            box.style.display = 'block';
+            box.innerHTML = `
+                <div style="color: #ef4444; font-size: 13px; line-height: 1.6; background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 10px 14px; border-radius: 6px;">
+                    ${guideMsg}
+                </div>
+            `;
+        }
+    }
+
+    async function stopShadowingAndEvaluate() {
+        if (!isRecordingSpeech) return;
+        isRecordingSpeech = false;
+
+        const q = currentMockExam ? currentMockExam.questions[currentQuestionIdx] : null;
+        const qId = q ? q.id : '';
+        const targetText = currentShadowingTarget || (q ? q.prompt : '');
+
+        const micBtn = document.getElementById(`mic-btn-${qId}`);
+        const micText = document.getElementById(`mic-text-${qId}`);
+        const box = document.getElementById(`pronun-box-${qId}`);
+        if (micBtn) micBtn.classList.remove('is-recording');
+        if (micText) micText.innerText = 'Luyện Lại';
+
+        // Dừng Web Speech API
+        if (window.TAPSpeech && window.TAPSpeech.stopListening) {
+            try { window.TAPSpeech.stopListening(); } catch (e) {}
+        }
+
+        // Dừng Native WAV
+        let audioBlob = null;
+        if (window.TAPSpeech && window.TAPSpeech.stopWavRecording) {
+            try { audioBlob = window.TAPSpeech.stopWavRecording(); } catch (e) {}
+        }
+
+        if (!box) return;
         box.style.display = 'flex';
+        box.style.flexDirection = 'column';
         box.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; animation: micRecordingPulse 1s infinite alternate;"></span>
-                <span style="color: #cbd5e1; font-size: 13px;">Hãy đọc to câu tiếng Anh trên vào micro của bạn...</span>
+            <div style="display: flex; align-items: center; gap: 10px; color: var(--neon-cyan); padding: 8px 0;">
+                <div class="pulse-neon" style="font-size: 14px;">🤖 AI Master G đang chấm điểm phát âm qua file âm thanh...</div>
             </div>
-            <button class="pixel-btn" onclick="startShadowingPractice('${qId}', '${targetText}')" style="background: rgba(255,255,255,0.1); font-size: 11px; padding: 4px 10px;">Dừng</button>
         `;
 
-        TAPSpeech.startListening({
-            onStart: () => {},
-            onResult: (transcript, isFinal) => {
+        const currentBand = (q && q.band) ? q.band : 'B1';
+
+        try {
+            let evalRes = null;
+
+            // Nếu có audio blob từ WAV, gọi API AI chấm âm thanh
+            if (audioBlob && audioBlob.size > 200) {
+                const res = await window.TAPSpeech.evaluateAudioBlob(audioBlob, targetText, currentBand);
+                if (res && res.success) {
+                    evalRes = res;
+                } else if (res && res.error) {
+                    console.warn("API audio evaluate notice:", res.error);
+                }
+            }
+
+            // Nếu API không phản hồi hoặc không có audio blob, dùng text đối soát nếu có
+            if (!evalRes) {
+                const spokenText = shadowingLiveTranscript || '';
+                if (spokenText) {
+                    evalRes = window.TAPSpeech.evaluatePronunciation(targetText, spokenText);
+                }
+            }
+
+            if (evalRes) {
+                const badgeColor = evalRes.badgeColor || '#22c55e';
+                const score = evalRes.score || 0;
+                const label = evalRes.label || (score >= 80 ? '★ Chuẩn Bản Xứ' : (score >= 65 ? '★ Rất Tốt' : '★ Cần Luyện Thêm'));
+                const advice = evalRes.advice || 'Hãy luyện tập thêm để phát âm tự nhiên hơn!';
+                const spoken = evalRes.transcript || shadowingLiveTranscript || targetText;
+
                 box.innerHTML = `
-                    <div style="flex: 1;">
-                        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Giọng đọc nhận diện được:</div>
-                        <div style="font-size: 14px; color: #fff; font-weight: bold;">"${transcript}"</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; width: 100%;">
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Giọng đọc nhận diện: <strong style="color: #fff;">"${escapeHtml(spoken)}"</strong></div>
+                            <div style="font-size: 13px; color: ${badgeColor}; font-weight: bold; margin-bottom: 6px;">${label}</div>
+                            <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4;">💡 ${escapeHtml(advice)}</div>
+                        </div>
+                        <div class="pronun-score-badge" style="color: ${badgeColor}; border-color: ${badgeColor}; font-size: 20px; padding: 6px 12px; font-weight: 800; border: 2px solid ${badgeColor}; border-radius: 8px; text-shadow: 0 0 10px ${badgeColor};">
+                            ${score}%
+                        </div>
                     </div>
                 `;
-                if (isFinal) {
-                    const evalRes = TAPSpeech.evaluatePronunciation(targetText, transcript);
-                    box.innerHTML = `
-                        <div style="flex: 1;">
-                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Bạn đã nói: <strong style="color: #fff;">"${transcript}"</strong></div>
-                            <div style="font-size: 13px; color: ${evalRes.badgeColor}; font-weight: 600;">${evalRes.label}</div>
-                        </div>
-                        <div class="pronun-score-badge" style="color: ${evalRes.badgeColor}; border-color: ${evalRes.badgeColor};">
-                            ${evalRes.score}%
-                        </div>
-                    `;
-                    isRecordingSpeech = false;
-                    micBtn.classList.remove('is-recording');
-                    if (micText) micText.innerText = 'Luyện Lại';
-                }
-            },
-            onError: (err) => {
-                isRecordingSpeech = false;
-                micBtn.classList.remove('is-recording');
-                if (micText) micText.innerText = 'Luyện Nói';
-                box.innerHTML = `<span style="color: #ef4444; font-size: 13px;">Không thể nhận diện giọng nói (Micro bị chặn hoặc không phát hiện âm thanh). Hãy kiểm tra quyền truy cập Micro.</span>`;
-            },
-            onEnd: () => {
-                isRecordingSpeech = false;
-                micBtn.classList.remove('is-recording');
-                if (micText) micText.innerText = 'Luyện Nói';
+            } else {
+                box.innerHTML = `
+                    <div style="color: var(--neon-amber); font-size: 13px; line-height: 1.5; padding: 6px 0;">
+                        ⚠️ Chưa ghi nhận được âm thanh rõ ràng từ micro. Hãy bấm <strong>Luyện Lại</strong> và nói to, rõ ràng hơn nhé!
+                    </div>
+                `;
             }
-        });
+        } catch (e) {
+            console.error("Lỗi đánh giá phát âm:", e);
+            box.innerHTML = `
+                <div style="color: #ef4444; font-size: 13px;">
+                    Lỗi kết nối khi chấm điểm: ${e.message}
+                </div>
+            `;
+        }
     }
 
     function renderExamReport(report) {
@@ -858,10 +1059,30 @@
         document.getElementById('report-final-score').innerText = `${report.final_score} / 10`;
         document.getElementById('report-percentage').innerText = `(${report.percentage}% độ chính xác)`;
         document.getElementById('report-estimated-band').innerText = report.estimated_band;
-        document.getElementById('report-band-title').innerText = report.is_practice ? `${report.band_title} (ĐẤU TẬP)` : report.band_title;
+        document.getElementById('report-band-title').innerText = report.is_practice ? `${report.band_title} (ĐẤU TẬP)` : (report.is_smurf ? `${report.band_title} (ÔN BÀI)` : report.band_title);
         document.getElementById('report-coins-reward').innerText = `+${report.coins_reward}`;
 
-        // Cập nhật Banner Thăng Cấp Band hoặc Chế độ Đấu tập
+        // Hiển thị điểm Rank (RP) co dãn theo độ dài đề thi & kiểm tra Anti-Smurf
+        const rpEl = document.getElementById('report-rp-reward');
+        const rpLabel = document.getElementById('report-rp-label');
+        if (rpEl && rpLabel) {
+            if (report.is_practice) {
+                rpEl.innerText = '0 RP';
+                rpEl.style.color = '#94a3b8';
+                rpLabel.innerText = 'LƯỢT ĐẤU TẬP (0 RP)';
+            } else if (report.is_smurf) {
+                rpEl.innerText = '+0 RP';
+                rpEl.style.color = 'var(--neon-amber)';
+                rpLabel.innerText = 'ÔN TẬP DƯỚI RANK (0 RP)';
+            } else {
+                const rpVal = report.rp_change || 0;
+                rpEl.innerText = `${rpVal >= 0 ? '+' : ''}${rpVal} RP`;
+                rpEl.style.color = rpVal >= 0 ? 'var(--neon-cyan)' : '#ef4444';
+                rpLabel.innerText = `ĐIỂM LEO RANK (Tổng: ${report.academic_rp || 500} RP)`;
+            }
+        }
+
+        // Cập nhật Banner Thăng Cấp Band, Anti-Smurf hoặc Chế độ Đấu tập
         const upgradeBanner = document.getElementById('report-band-upgrade-banner');
         if (upgradeBanner) {
             if (report.is_practice) {
@@ -870,6 +1091,12 @@
                 upgradeBanner.style.border = '2px solid var(--neon-cyan)';
                 upgradeBanner.style.color = 'var(--neon-cyan)';
                 upgradeBanner.innerHTML = `🛡️ CHẾ ĐỘ ĐẤU TẬP HOÀN TẤT: Bài thi thử không tính vào điểm Rank RP và không áp dụng hình phạt. Bạn đã có một lượt cọ xát tuyệt vời!`;
+            } else if (report.is_smurf) {
+                upgradeBanner.style.display = 'block';
+                upgradeBanner.style.background = 'rgba(245, 158, 11, 0.15)';
+                upgradeBanner.style.border = '2px solid var(--neon-amber)';
+                upgradeBanner.style.color = '#fde68a';
+                upgradeBanner.innerHTML = `🛡️ <strong>QUY CHẾ ANTI-SMURF:</strong> ${report.smurf_notice || 'Bài thi dưới Band hiện tại chỉ mang tính chất ôn tập cọ xát (0 RP). Hãy làm đề đúng Band hoặc Đề Toàn Bộ Band để tích lũy RP leo rank!'}`;
             } else if (report.band_upgraded) {
                 upgradeBanner.style.display = 'block';
                 upgradeBanner.style.background = 'rgba(52, 211, 153, 0.15)';

@@ -7,12 +7,78 @@ from app import db
 
 # BẢNG ÁNH XẠ RANK HỌC THUẬT THEO KHUNG CEFR & ĐIỂM RP (ACADEMIC ROADMAP TIERS - CHUẨN KHẮC NGHIỆT)
 ACADEMIC_TIERS = [
-    {"band": "C2", "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)", "min_milestones": 16, "min_rp": 2400, "req_vocab": 1800, "req_sentence": 1200},
-    {"band": "C1", "rank_name": "Kiến Trúc Sư C1 (Platinum)", "min_milestones": 12, "min_rp": 1700, "req_vocab": 1100, "req_sentence": 700},
-    {"band": "B2", "rank_name": "Pháp Sư B2 (Gold)", "min_milestones": 8, "min_rp": 1200, "req_vocab": 700, "req_sentence": 450},
-    {"band": "B1", "rank_name": "Chiến Binh B1 (Silver)", "min_milestones": 5, "min_rp": 800, "req_vocab": 400, "req_sentence": 250},
-    {"band": "A2", "rank_name": "Thợ Săn A2 (Bronze II)", "min_milestones": 3, "min_rp": 450, "req_vocab": 160, "req_sentence": 90},
-    {"band": "A1", "rank_name": "Tân Binh A1 (Bronze I)", "min_milestones": 0, "min_rp": 0, "req_vocab": 0, "req_sentence": 0}
+    {
+        "band": "C2",
+        "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)",
+        "min_milestones": 16,
+        "min_rp": 2400,
+        "req_vocab": 1800,
+        "req_sentence": 1200,
+        "icon": "👑",
+        "color": "#ec4899",
+        "badge_class": "c2",
+        "description": "Tinh hoa Độc Cô Cầu Bại: Cú pháp học thuật phức hợp, từ vựng triết học & học thuật đỉnh cao."
+    },
+    {
+        "band": "C1",
+        "rank_name": "Kiến Trúc Sư C1 (Platinum)",
+        "min_milestones": 12,
+        "min_rp": 1700,
+        "req_vocab": 1100,
+        "req_sentence": 700,
+        "icon": "💎",
+        "color": "#06b6d4",
+        "badge_class": "c1",
+        "description": "Cao cấp học thuật: Đảo ngữ nâng cao, Câu chẻ nhấn mạnh, Giả định thức, Chuẩn IELTS 7.5+."
+    },
+    {
+        "band": "B2",
+        "rank_name": "Pháp Sư B2 (Gold)",
+        "min_milestones": 8,
+        "min_rp": 1200,
+        "req_vocab": 700,
+        "req_sentence": 450,
+        "icon": "🥇",
+        "color": "#f59e0b",
+        "badge_class": "b2",
+        "description": "Trung cao cấp: Câu điều kiện loại 2, Quá khứ hoàn thành, Câu tường thuật gián tiếp."
+    },
+    {
+        "band": "B1",
+        "rank_name": "Chiến Binh B1 (Silver)",
+        "min_milestones": 5,
+        "min_rp": 800,
+        "req_vocab": 400,
+        "req_sentence": 250,
+        "icon": "🥈",
+        "color": "#a855f7",
+        "badge_class": "b1",
+        "description": "Trung cấp: Hiện tại hoàn thành, Câu bị động, Câu điều kiện loại 1, Mệnh đề quan hệ xác định."
+    },
+    {
+        "band": "A2",
+        "rank_name": "Thợ Săn A2 (Bronze II)",
+        "min_milestones": 3,
+        "min_rp": 450,
+        "req_vocab": 160,
+        "req_sentence": 90,
+        "icon": "🥉",
+        "color": "#38bdf8",
+        "badge_class": "a2",
+        "description": "Sơ cấp: Quá khứ đơn, Be going to, So sánh hơn & hơn nhất, Động từ khuyết thiếu cơ bản."
+    },
+    {
+        "band": "A1",
+        "rank_name": "Tân Binh A1 (Bronze I)",
+        "min_milestones": 0,
+        "min_rp": 0,
+        "req_vocab": 0,
+        "req_sentence": 0,
+        "icon": "🥉",
+        "color": "#94a3b8",
+        "badge_class": "a1",
+        "description": "Tân binh nhập môn: Ngữ pháp cơ bản S-V-O, Hiện tại đơn, Đại từ nhân xưng, Từ vựng thường nhật."
+    }
 ]
 
 SECTION_NAMES = {
@@ -22,29 +88,123 @@ SECTION_NAMES = {
     "grammar_cloze": "Vận Dụng Ngữ Pháp (Cloze)"
 }
 
+BAND_HIERARCHY = {'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6}
+
 
 def compute_user_academic_tier(user):
     """
-    Tính toán Rank học thuật của người dùng dựa trên đồng thời 2 yếu tố:
-    1. Số chặng Lộ trình đã vượt qua (Completed Milestones).
-    2. Điểm uy tín học thuật (Academic RP).
+    Tính toán Rank học thuật của người dùng dựa trên:
+    1. Điểm uy tín học thuật (Academic RP).
+    2. Đạt chuẩn thông qua chặng Lộ trình HOẶC Kỳ thi chuẩn hóa CEFR.
     Nếu RP tụt sâu dưới ngưỡng an toàn, người dùng sẽ bị GIÁNG HẠNG (Demotion)!
     """
     if not user:
         return "Tân Binh A1 (Bronze I)", "A1"
 
-    completed_milestones = UserMilestoneProgress.query.filter_by(user_id=user.id, is_completed=True).count()
+    completed_milestones = 0
+    try:
+        completed_milestones = UserMilestoneProgress.query.filter_by(user_id=user.id, is_completed=True).count()
+    except Exception:
+        pass
+
     user_rp = user.academic_rp if user.academic_rp is not None else 500
+    user_band = getattr(user, 'current_band', 'A1') or 'A1'
+    user_band_val = BAND_HIERARCHY.get(user_band.upper(), 1)
 
     target_tier = ACADEMIC_TIERS[-1]  # Mặc định A1
 
     for tier in ACADEMIC_TIERS:
-        # Điều kiện thăng/giữ hạng: Phải đủ cả mốc chặng VÀ đủ điểm RP uy tín
-        if completed_milestones >= tier["min_milestones"] and user_rp >= tier["min_rp"]:
+        tier_band_val = BAND_HIERARCHY.get(tier["band"], 1)
+        # Thăng/giữ hạng nếu đủ điểm RP VÀ (hoàn thành đủ mốc chặng HOẶC đã đạt chuẩn Band tương ứng qua kỳ thi CEFR)
+        is_qualified = (completed_milestones >= tier["min_milestones"] or user_band_val >= tier_band_val)
+        if is_qualified and user_rp >= tier["min_rp"]:
             target_tier = tier
             break
 
     return target_tier["rank_name"], target_tier["band"]
+
+
+def get_user_rank_progress(user):
+    """
+    Tính toán chi tiết tiến trình Rank học thuật của người dùng:
+    - Rank hiện tại & Band hiện tại
+    - Điểm RP hiện tại & Số chặng đã hoàn thành
+    - Mốc thăng hạng kế tiếp (Next Rank, Next RP, Next Milestones)
+    - Tỷ lệ % tiến độ thanh Progress Bar và số RP còn thiếu
+    - Danh sách 6 cấp bậc chuẩn CEFR
+    """
+    tiers_asc = list(reversed(ACADEMIC_TIERS))  # A1 -> C2
+
+    if not user:
+        return {
+            "current_rank": tiers_asc[0]["rank_name"],
+            "current_band": tiers_asc[0]["band"],
+            "current_icon": tiers_asc[0].get("icon", "🥉"),
+            "current_color": tiers_asc[0].get("color", "#94a3b8"),
+            "current_rp": 0,
+            "completed_milestones": 0,
+            "tier_min_rp": 0,
+            "next_rank": tiers_asc[1]["rank_name"],
+            "next_band": tiers_asc[1]["band"],
+            "next_icon": tiers_asc[1].get("icon", "🥉"),
+            "next_rp": tiers_asc[1]["min_rp"],
+            "next_milestones": tiers_asc[1]["min_milestones"],
+            "progress_percent": 0,
+            "rp_needed": tiers_asc[1]["min_rp"],
+            "is_max": False,
+            "all_tiers": tiers_asc
+        }
+
+    user_rp = user.academic_rp if user.academic_rp is not None else 500
+    user_band = getattr(user, 'current_band', 'A1') or 'A1'
+    user_band_val = BAND_HIERARCHY.get(user_band.upper(), 1)
+
+    try:
+        completed_milestones = UserMilestoneProgress.query.filter_by(user_id=user.id, is_completed=True).count()
+    except Exception:
+        completed_milestones = 0
+
+    current_tier_idx = 0
+    for idx, tier in enumerate(tiers_asc):
+        tier_band_val = BAND_HIERARCHY.get(tier["band"], 1)
+        is_qualified = (completed_milestones >= tier["min_milestones"] or user_band_val >= tier_band_val)
+        if user_rp >= tier["min_rp"] and is_qualified:
+            current_tier_idx = idx
+
+    current_tier = tiers_asc[current_tier_idx]
+
+    if current_tier_idx < len(tiers_asc) - 1:
+        next_tier = tiers_asc[current_tier_idx + 1]
+        rp_span = max(1, next_tier["min_rp"] - current_tier["min_rp"])
+        current_in_tier = max(0, user_rp - current_tier["min_rp"])
+        progress_pct = min(100, int((current_in_tier / rp_span) * 100))
+        rp_needed = max(0, next_tier["min_rp"] - user_rp)
+        is_max = False
+    else:
+        next_tier = current_tier
+        progress_pct = 100
+        rp_needed = 0
+        is_max = True
+
+    return {
+        "current_rank": current_tier["rank_name"],
+        "current_band": current_tier["band"],
+        "current_icon": current_tier.get("icon", "🥉"),
+        "current_color": current_tier.get("color", "#94a3b8"),
+        "current_rp": user_rp,
+        "completed_milestones": completed_milestones,
+        "tier_min_rp": current_tier["min_rp"],
+        "next_rank": next_tier["rank_name"],
+        "next_band": next_tier["band"],
+        "next_icon": next_tier.get("icon", "🥉"),
+        "next_rp": next_tier["min_rp"],
+        "next_milestones": next_tier["min_milestones"],
+        "progress_percent": progress_pct,
+        "rp_needed": rp_needed,
+        "is_max": is_max,
+        "all_tiers": tiers_asc
+    }
+
 
 
 def check_and_update_level(user_id):

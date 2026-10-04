@@ -48,9 +48,11 @@ def create_app():
     def inject_current_user():
         from flask import session
         from app.models.user import User
+        from app.utils.level_manager import get_user_rank_progress
         user_id = session.get('user_id')
         current_user = User.query.get(user_id) if user_id else None
-        return dict(current_user=current_user)
+        rank_progress = get_user_rank_progress(current_user) if current_user else None
+        return dict(current_user=current_user, rank_progress=rank_progress)
 
     # --- HỆ THỐNG ROUTE ĐIỀU HƯỚNG GIAO DIỆN CHÍNH ---
 

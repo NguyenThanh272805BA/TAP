@@ -1502,20 +1502,24 @@ def generate_mock_exam():
 
     exam_payload = exam_engine.generate_mock_exam(band=band, num_questions=num_q, user_id=user_id)
 
-    # Lưu answer_key và is_practice vào session để đối soát khi submit
+    # Lưu answer_key, band, num_q và is_practice vào session để đối soát khi submit
     is_practice = bool(data.get('is_practice', False))
     session['current_exam_id'] = exam_payload['exam_id']
     session['current_exam_answer_key'] = exam_payload['answer_key']
     session['current_exam_is_practice'] = is_practice
+    session['current_exam_band'] = band.upper()
+    session['current_exam_num_questions'] = num_q
 
     safe_response = {k: v for k, v in exam_payload.items() if k != 'answer_key'}
     safe_response['is_practice'] = is_practice
+    safe_response['exam_band'] = band.upper()
+    safe_response['num_questions'] = num_q
     return jsonify(safe_response), 200
 
 
 @game_bp.route('/exam/mock/submit', methods=['POST'])
 def submit_mock_exam():
-    """Chấm điểm bài thi thử tự động, tính subscores CEFR, áp dụng cơ chế Leo Rank khắt khe và vật phẩm hồi sinh"""
+    """Chấm điểm bài thi thử tự động, tính subscores CEFR, áp dụng cơ chế Leo Rank khắt khe, Anti-Smurf và vật phẩm hồi sinh"""
     data = request.get_json() or {}
     answers = data.get('answers', {})
     use_revive = data.get('use_revive', False)
@@ -1539,11 +1543,55 @@ def submit_mock_exam():
         coins = eval_result.get('coins_reward', 10)
         user.coins = (user.coins or 0) + coins
 
-        # CƠ CHẾ LEO RANK KHẮT KHE (STRICT COMPETITIVE RANKING)
+        exam_band = session.get('current_exam_band') or data.get('band') or 'ALL'
+        exam_band = exam_band.upper()
+        try:
+            num_q = int(session.get('current_exam_num_questions') or data.get('num_questions') or len(answer_key))
+        except Exception:
+            num_q = len(answer_key)
+
+        eval_result['exam_band'] = exam_band
+        eval_result['num_questions'] = num_q
+
+        # QUY TẮC CÔNG BẰNG ANTI-SMURF (CHỐNG CÀY ĐỀ BAND THẤP ĐỂ LEO RANK):
+        # Người học ở band cao (ví dụ B1) làm bài thi band thấp (ví dụ A1) chỉ tính là ôn tập rèn luyện (0 RP).
+        # Phải làm đề đúng Band hiện tại trở lên hoặc Đề Toàn Bộ Band ('ALL') mới được tính điểm RP leo rank!
+        user_band = (getattr(user, 'current_band', 'A1') or 'A1').upper()
+        band_ranks = {'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6}
+
+        is_smurf = False
+        smurf_notice = None
+
+        if exam_band != 'ALL':
+            exam_band_val = band_ranks.get(exam_band, 1)
+            user_band_val = band_ranks.get(user_band, 1)
+            if exam_band_val < user_band_val:
+                is_smurf = True
+                smurf_notice = (
+                    f"🛡️ [LUYỆN TẬP ÔN BÀI - KHÔNG TÍNH RP LEO RANK] Bạn đang ở Rank Band {user_band} "
+                    f"nhưng làm bài thi Band {exam_band} (dưới trình độ hiện tại). Bài thi này chỉ mang tính chất cọ xát ôn bài, "
+                    f"không được cộng hoặc trừ RP leo rank. Hãy làm đề đúng Band {user_band} trở lên hoặc Đề Toàn Bộ Band để tích lũy RP thăng hạng!"
+                )
+
+        eval_result['is_smurf'] = is_smurf
+        eval_result['smurf_notice'] = smurf_notice
+
+        # BẢNG THƯỞNG/PHẠT RP CO DÃN THEO ĐỘ DÀI ĐỀ THI:
+        # 5 câu:  Xuất sắc +15 RP | Qua môn +5 RP  | Trượt -15 RP
+        # 10 câu: Xuất sắc +35 RP | Qua môn +15 RP | Trượt -35 RP
+        # 20 câu: Xuất sắc +65 RP | Qua môn +30 RP | Trượt -50 RP
+        # 30 câu: Xuất sắc +100 RP| Qua môn +45 RP | Trượt -70 RP
+        rp_rewards_map = {
+            5:  {"bonus": 15, "pass": 5,  "fail": 15},
+            10: {"bonus": 35, "pass": 15, "fail": 35},
+            20: {"bonus": 65, "pass": 30, "fail": 50},
+            30: {"bonus": 100, "pass": 45, "fail": 70},
+        }
+        reward_config = rp_rewards_map.get(num_q, rp_rewards_map[10])
+
         final_score = eval_result.get('final_score', 0.0)
         rp_change = 0
         revive_applied = False
-        is_practice = bool(data.get('is_practice', False))
         eval_result['is_practice'] = is_practice
 
         if is_practice:
@@ -1551,10 +1599,14 @@ def submit_mock_exam():
             eval_result['revive_applied'] = False
             eval_result['academic_rp'] = user.academic_rp
             eval_result['diagnostic_advice'] = f"🛡️ [LƯỢT ĐẤU TẬP] Điểm thi: {final_score}/10 ({eval_result['percentage']}%). Bạn không bị trừ RP hay áp dụng phạt kỷ luật. Hãy xem lại các câu sai để tự tin hơn khi thi xếp hạng!"
+        elif is_smurf:
+            eval_result['rp_change'] = 0
+            eval_result['revive_applied'] = False
+            eval_result['academic_rp'] = user.academic_rp
+            eval_result['diagnostic_advice'] = f"{smurf_notice} • Tổng điểm: {final_score}/10. {eval_result['diagnostic_advice']}"
         else:
             if final_score < 5.0: # THI TRƯỢT
                 if use_revive:
-                    # Kiểm tra người dùng có Bình Hồi Sinh Thần Tốc không
                     revive_item = CosmeticItem.query.filter_by(item_effect='EXAM_REVIVE').first()
                     if revive_item:
                         uc = UserCosmetic.query.filter_by(user_id=user_id, cosmetic_id=revive_item.id).first()
@@ -1563,25 +1615,28 @@ def submit_mock_exam():
                             revive_applied = True
                             rp_change = 0
                 if not revive_applied:
-                    penalty = 35 + ((user.consecutive_fails or 0) * 10) # Trượt liên tiếp bị trừ thêm điểm
+                    base_penalty = reward_config["fail"]
+                    penalty = base_penalty + ((user.consecutive_fails or 0) * 10) # Trượt liên tiếp bị trừ thêm điểm
                     user.academic_rp = max(0, (user.academic_rp or 500) - penalty)
                     rp_change = -penalty
                     user.consecutive_fails = (user.consecutive_fails or 0) + 1
             elif final_score >= 8.0: # XUẤT SẮC
-                bonus = 35
+                bonus = reward_config["bonus"]
                 user.academic_rp = (user.academic_rp or 500) + bonus
                 rp_change = bonus
                 user.consecutive_fails = 0
             else: # QUA MÔN
-                user.academic_rp = (user.academic_rp or 500) + 15
-                rp_change = 15
+                pass_rp = reward_config["pass"]
+                user.academic_rp = (user.academic_rp or 500) + pass_rp
+                rp_change = pass_rp
                 user.consecutive_fails = 0
 
             eval_result['rp_change'] = rp_change
             eval_result['revive_applied'] = revive_applied
             eval_result['academic_rp'] = user.academic_rp
 
-        log_feedback = f"[{'ĐẤU TẬP' if is_practice else eval_result['band_title']}] Điểm: {eval_result['final_score']}/10 ({eval_result['percentage']}%). RP: {('+' if rp_change >= 0 else '')}{rp_change}. {eval_result['diagnostic_advice']}"
+        log_tag = 'ĐẤU TẬP' if is_practice else ('ÔN TẬP (DƯỚI RANK)' if is_smurf else eval_result['band_title'])
+        log_feedback = f"[{log_tag}] Đề {num_q} câu. Điểm: {eval_result['final_score']}/10 ({eval_result['percentage']}%). RP: {('+' if rp_change >= 0 else '')}{rp_change}. {eval_result['diagnostic_advice']}"
         test_log = TestLog(
             user_id=user_id,
             score=eval_result['final_score'],
@@ -1590,15 +1645,14 @@ def submit_mock_exam():
         db.session.add(test_log)
 
         achieved_band = eval_result.get('estimated_band', 'A1')
-        band_ranks = {'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6}
         current_user_band = getattr(user, 'current_band', 'A1')
 
-        # ĐIỀU KIỆN THĂNG BAND KHẮC NGHIỆT QUỐC TẾ (Chỉ áp dụng ở Ranked mode):
+        # ĐIỀU KIỆN THĂNG BAND KHẮC NGHIỆT QUỐC TẾ (Chỉ áp dụng ở Ranked mode và không smurf):
         eval_result['band_upgraded'] = False
-        if not is_practice and band_ranks.get(achieved_band, 1) > band_ranks.get(current_user_band, 1):
+        if not is_practice and not is_smurf and band_ranks.get(achieved_band, 1) > band_ranks.get(current_user_band, 1):
             subscores = eval_result.get('subscores') or {}
             weak_skills = [sec for sec, sc in subscores.items() if sc < 6.5]
-            
+
             if eval_result['final_score'] < 8.5:
                 eval_result['band_blocked_reason'] = f"Chưa thể thăng Band {achieved_band}: Điểm tổng đạt {eval_result['final_score']}/10.0 (Chuẩn thăng Band yêu cầu tối thiểu >= 8.5/10.0)."
             elif weak_skills:
@@ -1609,7 +1663,7 @@ def submit_mock_exam():
                 eval_result['new_band'] = achieved_band
 
         # CẬP NHẬT RANK HỌC THUẬT & KIỂM TRA THĂNG/GIÁNG HẠNG (PROMOTION / DEMOTION)
-        if not is_practice:
+        if not is_practice and not is_smurf:
             level_changed, new_rank = check_and_update_level(user_id)
             eval_result['level_changed'] = level_changed
             eval_result['current_level'] = user.current_level
@@ -1617,9 +1671,23 @@ def submit_mock_exam():
             eval_result['level_changed'] = False
             eval_result['current_level'] = user.current_level
 
+        # Bổ sung tiến độ rank chi tiết để client hiển thị
+        from app.utils.level_manager import get_user_rank_progress
+        eval_result['rank_progress'] = get_user_rank_progress(user)
+
         db.session.commit()
 
     return jsonify(eval_result), 200
+
+
+@game_bp.route('/user/rank_status', methods=['GET'])
+def get_user_rank_status():
+    """API lấy tiến độ Rank, RP và các mốc bậc CEFR của người dùng"""
+    user_id = session.get('user_id')
+    user = User.query.get(user_id) if user_id else None
+    from app.utils.level_manager import get_user_rank_progress
+    progress = get_user_rank_progress(user)
+    return jsonify({"status": "success", "rank_progress": progress}), 200
 
 
 @game_bp.route('/exam/mock/abandon', methods=['POST'])

@@ -42,7 +42,11 @@ class LocalExamEngine:
             ("We bought two tickets to watch an exciting [ _____ ] tonight.", "movie"),
             ("Please write your full [ _____ ] on the top of the test paper.", "name"),
             ("The chef prepared a delicious bowl of chicken [ _____ ].", "soup"),
-            ("My grandfather reads the morning [ _____ ] with a cup of coffee.", "newspaper")
+            ("My grandfather reads the morning [ _____ ] with a cup of coffee.", "newspaper"),
+            ("They decided to walk to the nearest [ _____ ] to buy some bread.", "bakery"),
+            ("She forgot to bring her [ _____ ] so she got wet in the rain.", "umbrella"),
+            ("My brother is learning how to play the [ _____ ] in music class.", "guitar"),
+            ("Please close the [ _____ ] because the cold wind is blowing.", "window")
         ],
         'A2': [
             ("Because of the heavy rain, our flight was delayed by two [ _____ ].", "hours"),
@@ -54,7 +58,12 @@ class LocalExamEngine:
             ("The doctor advised him to get plenty of [ _____ ] and drink warm water.", "rest"),
             ("Online shopping has become extremely [ _____ ] among modern youth.", "popular"),
             ("Our team celebrated our great [ _____ ] with a celebratory dinner.", "success"),
-            ("Could you please provide me with more [ _____ ] about this scholarship?", "information")
+            ("Could you please provide me with more [ _____ ] about this scholarship?", "information"),
+            ("He received a generous [ _____ ] for his excellent performance at work.", "bonus"),
+            ("Traveling to unfamiliar foreign countries helps broaden your [ _____ ].", "knowledge"),
+            ("You must pay attention to traffic [ _____ ] when crossing the street.", "signals"),
+            ("The museum exhibits a fascinating [ _____ ] of ancient pottery.", "collection"),
+            ("She made an appointment with her [ _____ ] for a routine check-up.", "dentist")
         ],
         'B1': [
             ("The government launched a new campaign to raise public [ _____ ] of clean energy.", "awareness"),
@@ -66,7 +75,12 @@ class LocalExamEngine:
             ("The research team conducted a comprehensive [ _____ ] of consumer behavior.", "survey"),
             ("Technological innovation plays a vital role in sustainable [ _____ ].", "development"),
             ("The manager praised her strong [ _____ ] to company values.", "commitment"),
-            ("Financial experts recommend maintaining a diversified investment [ _____ ].", "portfolio")
+            ("Financial experts recommend maintaining a diversified investment [ _____ ].", "portfolio"),
+            ("The committee failed to reach a [ _____ ] regarding the proposed changes.", "consensus"),
+            ("Her outstanding analytical skills contributed to the project's [ _____ ].", "triumph"),
+            ("The university offers numerous [ _____ ] for international students to conduct research.", "opportunities"),
+            ("Rapid industrialization can cause severe air and water [ _____ ].", "pollution"),
+            ("The spokesperson refused to [ _____ ] on rumors circulating in the press.", "comment")
         ],
         'B2': [
             ("The board of directors reached a unanimous [ _____ ] regarding the merger.", "decision"),
@@ -78,7 +92,11 @@ class LocalExamEngine:
             ("The novel explores the delicate balance between personal ambition and moral [ _____ ].", "integrity"),
             ("Economists warned that inflation could trigger widespread social [ _____ ].", "instability"),
             ("His insightful critique highlighted several crucial [ _____ ] in the experimental setup.", "flaws"),
-            ("The revolutionary vaccine demonstrated unprecedented [ _____ ] during clinical trials.", "efficacy")
+            ("The revolutionary vaccine demonstrated unprecedented [ _____ ] during clinical trials.", "efficacy"),
+            ("The architect designed a sustainable building that minimizes energy [ _____ ].", "consumption"),
+            ("The ongoing diplomatic dialogue helped de-escalate regional [ _____ ].", "tensions"),
+            ("Researchers established a strong statistical [ _____ ] between diet and longevity.", "correlation"),
+            ("The minister underscored the utmost [ _____ ] of preserving cultural heritage.", "importance")
         ],
         'C1': [
             ("The politician's speech was filled with ambiguous rhetoric to [ _____ ] public scrutiny.", "evade"),
@@ -90,7 +108,11 @@ class LocalExamEngine:
             ("The scholar articulated an exceptionally [ _____ ] critique of modern consumerism.", "incisive"),
             ("Unregulated speculation precipitated catastrophic [ _____ ] throughout banking systems.", "destabilization"),
             ("Her philosophical treatise exhibits remarkable intellectual [ _____ ] and rigor.", "coherence"),
-            ("The diplomatic envoy sought to [ _____ ] rising hostilities through bilateral dialogue.", "ameliorate")
+            ("The diplomatic envoy sought to [ _____ ] rising hostilities through bilateral dialogue.", "ameliorate"),
+            ("His theoretical framework offers an elegant [ _____ ] of contradictory observations.", "reconciliation"),
+            ("The author paints a vivid portrait of socio-cultural [ _____ ] in post-war society.", "fragmentation"),
+            ("The breakthrough represents a momentous [ _____ ] in theoretical astrophysics.", "milestone"),
+            ("Environmental degradation poses an existential [ _____ ] to planetary biodiversity.", "threat")
         ],
         'C2': [
             ("The philosopher articulated an [ _____ ] defense of ethical consequentialism.", "impeccable"),
@@ -100,7 +122,11 @@ class LocalExamEngine:
             ("Economic turbulence precipitated widespread [ _____ ] across speculative markets.", "destabilization"),
             ("The author's prose is characterized by its lyrical [ _____ ] and evocative cadence.", "eloquence"),
             ("He navigated the treacherous Byzantine political landscape with consummate [ _____ ].", "subtlety"),
-            ("The historical treatise debunked the long-standing [ _____ ] surrounding the empire's fall.", "fallacy")
+            ("The historical treatise debunked the long-standing [ _____ ] surrounding the empire's fall.", "fallacy"),
+            ("Her scathing monograph laid bare the intellectual [ _____ ] of modern demagogues.", "vacuity"),
+            ("The conductor led the orchestra with breathtaking virtuosity and artistic [ _____ ].", "verve"),
+            ("The treaty proved to be a transient [ _____ ] that failed to resolve underlying discord.", "palliative"),
+            ("His arcane disquisition on metaphysics baffled even the most erudite [ _____ ].", "academics")
         ]
     }
 
@@ -348,50 +374,54 @@ class LocalExamEngine:
     def generate_mock_exam(self, band: str = 'ALL', num_questions: int = 10, user_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Sinh đề thi thử chuẩn mực tự động 100% bằng AI Local.
-        - band: 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', hoặc 'ALL' (Placement Test)
-        - num_questions: Thường là 5 (Quick Mini Test) hoặc 10 (Standard Test)
+        - band: 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', hoặc 'ALL' (Toàn Bộ Các Band A1 -> C2)
+        - num_questions: 5 (Khởi động), 10 (Tiêu chuẩn), 20 (Chuyên sâu), 30 (Marathon Đại khảo thí)
         """
         band = band.upper()
         if band not in self.CEFR_LEVELS and band != 'ALL':
             band = 'ALL'
 
-        exam_title = f"ĐỀ THI THỬ CHUẨN CEFR BAND {band}" if band != 'ALL' else "ĐỀ THI ĐÁNH GIÁ NĂNG LỰC TOÀN DIỆN (PLACEMENT TEST)"
-        time_limit_minutes = max(5, int(num_questions * 1.5))
+        try:
+            num_questions = int(num_questions)
+        except (ValueError, TypeError):
+            num_questions = 10
+
+        if num_questions not in [5, 10, 20, 30]:
+            num_questions = 10
+
+        time_limits = {5: 7, 10: 15, 20: 30, 30: 45}
+        time_limit_minutes = time_limits.get(num_questions, 15)
+
+        if band == 'ALL':
+            exam_title = f"ĐỀ THI ĐÁNH GIÁ NĂNG LỰC TOÀN DIỆN (TOÀN BỘ CÁC BAND A1 → C2) • {num_questions} CÂU"
+            cefr_pool = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+            target_bands = [cefr_pool[min(len(cefr_pool) - 1, int(i * len(cefr_pool) / num_questions))] for i in range(num_questions)]
+        else:
+            exam_title = f"ĐỀ THI CHUẨN HÓA CEFR BAND {band} • {num_questions} CÂU"
+            target_bands = [band] * num_questions
+
+        used_templates = set()
+        used_errors = set()
+        used_grammars = set()
+        used_writing = set()
 
         questions = []
         q_id = 1
 
-        # Xác định dải phân bổ band cho từng câu hỏi
-        if band == 'ALL':
-            # Phân bổ tăng dần độ khó: 2 câu A1-A2, 3 câu B1, 3 câu B2, 2 câu C1-C2
-            target_bands = ['A1', 'A2', 'B1', 'B1', 'B2', 'B2', 'B2', 'C1', 'C1', 'C2'][:num_questions]
-            while len(target_bands) < num_questions:
-                target_bands.append('B1')
-        else:
-            target_bands = [band] * num_questions
-
-        # Tỷ lệ các dạng câu:
-        # 40% MCQ Vocab, 30% Error Spotting, 20% Syntax Scramble, 10% Writing
         for i, current_band in enumerate(target_bands):
-            # Chọn loại câu hỏi luân phiên
             mod = i % 10
             if mod in [0, 2, 4, 7]:
                 q_type = 'mcq_vocab'
+                q_data = self._build_mcq_vocab_question(q_id, current_band, used_templates)
             elif mod in [1, 5, 8]:
                 q_type = 'error_spotting'
+                q_data = self._build_error_spotting_question(q_id, current_band, used_errors)
             elif mod in [3, 6]:
                 q_type = 'syntax_scramble'
+                q_data = self._build_syntax_scramble_question(q_id, current_band, used_grammars)
             else:
                 q_type = 'writing_challenge'
-
-            if q_type == 'mcq_vocab':
-                q_data = self._build_mcq_vocab_question(q_id, current_band)
-            elif q_type == 'error_spotting':
-                q_data = self._build_error_spotting_question(q_id, current_band)
-            elif q_type == 'syntax_scramble':
-                q_data = self._build_syntax_scramble_question(q_id, current_band)
-            else:
-                q_data = self._build_writing_question(q_id, current_band)
+                q_data = self._build_writing_question(q_id, current_band, used_writing)
 
             questions.append(q_data)
             q_id += 1
@@ -434,13 +464,18 @@ class LocalExamEngine:
             "total_questions": len(questions),
             "time_limit_minutes": time_limit_minutes,
             "questions": client_questions,
-            "answer_key": answer_key  # Có thể lưu trong session Flask
+            "answer_key": answer_key
         }
 
-    def _build_mcq_vocab_question(self, q_id: int, band: str) -> Dict:
-        """Tạo câu hỏi trắc nghiệm từ vựng theo ngữ cảnh"""
+    def _build_mcq_vocab_question(self, q_id: int, band: str, used_templates: Optional[set] = None) -> Dict:
+        """Tạo câu hỏi trắc nghiệm từ vựng theo ngữ cảnh (tránh lặp câu)"""
         templates = self.CONTEXT_TEMPLATES.get(band, self.CONTEXT_TEMPLATES['A1'])
-        template, target_word = random.choice(templates)
+        available = [t for t in templates if (used_templates is None or t[0] not in used_templates)]
+        if not available:
+            available = templates
+        template, target_word = random.choice(available)
+        if used_templates is not None:
+            used_templates.add(template)
 
         distractors = self._get_distractors_for_word(target_word, band, 3)
         options = distractors + [target_word]
@@ -460,10 +495,15 @@ class LocalExamEngine:
             "hint": f"Từ vựng thuộc cấp độ CEFR [{band}]."
         }
 
-    def _build_error_spotting_question(self, q_id: int, band: str) -> Dict:
-        """Tạo câu hỏi nhận diện & sửa lỗi sai ngữ pháp"""
+    def _build_error_spotting_question(self, q_id: int, band: str, used_errors: Optional[set] = None) -> Dict:
+        """Tạo câu hỏi nhận diện & sửa lỗi sai ngữ pháp (tránh lặp câu)"""
         error_list = self.GRAMMAR_ERROR_BANK.get(band, self.GRAMMAR_ERROR_BANK['A1'])
-        item = random.choice(error_list)
+        available = [e for e in error_list if (used_errors is None or e["incorrect"] not in used_errors)]
+        if not available:
+            available = error_list
+        item = random.choice(available)
+        if used_errors is not None:
+            used_errors.add(item["incorrect"])
 
         options = item["options"].copy()
         correct_answer = options[0]  # Tùy chọn đầu tiên trong list là đáp án chuẩn
@@ -484,14 +524,20 @@ class LocalExamEngine:
             "hint": "Hãy chú ý đến quy tắc hòa hợp chủ vị hoặc cách chia thì/trợ động từ."
         }
 
-    def _build_syntax_scramble_question(self, q_id: int, band: str) -> Dict:
+    def _build_syntax_scramble_question(self, q_id: int, band: str, used_grammars: Optional[set] = None) -> Dict:
         """Tạo câu hỏi sắp xếp / lắp ráp cú pháp câu chuẩn"""
-        # Lấy một cấu trúc ngữ pháp tương ứng trong DB
         grammars = Grammar.query.filter_by(cefr_level=band).all()
         if not grammars:
             grammars = Grammar.query.filter_by(cefr_level='A1').all()
 
-        grammar = random.choice(grammars) if grammars else None
+        available = [g for g in grammars if (used_grammars is None or g.id not in used_grammars)]
+        if not available:
+            available = grammars
+
+        grammar = random.choice(available) if available else None
+        if grammar and used_grammars is not None:
+            used_grammars.add(grammar.id)
+
         example = grammar.example if grammar and grammar.example else "She plays tennis every Sunday."
         structure = grammar.structure if grammar else "S + V + O"
 
@@ -530,10 +576,20 @@ class LocalExamEngine:
             "hint": f"Cấu trúc ngữ pháp áp dụng: {structure}."
         }
 
-    def _build_writing_question(self, q_id: int, band: str) -> Dict:
+    def _build_writing_question(self, q_id: int, band: str, used_writing: Optional[set] = None) -> Dict:
         """Tạo câu hỏi thử thách viết câu tự luận chấm bằng AI Master G"""
         grammars = Grammar.query.filter_by(cefr_level=band).all()
-        grammar = random.choice(grammars) if grammars else None
+        if not grammars:
+            grammars = Grammar.query.filter_by(cefr_level='A1').all()
+
+        available = [g for g in grammars if (used_writing is None or g.id not in used_writing)]
+        if not available:
+            available = grammars
+
+        grammar = random.choice(available) if available else None
+        if grammar and used_writing is not None:
+            used_writing.add(grammar.id)
+
         structure = grammar.structure if grammar else "S + V + O"
 
         # Lấy 1 từ vựng tương ứng

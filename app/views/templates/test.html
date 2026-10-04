@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}TRUNG TÂM KHẢO THÍ CHUẨN HÓA CEFR{% endblock %}
+{% block title %}TRUNG TÂM KIỂM TRA & THI THỬ{% endblock %}
 
 {% block content %}
 <style>
@@ -74,6 +74,34 @@
         border: 1px solid var(--glass-border);
         color: #cbd5e1;
     }
+
+    /* Modal Styles */
+    .rank-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .rank-modal-box {
+        background: rgba(15, 23, 42, 0.98);
+        border: 2px solid var(--neon-cyan);
+        border-radius: 18px;
+        max-width: 850px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 30px;
+        box-shadow: 0 0 40px rgba(6, 182, 212, 0.3);
+        position: relative;
+    }
 </style>
 
 <!-- MAIN WRAPPER: Flex Column explicitly prevents 3-column grid bug -->
@@ -86,10 +114,10 @@
                 <span style="font-size: 28px;">🎯</span>
                 <div>
                     <div class="pixel-title" style="font-size: 22px; color: var(--neon-pink); margin: 0; letter-spacing: 1px;">
-                        TRUNG TÂM KHẢO THÍ CHUẨN HÓA CEFR
+                        TRUNG TÂM KIỂM TRA & THI THỬ
                     </div>
                     <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
-                        Cổng đánh giá năng lực ngôn ngữ toàn diện — Tự động hóa 100% bằng AI Local
+                        Cổng đánh giá năng lực ngôn ngữ toàn diện • Xếp hạng học thuật CEFR &amp; Chống cày đề rank thấp
                     </div>
                 </div>
             </div>
@@ -98,7 +126,7 @@
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div style="background: rgba(0,0,0,0.6); border: 1px solid var(--neon-amber); padding: 8px 16px; border-radius: 10px;">
                 <span style="font-size: 11px; color: var(--neon-amber); font-family: var(--text-mono);">BAND HIỆN TẠI: </span>
-                <strong id="header-user-band" style="color: #fff; font-family: var(--text-mono); font-size: 14px;">A1 TÂN BINH</strong>
+                <strong id="header-user-band" style="color: #fff; font-family: var(--text-mono); font-size: 14px;">{{ (rank_progress.current_band if rank_progress else 'A1')|upper }}</strong>
             </div>
             <a href="/arena" class="pixel-btn" style="background: rgba(34, 197, 94, 0.15); border: 1px solid var(--pixel-green); color: var(--pixel-green); font-size: 11px; padding: 10px 16px; text-decoration: none;">
                 ⚔️ ĐẤU TRƯỜNG PHẢN XẠ ▶
@@ -109,7 +137,7 @@
     <!-- SUB-NAVIGATION BAR (CHUYỂN ĐỔI GIỮA CÁC PHÂN HỆ TÁCH BIỆT) -->
     <div class="test-sub-nav">
         <a href="/test" class="test-nav-btn active">
-            <span>🏠</span> TỔNG QUAN KHẢO THÍ
+            <span>🏠</span> TỔNG QUAN THI THỬ
         </a>
         <a href="/test/placement" class="test-nav-btn">
             <span>🌟</span> ĐÁNH GIÁ ĐẦU VÀO
@@ -122,34 +150,56 @@
         </a>
     </div>
 
-    <!-- HERO CARD: TỔNG QUAN TIẾN TRÌNH & ĐỀ XUẤT LỘ TRÌNH -->
-    <div class="bento-card" style="padding: 28px; background: linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(15,23,42,0.85) 100%);">
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 25px; align-items: center;">
-            <div>
-                <div class="pixel-title" style="color: #fff; font-size: 17px; margin-bottom: 8px;">
-                    HỆ THỐNG ĐÁNH GIÁ NĂNG LỰC SƯ PHẠM THÍCH ỨNG
+    <!-- KHỐI TIẾN TRÌNH XẾP HẠNG HỌC THUẬT & THEO DÕI MỐC RANK (RANK PROGRESS DASHBOARD) -->
+    <div class="bento-card" style="padding: 24px; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 75, 0.8) 100%); border: 2px solid var(--neon-cyan); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -50px; right: -50px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(103,232,249,0.2) 0%, transparent 70%); pointer-events: none;"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <!-- Cột 1: Thông tin Rank hiện tại -->
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 58px; height: 58px; border-radius: 14px; background: rgba(103, 232, 249, 0.15); border: 2px solid var(--neon-cyan); display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 0 15px rgba(103, 232, 249, 0.3);">
+                    {{ rank_progress.current_icon if rank_progress else '🥉' }}
                 </div>
-                <div style="font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 18px;">
-                    Các bài thi được chia thành các phân hệ chuyên trách độc lập. Bạn có thể làm <strong>Bài Test Đầu Vào</strong> để xếp lớp chuẩn hóa, chọn <strong>Luyện đề chuyên sâu theo từng Band (A1-C1)</strong>, hoặc xem lại <strong>Báo cáo chẩn đoán 4 kỹ năng</strong> từ AI Master G.
-                </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <span class="stat-pill"><strong style="color: var(--neon-cyan);">4 Kỹ năng:</strong> Từ vựng • Ngữ pháp • Cú pháp • Viết câu</span>
-                    <span class="stat-pill"><strong style="color: var(--pixel-green);">Chuẩn hóa:</strong> Khung tham chiếu CEFR Châu Âu</span>
-                    <span class="stat-pill"><strong style="color: var(--neon-amber);">Thăng cấp:</strong> Điểm >= 8.0 tự động nâng Band</span>
-                    <a href="/guide#bang-trinh-do-cefr" class="stat-pill" style="text-decoration: none; border-color: rgba(6, 182, 212, 0.4);"><strong style="color: #38bdf8;">Mở khóa thi:</strong> Chuẩn tích lũy 2 tầng Master G 📖</a>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); letter-spacing: 1px;">BẬC XẾP HẠNG HIỆN TẠI</div>
+                    <div style="font-size: 18px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <span>{{ rank_progress.current_rank if rank_progress else 'Tân Binh A1 (Bronze I)' }}</span>
+                        <span class="cefr-badge {{ (rank_progress.current_band if rank_progress else 'a1')|lower }}" style="font-size: 10px;">BAND {{ rank_progress.current_band if rank_progress else 'A1' }}</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--neon-cyan); font-family: var(--text-mono); margin-top: 3px;">
+                        💎 <strong style="font-size: 14px;">{{ rank_progress.current_rp if rank_progress else 500 }}</strong> RP UY TÍN HỌC THUẬT
+                    </div>
                 </div>
             </div>
 
-            <!-- Khối Tóm Tắt Thành Tích -->
-            <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 14px; padding: 20px; text-align: center;">
-                <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono); margin-bottom: 4px;">TRÌNH ĐỘ CEFR CỦA BẠN</div>
-                <div id="hero-band-title" style="font-size: 26px; font-weight: 800; color: var(--neon-pink); font-family: var(--text-mono); margin-bottom: 4px;">
-                    BAND A1
+            <!-- Cột 2: Thanh Tiến Độ Lên Rank Tiếp Theo -->
+            <div style="flex: 1; min-width: 280px; max-width: 480px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; font-family: var(--text-mono); margin-bottom: 6px;">
+                    <span style="color: #cbd5e1;">Mục tiêu: <strong style="color: var(--neon-amber);">{{ rank_progress.next_rank if rank_progress and not rank_progress.is_max else 'ĐÃ ĐẠT ĐỈNH CAO' }}</strong></span>
+                    <span style="color: var(--neon-cyan); font-weight: bold;">{{ rank_progress.current_rp if rank_progress else 500 }} / {{ rank_progress.next_rp if rank_progress and not rank_progress.is_max else 2400 }} RP</span>
                 </div>
-                <div id="hero-exams-count" style="font-size: 12px; color: #cbd5e1; margin-bottom: 12px;">Đã hoàn thành: 0 bài thi</div>
-                <a href="/test/placement" class="pixel-btn" style="background: var(--neon-pink); font-size: 10px; padding: 8px 16px; text-decoration: none; display: inline-block;">
-                    TEST LẠI ĐẦU VÀO ▶
-                </a>
+                <div style="height: 10px; background: rgba(0,0,0,0.6); border-radius: 5px; overflow: hidden; border: 1px solid var(--glass-border); position: relative;">
+                    <div style="width: {{ rank_progress.progress_percent if rank_progress else 0 }}%; height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink)); border-radius: 5px; transition: width 0.6s ease; box-shadow: 0 0 10px var(--neon-cyan);"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 11px;">
+                    <span style="color: #94a3b8;">
+                        {% if rank_progress and rank_progress.is_max %}
+                            👑 Bạn đang ở cảnh giới cao nhất của hệ thống!
+                        {% elif rank_progress %}
+                            Còn thiếu <strong style="color: var(--neon-pink);">{{ rank_progress.rp_needed }} RP</strong> để thăng hạng
+                        {% else %}
+                            Chưa có dữ liệu
+                        {% endif %}
+                    </span>
+                    <span style="color: var(--neon-cyan); font-family: var(--text-mono); font-weight: bold;">{{ rank_progress.progress_percent if rank_progress else 0 }}%</span>
+                </div>
+            </div>
+
+            <!-- Cột 3: Nút Tra Cứu Toàn Bộ Mốc Rank -->
+            <div>
+                <button class="pixel-btn" onclick="openRankMilestonesModal()" style="background: rgba(0,0,0,0.6); border: 1.5px solid var(--neon-amber); color: var(--neon-amber); font-size: 11px; padding: 10px 18px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <span>📜</span> BẢNG 6 BẬC RANK & MỐC ĐIỂM CEFR
+                </button>
             </div>
         </div>
     </div>
@@ -157,7 +207,7 @@
     <!-- 3 PHÂN VÙNG / CỔNG VÀO KHẢO THÍ CHUYÊN BIỆT -->
     <div style="display: flex; flex-direction: column; gap: 20px;">
 
-        <!-- CỔNG 1: BÀI TEST ĐẦU VÀO (PLACEMENT TEST) -->
+        <!-- CỔNG 1: BÀI TEST ĐÁNH GIÁ TOÀN DIỆN (PLACEMENT / ALL BANDS A1 - C2) -->
         <div class="exam-portal-card">
             <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 25px; align-items: center;">
                 <div style="width: 70px; height: 70px; border-radius: 16px; background: rgba(236,72,153,0.15); border: 2px solid var(--neon-pink); display: flex; align-items: center; justify-content: center; font-size: 32px; flex-shrink: 0;">
@@ -166,27 +216,31 @@
                 <div>
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
                         <div class="pixel-title" style="color: var(--neon-pink); font-size: 17px; margin: 0;">
-                            PHÂN HỆ 1: BÀI THI ĐÁNH GIÁ NĂNG LỰC ĐẦU VÀO (PLACEMENT TEST)
+                            PHÂN HỆ 1: ĐỀ THI ĐÁNH GIÁ NĂNG LỰC TOÀN DIỆN (A1 → C2)
                         </div>
                         <span style="font-size: 10px; font-family: var(--text-mono); color: var(--neon-pink); background: rgba(236,72,153,0.2); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--neon-pink);">
-                            TOÀN DIỆN A1 - C2
+                            TÍCH LŨY MAX RP LEO RANK
                         </span>
                     </div>
-                    <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 10px;">
-                        Bài thi phân cấp thích ứng từ A1 đến C2 để xác định chuẩn xác vị trí xuất phát, đo lường điểm mạnh/yếu trên 4 trục năng lực và đề xuất lộ trình học tập cá nhân hóa.
+                    <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">
+                        Đề thi tổng hợp trải rộng toàn bộ 6 bậc CEFR từ A1 đến C2. Không bị giới hạn Anti-Smurf — mọi cấp bậc người dùng đều được tính trọn vẹn điểm RP leo rank khi làm đề này!
                     </div>
-                    <div style="display: flex; gap: 10px; font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">
-                        <span>⏱ Thời lượng: 7 - 15 phút</span>
-                        <span>•</span>
-                        <span>📋 Dạng bài: Trắc nghiệm, Sửa lỗi, Cú pháp, Tự luận</span>
+                    
+                    <!-- Lựa chọn độ dài đề thi nhanh -->
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">VÀO THI NHANH:</span>
+                        <a href="/test/room?band=ALL&num=5" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">⚡ 5 câu (7p) [+15 RP]</a>
+                        <a href="/test/room?band=ALL&num=10" class="pixel-btn" style="background: rgba(236,72,153,0.2); border: 1px solid var(--neon-pink); color: #fff; padding: 6px 12px; font-size: 11px; text-decoration: none;">📋 10 câu (15p) [+35 RP]</a>
+                        <a href="/test/room?band=ALL&num=20" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">🔥 20 câu (30p) [+65 RP]</a>
+                        <a href="/test/room?band=ALL&num=30" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">🏆 30 câu (45p) [+100 RP]</a>
                     </div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
-                    <a href="/test/placement" class="pixel-btn" style="background: var(--neon-pink); padding: 14px 24px; font-size: 12px; text-decoration: none; text-align: center;">
-                        XEM CHI TIẾT & VÀO THI ▶
+                    <a href="/test/room?band=ALL&num=10" class="pixel-btn" style="background: var(--neon-pink); padding: 14px 24px; font-size: 12px; text-decoration: none; text-align: center; font-weight: bold;">
+                        VÀO THI NGAY ▶
                     </a>
-                    <a href="/test/room?band=ALL&num=10" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--neon-pink); color: var(--neon-pink); padding: 10px 20px; font-size: 11px; text-decoration: none; text-align: center;">
-                        ⚡ VÀO THI NHANH 10 CÂU
+                    <a href="/test/placement" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #94a3b8; padding: 10px 20px; font-size: 11px; text-decoration: none; text-align: center;">
+                        XEM HƯỚNG DẪN ĐẦU VÀO
                     </a>
                 </div>
             </div>
@@ -201,21 +255,22 @@
                 <div>
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
                         <div class="pixel-title" style="color: var(--neon-cyan); font-size: 17px; margin: 0;">
-                            PHÂN HỆ 2: NGÂN HÀNG ĐỀ THI CHUẨN HÓA THEO TỪNG BAND
+                            PHÂN HỆ 2: NGÂN HÀNG ĐỀ THI CHUẨN HÓA THEO TỪNG BAND (A1 → C2)
                         </div>
                         <span style="font-size: 10px; font-family: var(--text-mono); color: var(--neon-cyan); background: rgba(103,232,249,0.2); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--neon-cyan);">
-                            5 CẤP ĐỘ CHUYÊN SÂU
+                            6 CẤP ĐỘ CEFR
                         </span>
                     </div>
                     <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">
-                        Lựa chọn các gói đề thi chuyên sâu theo mục tiêu cụ thể: A1 (Tân binh), A2 (Sơ cấp), B1 (Trung cấp), B2 (Trung cao cấp), C1 (Cao cấp). Chuẩn thăng Band khắc nghiệt: Đạt &gt;= 8.5 điểm &amp; Mọi kỹ năng &gt;= 6.5 để tự động thăng cấp Band trên toàn hệ thống.
+                        Luyện đề chuyên sâu theo Band: A1, A2, B1, B2, C1, C2. <em>Lưu ý quy chế Anti-Smurf:</em> Bạn phải làm bài thi đúng Band hiện tại trở lên mới được cộng điểm RP leo rank; làm bài thi dưới Band chỉ tính là ôn tập cọ xát.
                     </div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <span class="cefr-badge a1" style="padding: 4px 10px; font-size: 11px;">A1 TÂN BINH</span>
                         <span class="cefr-badge a2" style="padding: 4px 10px; font-size: 11px;">A2 SƠ CẤP</span>
                         <span class="cefr-badge b1" style="padding: 4px 10px; font-size: 11px;">B1 TRUNG CẤP</span>
-                        <span class="cefr-badge b2" style="padding: 4px 10px; font-size: 11px;">B2 CAO CẤP</span>
-                        <span class="cefr-badge c1" style="padding: 4px 10px; font-size: 11px;">C1 HỌC THUẬT</span>
+                        <span class="cefr-badge b2" style="padding: 4px 10px; font-size: 11px;">B2 TRUNG CAO</span>
+                        <span class="cefr-badge c1" style="padding: 4px 10px; font-size: 11px;">C1 CAO CẤP</span>
+                        <span class="cefr-badge c2" style="padding: 4px 10px; font-size: 11px;">C2 TINH HOA</span>
                     </div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
@@ -259,6 +314,83 @@
     </div>
 
 </div>
+
+<!-- MODAL: BẢNG 6 BẬC RANK & MỐC ĐIỂM CHUẨN HỌC THUẬT CEFR -->
+<div id="rank-milestones-modal" class="rank-modal-overlay" onclick="closeRankMilestonesModal(event)">
+    <div class="rank-modal-box" onclick="event.stopPropagation()">
+        <!-- Header Modal -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--glass-border); padding-bottom: 18px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 26px;">📜</span>
+                <div>
+                    <div class="pixel-title" style="color: var(--neon-cyan); font-size: 18px; margin: 0;">
+                        BẢNG 6 BẬC RANK & MỐC ĐIỂM CHUẨN CEFR
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 3px;">
+                        Quy chế Leo Rank chuẩn mực quốc tế &amp; Chính sách bảo đảm công bằng (Anti-Smurf)
+                    </div>
+                </div>
+            </div>
+            <button onclick="closeRankMilestonesModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; padding: 4px 10px;" title="Đóng">✕</button>
+        </div>
+
+        <!-- Danh Sách 6 Bậc Rank -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+            {% if rank_progress and rank_progress.all_tiers %}
+                {% for tier in rank_progress.all_tiers|reverse %}
+                {% set is_current = (rank_progress.current_band == tier.band) %}
+                <div style="background: {{ 'rgba(103, 232, 249, 0.15)' if is_current else 'rgba(0, 0, 0, 0.4)' }}; border: 2px solid {{ 'var(--neon-cyan)' if is_current else 'var(--glass-border)' }}; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; position: relative;">
+                    
+                    {% if is_current %}
+                    <span style="position: absolute; top: -10px; right: 15px; background: var(--neon-cyan); color: #000; font-size: 9px; font-weight: bold; font-family: var(--text-mono); padding: 2px 8px; border-radius: 4px; box-shadow: 0 0 10px var(--neon-cyan);">
+                        BẬC HIỆN TẠI CỦA BẠN
+                    </span>
+                    {% endif %}
+
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <span style="font-size: 26px;">{{ tier.icon }}</span>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <strong style="color: {{ tier.color }}; font-size: 15px;">{{ tier.rank_name }}</strong>
+                                <span class="cefr-badge {{ tier.badge_class }}" style="font-size: 10px;">BAND {{ tier.band }}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px; max-width: 520px; line-height: 1.4;">
+                                {{ tier.description }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">MỐC ĐIỂM YÊU CẦU</div>
+                        <div style="color: var(--neon-amber); font-weight: bold; font-size: 15px; font-family: var(--text-mono); margin-top: 2px;">
+                            ≥ {{ tier.min_rp }} RP
+                        </div>
+                        <div style="font-size: 11px; color: #64748b;">Mốc lộ trình: {{ tier.min_milestones }} chặng</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Khối Giải Thích Quy Chế Công Bằng Anti-Smurf -->
+        <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid var(--neon-amber); padding: 15px 18px; border-radius: 8px; font-size: 13px; line-height: 1.6; color: #fde68a;">
+            <strong style="color: #fff; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                <span>🛡️</span> QUY CHẾ KHẢO THÍ LEO RANK &amp; CHỐNG CÀY ĐỀ RANK THẤP (ANTI-SMURF):
+            </strong>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li><strong>Đề thi hợp lệ leo rank:</strong> Người học phải làm đề thi <strong>đúng Band hiện tại trở lên</strong> hoặc làm đề <strong>Toàn Bộ Các Band (A1 → C2)</strong> để được cộng điểm RP thăng hạng.</li>
+                <li><strong>Đề thi dưới Band:</strong> Người học ở Rank cao (ví dụ B1) làm bài thi ở Band thấp hơn (ví dụ A1, A2) được coi là <strong>ôn tập rèn luyện cho vui</strong>. Lượt thi này <strong>không được cộng hoặc trừ điểm RP</strong>.</li>
+                <li><strong>Cơ chế co dãn RP:</strong> Đề thi càng dài (20 câu, 30 câu) càng mang lại nhiều điểm RP (lên đến +100 RP/đề) và yêu cầu tính kiên trì, kỷ luật học thuật cao.</li>
+            </ul>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+            <button class="pixel-btn" onclick="closeRankMilestonesModal()" style="background: var(--neon-cyan); color: #000; font-weight: bold; padding: 10px 24px;">
+                ĐÃ HIỂU QUY CHẾ ✓
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -267,21 +399,17 @@
         loadUserExamStats();
     });
 
-    function loadUserExamStats() {
-        // Tải thông tin user
-        fetch('/api/auth/user/me')
-            .then(res => res.ok ? res.json() : null)
-            .then(data => {
-                if (data) {
-                    const band = data.current_band || 'A1';
-                    const bandEl = document.getElementById('header-user-band');
-                    const heroBandEl = document.getElementById('hero-band-title');
-                    if (bandEl) bandEl.innerText = `BAND ${band}`;
-                    if (heroBandEl) heroBandEl.innerText = `BAND ${band}`;
-                }
-            })
-            .catch(() => {});
+    function openRankMilestonesModal() {
+        const m = document.getElementById('rank-milestones-modal');
+        if (m) m.style.display = 'flex';
+    }
 
+    function closeRankMilestonesModal(e) {
+        const m = document.getElementById('rank-milestones-modal');
+        if (m) m.style.display = 'none';
+    }
+
+    function loadUserExamStats() {
         // Tải tóm tắt lịch sử thi
         fetch('/api/game/exam/history')
             .then(res => res.ok ? res.json() : null)
@@ -297,7 +425,7 @@
                         const latest = list[0];
                         recentEl.innerHTML = `Bài thi gần nhất: <strong style="color: var(--neon-cyan);">#${latest.id}</strong> — Điểm: <strong style="color: var(--pixel-green);">${latest.score}/10</strong> (${latest.created_at || 'Vừa xong'})`;
                     } else {
-                        recentEl.innerText = 'Bạn chưa làm bài thi nào. Hãy bắt đầu với bài Test đầu vào!';
+                        recentEl.innerText = 'Bạn chưa làm bài thi nào. Hãy bắt đầu với bài Test đầu vào hoặc chọn Đề theo Band!';
                     }
                 }
             })
