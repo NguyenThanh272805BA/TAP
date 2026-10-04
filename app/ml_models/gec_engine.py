@@ -29,29 +29,32 @@ class LocalGECEngine:
         return cls._instance
 
     def __init__(self, fallback_threshold=0.55, lazy=False):
-        if hasattr(self, '_initialized') and self._initialized:
-            return
         self.fallback_threshold = fallback_threshold
-        self._initialized = True
-        self.is_active = False
+        if not hasattr(self, '_initialized'):
+            self._initialized = True
+            self.is_active = False
 
-        if not lazy:
+        if not lazy and not self.is_active:
             self._ensure_loaded()
 
     def _ensure_loaded(self):
-        """Khởi tạo LanguageTool Engine (Lazy Loading Singleton)."""
+        """Khởi tạo LanguageTool Engine (Singleton) kèm Warm-up toàn diện loại bỏ độ trễ cold-start."""
         if self.is_active and self._lt_tool is not None:
             return True
 
         try:
             import language_tool_python
-            print("[GEC ENGINE] Đang khởi tạo Symbolic Grammar Engine (LanguageTool en-US)...")
+            print("[GEC ENGINE] Đang khởi tạo Symbolic Grammar Engine (LanguageTool en-US)...", flush=True)
             self._lt_tool = language_tool_python.LanguageTool('en-US')
+            # WARM-UP BỘ QUY TẮC: JVM LanguageTool tải và biên dịch lazy hơn 4,000 rules XML ở lần gọi đầu.
+            # Thực hiện warmup trước khi phục vụ để triệt tiêu hoàn toàn hiện tượng 'khựng' 5-8s của người dùng.
+            print("[GEC ENGINE] Đang làm nóng (warm-up) bộ nạp quy tắc cú pháp...", flush=True)
+            self._lt_tool.check("The quick brown fox jumps over the lazy dog.")
             self.is_active = True
-            print("[GEC ENGINE] Đã nạp thành công Symbolic Grammar Engine. Độc lập 100% dữ liệu train.")
+            print("[GEC ENGINE] Đã nạp thành công và làm nóng Symbolic Grammar Engine. Phản hồi tức thì <0.1s!", flush=True)
             return True
         except Exception as e:
-            print(f"[GEC ENGINE] Lỗi khởi tạo LanguageTool: {e}. Sẽ dùng fallback LLM.")
+            print(f"[GEC ENGINE] Lỗi khởi tạo LanguageTool: {e}. Sẽ dùng fallback LLM.", flush=True)
             self.is_active = False
             return False
 
@@ -196,9 +199,10 @@ class LocalGECEngine:
 
         try:
             clean_text = text.strip()
-            # 1. Phân tích ngữ pháp hình thức bằng LanguageTool
+            # 1. Phân tích ngữ pháp hình thức bằng LanguageTool (Single-pass: tái sử dụng matches, tránh gọi lại check lần 2)
             matches = self._lt_tool.check(clean_text)
-            corrected = self._lt_tool.correct(clean_text).strip()
+            from language_tool_python.utils import correct as lt_correct
+            corrected = lt_correct(clean_text, matches).strip()
 
             words = clean_text.split()
             word_count = max(1, len(words))

@@ -303,7 +303,7 @@ def evaluate():
                     chunk = line + "\n"
                     full_ai_response += chunk
                     yield f"data: {json.dumps({'type': 'chunk', 'text': chunk})}\n\n"
-                    time.sleep(0.012)
+                    time.sleep(0.005)
 
                 yield f"data: {json.dumps({'type': 'done', 'engine': 'local_autonomous_brain'})}\n\n"
 
