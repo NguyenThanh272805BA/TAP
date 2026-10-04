@@ -287,9 +287,17 @@ def render_hint_html(data: Dict) -> str:
     # Render cụm từ collocations
     colloc_html = ""
     for c in collocations:
+        if isinstance(c, dict):
+            c_text = c.get("collocation", "") or c.get("text", "")
+            c_mean = c.get("meaning", "")
+            disp = f"{c_text} ({c_mean})" if c_mean else c_text
+        else:
+            disp = str(c)
+        if not disp or disp == "undefined":
+            continue
         colloc_html += f"""
         <span style="display: inline-block; background: rgba(236, 72, 153, 0.15); border: 1px solid var(--neon-pink); color: #f472b6; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-family: var(--text-mono); font-weight: 600;">
-            🔗 {c}
+            🔗 {disp}
         </span>
         """
 

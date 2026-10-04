@@ -1309,13 +1309,30 @@
             // Render collocations chips
             let collocationsHtml = '';
             if (g.collocations && g.collocations.length > 0) {
-                const colls = g.collocations.map(c => `
-                    <span style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); color: #e2e8f0; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;" title="${c.meaning}">
-                        <strong>${c.collocation}</strong>
-                        <span style="color: var(--neon-amber); font-size: 10px;">(${c.meaning})</span>
+                const colls = g.collocations.map(c => {
+                    let text = '';
+                    let meaning = '';
+                    if (typeof c === 'string') {
+                        text = c;
+                    } else if (c && typeof c === 'object') {
+                        text = c.collocation || c.text || c.phrase || '';
+                        meaning = c.meaning || '';
+                    }
+                    if (!text || text === 'undefined') return '';
+                    const meaningText = (meaning && meaning !== 'undefined') ? meaning : '';
+                    const meaningBadge = meaningText ? `<span style="color: var(--neon-amber); font-size: 10px; margin-left: 3px;">(${meaningText})</span>` : '';
+                    const titleAttr = meaningText ? `title="${meaningText}"` : `title="${text}"`;
+
+                    return `
+                    <span style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); color: #e2e8f0; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;" ${titleAttr}>
+                        <strong>${text}</strong>
+                        ${meaningBadge}
                     </span>
-                `).join('');
-                collocationsHtml = `
+                    `;
+                }).filter(Boolean).join('');
+
+                if (colls.trim()) {
+                    collocationsHtml = `
                     <div style="margin-top: 10px; margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 8px; border: 1px dashed rgba(6, 182, 212, 0.2);">
                         <div style="font-size: 10.5px; color: var(--neon-cyan); font-family: var(--text-mono); margin-bottom: 6px; font-weight: bold;">
                             🔗 CỤM TỪ ĐI KÈM (COLLOCATIONS):
@@ -1324,6 +1341,7 @@
                             ${colls}
                         </div>
                     </div>`;
+                }
             }
 
             html += `
