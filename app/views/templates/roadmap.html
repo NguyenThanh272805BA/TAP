@@ -1478,7 +1478,10 @@
         // Master G Pedagogical Critique Box
         const critiqueEl = document.getElementById('report-master-g-critique-text');
         if (critiqueEl) {
-            critiqueEl.innerText = result.master_g_critique || 'Master G đã ghi nhận kết quả bài thi của bạn. Hãy kiên trì rèn luyện để bứt phá.';
+            const rawCritique = result.master_g_critique || 'Master G đã ghi nhận kết quả bài thi của bạn. Hãy kiên trì rèn luyện để bứt phá.';
+            critiqueEl.innerHTML = typeof renderStructuredFeedback === 'function' 
+                ? renderStructuredFeedback(rawCritique) 
+                : rawCritique.replace(/\n/g, '<br>');
         }
 
         // Scorecard

@@ -304,7 +304,7 @@ class LocalCritiqueSynthesizer:
         }.get(user_tier, 'Người Học')
 
         output_parts = [
-            f"🎯 Master G Cố Vấn | Đánh giá: {score}/10 Điểm ({tier_title})",
+            f"**ĐÁNH GIÁ MASTER G: {score}/10 ĐIỂM ({tier_title.upper()})**",
             "",
             opening,
             ""
@@ -347,28 +347,28 @@ class LocalCritiqueSynthesizer:
             tokens_in_input = set(re.findall(r'\b[a-zA-Z]+\b', user_input.lower()))
             is_target_used = any(clean_tgt in tok or tok in clean_tgt for tok in tokens_in_input) or (clean_tgt in user_input.lower())
 
-            output_parts.append("🎯 CHẨN ĐOÁN MỤC TIÊU CỐT LÕI:")
+            output_parts.append("**CHẨN ĐOÁN MỤC TIÊU CỐT LÕI**")
             output_parts.append(f"• Từ/Cấu trúc: {tgt_word} [{tgt_cefr}] - {tgt_pos}")
             if tgt_meaning and tgt_meaning != "Từ vựng mục tiêu":
                 output_parts.append(f"• Giải nghĩa: {tgt_meaning}")
 
             if target_word:
                 if is_target_used:
-                    output_parts.append(f"✨ Vận dụng mục tiêu: Xuất sắc! Bạn đã lồng ghép chuẩn xác '{target_word}' vào câu.")
+                    output_parts.append(f"**Vận dụng mục tiêu:** Xuất sắc! Bạn đã lồng ghép chuẩn xác '{target_word}' vào câu.")
                 else:
-                    output_parts.append(f"⚠️ Lưu ý mục tiêu: Câu của bạn hiện chưa xuất hiện '{target_word}'. Hãy thử áp dụng cấu trúc đề xuất bên dưới để hoàn thành bài tập nhé!")
+                    output_parts.append(f"**Lưu ý mục tiêu:** Câu của bạn hiện chưa xuất hiện '{target_word}'. Hãy thử áp dụng cấu trúc đề xuất bên dưới để hoàn thành bài tập nhé!")
             output_parts.append("")
 
         # 4. Chi tiết lỗi sai & phân tích sư phạm
         if is_fragment:
-            output_parts.append("🔍 Điểm cốt lõi cần lưu ý:")
+            output_parts.append("**ĐIỂM CỐT LÕI CẦN LƯU Ý**")
             output_parts.append(
                 f"Nội dung bạn nhập ('{user_input}') hiện mới là một cụm từ rời rạc / từ đơn lẻ, chưa cấu thành một câu hoàn chỉnh. "
                 f"Trong tiếng Anh, một câu chuẩn bắt buộc phải có đầy đủ Chủ ngữ (Subject) và Động từ vị ngữ chính (Verb) để diễn đạt một thông điệp trọn vẹn."
             )
             output_parts.append("")
         elif errors:
-            output_parts.append(f"🔍 Những điểm cần lưu ý ({len(errors)} điểm):")
+            output_parts.append(f"**NHỮNG ĐIỂM CẦN LƯU Ý ({len(errors)} ĐIỂM)**")
             displayed_errors = errors
             if user_tier == 'BEGINNER':
                 grammar_core = [e for e in errors if e.get('category') != 'STYLE']
@@ -379,17 +379,17 @@ class LocalCritiqueSynthesizer:
                 output_parts.append(f"• {explanation}")
             output_parts.append("")
         else:
-            output_parts.append("✨ Điểm sáng trong câu:")
+            output_parts.append("**ĐIỂM SÁNG TRONG CÂU**")
             output_parts.append("• Cấu trúc câu chuẩn xác 100%, các thành phần câu liên kết chặt chẽ và truyền tải ý tứ rất mạch lạc.")
             output_parts.append("")
 
         # 5. Phiên bản đề xuất & Câu mẫu chuẩn ngữ cảnh (Showcase Example)
         if corrected_text and corrected_text.strip().lower() != user_input.strip().lower():
-            output_parts.append("💡 Phiên bản chuẩn chỉnh đề xuất:")
+            output_parts.append("**PHIÊN BẢN CHUẨN CHỈNH ĐỀ XUẤT**")
             output_parts.append(f'"{corrected_text}"')
             output_parts.append("")
         elif not errors and not is_fragment:
-            output_parts.append("💡 Câu văn hoàn thiện:")
+            output_parts.append("**CÂU VĂN HOÀN THIỆN**")
             output_parts.append(f'"{user_input}"')
             output_parts.append("")
 
@@ -397,7 +397,7 @@ class LocalCritiqueSynthesizer:
         if hint_data and hint_data.get('main_sentence'):
             main_sen = hint_data.get('main_sentence')
             main_vi = hint_data.get('main_sentence_vi', '')
-            output_parts.append("📖 Câu mẫu chuẩn ngữ cảnh (Showcase Example):")
+            output_parts.append("**CÂU MẪU CHUẨN NGỮ CẢNH (SHOWCASE EXAMPLE)**")
             output_parts.append(f'• "{main_sen}"')
             if main_vi:
                 output_parts.append(f'  ➔ Dịch nghĩa: {main_vi}')
@@ -406,7 +406,7 @@ class LocalCritiqueSynthesizer:
         # 6. Kho cụm từ hay đi kèm (Collocations)
         collocations = (hint_data.get('collocations') if hint_data else []) or []
         if collocations:
-            output_parts.append("🔗 Cụm từ hay đi kèm (Collocations nên dùng):")
+            output_parts.append("**CỤM TỪ HAY ĐI KÈM (COLLOCATIONS)**")
             for c in collocations[:4]:
                 if isinstance(c, dict):
                     c_text = c.get('collocation') or c.get('text', '')
@@ -420,11 +420,11 @@ class LocalCritiqueSynthesizer:
 
         # 7. Lời khuyên nâng cấp từ Master G (Pedagogical Upgrade)
         vocab_analysis = self._analyze_vocabulary_sophistication(user_input, user_tier, is_fragment=is_fragment)
-        output_parts.append("🚀 Lời khuyên phát triển từ Master G:")
+        output_parts.append("**LỜI KHUYÊN PHÁT TRIỂN TỪ MASTER G**")
 
         formula = hint_data.get('formula') if hint_data else ""
         if formula:
-            output_parts.append(f"💡 Cấu trúc gợi ý: {formula}")
+            output_parts.append(f"**Cấu trúc gợi ý:** {formula}")
 
         if is_fragment:
             output_parts.append(
@@ -455,10 +455,10 @@ class LocalCritiqueSynthesizer:
 
         tip = hint_data.get('tip') if hint_data else ""
         if tip:
-            output_parts.append(f"• Mẹo: {tip}")
+            output_parts.append(f"**Mẹo ghi nhớ:** {tip}")
 
         if vocab_analysis["comment"]:
-            output_parts.append(f"• Vốn từ: {vocab_analysis['comment']}")
+            output_parts.append(f"**Vốn từ:** {vocab_analysis['comment']}")
 
         return "\n".join(output_parts)
 
