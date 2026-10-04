@@ -387,10 +387,36 @@
             body: JSON.stringify({ band: band, num_questions: num, is_practice: isPracticeModeActive })
         })
         .then(res => {
-            if (!res.ok) throw new Error("HTTP " + res.status);
-            return res.json();
+            return res.json().then(data => ({ status: res.status, ok: res.ok, data }));
         })
-        .then(data => {
+        .then(({ status, ok, data }) => {
+            if (!ok) {
+                if (data && data.error === 'daily_limit_reached') {
+                    document.getElementById('exam-loading-screen').innerHTML = `
+                        <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid var(--neon-amber); border-radius: 16px; padding: 30px; max-width: 550px; margin: 0 auto; text-align: center; box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);">
+                            <div style="font-size: 40px; margin-bottom: 12px;">🎫</div>
+                            <div class="pixel-title" style="color: var(--neon-amber); font-size: 18px; margin-bottom: 12px;">HẾT LƯỢT THI XẾP HẠNG HÔM NAY</div>
+                            <div style="color: #cbd5e1; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+                                ${data.message}
+                            </div>
+                            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                <button class="pixel-btn" onclick="buyTicketAndRetry('${band}', ${num})" style="background: var(--neon-amber); color: #000; font-weight: bold; padding: 12px 20px; font-size: 12px;">
+                                    ĐỔI 15 XU VÀ THI NGAY ▶
+                                </button>
+                                <button class="pixel-btn" onclick="switchPracticeAndRetry('${band}', ${num})" style="background: rgba(103, 232, 249, 0.2); border: 1.5px solid var(--neon-cyan); color: var(--neon-cyan); font-weight: bold; padding: 12px 18px; font-size: 12px;">
+                                    ĐẤU TẬP MIỄN PHÍ
+                                </button>
+                                <button class="pixel-btn" onclick="window.location.href='/test'" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #94a3b8; padding: 12px 18px; font-size: 12px;">
+                                    VỀ SẢNH THI
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                throw new Error(data.message || data.error || ("HTTP " + status));
+            }
+
             document.getElementById('exam-loading-screen').style.display = 'none';
 
             if (data.status === 'success') {
@@ -421,6 +447,35 @@
                 <button class="pixel-btn" onclick="window.location.href='/test'" style="background: var(--neon-cyan); color: #000; padding: 10px 20px;">QUAY VỀ TRUNG TÂM THI THỬ</button>
             `;
         });
+    }
+
+    function buyTicketAndRetry(band, num) {
+        fetch('/api/game/exam/buy_ticket', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.status === 'success') {
+                document.getElementById('exam-loading-screen').innerHTML = `
+                    <div class="tap-spinner" style="margin: 0 auto 15px;"></div>
+                    <div style="font-family: var(--text-mono); color: var(--pixel-green); font-size: 14px;">Đã mua vé thành công! Đang khởi tạo phòng thi...</div>
+                `;
+                initMockExam(band, num);
+            } else {
+                alert(res.message || res.error || "Không đủ xu vàng để mua vé thi!");
+            }
+        })
+        .catch(err => alert("Lỗi: " + err.message));
+    }
+
+    function switchPracticeAndRetry(band, num) {
+        switchExamMode(true);
+        document.getElementById('exam-loading-screen').innerHTML = `
+            <div class="tap-spinner" style="margin: 0 auto 15px;"></div>
+            <div style="font-family: var(--text-mono); color: var(--neon-cyan); font-size: 14px;">Đang chuẩn bị phòng Đấu Tập miễn phí...</div>
+        `;
+        initMockExam(band, num);
     }
 
     function startExamTimer() {
@@ -761,7 +816,7 @@
     window.addEventListener('beforeunload', (e) => {
         if (isExamActive) {
             e.preventDefault();
-            e.returnValue = '⚠️ CẢNH BÁO QUY CHẾ THI: Bạn đang trong phòng thi! Đóng tab hoặc tải lại trang sẽ bị hủy bài thi, phạt trừ 50 RP và GIÁNG HẠNG!';
+            e.returnValue = '⚠️ CẢNH BÁO QUY CHẾ THI: Bạn đang trong phòng thi! Đóng tab hoặc tải lại trang sẽ bị hủy bài thi, phạt trừ 15 RP và GIÁNG HẠNG!';
             return e.returnValue;
         }
     });
@@ -786,7 +841,7 @@
         } else {
             if (tabSwitchWarningCount === 1) {
                 window.showDanger(
-                    "⚠️ CẢNH BÁO VI PHẠM QUY CHẾ THI (Lần 1/2)!\n\nPhát hiện bạn vừa rời khỏi tab phòng thi. Quy chế khảo thí yêu cầu sự tập trung tuyệt đối 100% trên màn hình làm bài.\n\nNếu tiếp tục rời tab hoặc chuyển ứng dụng thêm 1 lần nữa, bài thi sẽ bị ĐÌNH CHỈ NGAY LẬP TỨC và tài khoản sẽ bị TRỪ 50 RP dẫn đến TỤT RANK!",
+                    "⚠️ CẢNH BÁO VI PHẠM QUY CHẾ THI (Lần 1/2)!\n\nPhát hiện bạn vừa rời khỏi tab phòng thi. Quy chế khảo thí yêu cầu sự tập trung tuyệt đối 100% trên màn hình làm bài.\n\nNếu tiếp tục rời tab hoặc chuyển ứng dụng thêm 1 lần nữa, bài thi sẽ bị ĐÌNH CHỈ NGAY LẬP TỨC và tài khoản sẽ bị TRỪ 15 RP dẫn đến TỤT RANK!",
                     "GIÁM SÁT PHÒNG THI"
                 );
             }
@@ -1352,7 +1407,7 @@
         }
 
         window.showConfirm(
-            "⚠️ CẢNH BÁO QUY CHẾ THI:\n\nBạn đang làm bài thi đánh giá năng lực CEFR! Nếu bạn thoát ra lúc này:\n• Bài thi sẽ bị tính 0 điểm\n• Bạn sẽ bị PHẠT TRỪ 50 RP UY TÍN\n• Nguy cơ cao bị GIÁNG HẠNG (TỤT RANK) ngay lập tức!\n\nBạn có chắc chắn muốn bỏ thi không?",
+            "⚠️ CẢNH BÁO QUY CHẾ THI:\n\nBạn đang làm bài thi đánh giá năng lực CEFR! Nếu bạn thoát ra lúc này:\n• Bài thi sẽ bị tính 0 điểm\n• Bạn sẽ bị PHẠT TRỪ 15 RP UY TÍN\n• Nguy cơ bị GIÁNG HẠNG (TỤT RANK) nếu RP tụt dưới ngưỡng!\n\nBạn có chắc chắn muốn bỏ thi không?",
             "CẢNH BÁO BỎ THI",
             () => {
                 isExamActive = false;

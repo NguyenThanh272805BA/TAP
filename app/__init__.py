@@ -48,11 +48,12 @@ def create_app():
     def inject_current_user():
         from flask import session
         from app.models.user import User
-        from app.utils.level_manager import get_user_rank_progress
+        from app.utils.level_manager import get_user_rank_progress, get_user_daily_exam_info
         user_id = session.get('user_id')
         current_user = User.query.get(user_id) if user_id else None
         rank_progress = get_user_rank_progress(current_user) if current_user else None
-        return dict(current_user=current_user, rank_progress=rank_progress)
+        daily_exam_info = get_user_daily_exam_info(current_user) if current_user else None
+        return dict(current_user=current_user, rank_progress=rank_progress, daily_exam_info=daily_exam_info)
 
     # --- HỆ THỐNG ROUTE ĐIỀU HƯỚNG GIAO DIỆN CHÍNH ---
 

@@ -570,7 +570,7 @@ def get_current_roadmap():
         "current_band": current_band,
         "target_band": target_band,
         "current_level": user.current_level,
-        "academic_rp": user.academic_rp if user.academic_rp is not None else 500,
+        "academic_rp": user.academic_rp if user.academic_rp is not None else 0,
         "consecutive_fails": user.consecutive_fails or 0,
         "equipped_frame": getattr(user, 'equipped_frame', 'frame-default'),
         "equipped_title": getattr(user, 'equipped_title', 'Tân Binh Ngơ Ngác'),
@@ -670,7 +670,7 @@ def get_milestone_details(milestone_id):
             "reward_coins": milestone.reward_coins
         },
         "user_status": {
-            "academic_rp": user.academic_rp if user.academic_rp is not None else 500,
+            "academic_rp": user.academic_rp if user.academic_rp is not None else 0,
             "current_rank": user.current_level,
             "current_band": getattr(user, 'current_band', 'A1'),
             "consecutive_fails": user.consecutive_fails or 0,
@@ -1326,8 +1326,8 @@ def submit_remediation(milestone_id):
     rp_recovered = 0
     if passed:
         user.last_exam_fail_time = None
-        rp_recovered = 20
-        user.academic_rp = (user.academic_rp or 500) + rp_recovered
+        rp_recovered = 10
+        user.academic_rp = (user.academic_rp or 0) + rp_recovered
         user.consecutive_fails = max(0, (user.consecutive_fails or 1) - 1)
         db.session.commit()
 
@@ -1830,7 +1830,7 @@ def submit_micro_drill(milestone_id):
         rescue_rp = 10
 
     if user.academic_rp is None:
-        user.academic_rp = 500
+        user.academic_rp = 0
 
     if rescue_rp > 0:
         user.academic_rp += rescue_rp
@@ -1950,7 +1950,7 @@ def submit_remediation_quiz(milestone_id):
 
     if user and passed:
         if user.academic_rp is None:
-            user.academic_rp = 500
+            user.academic_rp = 0
         user.academic_rp += rp_recovered
         user.last_exam_fail_time = datetime.now() - timedelta(seconds=40)
         if (user.consecutive_fails or 0) > 0:
@@ -1967,7 +1967,7 @@ def submit_remediation_quiz(milestone_id):
         "correct_count": correct_count,
         "total": len(answer_keys),
         "rp_recovered": rp_recovered,
-        "new_rp": user.academic_rp if user else 500,
+        "new_rp": user.academic_rp if user else 0,
         "message": f"🎉 Bạn đã làm đúng {correct_count}/{len(answer_keys)} câu! Đã xóa Cooldown và phục hồi +{rp_recovered} RP!" if passed else f"Bạn làm đúng {correct_count}/{len(answer_keys)} câu (cần >= 2 câu). Hãy ôn tập thêm nhé!"
     }), 200
 

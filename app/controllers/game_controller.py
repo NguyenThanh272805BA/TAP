@@ -1492,6 +1492,57 @@ def toggle_grammar_mastery():
     }), 200
 
 
+def calculate_exam_rp_reward(exam_band, num_q, final_score):
+    """
+    Tính điểm thưởng/phạt RP theo chuẩn thực tế và Band CEFR:
+    - Đề 30 câu (45 phút, chuẩn bài thi lớn):
+        + Điểm tối đa (Full điểm / Xuất sắc Band C1-C2-ALL): Tối đa +20 RP.
+        + Band A1: Xuất sắc +12 RP | Đạt +5 RP | Trượt -6 RP.
+        + Band A2: Xuất sắc +15 RP | Đạt +6 RP | Trượt -7 RP.
+        + Band B1: Xuất sắc +17 RP | Đạt +7 RP | Trượt -8 RP.
+        + Band B2: Xuất sắc +19 RP | Đạt +8 RP | Trượt -9 RP.
+        + Band C1/C2/ALL: Xuất sắc +20 RP | Đạt +9 RP | Trượt -10 RP.
+    - Đề 20 câu (30 phút):
+        + Max +14 RP (A1: +8, A2: +10, B1: +12, B2: +13, ALL: +14) | Đạt +4 đến +6 RP | Trượt -4 đến -7 RP.
+    - Đề 10 câu (15 phút):
+        + Max +8 RP (A1: +5, A2: +6, B1: +7, B2: +8, ALL: +8) | Đạt +2 đến +3 RP | Trượt -2 đến -4 RP.
+    - Đề 5 câu (7 phút):
+        + Max +4 RP (A1: +2, A2: +3, B1: +3, B2: +4, ALL: +4) | Đạt +1 RP | Trượt -1 đến -2 RP.
+    """
+    exam_band = (exam_band or 'ALL').upper()
+    band_multipliers = {
+        'A1': 0.60,
+        'A2': 0.75,
+        'B1': 0.85,
+        'B2': 0.95,
+        'C1': 1.0,
+        'C2': 1.0,
+        'ALL': 1.0
+    }
+    b_mult = band_multipliers.get(exam_band, 1.0)
+
+    base_table = {
+        5:  {"max_bonus": 4,  "pass": 1, "fail": 2},
+        10: {"max_bonus": 8,  "pass": 3, "fail": 4},
+        20: {"max_bonus": 14, "pass": 6, "fail": 7},
+        30: {"max_bonus": 20, "pass": 9, "fail": 10},
+    }
+    cfg = base_table.get(num_q, base_table[10])
+
+    if final_score < 5.0: # THI TRƯỢT (< 5.0)
+        penalty = max(1, round(cfg["fail"] * b_mult))
+        return -penalty, "fail"
+    elif final_score >= 8.0: # XUẤT SẮC (>= 8.0)
+        score_ratio = (final_score - 8.0) / 2.0  # 0.0 -> 1.0
+        bonus_span = cfg["max_bonus"] - cfg["pass"]
+        earned_bonus = cfg["pass"] + (bonus_span * score_ratio)
+        bonus = max(1, round(earned_bonus * b_mult))
+        return bonus, "bonus"
+    else: # QUA MÔN (5.0 <= score < 8.0)
+        pass_rp = max(1, round(cfg["pass"] * b_mult))
+        return pass_rp, "pass"
+
+
 @game_bp.route('/exam/mock/generate', methods=['POST'])
 def generate_mock_exam():
     """Sinh đề thi thử tự động chuẩn hóa theo Band CEFR hoặc đề toàn diện bằng AI Local 100%"""
@@ -1499,11 +1550,37 @@ def generate_mock_exam():
     band = data.get('band', 'ALL')
     num_q = int(data.get('num_questions', 10))
     user_id = session.get('user_id')
+    user = User.query.get(user_id) if user_id else None
+    is_practice = bool(data.get('is_practice', False))
+
+    # KIỂM SOÁT HẠN MỨC THI THEO NGÀY (DAILY EXAM LIMIT):
+    # Mỗi ngày người dùng được thi 3 lần miễn phí. Muốn thi thêm phải dùng vé / bỏ 15 Xu mua thêm vé.
+    # Chế độ Đấu Tập / Luyện thi tự do (is_practice=True) không tính vào hạn mức ngày.
+    from app.utils.level_manager import get_user_daily_exam_info
+    if user and not is_practice:
+        daily_info = get_user_daily_exam_info(user)
+        if not daily_info['can_take_exam']:
+            return jsonify({
+                "error": "daily_limit_reached",
+                "message": f"Bạn đã sử dụng hết {daily_info['free_limit']}/{daily_info['free_limit']} lượt thi xếp hạng miễn phí hôm nay! Đổi vé thi bằng Xu Vàng ({daily_info['ticket_price']} Xu/vé) để tiếp tục leo rank hoặc chuyển sang chế độ Đấu Tập miễn phí.",
+                "ticket_price": daily_info["ticket_price"],
+                "user_coins": daily_info["user_coins"],
+                "used_today": daily_info["used_today"],
+                "free_limit": daily_info["free_limit"],
+                "can_buy": daily_info["user_coins"] >= daily_info["ticket_price"],
+                "daily_exam_info": daily_info
+            }), 403
+
+        # Trừ 1 lượt thi hợp lệ (ưu tiên 3 lượt free trong ngày trước, sau đó trừ vé mua thêm)
+        if (user.daily_exams_used or 0) < daily_info['free_limit']:
+            user.daily_exams_used = (user.daily_exams_used or 0) + 1
+        else:
+            user.extra_exam_tickets = max(0, (user.extra_exam_tickets or 0) - 1)
+        db.session.commit()
 
     exam_payload = exam_engine.generate_mock_exam(band=band, num_questions=num_q, user_id=user_id)
 
     # Lưu answer_key, band, num_q và is_practice vào session để đối soát khi submit
-    is_practice = bool(data.get('is_practice', False))
     session['current_exam_id'] = exam_payload['exam_id']
     session['current_exam_answer_key'] = exam_payload['answer_key']
     session['current_exam_is_practice'] = is_practice
@@ -1514,6 +1591,8 @@ def generate_mock_exam():
     safe_response['is_practice'] = is_practice
     safe_response['exam_band'] = band.upper()
     safe_response['num_questions'] = num_q
+    if user:
+        safe_response['daily_exam_info'] = get_user_daily_exam_info(user)
     return jsonify(safe_response), 200
 
 
@@ -1554,8 +1633,6 @@ def submit_mock_exam():
         eval_result['num_questions'] = num_q
 
         # QUY TẮC CÔNG BẰNG ANTI-SMURF (CHỐNG CÀY ĐỀ BAND THẤP ĐỂ LEO RANK):
-        # Người học ở band cao (ví dụ B1) làm bài thi band thấp (ví dụ A1) chỉ tính là ôn tập rèn luyện (0 RP).
-        # Phải làm đề đúng Band hiện tại trở lên hoặc Đề Toàn Bộ Band ('ALL') mới được tính điểm RP leo rank!
         user_band = (getattr(user, 'current_band', 'A1') or 'A1').upper()
         band_ranks = {'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6}
 
@@ -1576,19 +1653,6 @@ def submit_mock_exam():
         eval_result['is_smurf'] = is_smurf
         eval_result['smurf_notice'] = smurf_notice
 
-        # BẢNG THƯỞNG/PHẠT RP CO DÃN THEO ĐỘ DÀI ĐỀ THI:
-        # 5 câu:  Xuất sắc +15 RP | Qua môn +5 RP  | Trượt -15 RP
-        # 10 câu: Xuất sắc +35 RP | Qua môn +15 RP | Trượt -35 RP
-        # 20 câu: Xuất sắc +65 RP | Qua môn +30 RP | Trượt -50 RP
-        # 30 câu: Xuất sắc +100 RP| Qua môn +45 RP | Trượt -70 RP
-        rp_rewards_map = {
-            5:  {"bonus": 15, "pass": 5,  "fail": 15},
-            10: {"bonus": 35, "pass": 15, "fail": 35},
-            20: {"bonus": 65, "pass": 30, "fail": 50},
-            30: {"bonus": 100, "pass": 45, "fail": 70},
-        }
-        reward_config = rp_rewards_map.get(num_q, rp_rewards_map[10])
-
         final_score = eval_result.get('final_score', 0.0)
         rp_change = 0
         revive_applied = False
@@ -1597,12 +1661,12 @@ def submit_mock_exam():
         if is_practice:
             eval_result['rp_change'] = 0
             eval_result['revive_applied'] = False
-            eval_result['academic_rp'] = user.academic_rp
+            eval_result['academic_rp'] = user.academic_rp if user.academic_rp is not None else 0
             eval_result['diagnostic_advice'] = f"🛡️ [LƯỢT ĐẤU TẬP] Điểm thi: {final_score}/10 ({eval_result['percentage']}%). Bạn không bị trừ RP hay áp dụng phạt kỷ luật. Hãy xem lại các câu sai để tự tin hơn khi thi xếp hạng!"
         elif is_smurf:
             eval_result['rp_change'] = 0
             eval_result['revive_applied'] = False
-            eval_result['academic_rp'] = user.academic_rp
+            eval_result['academic_rp'] = user.academic_rp if user.academic_rp is not None else 0
             eval_result['diagnostic_advice'] = f"{smurf_notice} • Tổng điểm: {final_score}/10. {eval_result['diagnostic_advice']}"
         else:
             if final_score < 5.0: # THI TRƯỢT
@@ -1615,20 +1679,15 @@ def submit_mock_exam():
                             revive_applied = True
                             rp_change = 0
                 if not revive_applied:
-                    base_penalty = reward_config["fail"]
-                    penalty = base_penalty + ((user.consecutive_fails or 0) * 10) # Trượt liên tiếp bị trừ thêm điểm
-                    user.academic_rp = max(0, (user.academic_rp or 500) - penalty)
+                    calc_rp, _ = calculate_exam_rp_reward(exam_band, num_q, final_score)
+                    penalty = abs(calc_rp) + ((user.consecutive_fails or 0) * 2) # Trượt liên tiếp bị trừ thêm điểm
+                    user.academic_rp = max(0, (user.academic_rp or 0) - penalty)
                     rp_change = -penalty
                     user.consecutive_fails = (user.consecutive_fails or 0) + 1
-            elif final_score >= 8.0: # XUẤT SẮC
-                bonus = reward_config["bonus"]
-                user.academic_rp = (user.academic_rp or 500) + bonus
-                rp_change = bonus
-                user.consecutive_fails = 0
-            else: # QUA MÔN
-                pass_rp = reward_config["pass"]
-                user.academic_rp = (user.academic_rp or 500) + pass_rp
-                rp_change = pass_rp
+            else: # QUA MÔN HOẶC XUẤT SẮC
+                calc_rp, _ = calculate_exam_rp_reward(exam_band, num_q, final_score)
+                user.academic_rp = (user.academic_rp or 0) + calc_rp
+                rp_change = calc_rp
                 user.consecutive_fails = 0
 
             eval_result['rp_change'] = rp_change
@@ -1671,9 +1730,10 @@ def submit_mock_exam():
             eval_result['level_changed'] = False
             eval_result['current_level'] = user.current_level
 
-        # Bổ sung tiến độ rank chi tiết để client hiển thị
-        from app.utils.level_manager import get_user_rank_progress
+        # Bổ sung tiến độ rank chi tiết và hạn mức thi ngày để client hiển thị
+        from app.utils.level_manager import get_user_rank_progress, get_user_daily_exam_info
         eval_result['rank_progress'] = get_user_rank_progress(user)
+        eval_result['daily_exam_info'] = get_user_daily_exam_info(user)
 
         db.session.commit()
 
@@ -1688,6 +1748,53 @@ def get_user_rank_status():
     from app.utils.level_manager import get_user_rank_progress
     progress = get_user_rank_progress(user)
     return jsonify({"status": "success", "rank_progress": progress}), 200
+
+
+@game_bp.route('/exam/daily_limit', methods=['GET'])
+def get_daily_limit_status():
+    """API tra cứu hạn mức lượt thi trong ngày và số vé thêm của người dùng"""
+    user_id = session.get('user_id')
+    user = User.query.get(user_id) if user_id else None
+    from app.utils.level_manager import get_user_daily_exam_info
+    info = get_user_daily_exam_info(user)
+    return jsonify({"status": "success", "daily_exam_info": info}), 200
+
+
+@game_bp.route('/exam/buy_ticket', methods=['POST'])
+def buy_exam_ticket():
+    """Đổi 15 Xu Vàng lấy thêm 1 vé thi xếp hạng"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Không tìm thấy người dùng!"}), 404
+
+    from app.utils.level_manager import get_user_daily_exam_info
+    daily_info = get_user_daily_exam_info(user)
+    price = daily_info['ticket_price']
+
+    user_coins = user.coins or 0
+    if user_coins < price:
+        return jsonify({
+            "error": "not_enough_coins",
+            "message": f"Bạn không đủ Xu Vàng! Cần {price} Xu để mua thêm 1 vé thi (hiện bạn có {user_coins} Xu).",
+            "user_coins": user_coins,
+            "ticket_price": price
+        }), 400
+
+    user.coins = user_coins - price
+    user.extra_exam_tickets = (user.extra_exam_tickets or 0) + 1
+    db.session.commit()
+
+    updated_info = get_user_daily_exam_info(user)
+    return jsonify({
+        "status": "success",
+        "message": f"Mua vé thi thành công! Đã trừ {price} Xu Vàng. Bạn có thêm 1 vé thi xếp hạng.",
+        "user_coins": user.coins,
+        "daily_exam_info": updated_info
+    }), 200
 
 
 @game_bp.route('/exam/mock/abandon', methods=['POST'])
@@ -1707,15 +1814,15 @@ def abandon_mock_exam():
             "status": "practice_abandoned",
             "penalty_rp": 0,
             "demoted": False,
-            "new_rp": user.academic_rp if user.academic_rp is not None else 500,
+            "new_rp": user.academic_rp if user.academic_rp is not None else 0,
             "message": "Đã rời phòng thi thử, không bị trừ RP."
         }), 200
 
     old_rank = user.current_level
-    old_rp = user.academic_rp if user.academic_rp is not None else 500
+    old_rp = user.academic_rp if user.academic_rp is not None else 0
 
-    # Phạt kỷ luật nghiêm ngặt: Trừ 50 RP uy tín học thuật
-    penalty = 50 + ((user.consecutive_fails or 0) * 10)
+    # Phạt kỷ luật: Trừ 15 RP + (consecutive_fails * 3)
+    penalty = 15 + ((user.consecutive_fails or 0) * 3)
     user.academic_rp = max(0, old_rp - penalty)
     user.consecutive_fails = (user.consecutive_fails or 0) + 1
     user.last_exam_fail_time = datetime.now()
@@ -2096,9 +2203,9 @@ def use_consumable():
                 del _ANIMAL_LAST_INTERACTIONS[(user_id, a_code)]
         effect_msg = "🌾 Đã cho Bò, Gà, Heo ăn Thức Ăn Vàng! Toàn bộ Cooldown gia súc đã được giải trừ lập tức!"
     elif item.item_effect == 'ACADEMIC_ELIXIR':
-        user.coins = (user.coins or 0) + 200
-        user.academic_rp = (user.academic_rp or 500) + 50
-        effect_msg = "🧪 Uống Thuốc Tiên Học Thuật thành công! Nhận ngay +200 Xu và +50 Điểm Rank Academic RP!"
+        user.coins = (user.coins or 0) + 100
+        user.academic_rp = (user.academic_rp or 0) + 15
+        effect_msg = "🧪 Uống Thuốc Tiên Học Thuật thành công! Nhận ngay +100 Xu và +15 Điểm Rank Academic RP!"
     elif item.item_effect == 'LUCKY_TALISMAN':
         import random
         from app.models.farm import FarmCrop, FarmInventory
@@ -2169,7 +2276,7 @@ def get_all_quests():
     streak = getattr(user, 'streak_count', 0) or 0
     arena_wins = getattr(user, 'arena_stage', 1) or 1
     coins = getattr(user, 'coins', 0) or 0
-    rp = getattr(user, 'academic_rp', 500) or 500
+    rp = getattr(user, 'academic_rp', 0) or 0
 
     # Lấy danh sách nhiệm vụ đã lưu tiến trình trong DB
     user_progress_map = {}

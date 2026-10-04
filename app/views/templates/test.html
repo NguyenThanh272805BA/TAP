@@ -204,6 +204,49 @@
         </div>
     </div>
 
+    <!-- WIDGET HẠN MỨC LƯỢT THI XẾP HẠNG THEO NGÀY (DAILY EXAM LIMIT & TICKET SHOP) -->
+    <div class="bento-card" style="padding: 16px 24px; background: rgba(15, 23, 42, 0.85); border: 1.5px solid {% if daily_exam_info and daily_exam_info.total_available == 0 %}#ef4444{% else %}var(--pixel-green){% endif %};">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: {% if daily_exam_info and daily_exam_info.total_available == 0 %}rgba(239,68,68,0.2){% else %}rgba(34, 197, 94, 0.2){% endif %}; border: 1.5px solid {% if daily_exam_info and daily_exam_info.total_available == 0 %}#ef4444{% else %}var(--pixel-green){% endif %}; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                    🎫
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 13px; font-weight: bold; color: #fff; font-family: var(--text-mono);">HẠN MỨC THI XẾP HẠNG HÔM NAY:</span>
+                        {% if daily_exam_info and daily_exam_info.remaining_free > 0 %}
+                            <span style="font-size: 11px; font-family: var(--text-mono); font-weight: bold; color: var(--pixel-green); background: rgba(34, 197, 94, 0.15); padding: 3px 10px; border-radius: 6px; border: 1px solid var(--pixel-green);">
+                                Còn {{ daily_exam_info.remaining_free }}/{{ daily_exam_info.free_limit }} lượt miễn phí
+                            </span>
+                        {% else %}
+                            <span style="font-size: 11px; font-family: var(--text-mono); font-weight: bold; color: #ef4444; background: rgba(239, 68, 68, 0.15); padding: 3px 10px; border-radius: 6px; border: 1px solid #ef4444;">
+                                Đã hết 3/3 lượt miễn phí hôm nay
+                            </span>
+                        {% endif %}
+
+                        {% if daily_exam_info and daily_exam_info.extra_tickets > 0 %}
+                            <span style="font-size: 11px; font-family: var(--text-mono); font-weight: bold; color: var(--neon-amber); background: rgba(245, 158, 11, 0.15); padding: 3px 10px; border-radius: 6px; border: 1px solid var(--neon-amber);">
+                                +{{ daily_exam_info.extra_tickets }} vé thi thêm
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                        Mỗi ngày hệ thống cấp <strong>3 lượt thi xếp hạng miễn phí</strong>. Muốn thi thêm cần đổi vé bằng Xu (15 Xu/vé). <em>Chế độ Đấu Tập hoàn toàn miễn phí không giới hạn.</em>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 12px; font-family: var(--text-mono); color: var(--neon-amber); background: rgba(0,0,0,0.5); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                    💰 Xu của bạn: <strong id="user-coins-val-dash">{{ daily_exam_info.user_coins if daily_exam_info else 0 }}</strong> Xu
+                </div>
+                <button class="pixel-btn" onclick="openBuyTicketModal()" style="background: rgba(245, 158, 11, 0.2); border: 1.5px solid var(--neon-amber); color: var(--neon-amber); font-size: 11px; padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: bold;">
+                    <span>🎟️</span> ĐỔI VÉ THI (15 XU)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 3 PHÂN VÙNG / CỔNG VÀO KHẢO THÍ CHUYÊN BIỆT -->
     <div style="display: flex; flex-direction: column; gap: 20px;">
 
@@ -229,10 +272,10 @@
                     <!-- Lựa chọn độ dài đề thi nhanh -->
                     <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                         <span style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">VÀO THI NHANH:</span>
-                        <a href="/test/room?band=ALL&num=5" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">⚡ 5 câu (7p) [+15 RP]</a>
-                        <a href="/test/room?band=ALL&num=10" class="pixel-btn" style="background: rgba(236,72,153,0.2); border: 1px solid var(--neon-pink); color: #fff; padding: 6px 12px; font-size: 11px; text-decoration: none;">📋 10 câu (15p) [+35 RP]</a>
-                        <a href="/test/room?band=ALL&num=20" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">🔥 20 câu (30p) [+65 RP]</a>
-                        <a href="/test/room?band=ALL&num=30" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">🏆 30 câu (45p) [+100 RP]</a>
+                        <a href="/test/room?band=ALL&num=5" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">⚡ 5 câu (7p) [+4 RP]</a>
+                        <a href="/test/room?band=ALL&num=10" class="pixel-btn" style="background: rgba(236,72,153,0.2); border: 1px solid var(--neon-pink); color: #fff; padding: 6px 12px; font-size: 11px; text-decoration: none;">📋 10 câu (15p) [+8 RP]</a>
+                        <a href="/test/room?band=ALL&num=20" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">🔥 20 câu (30p) [+14 RP]</a>
+                        <a href="/test/room?band=ALL&num=30" class="pixel-btn" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #cbd5e1; padding: 6px 12px; font-size: 11px; text-decoration: none;">🏆 30 câu (45p) [+20 RP]</a>
                     </div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
@@ -380,7 +423,8 @@
             <ul style="margin: 0; padding-left: 20px;">
                 <li><strong>Đề thi hợp lệ leo rank:</strong> Người học phải làm đề thi <strong>đúng Band hiện tại trở lên</strong> hoặc làm đề <strong>Toàn Bộ Các Band (A1 → C2)</strong> để được cộng điểm RP thăng hạng.</li>
                 <li><strong>Đề thi dưới Band:</strong> Người học ở Rank cao (ví dụ B1) làm bài thi ở Band thấp hơn (ví dụ A1, A2) được coi là <strong>ôn tập rèn luyện cho vui</strong>. Lượt thi này <strong>không được cộng hoặc trừ điểm RP</strong>.</li>
-                <li><strong>Cơ chế co dãn RP:</strong> Đề thi càng dài (20 câu, 30 câu) càng mang lại nhiều điểm RP (lên đến +100 RP/đề) và yêu cầu tính kiên trì, kỷ luật học thuật cao.</li>
+                <li><strong>Cơ chế co dãn RP chuẩn thực tế:</strong> Khảo thí lớn (30 câu - 45 phút) full điểm tối đa <strong>+20 RP</strong>. Các bài thi ngắn 5 - 10 câu nhận +4 đến +8 RP, bảo đảm tiến độ leo rank bám sát khả năng học thực thụ.</li>
+                <li><strong>Giới hạn theo ngày:</strong> Mỗi ngày bạn có <strong>3 lượt thi xếp hạng miễn phí</strong>. Muốn thi thêm cần đổi vé thi bằng Xu (15 Xu/vé) hoặc luyện tập tự do tại chế độ Đấu Tập không giới hạn.</li>
             </ul>
         </div>
 
@@ -391,10 +435,65 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL: MUA THÊM VÉ THI XẾP HẠNG BẰNG XU VÀNG -->
+<div id="buy-ticket-modal" class="rank-modal-overlay" onclick="closeBuyTicketModal(event)">
+    <div class="rank-modal-box" onclick="event.stopPropagation()" style="max-width: 520px; text-align: center;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(245, 158, 11, 0.2); border: 2px solid var(--neon-amber); display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 16px;">
+            🎟️
+        </div>
+        <div class="pixel-title" style="color: var(--neon-amber); font-size: 18px; margin-bottom: 8px;">
+            MUA VÉ THI XẾP HẠNG
+        </div>
+        <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-bottom: 20px;">
+            Mỗi ngày bạn có <strong>3 lượt thi miễn phí</strong> để bảo đảm nhịp độ học tập bền vững. Muốn thi thêm xếp hạng bạn có thể dùng <strong>15 Xu Vàng</strong> để mua 1 vé thi.
+        </div>
+
+        <div style="background: rgba(0,0,0,0.4); border: 1.5px solid var(--glass-border); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; justify-content: space-around; align-items: center;">
+            <div>
+                <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">GIÁ VÉ THI</div>
+                <div style="font-size: 18px; font-weight: bold; color: var(--neon-amber); font-family: var(--text-mono); margin-top: 4px;">
+                    15 🪙 Xu
+                </div>
+            </div>
+            <div style="height: 30px; width: 1px; background: var(--glass-border);"></div>
+            <div>
+                <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">XU HIỆN CÓ</div>
+                <div id="modal-user-coins-dash" style="font-size: 18px; font-weight: bold; color: var(--neon-cyan); font-family: var(--text-mono); margin-top: 4px;">
+                    {{ daily_exam_info.user_coins if daily_exam_info else 0 }} 🪙
+                </div>
+            </div>
+            <div style="height: 30px; width: 1px; background: var(--glass-border);"></div>
+            <div>
+                <div style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">VÉ HIỆN CÓ</div>
+                <div id="modal-user-tickets-dash" style="font-size: 18px; font-weight: bold; color: var(--pixel-green); font-family: var(--text-mono); margin-top: 4px;">
+                    {{ (daily_exam_info.remaining_free + daily_exam_info.extra_tickets) if daily_exam_info else 3 }} 🎫
+                </div>
+            </div>
+        </div>
+
+        <div id="buy-ticket-msg-dash" style="display: none; font-size: 12px; margin-bottom: 15px; padding: 8px; border-radius: 6px;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button id="btn-confirm-buy-ticket-dash" class="pixel-btn" onclick="executeBuyTicketDash()" style="background: var(--neon-amber); color: #000; font-weight: bold; padding: 12px 20px; font-size: 12px;">
+                XÁC NHẬN MUA (15 XU)
+            </button>
+            <a href="/test/room?band=ALL&num=10&practice=true" class="pixel-btn" style="background: rgba(103, 232, 249, 0.15); border: 1.5px solid var(--neon-cyan); color: var(--neon-cyan); font-weight: bold; padding: 12px 18px; font-size: 12px; text-decoration: none;">
+                THI ĐẤU TẬP MIỄN PHÍ ▶
+            </a>
+            <button class="pixel-btn" onclick="closeBuyTicketModal()" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #94a3b8; padding: 12px 16px; font-size: 12px;">
+                ĐỂ SAU
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    let userCoinsDash = {{ daily_exam_info.user_coins if daily_exam_info else 0 }};
+    let totalTicketsDash = {{ daily_exam_info.total_available if daily_exam_info else 3 }};
+
     document.addEventListener("DOMContentLoaded", () => {
         loadUserExamStats();
     });
@@ -407,6 +506,64 @@
     function closeRankMilestonesModal(e) {
         const m = document.getElementById('rank-milestones-modal');
         if (m) m.style.display = 'none';
+    }
+
+    function openBuyTicketModal() {
+        const m = document.getElementById('buy-ticket-modal');
+        if (m) m.style.display = 'flex';
+    }
+
+    function closeBuyTicketModal(e) {
+        const m = document.getElementById('buy-ticket-modal');
+        if (m) m.style.display = 'none';
+    }
+
+    function executeBuyTicketDash() {
+        const btn = document.getElementById('btn-confirm-buy-ticket-dash');
+        const msg = document.getElementById('buy-ticket-msg-dash');
+        btn.disabled = true;
+        btn.innerText = "ĐANG XỬ LÝ...";
+
+        fetch('/api/game/exam/buy_ticket', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerText = "XÁC NHẬN MUA (15 XU)";
+            if (data.status === 'success') {
+                userCoinsDash = data.user_coins;
+                totalTicketsDash = data.daily_exam_info.total_available;
+                document.getElementById('modal-user-coins-dash').innerText = `${userCoinsDash} 🪙`;
+                document.getElementById('modal-user-tickets-dash').innerText = `${totalTicketsDash} 🎫`;
+                const cVal = document.getElementById('user-coins-val-dash');
+                if (cVal) cVal.innerText = userCoinsDash;
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(34, 197, 94, 0.2)';
+                msg.style.color = '#86efac';
+                msg.style.border = '1px solid var(--pixel-green)';
+                msg.innerText = "✓ Mua vé thành công! Bạn có thêm 1 vé thi xếp hạng.";
+                setTimeout(() => {
+                    closeBuyTicketModal();
+                    location.reload();
+                }, 900);
+            } else {
+                msg.style.display = 'block';
+                msg.style.background = 'rgba(239, 68, 68, 0.2)';
+                msg.style.color = '#ef4444';
+                msg.style.border = '1px solid #ef4444';
+                msg.innerText = data.message || data.error || "Không đủ xu vàng để mua vé!";
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerText = "XÁC NHẬN MUA (15 XU)";
+            msg.style.display = 'block';
+            msg.style.background = 'rgba(239, 68, 68, 0.2)';
+            msg.style.color = '#ef4444';
+            msg.innerText = "Lỗi kết nối máy chủ: " + err.message;
+        });
     }
 
     function loadUserExamStats() {

@@ -5,13 +5,13 @@ from app.models.test import TestLog
 from app.models.roadmap import UserMilestoneProgress, RoadmapMilestone
 from app import db
 
-# BẢNG ÁNH XẠ RANK HỌC THUẬT THEO KHUNG CEFR & ĐIỂM RP (ACADEMIC ROADMAP TIERS - CHUẨN KHẮC NGHIỆT)
+# BẢNG ÁNH XẠ RANK HỌC THUẬT THEO KHUNG CEFR & ĐIỂM RP (MỐC CHUẨN ĐƯỢC ĐIỀU CHỈNH GẦN GŨI VỚI NỖ LỰC HỌC THỰC TẾ)
 ACADEMIC_TIERS = [
     {
         "band": "C2",
         "rank_name": "ĐỘC CÔ CẦU BẠI (Diamond)",
         "min_milestones": 16,
-        "min_rp": 2400,
+        "min_rp": 530,
         "req_vocab": 1800,
         "req_sentence": 1200,
         "icon": "👑",
@@ -23,7 +23,7 @@ ACADEMIC_TIERS = [
         "band": "C1",
         "rank_name": "Kiến Trúc Sư C1 (Platinum)",
         "min_milestones": 12,
-        "min_rp": 1700,
+        "min_rp": 370,
         "req_vocab": 1100,
         "req_sentence": 700,
         "icon": "💎",
@@ -35,7 +35,7 @@ ACADEMIC_TIERS = [
         "band": "B2",
         "rank_name": "Pháp Sư B2 (Gold)",
         "min_milestones": 8,
-        "min_rp": 1200,
+        "min_rp": 240,
         "req_vocab": 700,
         "req_sentence": 450,
         "icon": "🥇",
@@ -47,7 +47,7 @@ ACADEMIC_TIERS = [
         "band": "B1",
         "rank_name": "Chiến Binh B1 (Silver)",
         "min_milestones": 5,
-        "min_rp": 800,
+        "min_rp": 140,
         "req_vocab": 400,
         "req_sentence": 250,
         "icon": "🥈",
@@ -59,7 +59,7 @@ ACADEMIC_TIERS = [
         "band": "A2",
         "rank_name": "Thợ Săn A2 (Bronze II)",
         "min_milestones": 3,
-        "min_rp": 450,
+        "min_rp": 60,
         "req_vocab": 160,
         "req_sentence": 90,
         "icon": "🥉",
@@ -80,6 +80,54 @@ ACADEMIC_TIERS = [
         "description": "Tân binh nhập môn: Ngữ pháp cơ bản S-V-O, Hiện tại đơn, Đại từ nhân xưng, Từ vựng thường nhật."
     }
 ]
+
+def get_user_daily_exam_info(user):
+    """
+    Quản lý hạn mức làm bài kiểm tra theo ngày (Daily Exam Limit):
+    - Mỗi ngày có 3 lượt thi miễn phí.
+    - Reset lượt miễn phí khi sang ngày mới.
+    - Cho phép mua thêm vé thi bằng Xu Vàng (15 Xu/lượt).
+    """
+    from datetime import date
+    today = date.today()
+    if not user:
+        return {
+            "free_limit": 3,
+            "used_today": 0,
+            "remaining_free": 3,
+            "extra_tickets": 0,
+            "total_available": 3,
+            "can_take_exam": True,
+            "ticket_price": 15,
+            "user_coins": 0
+        }
+
+    # Reset lượt nếu sang ngày mới
+    if getattr(user, 'last_exam_date', None) != today:
+        user.daily_exams_used = 0
+        user.last_exam_date = today
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    used = user.daily_exams_used or 0
+    free_limit = 3
+    remaining_free = max(0, free_limit - used)
+    extra = user.extra_exam_tickets or 0
+    total_available = remaining_free + extra
+    can_take = total_available > 0
+
+    return {
+        "free_limit": free_limit,
+        "used_today": used,
+        "remaining_free": remaining_free,
+        "extra_tickets": extra,
+        "total_available": total_available,
+        "can_take_exam": can_take,
+        "ticket_price": 15,
+        "user_coins": user.coins or 0
+    }
 
 SECTION_NAMES = {
     "vocab_mcq": "Nhận Diện Từ Vựng (MCQ)",
@@ -107,7 +155,7 @@ def compute_user_academic_tier(user):
     except Exception:
         pass
 
-    user_rp = user.academic_rp if user.academic_rp is not None else 500
+    user_rp = user.academic_rp if user.academic_rp is not None else 0
     user_band = getattr(user, 'current_band', 'A1') or 'A1'
     user_band_val = BAND_HIERARCHY.get(user_band.upper(), 1)
 
@@ -155,7 +203,7 @@ def get_user_rank_progress(user):
             "all_tiers": tiers_asc
         }
 
-    user_rp = user.academic_rp if user.academic_rp is not None else 500
+    user_rp = user.academic_rp if user.academic_rp is not None else 0
     user_band = getattr(user, 'current_band', 'A1') or 'A1'
     user_band_val = BAND_HIERARCHY.get(user_band.upper(), 1)
 
@@ -252,7 +300,7 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
         return {"error": "Không tìm thấy người dùng hoặc chặng thi!"}
 
     if user.academic_rp is None:
-        user.academic_rp = 500
+        user.academic_rp = 0
 
     old_rank = user.current_level
     old_band = getattr(user, 'current_band', 'A1')
@@ -316,13 +364,13 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
     promoted = False
 
     if passed:
-        # Tính thưởng RP
+        # Tính thưởng RP (Mốc chuẩn được điều chỉnh tương ứng với nỗ lực học thực tế)
         if exam_score >= 9.5:
-            rp_change = 100
+            rp_change = 25
         elif exam_score >= 8.5:
-            rp_change = 80
+            rp_change = 20
         else:
-            rp_change = 60
+            rp_change = 15
 
         user.academic_rp += rp_change
         user.consecutive_fails = 0
@@ -346,9 +394,9 @@ def process_exam_result(user_id, milestone_id, exam_score, section_scores, is_ab
     else:
         # Bị phạt trừ RP (Chuẩn khảo thí kỷ luật nghiêm ngặt)
         if is_abandoned:
-            rp_change = -65  # Phạt nặng -65 RP khi tự ý bỏ cuộc / thoát phòng thi
+            rp_change = -18  # Phạt -18 RP khi tự ý bỏ cuộc / thoát phòng thi
         else:
-            rp_change = -45
+            rp_change = -10
 
         user.academic_rp = max(0, user.academic_rp + rp_change)
         user.consecutive_fails = (user.consecutive_fails or 0) + 1
