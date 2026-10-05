@@ -1360,17 +1360,21 @@ def get_my_inventory():
 
 @game_bp.route('/vocabularies/overview', methods=['GET'])
 def get_vocabularies_overview():
-    """Lấy dữ liệu thống kê tổng quan theo từng Topic của RIÊNG người dùng đang đăng nhập"""
+    """Lấy dữ liệu thống kê tổng quan theo từng Topic của RIÊNG người dùng đang đăng nhập, kèm mốc thời gian thêm vào"""
     user_id = session.get('user_id')
     from collections import defaultdict
+    from datetime import datetime
 
     if not user_id:
         return jsonify({"topics": [], "is_new_user": True}), 200
 
-    # Chỉ lấy các từ vựng mà tài khoản này đã mở khóa / sở hữu trong UserVocabulary
+    now = datetime.now()
+
+    # Chỉ lấy các từ vựng mà tài khoản này đã mở khóa / sở hữu trong UserVocabulary kèm mốc thời gian
     user_vocab_records = db.session.query(
         Vocabulary.id, Vocabulary.word, Vocabulary.meaning, Vocabulary.theme,
-        Vocabulary.cefr_level, UserVocabulary.memorization_level
+        Vocabulary.cefr_level, Vocabulary.created_at,
+        UserVocabulary.memorization_level, UserVocabulary.last_tested_at
     ).join(
         UserVocabulary, Vocabulary.id == UserVocabulary.vocab_id
     ).filter(
@@ -1406,16 +1410,38 @@ def get_vocabularies_overview():
 
         sample_words = [w.word for w in words[:4]]
 
+        dates = [w.created_at for w in words if getattr(w, 'created_at', None)] + [w.last_tested_at for w in words if getattr(w, 'last_tested_at', None)]
+        latest_dt = max(dates) if dates else None
+        earliest_dt = min(dates) if dates else None
+        max_id = max((w.id for w in words if w.id), default=0)
+
+        is_today = False
+        is_this_week = False
+        is_this_month = False
+        if latest_dt:
+            delta = now - latest_dt
+            is_today = (now.date() == latest_dt.date()) or (delta.total_seconds() <= 86400)
+            is_this_week = delta.days <= 7
+            is_this_month = delta.days <= 30
+
         overview.append({
             "theme": t_name,
             "total_words": total,
             "memorized_words": memorized,
             "progress_percent": pct,
             "representative_cefr": top_cefr,
-            "sample_words": sample_words
+            "sample_words": sample_words,
+            "latest_added_at": latest_dt.isoformat() if latest_dt else None,
+            "earliest_added_at": earliest_dt.isoformat() if earliest_dt else None,
+            "latest_timestamp": latest_dt.timestamp() if latest_dt else 0,
+            "max_vocab_id": max_id,
+            "is_today": is_today,
+            "is_this_week": is_this_week,
+            "is_this_month": is_this_month
         })
 
-    overview.sort(key=lambda x: x["theme"])
+    # Mặc định sắp xếp theo Mới thêm nhất (Newest first) để Unit vừa đúc luôn đứng đầu tiên!
+    overview.sort(key=lambda x: (x.get("latest_timestamp", 0), x.get("max_vocab_id", 0)), reverse=True)
     return jsonify({"topics": overview, "is_new_user": False}), 200
 
 

@@ -188,6 +188,23 @@
         box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25) !important;
     }
 
+    body.clean-mode .time-filter-pill,
+    body.theme-light .time-filter-pill {
+        background: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        color: #475569 !important;
+    }
+    body.clean-mode .time-filter-pill:hover,
+    body.clean-mode .time-filter-pill.active,
+    body.theme-light .time-filter-pill:hover,
+    body.theme-light .time-filter-pill.active {
+        background: #d97706 !important;
+        border-color: #b45309 !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25) !important;
+    }
+
     /* Top CTA Buttons ở chế độ sáng */
     body.clean-mode .btn-top-srs,
     body.theme-light .btn-top-srs {
@@ -352,6 +369,25 @@
         font-weight: bold;
     }
 
+    .time-filter-pill {
+        padding: 5px 12px;
+        font-size: 11px;
+        font-family: var(--text-mono);
+        border-radius: 20px;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--glass-border);
+        color: #94a3b8;
+        cursor: pointer;
+        transition: 0.2s;
+        white-space: nowrap;
+    }
+    .time-filter-pill:hover, .time-filter-pill.active {
+        background: rgba(245, 158, 11, 0.2);
+        border-color: var(--neon-amber);
+        color: var(--neon-amber);
+        font-weight: bold;
+    }
+
     /* Grammar Status Badges */
     .mastery-tag {
         padding: 4px 10px;
@@ -471,6 +507,31 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button id="btn-view-bento" class="filter-pill active" onclick="switchVocabView('bento')">⊞ THẺ CHỦ ĐỀ</button>
                     <button id="btn-view-all" class="filter-pill" onclick="switchVocabView('all')">☰ TẤT CẢ TỪ VỰNG</button>
+                </div>
+            </div>
+
+            <!-- Hàng 3: Bộ lọc Thời gian thêm Unit & Sắp xếp linh hoạt -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.08);">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono); display: flex; align-items: center; gap: 4px;">
+                        ⏳ LỌC THỜI GIAN THÊM:
+                    </span>
+                    <button class="time-filter-pill active" onclick="filterByTime('ALL', this)">TẤT CẢ</button>
+                    <button class="time-filter-pill" onclick="filterByTime('TODAY', this)">🔥 VỪA ĐÚC HÔM NAY</button>
+                    <button class="time-filter-pill" onclick="filterByTime('WEEK', this)">📅 7 NGÀY GẦN ĐÂY</button>
+                    <button class="time-filter-pill" onclick="filterByTime('MONTH', this)">🗓️ 30 NGÀY QUA</button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 12px; color: #94a3b8; font-family: var(--text-mono);">SẮP XẾP:</span>
+                    <select id="topicSortSelect" onchange="handleVocabSearch()" class="auth-input" style="margin-bottom: 0; padding: 4px 10px; height: 32px; font-size: 11px; background: rgba(15, 23, 42, 0.95); border: 1.5px solid var(--neon-cyan); color: var(--neon-cyan); border-radius: 6px; font-family: var(--text-mono); cursor: pointer;">
+                        <option value="newest" selected>⚡ Mới thêm gần đây nhất</option>
+                        <option value="oldest">🕰️ Thêm lâu nhất (Cũ nhất)</option>
+                        <option value="name_asc">🔤 Tên Unit (A ➔ Z)</option>
+                        <option value="name_desc">🔤 Tên Unit (Z ➔ A)</option>
+                        <option value="progress_asc">📈 Cần ôn tập (Tiến độ thấp ➔ cao)</option>
+                        <option value="progress_desc">🏆 Thành thạo (Tiến độ cao ➔ thấp)</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -847,7 +908,11 @@
             .then(res => res.json())
             .then(data => {
                 globalTopicsOverview = data.topics || [];
-                renderTopicBentoCards(globalTopicsOverview, data.is_new_user);
+                if (data.is_new_user || globalTopicsOverview.length === 0) {
+                    renderTopicBentoCards([], data.is_new_user);
+                } else {
+                    handleVocabSearch();
+                }
             })
             .catch(err => {
                 console.error("Error loading vocab overview:", err);
@@ -918,7 +983,10 @@
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span class="tap-icon topic-icon" style="width: 28px; height: 28px; color: var(--neon-cyan);">${iconSvg}</span>
                             <div>
-                                <strong class="bento-topic-title" style="color: #fff; font-size: 16px; letter-spacing: 0.5px;">${t.theme.toUpperCase()}</strong>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <strong class="bento-topic-title" style="color: #fff; font-size: 16px; letter-spacing: 0.5px;">${t.theme.toUpperCase()}</strong>
+                                    ${t.is_today ? '<span style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--neon-amber); color: var(--neon-amber); font-size: 9px; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-family: var(--text-mono); letter-spacing: 0.5px;">MỚI ĐÚC</span>' : ''}
+                                </div>
                                 <div class="bento-topic-count" style="font-size: 11px; color: #94a3b8; font-family: var(--text-mono);">${t.total_words} từ vựng</div>
                             </div>
                         </div>
@@ -997,22 +1065,60 @@
         }
     }
 
+    let currentTimeFilter = 'ALL';
+
+    function filterByTime(period, btn) {
+        currentTimeFilter = period;
+        document.querySelectorAll('.time-filter-pill').forEach(p => p.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        handleVocabSearch();
+    }
+
     function handleVocabSearch() {
         const query = document.getElementById('vocabSearchInput').value.trim().toLowerCase();
+        const sortSelect = document.getElementById('topicSortSelect');
+        const sortOrder = sortSelect ? sortSelect.value : 'newest';
 
         if (currentVocabView === 'bento') {
-            let filteredTopics = globalTopicsOverview;
+            let filteredTopics = [...globalTopicsOverview];
 
+            // 1. Lọc theo cấp độ CEFR
             if (currentCEFRFilter !== 'ALL') {
                 filteredTopics = filteredTopics.filter(t => (t.representative_cefr || 'A1').toUpperCase() === currentCEFRFilter);
             }
 
+            // 2. Lọc theo mốc thời gian thêm vào
+            if (currentTimeFilter === 'TODAY') {
+                filteredTopics = filteredTopics.filter(t => t.is_today);
+            } else if (currentTimeFilter === 'WEEK') {
+                filteredTopics = filteredTopics.filter(t => t.is_this_week);
+            } else if (currentTimeFilter === 'MONTH') {
+                filteredTopics = filteredTopics.filter(t => t.is_this_month);
+            }
+
+            // 3. Lọc theo từ khóa tìm kiếm (tên chủ đề hoặc từ mẫu)
             if (query) {
                 filteredTopics = filteredTopics.filter(t => 
                     t.theme.toLowerCase().includes(query) ||
                     (t.sample_words && t.sample_words.some(w => w.toLowerCase().includes(query)))
                 );
             }
+
+            // 4. Sắp xếp danh sách Unit linh hoạt
+            if (sortOrder === 'newest') {
+                filteredTopics.sort((a, b) => (b.latest_timestamp || 0) - (a.latest_timestamp || 0) || (b.max_vocab_id || 0) - (a.max_vocab_id || 0));
+            } else if (sortOrder === 'oldest') {
+                filteredTopics.sort((a, b) => (a.latest_timestamp || 0) - (b.latest_timestamp || 0) || (a.max_vocab_id || 0) - (b.max_vocab_id || 0));
+            } else if (sortOrder === 'name_asc') {
+                filteredTopics.sort((a, b) => a.theme.localeCompare(b.theme));
+            } else if (sortOrder === 'name_desc') {
+                filteredTopics.sort((a, b) => b.theme.localeCompare(a.theme));
+            } else if (sortOrder === 'progress_asc') {
+                filteredTopics.sort((a, b) => (a.progress_percent || 0) - (b.progress_percent || 0));
+            } else if (sortOrder === 'progress_desc') {
+                filteredTopics.sort((a, b) => (b.progress_percent || 0) - (a.progress_percent || 0));
+            }
+
             renderTopicBentoCards(filteredTopics);
         } else {
             let filteredWords = globalVocabList;
