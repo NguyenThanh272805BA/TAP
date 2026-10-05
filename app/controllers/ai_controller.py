@@ -447,7 +447,14 @@ def generate_unit():
 
 @ai_bp.route('/generate_random_unit', methods=['POST'])
 def generate_random_unit():
-    """Tạo Unit ngẫu nhiên thông minh, tránh trùng lặp 100% với dữ liệu tài khoản cá nhân (Phản hồi siêu tốc)"""
+    """
+    Tạo Unit ngẫu nhiên thông minh với bộ lọc Cấp độ / Khoảng cấp độ CEFR theo nhu cầu người học:
+    - Hỗ trợ 'CURRENT': Tự động lấy theo Band mục tiêu của người học (VD: A1 -> A2).
+    - Hỗ trợ Cố định 1 cấp độ: 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'.
+    - Hỗ trợ Dải cấp độ: 'A1-A2', 'A2-B1', 'B1-B2', 'B2-C1', 'C1-C2'.
+    - Hỗ trợ 'ALL': Ngẫu nhiên mọi cấp độ.
+    Tránh trùng lặp 100% với kho từ vựng đã có của user.
+    """
     import random
     from sqlalchemy import func
 
@@ -455,29 +462,67 @@ def generate_random_unit():
     if not user_id:
         return jsonify({"error": "Yêu cầu đăng nhập!"}), 401
 
+    data = request.get_json(silent=True) or {}
+    level_choice = str(data.get('level', 'CURRENT')).upper().strip()
+
     user = User.query.get(user_id)
-    target_band = getattr(user, 'current_band', 'A1') if user else 'A1'
+    current_band = getattr(user, 'current_band', 'A1') if user else 'A1'
+
+    from app.utils.master_g_agent import MasterGPedagogicalAgent
+    cfg = MasterGPedagogicalAgent.BAND_CONFIG.get(current_band, MasterGPedagogicalAgent.BAND_CONFIG['A1'])
+    target_band_default = cfg.get('target', 'A2')
+
+    VALID_BANDS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+    RANGE_MAP = {
+        'A1-A2': ['A1', 'A2'],
+        'A2-B1': ['A2', 'B1'],
+        'B1-B2': ['B1', 'B2'],
+        'B2-C1': ['B2', 'C1'],
+        'C1-C2': ['C1', 'C2'],
+    }
+
+    if level_choice == 'CURRENT':
+        target_levels = [target_band_default]
+        level_label = f"Band mục tiêu {target_band_default}"
+    elif level_choice in VALID_BANDS:
+        target_levels = [level_choice]
+        level_label = f"Band {level_choice}"
+    elif level_choice in RANGE_MAP:
+        target_levels = RANGE_MAP[level_choice]
+        level_label = f"Dải {level_choice}"
+    elif level_choice == 'ALL':
+        target_levels = None
+        level_label = "Mọi cấp độ"
+    else:
+        target_levels = [target_band_default]
+        level_label = f"Band {target_band_default}"
 
     # 1. Tìm tập ID từ vựng mà user ĐÃ CÓ trong kho
     user_vocab_ids = db.session.query(UserVocabulary.vocab_id).filter_by(user_id=user_id).all()
     user_vocab_id_set = {r[0] for r in user_vocab_ids}
 
-    # 2. ƯU TIÊN 1 (SIÊU TỐC 50ms): Tìm các Theme có sẵn trong CSDL mà user còn >= 6 từ chưa mở
-    db_themes = db.session.query(Vocabulary.theme).filter(
+    # 2. ƯU TIÊN 1 (SIÊU TỐC CSDL): Tìm Theme có sẵn chứa >= 4 từ chưa mở khớp cấp độ yêu cầu
+    base_theme_filters = [
         ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True,
         Vocabulary.theme != None,
         Vocabulary.theme != ''
-    ).group_by(Vocabulary.theme).having(func.count(Vocabulary.id) >= 6).all()
+    ]
+    if target_levels:
+        base_theme_filters.append(Vocabulary.cefr_level.in_(target_levels))
 
+    db_themes = db.session.query(Vocabulary.theme).filter(*base_theme_filters).group_by(Vocabulary.theme).having(func.count(Vocabulary.id) >= 4).all()
     available_db_themes = [t[0] for t in db_themes if t[0]]
 
     if available_db_themes:
         selected_theme = random.choice(available_db_themes)
-        candidate_vocabs = Vocabulary.query.filter(
+        cand_query = Vocabulary.query.filter(
             Vocabulary.theme == selected_theme,
             ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
-        ).limit(12).all()
+        )
+        if target_levels:
+            cand_query = cand_query.filter(Vocabulary.cefr_level.in_(target_levels))
 
+        candidate_vocabs = cand_query.limit(12).all()
         added = 0
         for v in candidate_vocabs:
             db.session.add(UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True))
@@ -486,28 +531,53 @@ def generate_random_unit():
 
         return jsonify({
             "status": "success",
-            "message": f"🎲 Đã đúc thành công Unit ngẫu nhiên '{selected_theme}' với {added} từ mới!",
+            "message": f"🎲 Đã đúc thành công Unit '{selected_theme}' ({level_label}) với {added} từ mới!",
             "theme": selected_theme,
             "topic": selected_theme,
             "words_count": added,
-            "added": added
+            "added": added,
+            "level": level_choice,
+            "level_label": level_label
         }), 200
 
-    # 3. ƯU TIÊN 2: Nếu đã thuộc hết các chủ đề có sẵn, mở rộng từ THEME_BANK qua AI
+    # 3. ƯU TIÊN 2: Gom các từ chưa học khớp chuẩn cấp độ từ các theme phân mảnh trong CSDL
+    cross_query = Vocabulary.query.filter(
+        ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
+    )
+    if target_levels:
+        cross_query = cross_query.filter(Vocabulary.cefr_level.in_(target_levels))
+    available_cross_words = cross_query.order_by(func.random()).limit(12).all()
+
+    if len(available_cross_words) >= 4:
+        unit_tag = '+'.join(target_levels) if target_levels else 'MIXED'
+        curated_theme = f"UNIT {unit_tag} BOOSTER"
+        added = 0
+        for v in available_cross_words:
+            if not v.theme or v.theme.strip() == '':
+                v.theme = curated_theme
+            db.session.add(UserVocabulary(user_id=user_id, vocab_id=v.id, is_unlocked=True))
+            added += 1
+        db.session.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": f"🎲 Đã đúc thành công Unit '{curated_theme}' ({level_label}) gồm {added} từ chuẩn mực!",
+            "theme": curated_theme,
+            "topic": curated_theme,
+            "words_count": added,
+            "added": added,
+            "level": level_choice,
+            "level_label": level_label
+        }), 200
+
+    # 4. ƯU TIÊN 3: Nếu kho từ vựng CSDL của cấp độ này đã được mở hết, kích hoạt Lò đúc AI (Gemini)
     THEME_BANK = [
-        "AI & ROBOTICS", "NEUROSCIENCE", "DIGITAL MARKETING", "GLOBAL LOGISTICS",
-        "QUANTUM COMPUTING", "ENVIRONMENTAL SCIENCE", "BEHAVIORAL ECONOMICS",
-        "MODERN ARCHITECTURE", "CULINARY ARTS", "ASTRONOMY & COSMOLOGY",
-        "BIOTECHNOLOGY", "FINANCIAL TECHNOLOGY", "RENEWABLE ENERGY",
-        "CYBERSECURITY", "COGNITIVE PSYCHOLOGY", "GLOBAL DIPLOMACY",
-        "DATA SCIENCE", "SPORTS SCIENCE", "GENETICS & EVOLUTION",
-        "CINEMATOGRAPHY", "AEROSPACE ENGINEERING", "PHILOSOPHY OF MIND",
-        "URBAN PLANNING", "MARINE BIOLOGY", "CLIMATE DYNAMICS",
-        "ANCIENT CIVILIZATIONS", "CREATIVE WRITING", "CROSS-CULTURAL COMMUNICATION",
-        "EPIDEMIOLOGY", "GAME DESIGN & THEORY", "MICROBIOLOGY", "MUSICOLOGY"
+        "DAILY LIFE & ROUTINES", "TRAVEL & ADVENTURE", "FOOD & NUTRITION",
+        "SCIENCE & TECHNOLOGY", "WORK & BUSINESS", "ENVIRONMENT & NATURE",
+        "SPORTS & WELLNESS", "ART & ENTERTAINMENT", "EDUCATION & CAMPUS",
+        "COMMUNICATION & MEDIA", "URBAN LIFE & HOUSING", "HEALTHCARE & MEDICINE"
     ]
 
-    # Tìm các chủ đề user đã có
     user_themes = db.session.query(Vocabulary.theme).join(
         UserVocabulary, Vocabulary.id == UserVocabulary.vocab_id
     ).filter(UserVocabulary.user_id == user_id).distinct().all()
@@ -515,11 +585,15 @@ def generate_random_unit():
 
     available_themes = [t for t in THEME_BANK if t not in existing_theme_set]
     selected_theme = random.choice(available_themes) if available_themes else random.choice(THEME_BANK)
+
+    target_prompt_cefr = target_levels[0] if target_levels else current_band
+    cefr_rule = f"ở cấp độ CEFR {', '.join(target_levels)}" if target_levels else f"ở cấp độ CEFR {target_prompt_cefr}"
+
     prompt = f"""
-    Tạo 12-15 từ vựng tiếng Anh học thuật hấp dẫn chủ đề '{selected_theme}', phù hợp trình độ CEFR {target_band}.
-    BẮT BUỘC TRẢ VỀ ĐÚNG 1 MẢNG JSON, TUYỆT ĐỐI KHÔNG CÓ KÝ TỰ MARKDOWN, KHÔNG GIẢI THÍCH.
+    Tạo 12-15 từ vựng tiếng Anh học thuật hấp dẫn chủ đề '{selected_theme}', CHÍNH XÁC phù hợp {cefr_rule}.
+    BẮT BUỘC TRẢ VỀ ĐÚNG 1 MẢNG JSON, TUYỆT ĐỐI KHÔNG CÓ KÝ TỰ MARKDOWN, KHÔNG GIẢI THÍCH:
     [
-        {{"word": "word_example", "meaning": "nghĩa_tiếng_việt", "theme": "{selected_theme}"}}
+        {{"word": "word_example", "meaning": "nghĩa_tiếng_việt", "theme": "{selected_theme}", "cefr_level": "{target_prompt_cefr}"}}
     ]
     """
     try:
@@ -533,6 +607,7 @@ def generate_random_unit():
             items = []
 
         if isinstance(items, list) and len(items) > 0:
+            added = 0
             for item in items:
                 w_str = item.get('word', '').strip().lower()
                 m_str = item.get('meaning', '').strip()
@@ -540,9 +615,11 @@ def generate_random_unit():
 
                 v = Vocabulary.query.filter_by(word=w_str).first()
                 if not v:
-                    predicted_level = cefr_engine.predict_cefr(w_str)
+                    assigned_cefr = item.get('cefr_level') or target_prompt_cefr
+                    if target_levels and assigned_cefr not in target_levels:
+                        assigned_cefr = target_levels[0]
                     v = Vocabulary(word=w_str, meaning=m_str, theme=selected_theme,
-                                   cefr_level=predicted_level, image_url="default.png", is_unlocked=True)
+                                   cefr_level=assigned_cefr, image_url="default.png", is_unlocked=True)
                     db.session.add(v)
                     db.session.flush()
 
@@ -553,20 +630,31 @@ def generate_random_unit():
             db.session.commit()
             return jsonify({
                 "status": "success",
-                "message": f"🎲 Lò đúc AI đã tạo thành công Unit ngẫu nhiên '{selected_theme}' với {added} từ mới!",
+                "message": f"🎲 Lò đúc AI đã tạo thành công Unit mới '{selected_theme}' ({level_label}) với {added} từ mới!",
                 "theme": selected_theme,
                 "topic": selected_theme,
                 "words_count": added,
-                "added": added
+                "added": added,
+                "level": level_choice,
+                "level_label": level_label
             }), 200
     except Exception:
         pass
 
-    # Fallback an toàn nếu AI bận: Lấy 12 từ trong kho từ vựng mà user chưa có
-    fallback_vocabs = Vocabulary.query.filter(
+    # 5. ƯU TIÊN 4: Fallback an toàn
+    fallback_query = Vocabulary.query.filter(
         ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
-    ).limit(12).all()
+    )
+    if target_levels:
+        fallback_query = fallback_query.filter(Vocabulary.cefr_level.in_(target_levels))
+    fallback_vocabs = fallback_query.limit(12).all()
+    if not fallback_vocabs:
+        fallback_vocabs = Vocabulary.query.filter(
+            ~Vocabulary.id.in_(user_vocab_id_set) if user_vocab_id_set else True
+        ).limit(12).all()
 
+    added = 0
+    fallback_theme = f"UNIT {target_levels[0] if target_levels else 'MIXED'} ESSENTIALS"
     for fv in fallback_vocabs:
         db.session.add(UserVocabulary(user_id=user_id, vocab_id=fv.id, is_unlocked=True))
         added += 1
@@ -574,11 +662,13 @@ def generate_random_unit():
     db.session.commit()
     return jsonify({
         "status": "success",
-        "message": f"🎲 Đã khởi tạo thành công Unit ngẫu nhiên '{selected_theme}' ({added} từ mới) cho bạn!",
-        "theme": selected_theme,
-        "topic": selected_theme,
+        "message": f"🎲 Đã khởi tạo thành công Unit '{fallback_theme}' ({level_label}) với {added} từ vựng cho bạn!",
+        "theme": fallback_theme,
+        "topic": fallback_theme,
         "words_count": added,
-        "added": added
+        "added": added,
+        "level": level_choice,
+        "level_label": level_label
     }), 200
 
 

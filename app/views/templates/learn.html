@@ -425,10 +425,32 @@
                 <div style="flex: 2; min-width: 260px; position: relative;">
                     <input type="text" id="vocabSearchInput" oninput="handleVocabSearch()" placeholder="🔍 Tìm kiếm từ vựng hoặc chủ đề (VD: cat, school, technology)..." class="auth-input" style="margin-bottom: 0; padding-left: 15px; width: 100%;">
                 </div>
-                <div style="display: flex; gap: 8px; flex: 1.2; min-width: 320px;">
-                    <input type="text" id="newTopicInput" placeholder="Đúc chủ đề mới..." class="auth-input" style="flex: 1; margin-bottom: 0;">
+                <div style="display: flex; gap: 8px; flex: 1.4; min-width: 380px; flex-wrap: wrap;">
+                    <input type="text" id="newTopicInput" placeholder="Đúc chủ đề mới..." class="auth-input" style="flex: 1; min-width: 140px; margin-bottom: 0;">
                     <button id="btn-generate-unit" onclick="generateCustomUnit()" class="pixel-btn" style="background: var(--neon-purple); font-size: 10px; padding: 10px 14px; white-space: nowrap;">TẠO UNIT</button>
-                    <button id="btn-random-unit" onclick="generateRandomUnit()" class="pixel-btn" style="background: linear-gradient(135deg, #10b981, #06b6d4); font-size: 10px; padding: 10px 14px; white-space: nowrap;">🎲 RANDOM UNIT</button>
+                    
+                    <!-- BỘ CHỌN CẤP ĐỘ / KHOẢNG CEFR CHO RANDOM UNIT -->
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <select id="randomUnitBandSelect" title="Chọn khoảng cấp độ CEFR cho Random Unit" class="auth-input" style="margin-bottom: 0; padding: 0 8px; height: 38px; font-size: 11px; background: rgba(15, 23, 42, 0.95); border: 1.5px solid var(--neon-cyan); color: var(--neon-cyan); border-radius: 6px; font-family: var(--text-mono); cursor: pointer; min-width: 140px;">
+                            <option value="CURRENT">🎯 Theo Band của tôi</option>
+                            <optgroup label="── CỐ ĐỊNH 1 CẤP ĐỘ ──" style="background: #0f172a; color: #94a3b8;">
+                                <option value="A1">🟢 Cố định A1 (Beginner)</option>
+                                <option value="A2" selected>🔵 Cố định A2 (Elementary)</option>
+                                <option value="B1">🟡 Cố định B1 (Intermediate)</option>
+                                <option value="B2">🟠 Cố định B2 (Upper-Inter)</option>
+                                <option value="C1">🔴 Cố định C1 (Advanced)</option>
+                                <option value="C2">🟣 Cố định C2 (Mastery)</option>
+                            </optgroup>
+                            <optgroup label="── KHOẢNG DẢI TRÌNH ĐỘ ──" style="background: #0f172a; color: #94a3b8;">
+                                <option value="A1-A2">🌱 Dải A1 ➔ A2 (Sơ cấp)</option>
+                                <option value="A2-B1">⚡ Dải A2 ➔ B1 (Chuyển tiếp)</option>
+                                <option value="B1-B2">🚀 Dải B1 ➔ B2 (Trung cấp)</option>
+                                <option value="B2-C1">🔥 Dải B2 ➔ C1 (Nâng cao)</option>
+                                <option value="ALL">🌐 Mọi cấp độ (Ngẫu nhiên)</option>
+                            </optgroup>
+                        </select>
+                        <button id="btn-random-unit" onclick="generateRandomUnit()" class="pixel-btn" style="background: linear-gradient(135deg, #10b981, #06b6d4); font-size: 10px; padding: 10px 14px; white-space: nowrap; height: 38px;">🎲 RANDOM UNIT</button>
+                    </div>
                 </div>
             </div>
 
@@ -1193,6 +1215,9 @@
 
     function generateRandomUnit() {
         const btnRandom = document.getElementById("btn-random-unit");
+        const bandSelect = document.getElementById("randomUnitBandSelect");
+        const selectedBand = bandSelect ? bandSelect.value : 'CURRENT';
+
         if (btnRandom) {
             btnRandom.disabled = true;
             btnRandom.innerText = "ĐANG ĐÚC...";
@@ -1200,14 +1225,16 @@
 
         fetch('/api/ai/generate_random_unit', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'}
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ level: selectedBand })
         })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
                 const topicName = data.topic || data.theme || "NGẪU NHIÊN";
                 const count = data.words_count !== undefined ? data.words_count : (data.added || 0);
-                alert(`✨ Tuyệt vời! Đã đúc thành công Unit: "${topicName.toUpperCase()}" gồm ${count} từ vựng mới độc quyền.`);
+                const levelNotice = data.level_label ? ` [${data.level_label}]` : '';
+                alert(`✨ Tuyệt vời! Đã đúc thành công Unit: "${topicName.toUpperCase()}"${levelNotice} gồm ${count} từ vựng mới.`);
                 loadVocabOverview();
             } else {
                 alert(data.message || data.error || "Không thể tạo Random Unit lúc này.");
