@@ -46,6 +46,7 @@ let reticleNormPos = { x: 0.5, y: 0.4 };
 let reticleRadius = 45;
 let currentReticleWord = null;
 let isDraggingReticle = false;
+let isResizingReticle = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     videoElement = document.getElementById("webcam-video");
@@ -77,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
         else if (e.key === '2') switchWorkspace('vault');
     });
 
-    // KHỞI TẠO TƯƠNG TÁC VÒNG ĐỎ SOI VẬT THỂ (MÀN HÌNH CẢM ỨNG & CHUỘT)
+    // KHỞI TẠO TƯƠNG TÁC VÒNG ĐỎ SOI VẬT THỂ (MÀN HÌNH CẢM ỨNG, CHUỘT & RESIZE)
     initTargetReticleEvents();
 
     // Khởi tạo trạng thái Workspace ban đầu
@@ -95,46 +96,101 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initTargetReticleEvents() {
     const reticleEl = document.getElementById("target-reticle");
+    const resizeHandle = document.getElementById("reticle-resize-handle");
     const wrapper = document.getElementById("viewport-wrapper");
 
-    if (reticleEl) {
-        // Chuột kéo vòng đỏ
-        reticleEl.addEventListener("mousedown", (e) => {
-            if (e.target.closest("button") || e.target.closest("#reticle-callout")) return;
-            isDraggingReticle = true;
+    // Tay nắm góc kéo để phóng to / thu nhỏ vòng tròn
+    if (resizeHandle) {
+        resizeHandle.addEventListener("mousedown", (e) => {
+            isResizingReticle = true;
+            isDraggingReticle = false;
+            e.stopPropagation();
             e.preventDefault();
         });
 
-        // Chạm ngón tay kéo vòng đỏ (Hỗ trợ 100% thiết bị di động / điện thoại)
-        reticleEl.addEventListener("touchstart", (e) => {
-            if (e.target.closest("button") || e.target.closest("#reticle-callout")) return;
-            isDraggingReticle = true;
+        resizeHandle.addEventListener("touchstart", (e) => {
+            isResizingReticle = true;
+            isDraggingReticle = false;
             e.stopPropagation();
         }, { passive: false });
     }
 
-    // Sự kiện kéo chuột toàn cửa sổ
+    if (reticleEl) {
+        // Chuột kéo di chuyển vòng đỏ
+        reticleEl.addEventListener("mousedown", (e) => {
+            if (e.target.closest("button") || e.target.closest("#reticle-callout") || e.target.closest("#reticle-resize-handle")) return;
+            isDraggingReticle = true;
+            isResizingReticle = false;
+            e.preventDefault();
+        });
+
+        // Chạm ngón tay kéo di chuyển vòng đỏ (Hỗ trợ 100% thiết bị di động / điện thoại)
+        reticleEl.addEventListener("touchstart", (e) => {
+            if (e.target.closest("button") || e.target.closest("#reticle-callout") || e.target.closest("#reticle-resize-handle")) return;
+            isDraggingReticle = true;
+            isResizingReticle = false;
+            e.stopPropagation();
+        }, { passive: false });
+
+        // Cuộn bánh xe chuột để phóng to / thu nhỏ vòng tròn
+        reticleEl.addEventListener("wheel", (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 8 : -8;
+            stepReticleZoom(delta);
+        }, { passive: false });
+    }
+
+    // Sự kiện kéo chuột toàn cửa sổ (hỗ trợ cả kéo di chuyển và kéo góc thu phóng)
     window.addEventListener("mousemove", (e) => {
-        if (!isDraggingReticle || !wrapper) return;
+        if (!wrapper) return;
         const rect = wrapper.getBoundingClientRect();
-        const normX = (e.clientX - rect.left) / rect.width;
-        const normY = (e.clientY - rect.top) / rect.height;
-        moveReticleTo(normX, normY);
+
+        if (isResizingReticle) {
+            const centerX = rect.left + reticleNormPos.x * rect.width;
+            const centerY = rect.top + reticleNormPos.y * rect.height;
+            const dist = Math.hypot(e.clientX - centerX, e.clientY - centerY);
+            setReticleDiameter(Math.round(dist * 2));
+            return;
+        }
+
+        if (isDraggingReticle) {
+            const normX = (e.clientX - rect.left) / rect.width;
+            const normY = (e.clientY - rect.top) / rect.height;
+            moveReticleTo(normX, normY);
+        }
     });
 
     // Sự kiện vuốt ngón tay toàn màn hình cho điện thoại
     window.addEventListener("touchmove", (e) => {
-        if (!isDraggingReticle || !wrapper || !e.touches[0]) return;
+        if (!wrapper || !e.touches[0]) return;
         const touch = e.touches[0];
         const rect = wrapper.getBoundingClientRect();
-        const normX = (touch.clientX - rect.left) / rect.width;
-        const normY = (touch.clientY - rect.top) / rect.height;
-        moveReticleTo(normX, normY);
-        e.preventDefault();
+
+        if (isResizingReticle) {
+            const centerX = rect.left + reticleNormPos.x * rect.width;
+            const centerY = rect.top + reticleNormPos.y * rect.height;
+            const dist = Math.hypot(touch.clientX - centerX, touch.clientY - centerY);
+            setReticleDiameter(Math.round(dist * 2));
+            e.preventDefault();
+            return;
+        }
+
+        if (isDraggingReticle) {
+            const normX = (touch.clientX - rect.left) / rect.width;
+            const normY = (touch.clientY - rect.top) / rect.height;
+            moveReticleTo(normX, normY);
+            e.preventDefault();
+        }
     }, { passive: false });
 
-    window.addEventListener("mouseup", () => { isDraggingReticle = false; });
-    window.addEventListener("touchend", () => { isDraggingReticle = false; });
+    window.addEventListener("mouseup", () => {
+        isDraggingReticle = false;
+        isResizingReticle = false;
+    });
+    window.addEventListener("touchend", () => {
+        isDraggingReticle = false;
+        isResizingReticle = false;
+    });
 
     // Chạm hoặc Click vào bất kỳ vị trí nào trên Camera -> Vòng đỏ tự động lướt tới đó!
     if (wrapper) {
@@ -143,6 +199,7 @@ function initTargetReticleEvents() {
             if (e.target.closest("button") || 
                 e.target.closest("#camera-ar-sentence-dock") || 
                 e.target.closest("#reticle-callout") || 
+                e.target.closest("#reticle-resize-handle") ||
                 e.target.closest(".hud-metrics") ||
                 e.target.closest(".hud-gesture-badge") ||
                 e.target.closest("#media-mode-bar") ||
@@ -286,13 +343,13 @@ function updateReticleTarget() {
         currentReticleWord = matchedPart;
         titleEl.innerText = (matchedPart.word || "").toUpperCase();
         badgeEl.innerText = (matchedPart.cefr || "B1").toUpperCase();
-        meaningEl.innerText = matchedPart.meaning ? `🇻🇳 ${matchedPart.meaning}` : "";
+        meaningEl.innerText = matchedPart.meaning || "";
         calloutEl.style.display = "flex";
     } else {
         currentReticleWord = null;
-        titleEl.innerText = "🎯 VÒNG ĐỎ SOI";
+        titleEl.innerText = "VÒNG ĐỎ QUÉT";
         badgeEl.innerText = "A1-C1";
-        meaningEl.innerText = "Di chuyển vòng đỏ tới chi tiết để nhận biết";
+        meaningEl.innerText = "Di chuyển hoặc phóng to vòng đỏ để ngắm chi tiết";
         calloutEl.style.display = "flex";
     }
 
@@ -304,34 +361,54 @@ function updateReticleTarget() {
 function toggleTargetReticle() {
     isReticleActive = !isReticleActive;
     const reticleEl = document.getElementById("target-reticle");
-    const iconEl = document.getElementById("reticle-icon");
+    const zoomDock = document.getElementById("reticle-zoom-dock");
     const textEl = document.getElementById("reticle-text");
     const btnEl = document.getElementById("btn-toggle-reticle");
 
     if (reticleEl) {
         reticleEl.style.display = isReticleActive ? "flex" : "none";
     }
+    if (zoomDock) {
+        zoomDock.style.display = isReticleActive ? "inline-flex" : "none";
+    }
     if (textEl) {
         textEl.innerText = isReticleActive ? "Vòng Đỏ: Bật" : "Vòng Đỏ: Tắt";
     }
     if (btnEl) {
-        btnEl.style.borderColor = isReticleActive ? "#f43f5e" : "rgba(148, 163, 184, 0.4)";
-        btnEl.style.background = isReticleActive ? "linear-gradient(135deg, rgba(244, 63, 94, 0.25), rgba(225, 29, 72, 0.35))" : "rgba(30, 41, 59, 0.6)";
+        btnEl.style.borderColor = isReticleActive ? "#ef4444" : "rgba(148, 163, 184, 0.4)";
+        btnEl.style.background = isReticleActive ? "linear-gradient(135deg, rgba(239, 68, 68, 0.28), rgba(220, 38, 38, 0.38))" : "rgba(30, 41, 59, 0.6)";
     }
     if (isReticleActive) updateReticleTarget();
 }
 
-function setReticleSize(radius, event) {
-    if (event) event.stopPropagation();
-    reticleRadius = radius;
+function stepReticleZoom(delta) {
+    const currentDiameter = reticleRadius * 2;
+    const newDiameter = Math.max(36, Math.min(240, currentDiameter + delta));
+    setReticleDiameter(newDiameter);
+}
+
+function setReticleDiameter(diameter) {
+    const dia = Math.max(36, Math.min(240, parseInt(diameter) || 90));
+    reticleRadius = dia / 2;
+
     const reticleEl = document.getElementById("target-reticle");
     if (reticleEl) {
-        reticleEl.style.width = `${radius * 2}px`;
-        reticleEl.style.height = `${radius * 2}px`;
+        reticleEl.style.width = `${dia}px`;
+        reticleEl.style.height = `${dia}px`;
     }
-    document.querySelectorAll(".reticle-size-dot").forEach(dot => dot.classList.remove("active"));
-    if (event && event.target) event.target.classList.add("active");
+
+    const slider = document.getElementById("reticle-zoom-slider");
+    if (slider) slider.value = dia;
+
+    const label = document.getElementById("reticle-diameter-label");
+    if (label) label.innerText = `${dia}px`;
+
     updateReticleTarget();
+}
+
+function setReticleSize(radius, event) {
+    if (event) event.stopPropagation();
+    setReticleDiameter(radius * 2);
 }
 
 function addReticleWordToSentence(event) {
@@ -507,8 +584,13 @@ function renderLiveDetectionStrip() {
             <span style="font-size: 10px; font-weight: 800; color: ${badgeColor}; background: ${badgeBg}; padding: 1px 5px; border-radius: 4px;">${part.cefr || 'B1'}</span>
             <strong style="color: #fff;">${(part.word || '').toUpperCase()}</strong>
             ${part.meaning ? `<span style="color: #fef08a; font-size: 11px;">(${part.meaning})</span>` : ''}
-            <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; font-size: 12px;" onclick="speakWord('${part.word}', event)" title="Nghe phát âm">🔊</button>
-            <button type="button" class="action-pill-btn btn-primary-pill" style="padding: 2px 7px; font-size: 10px;" onclick="useWordInAssembly('${part.word}')" title="Chuyển sang Khay Ghép Câu">🧩 Dùng</button>
+            <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; display: inline-flex; align-items: center;" onclick="speakWord('${part.word}', event)" title="Nghe phát âm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </button>
+            <button type="button" class="action-pill-btn btn-primary-pill" style="padding: 2px 7px; font-size: 10px; display: inline-flex; align-items: center; gap: 3px;" onclick="useWordInAssembly('${part.word}')" title="Chuyển sang Khay Ghép Câu">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.439 7.85c0-1.57.802-2.54 1.561-3.34V4.5a2 2 0 0 0-2-2h-3.5a2.5 2.5 0 0 1-5 0H7a2 2 0 0 0-2 2v.01c.759.8 1.561 1.77 1.561 3.34 0 1.58-.802 2.55-1.561 3.35V11.2a2 2 0 0 0 2 2h3.5a2.5 2.5 0 0 1 5 0H19a2 2 0 0 0 2-2v-.01c-.759-.8-1.561-1.77-1.561-3.34Z"/><circle cx="12" cy="12" r="2"/></svg>
+                <span>Dùng</span>
+            </button>
         `;
 
         chipsContainer.appendChild(chip);
@@ -564,8 +646,8 @@ function renderVaultCards() {
 
         const isBasic = item.levelTier === "basic";
         const tierBadge = isBasic 
-            ? `<span style="background: rgba(34, 211, 238, 0.2); color: #22d3ee; border: 1px solid #22d3ee; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🌱 A1-A2 Cơ Bản</span>`
-            : `<span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #c084fc; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🚀 B1-C1 Chuyên Sâu</span>`;
+            ? `<span style="background: rgba(34, 211, 238, 0.2); color: #22d3ee; border: 1px solid #22d3ee; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M12 22v-9"/><path d="M12 13a5 5 0 0 0 5-5c0-3-2-5-5-5s-5 2-5 5a5 5 0 0 0 5 5Z"/></svg> A1-A2 Cơ Bản</span>`
+            : `<span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #c084fc; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg> B1-C1 Chuyên Sâu</span>`;
 
         card.innerHTML = `
             <div>
@@ -573,7 +655,9 @@ function renderVaultCards() {
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <h3 style="margin: 0; color: #fff; font-size: 17px; font-weight: 800; letter-spacing: 0.5px;">${item.word.toUpperCase()}</h3>
-                            <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; font-size: 14px;" onclick="speakWord('${item.word}', event)" title="Nghe phát âm">🔊</button>
+                            <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; display: inline-flex; align-items: center;" onclick="speakWord('${item.word}', event)" title="Nghe phát âm">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                            </button>
                         </div>
                         ${item.ipa ? `<div style="color: #94a3b8; font-size: 12px; font-family: var(--text-mono);">${item.ipa}</div>` : ''}
                     </div>
@@ -581,7 +665,7 @@ function renderVaultCards() {
                 </div>
 
                 <div style="background: rgba(2, 6, 23, 0.6); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--neon-cyan);">
-                    <div style="color: #fef08a; font-weight: 600; font-size: 13px;">🇻🇳 ${item.meaning}</div>
+                    <div style="color: #fef08a; font-weight: 600; font-size: 13px;">${item.meaning}</div>
                     <div style="color: #94a3b8; font-size: 11px; margin-top: 3px;">
                         Thuộc vật thể: <b style="color: #67e8f9;">${(item.parentObject || 'object').toUpperCase()}</b>
                     </div>
@@ -589,8 +673,9 @@ function renderVaultCards() {
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px dashed rgba(103, 232, 249, 0.2); padding-top: 10px;">
-                <button type="button" class="action-pill-btn btn-primary-pill" onclick="useWordInAssembly('${item.word}')" style="font-size: 11px; padding: 5px 10px;">
-                    <span>🧩</span> Đưa vào khay ghép
+                <button type="button" class="action-pill-btn btn-primary-pill" onclick="useWordInAssembly('${item.word}')" style="font-size: 11px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.439 7.85c0-1.57.802-2.54 1.561-3.34V4.5a2 2 0 0 0-2-2h-3.5a2.5 2.5 0 0 1-5 0H7a2 2 0 0 0-2 2v.01c.759.8 1.561 1.77 1.561 3.34 0 1.58-.802 2.55-1.561 3.35V11.2a2 2 0 0 0 2 2h3.5a2.5 2.5 0 0 1 5 0H19a2 2 0 0 0 2-2v-.01c-.759-.8-1.561-1.77-1.561-3.34Z"/><circle cx="12" cy="12" r="2"/></svg>
+                    <span>Đưa vào khay ghép</span>
                 </button>
                 ${item.isLearned 
                     ? `<span style="font-size: 11px; color: #4ade80; font-weight: 700;">✓ Đã lưu SRS</span>`
@@ -832,18 +917,19 @@ function classifyGesture(landmarks) {
     avgDistToWrist /= 4;
     const relativeWrist = avgDistToWrist / handScale;
 
+    const gestureEmojiEl = document.getElementById("gesture-emoji");
     // Phân loại chuẩn xác bất kể đứng gần hay xa webcam
     if (relativePinch < 0.42 || pinchDist < 0.055) {
         currentGesture = "PINCH";
-        document.getElementById("gesture-emoji").innerText = "👌";
+        if (gestureEmojiEl) gestureEmojiEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`;
         document.getElementById("gesture-text").innerText = "Kẹp ngón tay (Pinch)";
     } else if (relativeWrist < 1.15 || avgDistToWrist < 0.20) {
         currentGesture = "FIST";
-        document.getElementById("gesture-emoji").innerText = "✊";
+        if (gestureEmojiEl) gestureEmojiEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2"><circle cx="12" cy="12" r="7"/></svg>`;
         document.getElementById("gesture-text").innerText = "Nắm tay (Grab)";
     } else {
         currentGesture = "OPEN";
-        document.getElementById("gesture-emoji").innerText = "🖐️";
+        if (gestureEmojiEl) gestureEmojiEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v3"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v7"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>`;
         document.getElementById("gesture-text").innerText = "Bàn tay mở (Open)";
     }
 }
@@ -914,7 +1000,11 @@ function updateAirPointerAndInteraction(normX, normY) {
 
     if (isGrabbing) {
         airPointer.classList.add("is-grabbing");
-        if (airPointerIcon) airPointerIcon.innerText = (currentGesture === "PINCH") ? "👌" : "✊";
+        if (airPointerIcon) {
+            airPointerIcon.innerHTML = (currentGesture === "PINCH") 
+                ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="2"/></svg>` 
+                : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5"><circle cx="12" cy="12" r="7"/></svg>`;
+        }
 
         if (!grabbedElement) {
             // Dùng elementFromPoint chạy O(1) siêu nhanh
@@ -948,7 +1038,9 @@ function updateAirPointerAndInteraction(normX, normY) {
     } else {
         // Cử chỉ là OPEN
         airPointer.classList.remove("is-grabbing");
-        if (airPointerIcon) airPointerIcon.innerText = "🖐️";
+        if (airPointerIcon) {
+            airPointerIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v3"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v7"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>`;
+        }
 
         if (grabbedElement) {
             releaseGrabbedElement(true, screenX, screenY);
@@ -1131,7 +1223,7 @@ function startVideoAutoScan() {
         autoScanBtn.style.background = "linear-gradient(135deg, #f43f5e, #e11d48)";
         autoScanBtn.style.borderColor = "#f43f5e";
     }
-    if (icon) icon.innerText = "⏹️";
+    if (icon) icon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`;
     if (text) text.innerText = "Dừng Quét Video";
 
     captureAndScan();
@@ -1155,7 +1247,7 @@ function stopVideoAutoScan() {
         autoScanBtn.style.background = "rgba(168, 85, 247, 0.25)";
         autoScanBtn.style.borderColor = "#c084fc";
     }
-    if (icon) icon.innerText = "🎞️";
+    if (icon) icon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="15" x="2" y="7" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>`;
     if (text) text.innerText = "Quét Video Tự Động";
 }
 
@@ -1702,7 +1794,9 @@ function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPar
         <span style="font-weight: 700; color: #fff;">${word}</span>
         ${ipa ? `<span class="word-ipa">${ipa}</span>` : ''}
         ${meaning && isObjectPart ? `<span style="font-size: 11px; color: #fef08a; margin-left: 2px;">(${meaning})</span>` : ''}
-        <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; padding: 0 4px;" onclick="speakWord('${word}', event)" title="Nghe phát âm">🔊</button>
+        <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; padding: 0 4px; display: inline-flex; align-items: center;" onclick="speakWord('${word}', event)" title="Nghe phát âm">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
         ${(isObjectPart && !isLearned) ? `<button type="button" class="btn-add-vocab" onclick="collectVocab('${word}', event)" title="Lưu vào kho ôn tập SRS">+ Thu thập</button>` : ''}
     `;
 
@@ -1767,7 +1861,7 @@ function autoAssembleSentence() {
 
     const statusHud = document.getElementById("status-hud");
     if (statusHud) {
-        statusHud.innerHTML = `✨ Đã tự động ghép câu: "<b>${sentenceWords.join(" ")}</b>"`;
+        statusHud.innerHTML = `Đã tự động ghép câu: "<b>${sentenceWords.join(" ")}</b>"`;
     }
 }
 
@@ -1926,7 +2020,7 @@ async function submitSentence() {
     const submitBtn = document.getElementById("btn-submit-sentence");
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = "<span>⏳</span> Đang chấm điểm...";
+        submitBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> <span>Đang chấm điểm...</span>`;
     }
 
     try {
@@ -1968,7 +2062,7 @@ async function submitSentence() {
                 el.innerText = data.feedback || "Cấu trúc câu rất tốt!";
             });
             document.querySelectorAll("#result-exp").forEach(el => {
-                el.innerHTML = `<span>⭐</span> +${data.exp_awarded || 50} EXP đã được cộng vào tài khoản!`;
+                el.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> +${data.exp_awarded || 50} EXP đã được cộng vào tài khoản!</span>`;
             });
 
             playHapticSound("grab");
@@ -1981,7 +2075,7 @@ async function submitSentence() {
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = "<span>✨</span> Chấm Điểm & Phân Tích Ngữ Pháp";
+            submitBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> <span>Chấm Điểm & Phân Tích Ngữ Pháp</span>`;
         }
     }
 }

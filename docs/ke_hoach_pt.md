@@ -210,14 +210,14 @@
 - Hologram Phản hồi Sư phạm nổi (AR Feedback Modal): Bảng điểm, câu chuẩn hóa và lời nhận xét của Master G hiển thị nổi ngay giữa lòng camera kèm hiệu ứng âm thanh trực quan [x]
 - Nút thu gọn / mở rộng khay câu AR (`🔽 / 🔼`) giúp người dùng linh hoạt giải phóng tầm nhìn quan sát camera khi cần thiết [x]
 
-### 9.2 Vòng Đỏ Soi & Phân Biệt Vật Thể (Target Spotlight Reticle) [x]
-- Vòng tròn đỏ neon Cyberpunk (`#f43f5e`) kèm tâm ngắm Crosshair chuẩn xác và radar pulse nhấp nháy:
-  - Cho phép người dùng chạm hoặc kéo di chuyển vòng đỏ tới bất kỳ vị trí mong muốn trên ảnh chụp/camera để ngắm và phân biệt chi tiết vật thể [x]
-  - Tự động bắt tọa độ (Hit-Testing) theo khoảng cách Euclid và Bounding Box để nhận biết chi tiết vật thể gần nhất [x]
-  - Thẻ thông tin AR Callout Badge gắn liền theo vòng đỏ: Hiển thị tên từ vựng tiếng Anh in hoa, cấp độ CEFR, bản dịch tiếng Việt, nút 🔊 nghe phát âm chuẩn và nút `➕ Ghép vào câu` để đưa ngay từ đó vào câu đang ghép trong camera [x]
-  - Bổ sung thanh chỉnh bán kính vòng ngắm linh hoạt: 3 kích cỡ `S` (55px - soi chi tiết vi mô), `M` (90px - kích cỡ tiêu chuẩn), `L` (140px - bao quát toàn thể vật thể) [x]
-  - Đồng bộ hiệu ứng Bounding Box phát sáng đỏ neon rực rỡ khi vòng đỏ ngắm trúng chi tiết [x]
-  - Nút bật / tắt vòng đỏ trên thanh công cụ điều khiển [x]
+### 9.2 Vòng Đỏ Tối Giản Soi Vật Thể & Bộ Thu Phóng Linh Hoạt (Minimalist Red Reticle & Multi-Modal Zoom) [x]
+- **Thiết kế Vòng đỏ tối giản & tinh tế**: Vòng tròn đỏ neon thanh thoát (`2px solid #ef4444`), loại bỏ hoàn toàn các chi tiết rườm rà (bỏ crosshair, bỏ chấm tâm, bỏ nút S/M/L cũ) để người dùng có tầm nhìn trong suốt, thông thoáng nhất khi quan sát vật thể [x]
+- **Khả năng Bật / Tắt tức thì**: Nút bấm "Vòng Đỏ: Bật/Tắt" trên thanh điều khiển cho phép người dùng chủ động ẩn/hiện vòng tròn đỏ tùy theo nhu cầu [x]
+- **Bộ điều khiển Mở to / Thu nhỏ đa phương thức (Multi-Modal Zoom Controller)**:
+  - *Thanh trượt & Nút bấm Zoom Dock*: Nút `+`, `-` và thanh trượt trực tiếp (36px - 240px) hiển thị đường kính thời gian thực (ví dụ: `90px`) [x]
+  - *Tay nắm kéo góc trực quan (`#reticle-resize-handle`)*: Chạm ngón tay hoặc kéo chuột vào góc vòng đỏ để thu nhỏ/phóng to mượt mà [x]
+  - *Cuộn bánh xe chuột (Mouse Wheel)*: Cuộn chuột trực tiếp trên vòng đỏ để zoom to/nhỏ cực nhanh [x]
+- **Quét vật thể & sinh từ vựng chuẩn xác**: Tự động nhận diện chi tiết vật thể nằm trong phạm vi vòng tròn, hiển thị thẻ AR Callout gồm từ tiếng Anh, phát âm IPA, cấp độ CEFR, bản dịch tiếng Việt, nút loa phát âm SVG và nút đưa vào khay ghép câu AR [x]
 
 ### 9.3 Tối ưu Hóa Giao diện Đa Thiết Bị & Mobile-First (Responsive Mobile UX) [x]
 - Tối ưu hóa chuẩn Touch Targets theo khuyến nghị WCAG (kích thước tối thiểu $\ge 44\text{px}$) cho ngón tay cái trên điện thoại [x]
@@ -227,5 +227,21 @@
 
 ---
 
+## PHẦN X: CHUẨN HÓA TOÀN DIỆN ICON VECTOR SVG VẼ BẰNG CODE (CODE-BASED SVG VECTOR ICONS) [x]
+
+### 10.1 Triệt tiêu Toàn bộ Emoji Unicode Sẵn có trong Mã Nguồn [x]
+- Loại bỏ 100% các icon emoji có sẵn (👁️, 🖐️, 📦, 📸, 📁, 🎯, 🔊, 🗑️, 🤖, ⭐, ⚙️, ❌, ✨, 🔽, 🔼...) khỏi toàn bộ giao diện HTML và JavaScript DOM runtime [x]
+- Đảm bảo tính nhất quán, chuyên nghiệp của hệ thống trên mọi hệ điều hành (Windows, macOS, iOS, Android), không bị méo icon hay hiển thị icon mặt cười theo font hệ thống của điện thoại [x]
+
+### 10.2 Thư viện Biểu tượng Vector SVG Nội tuyến Chuẩn mực (Pure Inline Vector SVGs) [x]
+- Vẽ trực tiếp bằng mã SVG vector sắc nét với tỷ lệ `viewBox="0 0 24 24"`, kế thừa màu sắc qua `currentColor` và tối ưu cho giao diện Cyberpunk:
+  - **Nhóm Điều khiển Camera & Media**: SVG Camera, Shutter Scan, SVG Video Player, SVG Upload File, SVG Target Reticle, SVG Fullscreen, SVG Zoom Controls (`+` / `-`). [x]
+  - **Nhóm Cử chỉ Bàn tay (Air Pointer & HCI)**: SVG Bàn tay xòe (Open Hand), SVG Bàn tay nhúm (Pinch / Fist Grip). [x]
+  - **Nhóm Khay Ghép Câu & Ngữ Pháp AR**: SVG Khối ghép (Puzzle Piece), SVG Loa phát âm (Speaker), SVG Thùng rác dọn dẹp (Trash), SVG Mũ tốt nghiệp (Graduation Cap), SVG Đánh giá Sư phạm (Sparkles & Stars). [x]
+  - **Nhóm Phân cấp & Thống kê Kho Từ**: SVG Cây mầm (Cơ bản A1-A2), SVG Tên lửa (Chuyên sâu B1-C1), SVG Não bộ (Spaced Repetition SRS), SVG Hộp kho lưu trữ (Archive Box), SVG Kính lúp tìm kiếm (Search Glass). [x]
+
+---
+
 *Kế hoạch được phê duyệt và lưu trữ tại*: [`docs/ke_hoach_pt.md`](file:///d:/Python/TAP/docs/ke_hoach_pt.md)
+
 
