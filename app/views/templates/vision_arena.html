@@ -25,18 +25,181 @@
         position: relative;
     }
 
-    .vision-bento-grid {
+    /* WORKSPACE NAVIGATION BAR */
+    .workspace-nav-bar {
+        display: flex;
+        gap: 10px;
+        background: rgba(15, 23, 42, 0.88);
+        border: 1.5px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 6px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        flex-wrap: wrap;
+    }
+
+    .ws-tab-btn {
+        flex: 1;
+        min-width: 230px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: transparent;
+        border: 1.5px solid transparent;
+        color: #94a3b8;
+        padding: 12px 18px;
+        border-radius: 12px;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ws-tab-btn:hover {
+        color: #fff;
+        background: rgba(103, 232, 249, 0.08);
+    }
+
+    .ws-tab-btn.active {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(6, 182, 212, 0.2));
+        border-color: var(--neon-cyan);
+        color: #fff;
+        box-shadow: 0 4px 18px rgba(6, 182, 212, 0.35);
+    }
+
+    .ws-tab-badge {
+        background: rgba(2, 6, 23, 0.7);
+        border: 1px solid rgba(103, 232, 249, 0.3);
+        color: var(--neon-cyan);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-family: var(--text-mono);
+        transition: all 0.2s;
+    }
+
+    .ws-tab-btn.active .ws-tab-badge {
+        background: rgba(6, 182, 212, 0.25);
+        border-color: var(--neon-cyan);
+        color: #fff;
+    }
+
+    .arena-workspace-panel {
+        display: none;
+        animation: fadeInWs 0.25s ease;
+    }
+
+    .arena-workspace-panel.active {
+        display: block;
+    }
+
+    @keyframes fadeInWs {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* GIAO DIỆN 1: KHUNG CAMERA CHIẾM DIỆN TÍCH LỚN NHẤT (CINEMA VIEW) */
+    .cinema-viewport-container {
+        width: 100%;
+        position: relative;
+    }
+
+    .viewport-wrapper {
+        position: relative;
+        width: 100%;
+        background: #020617;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .viewport-wrapper.cinema-mode {
+        width: 100%;
+        height: 68vh;
+        min-height: 520px;
+        max-height: 800px;
+        border-radius: 20px;
+        border: 2px solid rgba(34, 211, 238, 0.5);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(6, 182, 212, 0.25);
+    }
+
+    /* GIAO DIỆN 2: CHẾ ĐỘ PIP THU NHỎ TRONG ĐẤU TRƯỜNG GHÉP CÂU */
+    .viewport-wrapper.pip-mode {
+        width: 300px;
+        height: 175px;
+        border-radius: 14px;
+        border: 2px solid var(--neon-cyan);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 20px rgba(6, 182, 212, 0.4);
+    }
+
+    .cinema-dock-card {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1.5px solid var(--glass-border);
+        border-radius: 18px;
+        padding: 18px 22px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        margin-top: 14px;
+    }
+
+    .live-detection-banner {
+        margin-top: 14px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1.5px solid rgba(103, 232, 249, 0.35);
+        border-radius: 16px;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+    }
+
+    /* GIAO DIỆN 3: KHO TỪ VỰNG DASHBOARD & GRID */
+    .vault-stats-grid {
         display: grid;
-        grid-template-columns: 1.25fr 1fr;
-        gap: 22px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
     }
 
-    @media (max-width: 1024px) {
-        .vision-bento-grid {
-            grid-template-columns: 1fr;
-        }
+    .vault-stat-card {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
+    .vault-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 14px;
+        margin-top: 14px;
+    }
+
+    .vault-word-card {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1.5px solid rgba(103, 232, 249, 0.25);
+        border-radius: 14px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 12px;
+        transition: all 0.2s ease;
+    }
+
+    .vault-word-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--neon-cyan);
+        box-shadow: 0 8px 25px rgba(6, 182, 212, 0.25);
+    }
+
+    /* BENTO CARD GENERAL */
     .bento-card {
         background: rgba(15, 23, 42, 0.75);
         border: 1.5px solid var(--glass-border);
@@ -47,18 +210,6 @@
         display: flex;
         flex-direction: column;
         position: relative;
-    }
-
-    /* Video & Canvas Viewport */
-    .viewport-wrapper {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background: #020617;
-        border-radius: 14px;
-        overflow: hidden;
-        border: 2px solid rgba(103, 232, 249, 0.3);
-        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
     }
 
     #webcam-video {
@@ -510,83 +661,56 @@
     <!-- HERO HEADER -->
     <div class="vision-hero-card">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 26px;">👁️</span>
-                    <div>
-                        <h1 style="color: var(--neon-cyan); font-size: 20px; font-weight: 800; margin: 0;">
-                            ĐẤU TRƯỜNG THỊ GIÁC & CỬ CHỈ BÀN TAY (AIR-GESTURE)
-                        </h1>
-                        <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">
-                            Nhận diện chi tiết bộ phận vật thể (100% Offline Vision Transformer OWL-ViT) & Kẹp/Thả chữ không chạm bằng cử chỉ bàn tay!
-                        </p>
-                    </div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="font-size: 28px;">👁️</span>
+                <div>
+                    <h1 style="color: var(--neon-cyan); font-size: 20px; font-weight: 800; margin: 0; letter-spacing: 0.5px;">
+                        ĐẤU TRƯỜNG THỊ GIÁC & CỬ CHỈ BÀN TAY (AIR-GESTURE ARENA)
+                    </h1>
+                    <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">
+                        100% Offline Vision Transformer OWL-ViT • Nhận diện chi tiết bộ phận đồ vật đa tầng • Kẹp thả chữ không chạm!
+                    </p>
                 </div>
             </div>
 
-            <!-- CONTROLS & CAMERA TOGGLE -->
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <div class="control-mode-toggle">
-                    <button id="mode-gesture-btn" class="mode-tab active" onclick="setControlMode('gesture')">🖐️ Cử Chỉ Bàn Tay</button>
-                    <button id="mode-mouse-btn" class="mode-tab" onclick="setControlMode('mouse')">🖱️ Chuột / Cảm Ứng</button>
-                </div>
-
-                <!-- ĐỘ SÂU / MỨC ĐỘ NHẬN BIẾT -->
-                <select id="granularity-select" style="background: rgba(2, 6, 23, 0.85); border: 1.5px solid #a855f7; color: #f3e8ff; padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer; font-weight: 600;" title="Chọn mức độ chi tiết nhận diện">
-                    <option value="all">🌐 Mức độ: Toàn diện (Mọi chi tiết)</option>
-                    <option value="macro">🔍 Mức độ: Cơ bản (Chỉ đồ vật chính)</option>
-                    <option value="functional">⚙️ Mức độ: Trung cấp (Bộ phận chức năng)</option>
-                    <option value="micro">🔬 Mức độ: Chuyên sâu (Chi tiết vi mô, linh kiện)</option>
-                </select>
-
-                <select id="category-select" style="background: rgba(2, 6, 23, 0.8); border: 1.5px solid var(--neon-cyan); color: #fff; padding: 8px 12px; border-radius: 10px; font-size: 13px; cursor: pointer;">
-                    <option value="">🎯 Tự động phát hiện mọi vật thể</option>
-                    {% for cat_key, cat_data in taxonomy.items() %}
-                    <option value="{{ cat_key }}">{{ cat_data.vn_name }} ({{ cat_key.capitalize() }})</option>
-                    {% endfor %}
-                </select>
-
-                <!-- NÚT UPLOAD ẢNH / VIDEO (MAX 25MB) -->
-                <input type="file" id="media-file-input" accept="image/*,video/*" style="display:none;" onchange="handleMediaFileUpload(event)">
-                <button id="btn-upload-media" class="cyber-btn" onclick="document.getElementById('media-file-input').click()" style="background: linear-gradient(135deg, #0ea5e9, #2563eb); border: 1.5px solid #38bdf8; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);">
-                    <span id="upload-icon">📁</span> <span id="upload-text">Tải Ảnh / Video (≤25MB)</span>
-                </button>
-
-                <button id="btn-toggle-camera" class="cyber-btn" onclick="toggleCamera()">
-                    <span id="cam-icon">📹</span> <span id="cam-text">Bật Camera</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- PRESET SAMPLES QUICK TEST -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(103, 232, 249, 0.2); flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">🧪 Thử nhanh ảnh mẫu không cần Webcam:</span>
-                <button class="preset-btn" onclick="loadSamplePreset('backpack')">🎒 Balo & Khóa Kéo</button>
-                <button class="preset-btn" onclick="loadSamplePreset('laptop')">💻 Laptop & Bàn Phím</button>
-                <button class="preset-btn" onclick="loadSamplePreset('shirt')">👕 Áo & Cúc/Cổ Áo</button>
-            </div>
-            <div style="font-size: 12px; color: var(--neon-amber); display: flex; align-items: center; gap: 6px;">
-                <span>💡 Mẹo:</span>
-                <span style="color: #e2e8f0;">Có thể kéo thả trực tiếp file <b>Ảnh tĩnh</b> hoặc <b>Video</b> (tối đa 25MB) vào khung nhìn!</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; color: #94a3b8;">Phím tắt chuyển nhanh:</span>
+                <span class="quick-word-chip" style="cursor: default;" title="Phím 1: Khung nhìn Camera">1: Camera</span>
+                <span class="quick-word-chip" style="cursor: default;" title="Phím 2: Khay ghép câu">2: Ghép câu</span>
+                <span class="quick-word-chip" style="cursor: default;" title="Phím 3: Kho từ vựng">3: Kho từ</span>
             </div>
         </div>
     </div>
 
-    <!-- MAIN BENTO GRID -->
-    <div class="vision-bento-grid">
-        <!-- BENTO 1: CAMERA VIEWPORT & HAND SKELETON -->
-        <div class="bento-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                    <span style="color: var(--neon-cyan);">●</span> Khung Nhìn Thị Giác (Camera / Video / Ảnh)
-                </span>
-                <span style="font-size: 12px; color: #94a3b8;">
-                    Mô hình: <b style="color: #4ade80;">OWL-ViT Local Core</b>
-                </span>
-            </div>
+    <!-- WORKSPACE NAVIGATION TABS -->
+    <div class="workspace-nav-bar">
+        <button type="button" class="ws-tab-btn active" id="ws-btn-scanner" onclick="switchWorkspace('scanner')">
+            <span style="font-size: 16px;">👁️</span>
+            <span>1. Khung Nhìn Thị Giác (Camera Siêu Rộng)</span>
+            <span class="ws-tab-badge" id="badge-detected-count">0 vật thể</span>
+        </button>
+        <button type="button" class="ws-tab-btn" id="ws-btn-assembly" onclick="switchWorkspace('assembly')">
+            <span style="font-size: 16px;">🖐️</span>
+            <span>2. Đấu Trường Ghép Câu & Cử Chỉ</span>
+            <span class="ws-tab-badge" id="badge-sentence-count">0 từ trong khay</span>
+        </button>
+        <button type="button" class="ws-tab-btn" id="ws-btn-vault" onclick="switchWorkspace('vault')">
+            <span style="font-size: 16px;">📦</span>
+            <span>3. Kho Từ Vựng & Ôn Tập SRS</span>
+            <span class="ws-tab-badge" id="badge-vault-count">0 từ đã quét</span>
+        </button>
+    </div>
 
-            <div class="viewport-wrapper" id="viewport-wrapper" ondragover="handleViewportDragOver(event)" ondragleave="handleViewportDragLeave(event)" ondrop="handleViewportDrop(event)">
+    <!-- PIP HOST (Dành cho chế độ thu nhỏ góc màn hình khi sang Tab 2 và Tab 3) -->
+    <div id="pip-viewport-host" style="position: fixed; bottom: 20px; right: 20px; z-index: 99990; display: none;"></div>
+
+    <!-- ========================================================================================= -->
+    <!-- GIAO DIỆN 1: KHUNG NHÌN THỊ GIÁC (CAMERA CHIẾM DIỆN TÍCH LỚN NHẤT - CINEMA MAX VIEW)      -->
+    <!-- ========================================================================================= -->
+    <div class="arena-workspace-panel active" id="workspace-scanner">
+        <div id="cinema-viewport-host" class="cinema-viewport-container">
+            <!-- KHUNG CAMERA CHÍNH MỞ RỘNG TỐI ĐA -->
+            <div class="viewport-wrapper cinema-mode" id="viewport-wrapper" ondragover="handleViewportDragOver(event)" ondragleave="handleViewportDragLeave(event)" ondrop="handleViewportDrop(event)">
                 <video id="webcam-video" autoplay playsinline muted></video>
                 <video id="uploaded-video-player" playsinline controls style="display: none; width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; z-index: 12; background: #000;"></video>
                 <img id="uploaded-image-preview" style="display: none; width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; z-index: 11; background: #000;" alt="Uploaded Preview">
@@ -594,9 +718,16 @@
                 <div class="scan-laser" id="scan-laser"></div>
 
                 <!-- Thanh điều khiển chế độ Tệp tải lên -->
-                <div id="media-mode-bar" style="display: none; position: absolute; top: 12px; right: 12px; z-index: 25; background: rgba(15, 23, 42, 0.92); border: 1px solid var(--neon-cyan); border-radius: 10px; padding: 4px 10px; align-items: center; gap: 8px; backdrop-filter: blur(8px);">
+                <div id="media-mode-bar" style="display: none; position: absolute; top: 12px; right: 60px; z-index: 25; background: rgba(15, 23, 42, 0.92); border: 1px solid var(--neon-cyan); border-radius: 10px; padding: 4px 10px; align-items: center; gap: 8px; backdrop-filter: blur(8px);">
                     <span id="media-mode-label" style="font-size: 11px; color: #67e8f9; font-weight: 700;">🎞️ Chế độ Video Tải Lên</span>
                     <button type="button" class="action-pill-btn btn-danger-pill" style="padding: 2px 8px; font-size: 10px;" onclick="closeUploadedMedia()">❌ Đóng tệp</button>
+                </div>
+
+                <!-- Nút Phóng to / Thu nhỏ Fullscreen & Trở lại Cinema View -->
+                <div style="position: absolute; top: 12px; right: 12px; z-index: 25;">
+                    <button type="button" class="action-pill-btn" onclick="toggleFullscreenViewport()" title="Phóng to toàn màn hình">
+                        <span>⛶</span>
+                    </button>
                 </div>
 
                 <!-- HUD Overlays -->
@@ -611,116 +742,143 @@
                     <span id="gesture-text">Chưa thấy bàn tay</span>
                 </div>
             </div>
+        </div>
 
-            <!-- ACTION BUTTONS -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button id="btn-scan-frame" class="cyber-btn" onclick="captureAndScan()" disabled>
+        <!-- LIVE DETECTED VOCABULARY STRIP (DẢI TỪ VỰNG QUÉT TRỰC TIẾP) -->
+        <div class="live-detection-banner" id="live-detection-banner">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span style="font-size: 18px;">✨</span>
+                <div>
+                    <span style="font-weight: 700; color: #fff; font-size: 13px;">Từ vựng vừa quét:</span>
+                    <span style="font-size: 11px; color: #94a3b8; margin-left: 4px;">(Nhãn song ngữ Anh - Việt & CEFR)</span>
+                </div>
+                <div id="live-detection-chips" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <span style="color: #64748b; font-style: italic; font-size: 12px;">Chưa quét vật thể. Hãy bấm "Bật Camera" hoặc tải ảnh/video...</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="cyber-btn cyber-btn-pink" onclick="switchWorkspace('assembly')" style="padding: 9px 16px; font-size: 12.5px;">
+                    <span>🧩</span> Sang Khay Ghép Câu ➔
+                </button>
+                <button type="button" class="cyber-btn" onclick="switchWorkspace('vault')" style="padding: 9px 16px; font-size: 12.5px; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(103, 232, 249, 0.4);">
+                    <span>📦</span> Mở Kho Từ Vựng & SRS
+                </button>
+            </div>
+        </div>
+
+        <!-- CINEMA CONTROL DOCK (THANH CÔNG CỤ ĐIỀU KHIỂN THỊ GIÁC TOÀN DIỆN) -->
+        <div class="cinema-dock-card">
+            <!-- HÀNG 1: CÁC NÚT HÀNH ĐỘNG CHÍNH -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button id="btn-toggle-camera" class="cyber-btn" onclick="toggleCamera()">
+                        <span id="cam-icon">📹</span> <span id="cam-text">Bật Camera</span>
+                    </button>
+
+                    <button id="btn-scan-frame" class="cyber-btn" onclick="captureAndScan()" disabled style="background: linear-gradient(135deg, #10b981, #059669); border: 1.5px solid #34d399; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
                         <span>📸</span> Quét Chi Tiết Đồ Vật
                     </button>
+
                     <button id="btn-video-autoscan" class="cyber-btn" onclick="toggleVideoAutoScan()" style="display: none; background: rgba(168, 85, 247, 0.25); border: 1.5px solid #c084fc; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);">
                         <span id="video-autoscan-icon">🎞️</span> <span id="video-autoscan-text">Quét Video Tự Động</span>
                     </button>
-                    <button class="cyber-btn" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(103, 232, 249, 0.4);" onclick="resetArena()">
-                        <span>🔄</span> Làm Mới
+
+                    <!-- UPLOAD MEDIA -->
+                    <input type="file" id="media-file-input" accept="image/*,video/*" style="display:none;" onchange="handleMediaFileUpload(event)">
+                    <button id="btn-upload-media" class="cyber-btn" onclick="document.getElementById('media-file-input').click()" style="background: linear-gradient(135deg, #0ea5e9, #2563eb); border: 1.5px solid #38bdf8; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);">
+                        <span id="upload-icon">📁</span> <span id="upload-text">Tải Ảnh / Video (≤25MB)</span>
                     </button>
                 </div>
 
-                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <!-- ĐỘ SÂU / MỨC ĐỘ NHẬN BIẾT -->
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 12px; color: #c084fc; font-weight: 700;">Độ sâu:</span>
+                        <select id="granularity-select" class="cyber-mini-select" style="padding: 7px 10px; font-size: 12.5px; border-color: #a855f7;" title="Chọn mức độ chi tiết nhận diện">
+                            <option value="all">🌐 Toàn diện (Mọi chi tiết)</option>
+                            <option value="macro">🔍 Cơ bản (Chỉ đồ vật chính)</option>
+                            <option value="functional">⚙️ Trung cấp (Bộ phận chức năng)</option>
+                            <option value="micro">🔬 Chuyên sâu (Chi tiết vi mô, linh kiện)</option>
+                        </select>
+                    </div>
+
+                    <!-- VẬT THỂ MỤC TIÊU -->
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 12px; color: #67e8f9; font-weight: 700;">Vật thể:</span>
+                        <select id="category-select" class="cyber-mini-select" style="padding: 7px 10px; font-size: 12.5px;">
+                            <option value="">🎯 Tự động phát hiện mọi vật thể</option>
+                            {% for cat_key, cat_data in taxonomy.items() %}
+                            <option value="{{ cat_key }}">{{ cat_data.vn_name }} ({{ cat_key.capitalize() }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HÀNG 2: THIẾT LẬP THÔNG SỐ & MẪU THỬ NHANH -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(103, 232, 249, 0.2); flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">🧪 Thử nhanh ảnh mẫu:</span>
+                    <button type="button" class="preset-btn" onclick="loadSamplePreset('backpack')">🎒 Balo & Khóa Kéo</button>
+                    <button type="button" class="preset-btn" onclick="loadSamplePreset('laptop')">💻 Laptop & Bàn Phím</button>
+                    <button type="button" class="preset-btn" onclick="loadSamplePreset('shirt')">👕 Áo & Cúc/Cổ Áo</button>
+                    <button type="button" class="action-pill-btn" onclick="resetArena()" style="margin-left: 6px;">🔄 Làm Mới</button>
+                </div>
+
+                <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
                     <!-- GIỚI HẠN SỐ LƯỢNG VẬT THỂ (3 - 20) -->
                     <div style="font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
-                        <span>🎯 Giới hạn:</span>
-                        <input type="range" id="max-objects-slider" min="3" max="20" step="1" value="10" style="accent-color: #a855f7; cursor: pointer; width: 75px;" oninput="document.getElementById('max-objects-val').innerText = this.value">
-                        <span id="max-objects-val" style="font-family: var(--text-mono); color: #c084fc; font-weight: 700;">10</span> <span style="font-size: 11px;">vật thể</span>
+                        <span>🎯 Giới hạn vật thể:</span>
+                        <input type="range" id="max-objects-slider" min="3" max="20" step="1" value="10" style="accent-color: #a855f7; cursor: pointer; width: 85px;" oninput="document.getElementById('max-objects-val').innerText = this.value">
+                        <span id="max-objects-val" style="font-family: var(--text-mono); color: #c084fc; font-weight: 700;">10</span>
                     </div>
 
                     <!-- ĐỘ NHẠY THRESHOLD -->
                     <div style="font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
                         <span>Độ nhạy:</span>
-                        <input type="range" id="threshold-slider" min="0.06" max="0.25" step="0.02" value="0.10" style="accent-color: var(--neon-cyan); cursor: pointer; width: 70px;" oninput="document.getElementById('threshold-val').innerText = this.value">
+                        <input type="range" id="threshold-slider" min="0.06" max="0.25" step="0.02" value="0.10" style="accent-color: var(--neon-cyan); cursor: pointer; width: 80px;" oninput="document.getElementById('threshold-val').innerText = this.value">
                         <span id="threshold-val" style="font-family: var(--text-mono); color: var(--neon-cyan); font-weight: 700;">0.10</span>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- BENTO 2: WORD POOL & SENTENCE ASSEMBLY ARENA -->
-        <div class="bento-card">
-            <!-- WORD POOL HEADER -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 6px;">
-                        <span>📦</span> Kho Từ Vựng Thị Giác Vừa Quét
-                    </span>
-                    <span id="word-count-badge" style="font-size: 11px; color: var(--neon-cyan); background: rgba(103, 232, 249, 0.15); padding: 2px 8px; border-radius: 8px; font-weight: 700;">
-                        0 từ vựng
-                    </span>
+    <!-- ========================================================================================= -->
+    <!-- GIAO DIỆN 2: ĐẤU TRƯỜNG GHÉP CÂU & CỬ CHỈ BÀN TAY (AIR-GESTURE & GEC SENTENCE ARENA)        -->
+    <!-- ========================================================================================= -->
+    <div class="arena-workspace-panel" id="workspace-assembly">
+        <div class="bento-card" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h2 style="color: var(--neon-cyan); font-size: 16px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <span>🖐️</span> ĐẤU TRƯỜNG GHÉP CÂU TƯƠNG TÁC
+                    </h2>
+                    <p style="color: #94a3b8; font-size: 12px; margin: 4px 0 0 0;">
+                        Gắp thả chữ bằng cử chỉ tay không chạm hoặc kéo chuột để ghép câu hoàn chỉnh. Hệ thống GEC & Master G sẽ phân tích ngữ pháp tức thì!
+                    </p>
                 </div>
 
-                <div style="display: flex; gap: 6px; align-items: center;">
-                    <button type="button" class="action-pill-btn btn-danger-pill" id="btn-clear-pool" onclick="clearScannedWordPool()" title="Xóa toàn bộ các từ vựng vừa quét trong kho">
-                        <span>🗑️</span> Xóa kho từ
-                    </button>
-                </div>
-            </div>
-
-            <!-- THANH BỘ LỌC TỪ VỰNG THEO VẬT THỂ & PHÂN LOẠI & CẤP ĐỘ CEFR -->
-            <div class="pool-filter-bar">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 6px;">
-                    <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                        <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Lọc từ:</span>
-                        <button type="button" class="pool-filter-tab active" id="filter-all-btn" onclick="setWordFilter('all')">
-                            🌟 Tất cả
-                        </button>
-                        <button type="button" class="pool-filter-tab" id="filter-objects-btn" onclick="setWordFilter('objects')">
-                            👁️ Chỉ từ vật thể / Bộ phận
-                        </button>
-                        <button type="button" class="pool-filter-tab" id="filter-connectors-btn" onclick="setWordFilter('connectors')">
-                            🔗 Chỉ từ nối / Trợ từ
-                        </button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <div class="control-mode-toggle">
+                        <button id="mode-gesture-btn" class="mode-tab active" onclick="setControlMode('gesture')">🖐️ Cử Chỉ Bàn Tay</button>
+                        <button id="mode-mouse-btn" class="mode-tab" onclick="setControlMode('mouse')">🖱️ Chuột / Cảm Ứng</button>
                     </div>
-
-                    <!-- Dropdown lọc theo vật thể cụ thể nếu có nhiều loại đồ vật -->
-                    <div id="object-category-filter-wrapper" style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 11px; color: #94a3b8;">Vật thể:</span>
-                        <select id="pool-object-select" onchange="filterBySpecificObject(this.value)" class="cyber-mini-select">
-                            <option value="all">Mọi vật thể</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- BỘ LỌC THEO CẤP ĐỘ HỌC TẬP (CƠ BẢN A1-A2 vs CHUYÊN SÂU B1-C1) -->
-                <div style="display: flex; gap: 6px; align-items: center; margin-top: 6px; width: 100%; border-top: 1px dashed rgba(103, 232, 249, 0.15); padding-top: 6px; flex-wrap: wrap;">
-                    <span style="font-size: 11px; color: #a855f7; font-weight: 700; display: flex; align-items: center; gap: 4px;">
-                        <span>🎓</span> Cấp độ học tập:
-                    </span>
-                    <button type="button" class="pool-filter-tab active" id="level-all-btn" onclick="setWordLevelFilter('all')">
-                        🌟 Mọi Cấp Độ
+                    <button type="button" class="action-pill-btn btn-primary-pill" onclick="switchWorkspace('scanner')">
+                        <span>👁️</span> Mở Camera Lớn
                     </button>
-                    <button type="button" class="pool-filter-tab" id="level-basic-btn" onclick="setWordLevelFilter('basic')">
-                        🌱 Cơ Bản (A1 - A2)
-                    </button>
-                    <button type="button" class="pool-filter-tab" id="level-advanced-btn" onclick="setWordLevelFilter('advanced')">
-                        🚀 Chuyên Sâu (B1 - C1)
-                    </button>
-                </div>
-            </div>
-
-            <!-- CONTAINER KHO TỪ VỰNG -->
-            <div class="word-pool-container" id="word-pool">
-                <div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">
-                    Bấm "Bật Camera" hoặc click vào một "Ảnh mẫu" phía trên để nạp từ vựng...
                 </div>
             </div>
 
             <!-- SENTENCE ASSEMBLY DECK -->
-            <div class="sentence-deck">
+            <div class="sentence-deck" style="margin-top: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                     <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 6px;">
                         <span>🧩</span> Khay Ghép Câu Hoàn Chỉnh
                     </span>
                     <span style="font-size: 11px; color: #94a3b8;">
-                        Hỗ trợ cử chỉ bàn tay, kéo thả hoặc click 1 chạm
+                        Hỗ trợ cử chỉ bàn tay, kéo thả hoặc click 1 chạm vào thẻ từ
                     </span>
                 </div>
 
@@ -801,6 +959,150 @@
 
                 <div id="result-exp" style="margin-top: 10px; color: #fbbf24; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px;">
                     <span>⭐</span> +50 EXP đã được cộng vào tài khoản của bạn!
+                </div>
+            </div>
+        </div>
+
+        <!-- WORD POOL DECK FOR ASSEMBLY -->
+        <div class="bento-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-weight: 700; color: #fff; font-size: 14px;">
+                        <span>📦</span> Thẻ Từ Vựng Có Sẵn Để Ghép Câu
+                    </span>
+                    <span id="word-count-badge" style="font-size: 11px; color: var(--neon-cyan); background: rgba(103, 232, 249, 0.15); padding: 2px 8px; border-radius: 8px; font-weight: 700;">
+                        0 từ vựng
+                    </span>
+                </div>
+
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button type="button" class="action-pill-btn btn-danger-pill" id="btn-clear-pool" onclick="clearScannedWordPool()">
+                        <span>🗑️</span> Xóa kho từ
+                    </button>
+                </div>
+            </div>
+
+            <!-- THANH BỘ LỌC TỪ VỰNG -->
+            <div class="pool-filter-bar">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 6px;">
+                    <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Lọc từ:</span>
+                        <button type="button" class="pool-filter-tab active" id="filter-all-btn" onclick="setWordFilter('all')">🌟 Tất cả</button>
+                        <button type="button" class="pool-filter-tab" id="filter-objects-btn" onclick="setWordFilter('objects')">👁️ Chỉ từ vật thể</button>
+                        <button type="button" class="pool-filter-tab" id="filter-connectors-btn" onclick="setWordFilter('connectors')">🔗 Chỉ từ nối</button>
+                    </div>
+
+                    <div id="object-category-filter-wrapper" style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 11px; color: #94a3b8;">Vật thể:</span>
+                        <select id="pool-object-select" onchange="filterBySpecificObject(this.value)" class="cyber-mini-select">
+                            <option value="all">Mọi vật thể</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- BỘ LỌC THEO CẤP ĐỘ CEFR -->
+                <div style="display: flex; gap: 6px; align-items: center; margin-top: 6px; width: 100%; border-top: 1px dashed rgba(103, 232, 249, 0.15); padding-top: 6px; flex-wrap: wrap;">
+                    <span style="font-size: 11px; color: #a855f7; font-weight: 700;">🎓 Cấp độ:</span>
+                    <button type="button" class="pool-filter-tab active" id="level-all-btn" onclick="setWordLevelFilter('all')">🌟 Mọi Cấp Độ</button>
+                    <button type="button" class="pool-filter-tab" id="level-basic-btn" onclick="setWordLevelFilter('basic')">🌱 Cơ Bản (A1 - A2)</button>
+                    <button type="button" class="pool-filter-tab" id="level-advanced-btn" onclick="setWordLevelFilter('advanced')">🚀 Chuyên Sâu (B1 - C1)</button>
+                </div>
+            </div>
+
+            <!-- CONTAINER KHO TỪ VỰNG GHÉP CÂU -->
+            <div class="word-pool-container" id="word-pool">
+                <div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">
+                    Kho từ đang trống. Bấm "Khung Nhìn Thị Giác" để quét hoặc click vào một ảnh mẫu!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- GIAO DIỆN 3: KHO TỪ VỰNG THỊ GIÁC & ÔN TẬP SRS (VOCABULARY VAULT & SPACED REPETITION)       -->
+    <!-- ========================================================================================= -->
+    <div class="arena-workspace-panel" id="workspace-vault">
+        <div class="bento-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h2 style="color: var(--neon-cyan); font-size: 17px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <span>📦</span> KHO TỪ VỰNG THỊ GIÁC & LỘ TRÌNH ÔN TẬP SRS
+                    </h2>
+                    <p style="color: #94a3b8; font-size: 12.5px; margin: 4px 0 0 0;">
+                        Quản lý toàn bộ từ vựng quét được, lọc theo cấp độ CEFR A1-C1 và tích hợp thuật toán ghi nhớ ngắt quãng Ebbinghaus.
+                    </p>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="cyber-btn" onclick="switchWorkspace('scanner')" style="padding: 8px 14px; font-size: 12px;">
+                        <span>👁️</span> Quét Thêm Từ Mới
+                    </button>
+                    <button type="button" class="cyber-btn cyber-btn-pink" onclick="switchWorkspace('assembly')" style="padding: 8px 14px; font-size: 12px;">
+                        <span>🧩</span> Ghép Câu Với Kho Từ
+                    </button>
+                </div>
+            </div>
+
+            <!-- THẺ THỐNG KÊ KHO TỪ -->
+            <div class="vault-stats-grid">
+                <div class="vault-stat-card">
+                    <span style="font-size: 24px;">📦</span>
+                    <div>
+                        <div style="font-size: 11px; color: #94a3b8;">Tổng từ đã phát hiện</div>
+                        <div id="vault-stat-total" style="font-size: 18px; font-weight: 800; color: #fff;">0 từ</div>
+                    </div>
+                </div>
+
+                <div class="vault-stat-card">
+                    <span style="font-size: 24px;">🌱</span>
+                    <div>
+                        <div style="font-size: 11px; color: #67e8f9;">Cơ bản (A1 - A2)</div>
+                        <div id="vault-stat-basic" style="font-size: 18px; font-weight: 800; color: #67e8f9;">0 từ</div>
+                    </div>
+                </div>
+
+                <div class="vault-stat-card">
+                    <span style="font-size: 24px;">🚀</span>
+                    <div>
+                        <div style="font-size: 11px; color: #c084fc;">Chuyên sâu (B1 - C1)</div>
+                        <div id="vault-stat-advanced" style="font-size: 18px; font-weight: 800; color: #c084fc;">0 từ</div>
+                    </div>
+                </div>
+
+                <div class="vault-stat-card">
+                    <span style="font-size: 24px;">🧠</span>
+                    <div>
+                        <div style="font-size: 11px; color: #4ade80;">Đã lưu vào SRS (+RP)</div>
+                        <div id="vault-stat-learned" style="font-size: 18px; font-weight: 800; color: #4ade80;">0 từ</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THANH TÌM KIẾM & BỘ LỌC KHO TỪ VỰNG -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; background: rgba(15, 23, 42, 0.6); padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(103, 232, 249, 0.2);">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1; min-width: 260px;">
+                    <div style="position: relative; flex: 1; min-width: 200px;">
+                        <input type="text" id="vault-search-input" placeholder="🔍 Tìm kiếm từ vựng (Anh hoặc Việt)..." oninput="renderVaultCards()" style="width: 100%; background: rgba(2, 6, 23, 0.8); border: 1px solid rgba(103, 232, 249, 0.3); border-radius: 8px; padding: 7px 12px; color: #fff; font-size: 12.5px; outline: none;">
+                    </div>
+                    <select id="vault-filter-tier" onchange="renderVaultCards()" class="cyber-mini-select" style="padding: 7px 10px; font-size: 12.5px;">
+                        <option value="all">🌟 Mọi cấp độ (A1 - C1)</option>
+                        <option value="basic">🌱 Chỉ Cơ bản (A1 - A2)</option>
+                        <option value="advanced">🚀 Chỉ Chuyên sâu (B1 - C1)</option>
+                        <option value="learned">🧠 Chỉ từ đã lưu SRS</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="action-pill-btn btn-danger-pill" onclick="clearScannedWordPool()" style="padding: 6px 12px; font-size: 11.5px;">
+                        <span>🗑️</span> Làm sạch kho
+                    </button>
+                </div>
+            </div>
+
+            <!-- LƯỚI CARD TỪ VỰNG HỌC THUẬT -->
+            <div id="vault-cards-container" class="vault-card-grid">
+                <div style="color: #64748b; font-style: italic; font-size: 13px; grid-column: 1 / -1; padding: 30px; text-align: center;">
+                    Kho từ vựng chưa có dữ liệu. Hãy chuyển sang Tab "1. Khung Nhìn Thị Giác" để quét đồ vật!
                 </div>
             </div>
         </div>

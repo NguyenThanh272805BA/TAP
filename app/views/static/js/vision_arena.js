@@ -38,6 +38,7 @@ let grabbedElement = null;
 let lastFrameTime = performance.now();
 let frameCount = 0;
 let currentFPS = 0;
+let activeWorkspace = "scanner"; // 'scanner' | 'assembly' | 'vault'
 
 document.addEventListener("DOMContentLoaded", () => {
     videoElement = document.getElementById("webcam-video");
@@ -52,7 +53,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     window.addEventListener("resize", resizeCanvas);
+    document.addEventListener("fullscreenchange", () => setTimeout(resizeCanvas, 80));
     resizeCanvas();
+
+    // Lắng nghe phím tắt số 1, 2, 3 chuyển nhanh giữa 3 Workspace
+    window.addEventListener("keydown", (e) => {
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (e.key === '1') switchWorkspace('scanner');
+        else if (e.key === '2') switchWorkspace('assembly');
+        else if (e.key === '3') switchWorkspace('vault');
+    });
+
+    // Khởi tạo trạng thái Workspace ban đầu
+    updateWorkspaceBadges();
+    renderLiveDetectionStrip();
 
     // Khởi tạo MediaPipe
     initMediaPipeHands();
@@ -80,6 +95,287 @@ function setControlMode(mode) {
         if (airPointer) airPointer.style.display = "none";
         if (grabbedElement) releaseGrabbedElement(false);
     }
+}
+
+/**
+ * 0. QUẢN LÝ CHUYỂN ĐỔI WORKSPACES & VIEWPORT CAMERA
+ */
+function switchWorkspace(mode) {
+    activeWorkspace = mode;
+
+    // 1. Cập nhật trạng thái các Tab buttons
+    const btnScanner = document.getElementById("ws-btn-scanner");
+    const btnAssembly = document.getElementById("ws-btn-assembly");
+    const btnVault = document.getElementById("ws-btn-vault");
+
+    if (btnScanner) btnScanner.classList.toggle("active", mode === "scanner");
+    if (btnAssembly) btnAssembly.classList.toggle("active", mode === "assembly");
+    if (btnVault) btnVault.classList.toggle("active", mode === "vault");
+
+    // 2. Chuyển đổi hiển thị Panels
+    const panelScanner = document.getElementById("workspace-scanner");
+    const panelAssembly = document.getElementById("workspace-assembly");
+    const panelVault = document.getElementById("workspace-vault");
+
+    if (panelScanner) panelScanner.classList.toggle("active", mode === "scanner");
+    if (panelAssembly) panelAssembly.classList.toggle("active", mode === "assembly");
+    if (panelVault) panelVault.classList.toggle("active", mode === "vault");
+
+    // 3. Quản lý Viewport Camera (Cinema Ultrawide vs PiP Mini View)
+    const viewportWrapper = document.getElementById("viewport-wrapper");
+    const cinemaHost = document.getElementById("cinema-viewport-host");
+    const pipHost = document.getElementById("pip-viewport-host");
+
+    if (viewportWrapper) {
+        if (mode === "scanner") {
+            // Chế độ Camera siêu rộng (Cinema Max View)
+            if (cinemaHost && viewportWrapper.parentElement !== cinemaHost) {
+                cinemaHost.appendChild(viewportWrapper);
+            }
+            viewportWrapper.classList.remove("pip-mode");
+            viewportWrapper.classList.add("cinema-mode");
+            if (pipHost) pipHost.style.display = "none";
+        } else {
+            // Chế độ PiP thu nhỏ góc màn hình (Giữ luồng Air Gesture & Hand tracking liên tục)
+            if (pipHost && viewportWrapper.parentElement !== pipHost) {
+                pipHost.appendChild(viewportWrapper);
+            }
+            viewportWrapper.classList.remove("cinema-mode");
+            viewportWrapper.classList.add("pip-mode");
+            if (pipHost) pipHost.style.display = "block";
+        }
+    }
+
+    // 4. Đồng bộ kích thước canvas vẽ
+    setTimeout(() => {
+        resizeCanvas();
+        if (!isCameraActive && activeMediaType !== "camera") {
+            drawDetectedBoundingBoxes();
+        }
+    }, 60);
+
+    // 5. Cập nhật dữ liệu tương ứng cho từng màn hình
+    if (mode === "assembly") {
+        renderWordPool();
+    } else if (mode === "vault") {
+        renderVaultCards();
+    }
+    updateWorkspaceBadges();
+}
+
+function toggleFullscreenViewport() {
+    const wrapper = document.getElementById("viewport-wrapper");
+    if (!wrapper) return;
+
+    if (!document.fullscreenElement) {
+        if (wrapper.requestFullscreen) {
+            wrapper.requestFullscreen().catch(err => console.warn("Fullscreen request error:", err));
+        } else if (wrapper.webkitRequestFullscreen) {
+            wrapper.webkitRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.warn("Exit fullscreen error:", err));
+        }
+    }
+}
+
+function updateWorkspaceBadges() {
+    // Tab 1 badge: số vật thể phát hiện
+    const badgeDetected = document.getElementById("badge-detected-count");
+    if (badgeDetected) {
+        badgeDetected.innerText = `${currentDetectedParts.length} vật thể`;
+    }
+
+    // Tab 2 badge: số từ trong khay ghép câu
+    const badgeSentence = document.getElementById("badge-sentence-count");
+    if (badgeSentence) {
+        const dropZone = document.getElementById("assembly-drop-zone");
+        const count = dropZone ? dropZone.querySelectorAll(".word-token").length : 0;
+        badgeSentence.innerText = `${count} từ trong khay`;
+    }
+
+    // Tab 3 badge: số từ vựng vật thể đã ghi nhận
+    const badgeVault = document.getElementById("badge-vault-count");
+    if (badgeVault) {
+        const objCount = scannedWordRegistry.filter(w => w.isObjectPart).length;
+        badgeVault.innerText = `${objCount} từ đã quét`;
+    }
+
+    // Cập nhật 4 chỉ số KPI trong Workspace 3 (Vault)
+    const statTotal = document.getElementById("vault-stat-total");
+    const statBasic = document.getElementById("vault-stat-basic");
+    const statAdv = document.getElementById("vault-stat-advanced");
+    const statLearned = document.getElementById("vault-stat-learned");
+
+    if (statTotal) {
+        const totalObj = scannedWordRegistry.filter(w => w.isObjectPart).length;
+        statTotal.innerText = `${totalObj} từ`;
+    }
+    if (statBasic) {
+        const basicCount = scannedWordRegistry.filter(w => w.isObjectPart && w.levelTier === "basic").length;
+        statBasic.innerText = `${basicCount} từ`;
+    }
+    if (statAdv) {
+        const advCount = scannedWordRegistry.filter(w => w.isObjectPart && w.levelTier === "advanced").length;
+        statAdv.innerText = `${advCount} từ`;
+    }
+    if (statLearned) {
+        const learnedCount = scannedWordRegistry.filter(w => w.isObjectPart && w.isLearned).length;
+        statLearned.innerText = `${learnedCount} từ`;
+    }
+}
+
+function renderLiveDetectionStrip() {
+    const chipsContainer = document.getElementById("live-detection-chips");
+    if (!chipsContainer) return;
+
+    chipsContainer.innerHTML = "";
+
+    if (!currentDetectedParts || currentDetectedParts.length === 0) {
+        chipsContainer.innerHTML = `<span style="color: #64748b; font-style: italic; font-size: 12px;">Chưa quét vật thể. Hãy bấm "Bật Camera" hoặc chọn ảnh mẫu phía dưới!</span>`;
+        return;
+    }
+
+    currentDetectedParts.forEach(part => {
+        const chip = document.createElement("div");
+        chip.className = "quick-word-chip";
+        chip.style.display = "inline-flex";
+        chip.style.alignItems = "center";
+        chip.style.gap = "6px";
+        chip.style.padding = "5px 10px";
+        chip.style.fontSize = "12px";
+        chip.style.borderRadius = "8px";
+
+        const isBasic = (part.level_tier === "basic" || ["A1", "A2"].includes((part.cefr || "").toUpperCase()));
+        const badgeColor = isBasic ? "#22d3ee" : "#c084fc";
+        const badgeBg = isBasic ? "rgba(34, 211, 238, 0.2)" : "rgba(168, 85, 247, 0.2)";
+
+        chip.innerHTML = `
+            <span style="font-size: 10px; font-weight: 800; color: ${badgeColor}; background: ${badgeBg}; padding: 1px 5px; border-radius: 4px;">${part.cefr || 'B1'}</span>
+            <strong style="color: #fff;">${(part.word || '').toUpperCase()}</strong>
+            ${part.meaning ? `<span style="color: #fef08a; font-size: 11px;">(${part.meaning})</span>` : ''}
+            <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; font-size: 12px;" onclick="speakWord('${part.word}', event)" title="Nghe phát âm">🔊</button>
+            <button type="button" class="action-pill-btn btn-primary-pill" style="padding: 2px 7px; font-size: 10px;" onclick="useWordInAssembly('${part.word}')" title="Chuyển sang Khay Ghép Câu">🧩 Dùng</button>
+        `;
+
+        chipsContainer.appendChild(chip);
+    });
+}
+
+function renderVaultCards() {
+    const container = document.getElementById("vault-cards-container");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const objectWords = scannedWordRegistry.filter(w => w.isObjectPart);
+
+    if (objectWords.length === 0) {
+        container.innerHTML = `
+            <div style="color: #64748b; font-style: italic; font-size: 13px; grid-column: 1 / -1; padding: 30px; text-align: center;">
+                Kho từ vựng chưa có dữ liệu. Hãy chuyển sang Tab "1. Khung Nhìn Thị Giác" để quét đồ vật!
+            </div>
+        `;
+        return;
+    }
+
+    const searchInput = document.getElementById("vault-search-input");
+    const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : "";
+    const filterTierEl = document.getElementById("vault-filter-tier");
+    const tierVal = filterTierEl ? filterTierEl.value : "all";
+
+    const filteredWords = objectWords.filter(item => {
+        if (searchVal) {
+            const matchWord = item.word.toLowerCase().includes(searchVal);
+            const matchMeaning = (item.meaning || "").toLowerCase().includes(searchVal);
+            if (!matchWord && !matchMeaning) return false;
+        }
+        if (tierVal === "basic" && item.levelTier !== "basic") return false;
+        if (tierVal === "advanced" && item.levelTier !== "advanced") return false;
+        if (tierVal === "learned" && !item.isLearned) return false;
+        return true;
+    });
+
+    if (filteredWords.length === 0) {
+        container.innerHTML = `
+            <div style="color: #64748b; font-style: italic; font-size: 13px; grid-column: 1 / -1; padding: 30px; text-align: center;">
+                Không tìm thấy từ vựng nào khớp với bộ lọc hiện tại.
+            </div>
+        `;
+        return;
+    }
+
+    filteredWords.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "vault-word-card";
+
+        const isBasic = item.levelTier === "basic";
+        const tierBadge = isBasic 
+            ? `<span style="background: rgba(34, 211, 238, 0.2); color: #22d3ee; border: 1px solid #22d3ee; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🌱 A1-A2 Cơ Bản</span>`
+            : `<span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #c084fc; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🚀 B1-C1 Chuyên Sâu</span>`;
+
+        card.innerHTML = `
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h3 style="margin: 0; color: #fff; font-size: 17px; font-weight: 800; letter-spacing: 0.5px;">${item.word.toUpperCase()}</h3>
+                            <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; font-size: 14px;" onclick="speakWord('${item.word}', event)" title="Nghe phát âm">🔊</button>
+                        </div>
+                        ${item.ipa ? `<div style="color: #94a3b8; font-size: 12px; font-family: var(--text-mono);">${item.ipa}</div>` : ''}
+                    </div>
+                    ${tierBadge}
+                </div>
+
+                <div style="background: rgba(2, 6, 23, 0.6); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--neon-cyan);">
+                    <div style="color: #fef08a; font-weight: 600; font-size: 13px;">🇻🇳 ${item.meaning}</div>
+                    <div style="color: #94a3b8; font-size: 11px; margin-top: 3px;">
+                        Thuộc vật thể: <b style="color: #67e8f9;">${(item.parentObject || 'object').toUpperCase()}</b>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px dashed rgba(103, 232, 249, 0.2); padding-top: 10px;">
+                <button type="button" class="action-pill-btn btn-primary-pill" onclick="useWordInAssembly('${item.word}')" style="font-size: 11px; padding: 5px 10px;">
+                    <span>🧩</span> Đưa vào khay ghép
+                </button>
+                ${item.isLearned 
+                    ? `<span style="font-size: 11px; color: #4ade80; font-weight: 700;">✓ Đã lưu SRS</span>`
+                    : `<button type="button" class="action-pill-btn" onclick="collectVocab('${item.word}', event)" style="font-size: 11px; padding: 5px 10px; background: rgba(16, 185, 129, 0.2); border-color: #34d399; color: #34d399;">+ Thu thập</button>`
+                }
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+function useWordInAssembly(word) {
+    if (!word) return;
+    switchWorkspace("assembly");
+
+    const dropZone = document.getElementById("assembly-drop-zone");
+    if (!dropZone) return;
+
+    const existingToken = dropZone.querySelector(`.word-token[data-word="${word.toLowerCase()}"]`);
+    if (!existingToken) {
+        const item = scannedWordRegistry.find(w => w.word.toLowerCase() === word.toLowerCase());
+        const token = createWordTokenElement(
+            word.toLowerCase(),
+            item ? item.ipa : "",
+            item ? item.cefr : "B1",
+            item ? item.meaning : "",
+            item ? item.isLearned : false,
+            true,
+            item ? item.levelTier : "basic"
+        );
+        dropZone.appendChild(token);
+    }
+
+    playHapticSound("drop");
+    updateSentenceSubmitButton();
+    updateWorkspaceBadges();
 }
 
 /**
@@ -992,6 +1288,9 @@ function registerDetectedParts(parts, objectCategory) {
 
     updateObjectCategoryDropdown();
     renderWordPool();
+    renderLiveDetectionStrip();
+    updateWorkspaceBadges();
+    renderVaultCards();
 }
 
 function setWordFilter(filterType) {
@@ -1050,6 +1349,9 @@ function clearScannedWordPool() {
 
     renderWordPool();
     updateObjectCategoryDropdown();
+    renderLiveDetectionStrip();
+    updateWorkspaceBadges();
+    renderVaultCards();
 
     if (canvasCtx && canvasElement) {
         canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -1298,6 +1600,10 @@ async function collectVocab(word, event) {
             if (event && event.target) {
                 event.target.outerHTML = `<span style="font-size: 10px; color: #4ade80;">✓ Đã lưu</span>`;
             }
+            const item = scannedWordRegistry.find(w => w.word.toLowerCase() === word.toLowerCase());
+            if (item) item.isLearned = true;
+            updateWorkspaceBadges();
+            renderVaultCards();
         } else {
             alert(`Thông báo: ${data.message}`);
         }
@@ -1312,8 +1618,12 @@ async function collectVocab(word, event) {
  */
 function updateSentenceSubmitButton() {
     const dropZone = document.getElementById("assembly-drop-zone");
-    const words = dropZone.querySelectorAll(".word-token");
-    document.getElementById("btn-submit-sentence").disabled = (words.length === 0);
+    const words = dropZone ? dropZone.querySelectorAll(".word-token") : [];
+    const submitBtn = document.getElementById("btn-submit-sentence");
+    if (submitBtn) {
+        submitBtn.disabled = (words.length === 0);
+    }
+    updateWorkspaceBadges();
 }
 
 function clearSentence() {

@@ -179,4 +179,25 @@
 
 ---
 
+## PHẦN VIII: PHÂN TÁCH GIAO DIỆN ĐA WORKSPACE & TỐI ƯU HÓA KHUNG CAMERA SIÊU RỘNG (CINEMA MAX VIEW) [x]
+
+### 8.1 Kiến trúc Phân tách Không gian Làm việc Độc lập (Multi-Workspace Architecture) [x]
+- Tách biệt hoàn toàn `vision-arena` thành 3 không gian chuyên biệt (thay vì dồn nén bố cục bento chật hẹp):
+  1. **Workspace 1: Khung Nhìn Thị Giác (`workspace-scanner`)**: Tập trung tối đa vào quan sát, quét vật thể, nhận diện đa tầng và xem dải từ vựng trực tiếp. [x]
+  2. **Workspace 2: Đấu Trường Ghép Câu & Cử Chỉ (`workspace-assembly`)**: Không gian thao tác gắp thả chữ toàn màn hình, khay ghép câu trực quan và bảng phản hồi chấm điểm ngữ pháp GEC. [x]
+  3. **Workspace 3: Kho Từ Vựng & Ôn Tập SRS (`workspace-vault`)**: Trung tâm quản lý từ vựng học thuật toàn màn hình với 4 thẻ KPI thống kê, bộ lọc đa chiều (CEFR, tìm kiếm, vật thể) và lưới Flashcard chi tiết. [x]
+- Điều hướng mượt mà: Thanh tab navigation hiện đại kèm badge đếm số lượng thời gian thực và hỗ trợ **phím tắt nhanh `1`, `2`, `3`** trên bàn phím. [x]
+
+### 8.2 Tối ưu Khung Camera Siêu Rộng (Cinema Max View & Seamless PiP Mode) [x]
+- **Cinema Mode (Workspace 1)**: Khung camera chiếm diện tích lớn nhất (100% chiều rộng, chiều cao 68vh, tỷ lệ chuẩn điện ảnh), mang lại tầm nhìn bao quát và độ phân giải hiển thị tối đa. [x]
+- **PiP Mode (Workspace 2 & 3)**: Khi chuyển sang Đấu trường ghép câu hoặc Kho từ vựng, khung camera tự động chuyển sang chế độ Picture-in-Picture thu nhỏ (300x175px) cố định ở góc dưới bên phải màn hình. Luồng WebRTC MediaStream và MediaPipe Hand Tracking vẫn chạy liên tục không bị ngắt quãng hay giật lag. [x]
+- **Bổ sung nút Toàn màn hình (Fullscreen Viewport)**: Hỗ trợ phóng to camera tràn viền với một cú nhấp chuột. [x]
+
+### 8.3 Nâng cấp Tương tác & Trải nghiệm Người dùng (UX/UI Polish) [x]
+- Bổ sung dải chip từ vựng quét trực tiếp (`Live Detection Strip`) ngay dưới camera ở Workspace 1.
+- Hỗ trợ nút click nhanh "🧩 Dùng" trên mỗi thẻ từ để tự động chuyển tab và đưa từ vào khay ghép câu.
+- Tích hợp thanh tìm kiếm tức thời và bộ lọc cấp độ CEFR cho lưới thẻ Flashcard trong Kho từ vựng. [x]
+
+---
+
 *Kế hoạch được phê duyệt và lưu trữ tại*: [`docs/ke_hoach_pt.md`](file:///d:/Python/TAP/docs/ke_hoach_pt.md)
