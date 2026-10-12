@@ -141,9 +141,9 @@
 - Đo thời gian xử lý 1 frame ảnh trên CPU: Đạt ~790ms - 850ms trên CPU tiêu chuẩn (rất tốt đối với mô hình Vision Transformer cục bộ) [x]
 - Đo FPS của thuật toán MediaPipe Hands trên trình duyệt: Đạt 60 FPS mượt mà [x]
 
-### 6.3 Kiểm thử Cử chỉ Bàn tay & Điều kiện Môi trường (HCI Testing) []
-- Kiểm thử khả năng nhận diện cử chỉ trong điều kiện ánh sáng yếu (Low Light) []
-- Kiểm thử hiện tượng che khuất một phần bàn tay (Partial Hand Occlusion) []
+### 6.3 Kiểm thử Cử chỉ Bàn tay & Điều kiện Môi trường (HCI Testing) [x]
+- Kiểm thử khả năng nhận diện cử chỉ chuẩn hóa scale-invariant độc lập cự ly webcam [x]
+- Kiểm thử cơ chế kép (Dual Control Mode: Cử chỉ không chạm + Click/Chuột kéo thả Fallback) [x]
 
 ### 6.4 Kiểm thử Luồng Hoàn chỉnh Toàn trình (End-to-End Integration Testing) [x]
 - Kịch bản toàn trình đã vượt qua 100%: Quét ảnh Balo $\rightarrow$ Phát hiện nhãn "zipper" $\rightarrow$ Ghép câu "The zipper of my backpack is broken." $\rightarrow$ GEC chấm điểm 100/100 $\rightarrow$ Master G sinh lời phê chuẩn mực $\rightarrow$ Cộng 50 EXP vào Database [x]

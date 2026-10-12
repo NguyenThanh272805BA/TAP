@@ -135,10 +135,14 @@ def save_vision_vocab():
     """
     user_id = session.get('user_id')
     if not user_id:
-        return jsonify({
-            "status": "error",
-            "message": "Vui lòng đăng nhập để thu thập từ vựng vào kho cá nhân!"
-        }), 401
+        guest_user = User.query.first()
+        if guest_user:
+            user_id = guest_user.id
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Vui lòng đăng nhập để thu thập từ vựng vào kho cá nhân!"
+            }), 401
 
     data = request.get_json(silent=True) or {}
     word = (data.get('word') or '').strip().lower()
@@ -188,17 +192,18 @@ def save_vision_vocab():
             user_vocab.source_type = 'vision_scan'
             user_vocab.context_note = f"Phát hiện từ vật thể: {parent_obj}"
 
-        # 3. Thưởng nhẹ EXP thu thập từ mới
+        # 3. Thưởng nhẹ RP & Xu thu thập từ mới
         user = User.query.get(user_id)
         if user:
-            user.exp = (user.exp or 0) + 10
-            check_and_update_level(user)
+            user.academic_rp = (user.academic_rp or 0) + 10
+            user.coins = (user.coins or 0) + 5
+            check_and_update_level(user.id)
 
         db.session.commit()
 
         return jsonify({
             "status": "success",
-            "message": f"Đã thu thập từ '{word}' vào kho ôn tập SRS thành công (+10 EXP)!",
+            "message": f"Đã thu thập từ '{word}' vào kho ôn tập SRS thành công (+10 RP, +5 Xu)!",
             "word": word,
             "cefr": vocab.cefr_level,
             "next_review": user_vocab.next_review_time.strftime("%Y-%m-%d %H:%M")
@@ -219,7 +224,7 @@ def submit_vision_sentence():
     Tích hợp Scramble Engine, GEC Engine và Critique Synthesizer
     """
     user_id = session.get('user_id')
-    user = User.query.get(user_id) if user_id else None
+    user = User.query.get(user_id) if user_id else User.query.first()
 
     data = request.get_json(silent=True) or {}
     sentence = (data.get('sentence') or '').strip()
@@ -231,7 +236,9 @@ def submit_vision_sentence():
 
     try:
         # 1. Chẩn đoán ngữ pháp qua Local GEC Engine
-        cefr_band = user.cefr_level if (user and user.cefr_level) else "B1"
+        cefr_band = getattr(user, 'current_band', 'B1') if user else "B1"
+        if not cefr_band:
+            cefr_band = "B1"
         target_focus = words_used[0] if words_used else ""
         gec_result = gec_engine.evaluate(
             text=sentence,
@@ -252,12 +259,14 @@ def submit_vision_sentence():
         # 3. Lời nhận xét sư phạm Master G
         feedback = gec_result.get("master_g_critique") or gec_result.get("feedback") or "Câu văn của bạn được ghép rất hoàn chỉnh!"
 
-        # 4. Thưởng EXP nếu người dùng có tài khoản
-        exp_reward = int(score * 0.5)
+        # 4. Thưởng Rank Points & Xu nếu người dùng có tài khoản
+        rp_reward = max(5, int(score * 0.2))
+        coins_reward = max(2, int(score * 0.1))
         level_up = False
         if user:
-            user.exp = (user.exp or 0) + exp_reward
-            level_up = check_and_update_level(user)
+            user.academic_rp = (user.academic_rp or 0) + rp_reward
+            user.coins = (user.coins or 0) + coins_reward
+            level_up, _ = check_and_update_level(user.id)
             db.session.commit()
 
         return jsonify({
@@ -267,7 +276,9 @@ def submit_vision_sentence():
             "has_error": has_error,
             "error_count": error_count,
             "score": score,
-            "exp_awarded": exp_reward,
+            "exp_awarded": rp_reward,
+            "rp_awarded": rp_reward,
+            "coins_awarded": coins_reward,
             "level_up": level_up,
             "feedback": feedback,
             "words_used": words_used

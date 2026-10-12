@@ -80,19 +80,28 @@ with app.test_client() as client:
     scan_data = r_scan.get_json()
     print(f"    [✓] POST /api/vision/scan: 200 OK (Trả về {scan_data.get('total_detected')} chi tiết)")
 
-    # 4.3 Test POST /api/vision/submit-sentence
+    # 4.3 Test POST /api/vision/save-vocab
+    r_save = client.post('/api/vision/save-vocab', json={
+        "word": "zipper",
+        "parent_object": "backpack"
+    })
+    assert r_save.status_code == 200, f"POST /api/vision/save-vocab lỗi {r_save.status_code}: {r_save.get_data(as_text=True)}"
+    save_data = r_save.get_json()
+    print(f"    [✓] POST /api/vision/save-vocab: 200 OK ({save_data.get('message')})")
+
+    # 4.4 Test POST /api/vision/submit-sentence
     r_submit = client.post('/api/vision/submit-sentence', json={
         "sentence": "The zipper of my backpack is broken.",
         "words_used": ["zipper", "backpack"],
         "primary_object": "backpack"
     })
-    assert r_submit.status_code == 200, f"POST /api/vision/submit-sentence lỗi {r_submit.status_code}"
+    assert r_submit.status_code == 200, f"POST /api/vision/submit-sentence lỗi {r_submit.status_code}: {r_submit.get_data(as_text=True)}"
     sub_data = r_submit.get_json()
     print(f"    [✓] POST /api/vision/submit-sentence: 200 OK")
     print(f"        - Điểm số: {sub_data.get('score')}/100")
     print(f"        - Câu sửa lỗi (GEC): '{sub_data.get('corrected_sentence')}'")
     print(f"        - Lời phê Master G: '{sub_data.get('feedback')}'")
-    print(f"        - Thưởng EXP: +{sub_data.get('exp_awarded')} EXP")
+    print(f"        - Thưởng RP/EXP: +{sub_data.get('exp_awarded')} RP")
 
 print("\n" + "=" * 70)
 print(">>> TẤT CẢ CÁC BÀI KIỂM THỬ PHÂN HỆ THỊ GIÁC ĐỀU VƯỢT QUA 100%!")
