@@ -172,11 +172,15 @@ class LocalOwlVitEngine:
         image_input: Union[str, Image.Image, np.ndarray],
         target_category: Optional[str] = None,
         custom_queries: Optional[List[str]] = None,
-        score_threshold: float = 0.14,
-        max_results: int = 8
+        score_threshold: float = 0.12,
+        max_results: int = 10,
+        granularity: str = "all"
     ) -> Dict[str, Any]:
         """
         Nhận diện vật thể và trích xuất các bộ phận con chi tiết.
+        Hỗ trợ:
+        - granularity: 'macro' (cơ bản), 'functional' (trung cấp), 'micro' (chuyên sâu), 'all' (toàn diện).
+        - max_results: Giới hạn 3 - 20 vật thể/bộ phận trong khung hình.
         Trả về kết quả JSON với tọa độ chuẩn hóa, nhãn tiếng Anh, IPA, nghĩa tiếng Việt và CEFR.
         """
         if not self.is_loaded:
@@ -189,6 +193,7 @@ class LocalOwlVitEngine:
 
         try:
             start_infer = time.time()
+            max_results = max(3, min(20, int(max_results or 10)))
             pil_img = self._prepare_image(image_input)
             
             # Chuẩn hóa kích thước ảnh tối đa 640px để tăng tốc độ suy luận gấp 2.5x trên CPU
@@ -199,11 +204,11 @@ class LocalOwlVitEngine:
                 pil_img = pil_img.resize((int(orig_w * scale), int(orig_h * scale)), Image.Resampling.BILINEAR)
             img_width, img_height = pil_img.size
 
-            # 1. Xây dựng danh sách text queries
+            # 1. Xây dựng danh sách text queries theo độ sâu (Granularity)
             if custom_queries and len(custom_queries) > 0:
                 raw_queries = custom_queries
             else:
-                raw_queries = build_candidate_queries(category=target_category)
+                raw_queries = build_candidate_queries(category=target_category, granularity=granularity)
 
             # Thêm tiền tố mô tả tự nhiên để Vision-Language matching tốt hơn
             formatted_texts = [f"a photo of a {q.strip()}" for q in raw_queries]
@@ -275,6 +280,8 @@ class LocalOwlVitEngine:
                     "ipa": meta["ipa"],
                     "meaning": meta["meaning"],
                     "cefr": meta["cefr"],
+                    "tier": meta.get("tier", "functional"),
+                    "level_tier": meta.get("level_tier", "basic"),
                     "confidence": score,
                     "normalized_box": norm_box
                 })

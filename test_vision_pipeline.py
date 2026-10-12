@@ -103,6 +103,46 @@ with app.test_client() as client:
     print(f"        - Lời phê Master G: '{sub_data.get('feedback')}'")
     print(f"        - Thưởng RP/EXP: +{sub_data.get('exp_awarded')} RP")
 
+    # 4.5 Test Phân cấp độ sâu (Granularity) & Giới hạn số lượng (3 - 20)
+    print("\n[5] Kiểm tra Cấp độ chi tiết (Granularity) & Giới hạn vật thể (3-20):")
+    for gran in ["macro", "functional", "micro", "all"]:
+        r_gran = client.post('/api/vision/scan', json={
+            "image": f"data:image/jpeg;base64,{img_b64}",
+            "target_category": "backpack",
+            "granularity": gran,
+            "max_results": 5
+        })
+        assert r_gran.status_code == 200, f"Granularity {gran} failed"
+        g_data = r_gran.get_json()
+        print(f"    [✓] Granularity '{gran}': OK (Phát hiện {len(g_data['detected_parts'])} chi tiết)")
+        for p in g_data['detected_parts']:
+            assert 'meaning' in p, "Phải có bản dịch tiếng Việt!"
+            assert 'level_tier' in p, "Phải có phân loại cấp độ basic/advanced!"
+            assert 'tier' in p, "Phải có phân loại tier!"
+
+    # 4.6 Test Upload Media (/api/vision/upload-media)
+    print("\n[6] Kiểm tra Tải lên Đa phương tiện (Media Upload ≤ 25MB):")
+    buffered.seek(0)
+    data = {
+        'file': (buffered, 'test_backpack.jpg'),
+        'granularity': 'functional',
+        'max_results': '8',
+        'threshold': '0.10'
+    }
+    r_upload = client.post('/api/vision/upload-media', data=data, content_type='multipart/form-data')
+    assert r_upload.status_code == 200, f"POST /api/vision/upload-media lỗi {r_upload.status_code}: {r_upload.get_data(as_text=True)}"
+    up_data = r_upload.get_json()
+    assert up_data.get('status') == 'success'
+    assert up_data.get('media_type') == 'image'
+    print(f"    [✓] Upload Image: 200 OK (Loại: {up_data.get('media_type')}, Chi tiết: {len(up_data.get('detected_parts', []))})")
+
+    # 4.7 Test Rejection khi file vượt quá 25MB
+    fake_huge_file = io.BytesIO(b"0" * (26 * 1024 * 1024))
+    r_huge = client.post('/api/vision/upload-media', data={'file': (fake_huge_file, 'huge_file.mp4')}, content_type='multipart/form-data')
+    assert r_huge.status_code == 400, "Phải chặn file lớn hơn 25MB!"
+    huge_err = r_huge.get_json()
+    print(f"    [✓] Chặn file >25MB thành công: {huge_err.get('message')}")
+
 print("\n" + "=" * 70)
 print(">>> TẤT CẢ CÁC BÀI KIỂM THỬ PHÂN HỆ THỊ GIÁC ĐỀU VƯỢT QUA 100%!")
 print("=" * 70)

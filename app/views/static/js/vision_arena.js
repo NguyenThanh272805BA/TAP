@@ -19,7 +19,13 @@ let currentDetectedParts = [];
 let primaryObject = "object";
 let scannedWordRegistry = [];
 let currentWordFilter = "all"; // 'all' | 'objects' | 'connectors'
+let currentLevelFilter = "all"; // 'all' | 'basic' | 'advanced'
 let selectedObjectCategory = "all";
+
+let activeMediaType = "camera"; // 'camera' | 'image' | 'video'
+let uploadedVideoElement = null;
+let uploadedImageElement = null;
+let videoAutoScanInterval = null;
 
 // Quản lý con trỏ cử chỉ ảo toàn màn hình
 let airPointer = null;
@@ -38,6 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
     canvasElement = document.getElementById("vision-canvas");
     airPointer = document.getElementById("air-pointer");
     airPointerIcon = document.getElementById("air-pointer-icon");
+    uploadedVideoElement = document.getElementById("uploaded-video-player");
+    uploadedImageElement = document.getElementById("uploaded-image-preview");
 
     if (canvasElement) {
         canvasCtx = canvasElement.getContext("2d");
@@ -428,36 +436,224 @@ function releaseGrabbedElement(checkDropZone = true, dropX = 0, dropY = 0) {
 }
 
 /**
- * 4. QUÉT VẬT THỂ & TRÍCH XUẤT BỘ PHẬN CON (OWL-ViT BACKEND)
+ * 4. XỬ LÝ TẢI LÊN ĐA PHƯƠNG TIỆN (ẢNH / VIDEO ≤ 25MB) & KÉO THẢ TỆP
+ */
+function handleMediaFileUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    processSelectedMediaFile(file);
+    event.target.value = "";
+}
+
+function handleViewportDragOver(event) {
+    event.preventDefault();
+    const wrapper = document.getElementById("viewport-wrapper");
+    if (wrapper) wrapper.style.border = "2px dashed #38bdf8";
+}
+
+function handleViewportDragLeave(event) {
+    event.preventDefault();
+    const wrapper = document.getElementById("viewport-wrapper");
+    if (wrapper) wrapper.style.border = "";
+}
+
+function handleViewportDrop(event) {
+    event.preventDefault();
+    const wrapper = document.getElementById("viewport-wrapper");
+    if (wrapper) wrapper.style.border = "";
+
+    if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        const file = event.dataTransfer.files[0];
+        processSelectedMediaFile(file);
+    }
+}
+
+function processSelectedMediaFile(file) {
+    const maxSizeBytes = 25 * 1024 * 1024; // 25MB
+    if (file.size > maxSizeBytes) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        alert(`Dung lượng tệp (${sizeMb} MB) vượt quá giới hạn tối đa 25MB! Vui lòng chọn tệp từ 10MB - 25MB trở xuống.`);
+        return;
+    }
+
+    const fileName = file.name.toLowerCase();
+    const isVideo = file.type.startsWith("video/") || ['.mp4', '.webm', '.mov', '.avi', '.mkv'].some(ext => fileName.endsWith(ext));
+    const isImage = file.type.startsWith("image/") || ['.jpg', '.jpeg', '.png', '.webp', '.bmp'].some(ext => fileName.endsWith(ext));
+
+    if (!isVideo && !isImage) {
+        alert("Định dạng tệp không được hỗ trợ! Vui lòng tải file ảnh (JPG, PNG, WEBP) hoặc video (MP4, WEBM, MOV).");
+        return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const mediaBar = document.getElementById("media-mode-bar");
+    const mediaLabel = document.getElementById("media-mode-label");
+    const scanBtn = document.getElementById("btn-scan-frame");
+    const autoScanBtn = document.getElementById("btn-video-autoscan");
+
+    if (mediaBar) mediaBar.style.display = "flex";
+    if (scanBtn) scanBtn.disabled = false;
+
+    if (isVideo) {
+        activeMediaType = "video";
+        if (mediaLabel) mediaLabel.innerHTML = `🎞️ Video: <b>${file.name.slice(0, 18)}...</b> (${(file.size/(1024*1024)).toFixed(1)}MB)`;
+        if (uploadedImageElement) uploadedImageElement.style.display = "none";
+        if (videoElement) videoElement.style.display = "none";
+
+        if (uploadedVideoElement) {
+            uploadedVideoElement.src = objectUrl;
+            uploadedVideoElement.style.display = "block";
+            uploadedVideoElement.play().catch(e => console.log("Video auto play notice:", e));
+        }
+
+        if (autoScanBtn) autoScanBtn.style.display = "inline-flex";
+        document.getElementById("status-hud").innerHTML = "🎞️ Đã tải Video. Bấm 'Quét' hoặc 'Quét Video Tự Động'!";
+
+        setTimeout(() => {
+            captureAndScan();
+        }, 500);
+
+    } else {
+        activeMediaType = "image";
+        if (mediaLabel) mediaLabel.innerHTML = `🖼️ Ảnh: <b>${file.name.slice(0, 18)}...</b> (${(file.size/(1024*1024)).toFixed(1)}MB)`;
+        if (uploadedVideoElement) {
+            uploadedVideoElement.pause();
+            uploadedVideoElement.style.display = "none";
+        }
+        if (videoElement) videoElement.style.display = "none";
+        if (autoScanBtn) {
+            autoScanBtn.style.display = "none";
+            stopVideoAutoScan();
+        }
+
+        if (uploadedImageElement) {
+            uploadedImageElement.src = objectUrl;
+            uploadedImageElement.style.display = "block";
+            uploadedImageElement.onload = () => {
+                document.getElementById("status-hud").innerHTML = "🖼️ Đã nạp ảnh tĩnh. Đang tự động quét...";
+                captureAndScan();
+            };
+        }
+    }
+}
+
+function closeUploadedMedia() {
+    stopVideoAutoScan();
+    activeMediaType = "camera";
+
+    if (uploadedVideoElement) {
+        uploadedVideoElement.pause();
+        uploadedVideoElement.src = "";
+        uploadedVideoElement.style.display = "none";
+    }
+    if (uploadedImageElement) {
+        uploadedImageElement.src = "";
+        uploadedImageElement.style.display = "none";
+    }
+    if (videoElement) {
+        videoElement.style.display = "block";
+    }
+
+    const mediaBar = document.getElementById("media-mode-bar");
+    if (mediaBar) mediaBar.style.display = "none";
+
+    const autoScanBtn = document.getElementById("btn-video-autoscan");
+    if (autoScanBtn) autoScanBtn.style.display = "none";
+
+    const scanBtn = document.getElementById("btn-scan-frame");
+    if (scanBtn) scanBtn.disabled = !isCameraActive;
+
+    document.getElementById("status-hud").innerHTML = isCameraActive ? "🟢 Camera: Đang chạy" : "🔴 Camera: Đang tắt";
+}
+
+function toggleVideoAutoScan() {
+    if (videoAutoScanInterval) {
+        stopVideoAutoScan();
+    } else {
+        startVideoAutoScan();
+    }
+}
+
+function startVideoAutoScan() {
+    const autoScanBtn = document.getElementById("btn-video-autoscan");
+    const icon = document.getElementById("video-autoscan-icon");
+    const text = document.getElementById("video-autoscan-text");
+
+    if (autoScanBtn) {
+        autoScanBtn.style.background = "linear-gradient(135deg, #f43f5e, #e11d48)";
+        autoScanBtn.style.borderColor = "#f43f5e";
+    }
+    if (icon) icon.innerText = "⏹️";
+    if (text) text.innerText = "Dừng Quét Video";
+
+    captureAndScan();
+    videoAutoScanInterval = setInterval(() => {
+        if (activeMediaType === "video" && uploadedVideoElement && !uploadedVideoElement.paused) {
+            captureAndScan();
+        }
+    }, 2500);
+}
+
+function stopVideoAutoScan() {
+    if (videoAutoScanInterval) {
+        clearInterval(videoAutoScanInterval);
+        videoAutoScanInterval = null;
+    }
+    const autoScanBtn = document.getElementById("btn-video-autoscan");
+    const icon = document.getElementById("video-autoscan-icon");
+    const text = document.getElementById("video-autoscan-text");
+
+    if (autoScanBtn) {
+        autoScanBtn.style.background = "rgba(168, 85, 247, 0.25)";
+        autoScanBtn.style.borderColor = "#c084fc";
+    }
+    if (icon) icon.innerText = "🎞️";
+    if (text) text.innerText = "Quét Video Tự Động";
+}
+
+/**
+ * 5. QUÉT VẬT THỂ & TRÍCH XUẤT BỘ PHẬN CON (OWL-ViT BACKEND)
  */
 async function captureAndScan() {
-    if (!isCameraActive || !videoElement) {
-        alert("Vui lòng bật camera trước khi quét!");
+    let sourceMedia = null;
+    let isMirrored = false;
+
+    if (activeMediaType === "video" && uploadedVideoElement) {
+        sourceMedia = uploadedVideoElement;
+    } else if (activeMediaType === "image" && uploadedImageElement) {
+        sourceMedia = uploadedImageElement;
+    } else if (isCameraActive && videoElement) {
+        sourceMedia = videoElement;
+        isMirrored = true;
+    } else {
+        alert("Vui lòng bật camera hoặc tải lên ảnh/video trước khi quét!");
         return;
     }
 
     const scanBtn = document.getElementById("btn-scan-frame");
     const laser = document.getElementById("scan-laser");
-    scanBtn.disabled = true;
-    laser.style.display = "block";
+    if (scanBtn) scanBtn.disabled = true;
+    if (laser) laser.style.display = "block";
     document.getElementById("status-hud").innerHTML = "🔍 Đang phân tích OWL-ViT...";
 
     try {
-        // Chụp frame tĩnh chuẩn hóa 640px và lật gương để đồng bộ 100% với góc nhìn người dùng
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = 640;
         tempCanvas.height = 360;
         const ctx = tempCanvas.getContext("2d");
 
-        // Lật ảnh theo trục X trước khi gửi để backend nhận diện đúng vị trí trên màn hình lật gương
-        ctx.translate(tempCanvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+        if (isMirrored) {
+            ctx.translate(tempCanvas.width, 0);
+            ctx.scale(-1, 1);
+        }
+        ctx.drawImage(sourceMedia, 0, 0, tempCanvas.width, tempCanvas.height);
 
         const base64Image = tempCanvas.toDataURL("image/jpeg", 0.85);
 
-        const category = document.getElementById("category-select").value || null;
-        const threshold = parseFloat(document.getElementById("threshold-slider").value) || 0.10;
+        const category = document.getElementById("category-select") ? (document.getElementById("category-select").value || null) : null;
+        const threshold = parseFloat(document.getElementById("threshold-slider") ? document.getElementById("threshold-slider").value : 0.10) || 0.10;
+        const maxResults = parseInt(document.getElementById("max-objects-slider") ? document.getElementById("max-objects-slider").value : 10) || 10;
+        const granularity = document.getElementById("granularity-select") ? document.getElementById("granularity-select").value : "all";
 
         const startTime = performance.now();
         const response = await fetch("/api/vision/scan", {
@@ -466,7 +662,9 @@ async function captureAndScan() {
             body: JSON.stringify({
                 image: base64Image,
                 target_category: category,
-                threshold: threshold
+                threshold: threshold,
+                max_results: maxResults,
+                granularity: granularity
             })
         });
 
@@ -479,7 +677,12 @@ async function captureAndScan() {
             primaryObject = data.primary_object || "object";
 
             registerDetectedParts(currentDetectedParts, primaryObject);
-            document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject}</b> (${currentDetectedParts.length} chi tiết)`;
+            document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject}</b> (${currentDetectedParts.length} vật thể/chi tiết)`;
+
+            if (!isCameraActive && canvasCtx && canvasElement) {
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                drawDetectedBoundingBoxes();
+            }
         } else {
             alert(`Lỗi nhận diện: ${data.message}`);
             document.getElementById("status-hud").innerHTML = "⚠️ Nhận diện thất bại";
@@ -490,8 +693,8 @@ async function captureAndScan() {
         alert("Lỗi kết nối tới Server Vision!");
         document.getElementById("status-hud").innerHTML = "❌ Lỗi Server";
     } finally {
-        laser.style.display = "none";
-        scanBtn.disabled = false;
+        if (laser) laser.style.display = "none";
+        if (scanBtn) scanBtn.disabled = false;
     }
 }
 
@@ -618,13 +821,18 @@ async function loadSamplePreset(type) {
 
     try {
         const startTime = performance.now();
+        const granularity = document.getElementById("granularity-select") ? document.getElementById("granularity-select").value : "all";
+        const maxResults = parseInt(document.getElementById("max-objects-slider") ? document.getElementById("max-objects-slider").value : 10) || 10;
+
         const response = await fetch("/api/vision/scan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 image: base64Image,
                 target_category: type,
-                threshold: 0.08
+                threshold: 0.08,
+                max_results: maxResults,
+                granularity: granularity
             })
         });
 
@@ -657,10 +865,15 @@ async function loadSamplePreset(type) {
  * 6. VẼ BOUNDING BOX TRÊN CANVAS
  */
 function drawDetectedBoundingBoxes() {
-    if (!currentDetectedParts || currentDetectedParts.length === 0 || !canvasCtx) return;
+    if (!currentDetectedParts || currentDetectedParts.length === 0 || !canvasCtx || !canvasElement) return;
 
     const w = canvasElement.width;
     const h = canvasElement.height;
+
+    // Nếu camera tắt (đang xem ảnh/video tĩnh), vẽ đè rõ nét
+    if (!isCameraActive && activeMediaType !== "camera") {
+        canvasCtx.clearRect(0, 0, w, h);
+    }
 
     currentDetectedParts.forEach((part) => {
         const box = part.normalized_box;
@@ -671,32 +884,63 @@ function drawDetectedBoundingBoxes() {
         const boxW = (box.xmax - box.xmin) * w;
         const boxH = (box.ymax - box.ymin) * h;
 
+        const isBasic = (part.level_tier === "basic" || ["A1", "A2"].includes((part.cefr || "").toUpperCase()));
+        const themeColor = isBasic ? "#22d3ee" : "#c084fc"; // Cyan cho Cơ bản (A1-A2), Tím neon cho Chuyên sâu (B1-C1)
+        const shadowColor = isBasic ? "rgba(34, 211, 238, 0.7)" : "rgba(192, 132, 252, 0.7)";
+
         canvasCtx.save();
         canvasCtx.lineWidth = 2.5;
-        canvasCtx.strokeStyle = "#22d3ee";
-        canvasCtx.fillStyle = "rgba(6, 182, 212, 0.15)";
+        canvasCtx.strokeStyle = themeColor;
+        canvasCtx.fillStyle = isBasic ? "rgba(6, 182, 212, 0.14)" : "rgba(168, 85, 247, 0.14)";
         canvasCtx.shadowBlur = 10;
-        canvasCtx.shadowColor = "#22d3ee";
+        canvasCtx.shadowColor = shadowColor;
 
+        // Vẽ hộp bao quanh vật thể
         canvasCtx.fillRect(x1, y1, boxW, boxH);
         canvasCtx.strokeRect(x1, y1, boxW, boxH);
 
-        const labelText = `${part.word.toUpperCase()} [${part.cefr}] (${Math.round(part.confidence * 100)}%)`;
-        canvasCtx.font = "bold 12px Inter, sans-serif";
-        const textW = canvasCtx.measureText(labelText).width;
+        // Chuẩn bị nhãn song ngữ: EN [CEFR] (conf%) và Tiếng Việt chuẩn xác
+        const enWord = (part.word || "").toUpperCase();
+        const cefr = part.cefr || "B1";
+        const vnMeaning = part.meaning || "";
+        const confPercent = Math.round((part.confidence || 0) * 100);
 
-        canvasCtx.fillStyle = "rgba(2, 6, 23, 0.88)";
-        canvasCtx.fillRect(x1, Math.max(0, y1 - 22), textW + 12, 20);
+        const line1 = `${enWord} [${cefr}] (${confPercent}%)`;
+        const line2 = vnMeaning ? `🇻🇳 ${vnMeaning}` : "";
 
-        canvasCtx.fillStyle = "#67e8f9";
-        canvasCtx.fillText(labelText, x1 + 6, Math.max(14, y1 - 7));
+        canvasCtx.font = "bold 11px Inter, sans-serif";
+        const w1 = canvasCtx.measureText(line1).width;
+        canvasCtx.font = "normal 11px Inter, sans-serif";
+        const w2 = canvasCtx.measureText(line2).width;
+        const badgeW = Math.max(w1, w2) + 14;
+        const badgeH = line2 ? 34 : 20;
+        const badgeY = Math.max(0, y1 - badgeH - 3);
+
+        // Nền nhãn kính mờ Cyberpunk tương phản cao
+        canvasCtx.fillStyle = "rgba(2, 6, 23, 0.92)";
+        canvasCtx.fillRect(x1, badgeY, badgeW, badgeH);
+        canvasCtx.strokeStyle = themeColor;
+        canvasCtx.lineWidth = 1;
+        canvasCtx.strokeRect(x1, badgeY, badgeW, badgeH);
+
+        // Dòng 1: Tiếng Anh + Cấp độ CEFR + Độ tin cậy
+        canvasCtx.fillStyle = themeColor;
+        canvasCtx.font = "bold 11px Inter, sans-serif";
+        canvasCtx.fillText(line1, x1 + 6, badgeY + 13);
+
+        // Dòng 2: Bản dịch tiếng Việt chuẩn xác
+        if (line2) {
+            canvasCtx.fillStyle = "#fef08a"; // Màu vàng hổ phách nổi bật
+            canvasCtx.font = "bold 10.5px Inter, sans-serif";
+            canvasCtx.fillText(line2, x1 + 6, badgeY + 27);
+        }
 
         canvasCtx.restore();
     });
 }
 
 /**
- * 7. QUẢN LÝ KHO TỪ VỰNG THỊ GIÁC, BỘ LỌC ĐỒ VẬT & GỢI Ý ĐẶT CÂU
+ * 7. QUẢN LÝ KHO TỪ VỰNG THỊ GIÁC, BỘ LỌC ĐỒ VẬT & CẤP ĐỘ CEFR
  */
 
 function registerDetectedParts(parts, objectCategory) {
@@ -708,11 +952,16 @@ function registerDetectedParts(parts, objectCategory) {
         const cleanWord = (part.word || "").trim().toLowerCase();
         if (!cleanWord) return;
         const existingIdx = scannedWordRegistry.findIndex(w => w.word.toLowerCase() === cleanWord);
+        const cefrUpper = (part.cefr || "B1").toUpperCase();
+        const levelTier = part.level_tier || (["A1", "A2"].includes(cefrUpper) ? "basic" : "advanced");
+
         const item = {
             word: cleanWord,
             ipa: part.ipa || "",
-            cefr: part.cefr || "B1",
+            cefr: cefrUpper,
             meaning: part.meaning || "Chi tiết vật thể",
+            tier: part.tier || "functional",
+            levelTier: levelTier,
             isLearned: !!part.is_learned,
             parentObject: objectCategory || primaryObject,
             isObjectPart: true
@@ -726,13 +975,13 @@ function registerDetectedParts(parts, objectCategory) {
 
     // 2. Nạp các từ nối cơ bản phục vụ đặt câu (Chỉ nạp 1 lần duy nhất)
     const baseConnectors = [
-        { word: "the", ipa: "/ðə/", cefr: "A1", meaning: "Mạo từ xác định", isLearned: true, isObjectPart: false },
-        { word: "is", ipa: "/ɪz/", cefr: "A1", meaning: "Thì / là", isLearned: true, isObjectPart: false },
-        { word: "a", ipa: "/ə/", cefr: "A1", meaning: "Một", isLearned: true, isObjectPart: false },
-        { word: "has", ipa: "/hæz/", cefr: "A1", meaning: "Có", isLearned: true, isObjectPart: false },
-        { word: "my", ipa: "/maɪ/", cefr: "A1", meaning: "Của tôi", isLearned: true, isObjectPart: false },
-        { word: "of", ipa: "/əv/", cefr: "A1", meaning: "Của", isLearned: true, isObjectPart: false },
-        { word: "this", ipa: "/ðɪs/", cefr: "A1", meaning: "Cái này", isLearned: true, isObjectPart: false }
+        { word: "the", ipa: "/ðə/", cefr: "A1", levelTier: "basic", meaning: "Mạo từ xác định", isLearned: true, isObjectPart: false },
+        { word: "is", ipa: "/ɪz/", cefr: "A1", levelTier: "basic", meaning: "Thì / là", isLearned: true, isObjectPart: false },
+        { word: "a", ipa: "/ə/", cefr: "A1", levelTier: "basic", meaning: "Một", isLearned: true, isObjectPart: false },
+        { word: "has", ipa: "/hæz/", cefr: "A1", levelTier: "basic", meaning: "Có", isLearned: true, isObjectPart: false },
+        { word: "my", ipa: "/maɪ/", cefr: "A1", levelTier: "basic", meaning: "Của tôi", isLearned: true, isObjectPart: false },
+        { word: "of", ipa: "/əv/", cefr: "A1", levelTier: "basic", meaning: "Của", isLearned: true, isObjectPart: false },
+        { word: "this", ipa: "/ðɪs/", cefr: "A1", levelTier: "basic", meaning: "Cái này", isLearned: true, isObjectPart: false }
     ];
 
     baseConnectors.forEach(conn => {
@@ -747,9 +996,19 @@ function registerDetectedParts(parts, objectCategory) {
 
 function setWordFilter(filterType) {
     currentWordFilter = filterType;
-    document.querySelectorAll(".pool-filter-tab").forEach(tab => tab.classList.remove("active"));
-    const activeBtn = document.getElementById(`filter-${filterType}-btn`);
-    if (activeBtn) activeBtn.classList.add("active");
+    ["all", "objects", "connectors"].forEach(type => {
+        const btn = document.getElementById(`filter-${type}-btn`);
+        if (btn) btn.classList.toggle("active", type === filterType);
+    });
+    renderWordPool();
+}
+
+function setWordLevelFilter(levelTier) {
+    currentLevelFilter = levelTier;
+    ["all", "basic", "advanced"].forEach(lvl => {
+        const btn = document.getElementById(`level-${lvl}-btn`);
+        if (btn) btn.classList.toggle("active", lvl === levelTier);
+    });
     renderWordPool();
 }
 
@@ -812,23 +1071,28 @@ function renderWordPool() {
     pool.innerHTML = "";
 
     if (scannedWordRegistry.length === 0) {
-        pool.innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Kho từ đang trống. Bấm "Bật Camera" hoặc click vào một "Ảnh mẫu" phía trên để nạp từ vựng...</div>`;
+        pool.innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Kho từ đang trống. Bấm "Bật Camera", click vào một "Ảnh mẫu", hoặc tải ảnh/video để nạp từ vựng...</div>`;
         countBadge.innerText = "0 từ vựng";
         return;
     }
 
-    // Lọc theo currentWordFilter và selectedObjectCategory
+    // Lọc đồng thời theo:
+    // 1. Phân loại (Tất cả / Chỉ từ vật thể / Chỉ từ nối)
+    // 2. Vật thể cha cụ thể
+    // 3. Cấp độ học tập (Tất cả / Cơ bản A1-A2 / Chuyên sâu B1-C1)
     const filteredList = scannedWordRegistry.filter(item => {
         if (currentWordFilter === "objects" && !item.isObjectPart) return false;
         if (currentWordFilter === "connectors" && item.isObjectPart) return false;
         if (selectedObjectCategory !== "all" && item.isObjectPart) {
             if (item.parentObject !== selectedObjectCategory) return false;
         }
+        if (currentLevelFilter === "basic" && item.levelTier !== "basic") return false;
+        if (currentLevelFilter === "advanced" && item.levelTier !== "advanced") return false;
         return true;
     });
 
     if (filteredList.length === 0) {
-        pool.innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Không có từ nào thuộc nhóm này. Hãy bấm tab "🌟 Tất cả" hoặc quét thêm vật thể!</div>`;
+        pool.innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Không có từ nào thỏa mãn bộ lọc hiện tại. Hãy bấm chọn "🌟 Mọi Cấp Độ" hoặc quét thêm vật thể!</div>`;
         countBadge.innerText = `${scannedWordRegistry.filter(w => w.isObjectPart).length} từ (đang ẩn)`;
         return;
     }
@@ -843,24 +1107,34 @@ function renderWordPool() {
             item.cefr,
             item.meaning,
             item.isLearned,
-            item.isObjectPart
+            item.isObjectPart,
+            item.levelTier
         );
         pool.appendChild(token);
     });
 }
 
-function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPart = true) {
+function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPart = true, levelTier = 'basic') {
     const token = document.createElement("div");
     token.className = "word-token";
     token.setAttribute("draggable", "true");
     token.setAttribute("data-word", word);
+    token.setAttribute("title", meaning ? `${word}: ${meaning}` : word);
 
-    const badgeStyle = !isObjectPart ? 'background: rgba(148, 163, 184, 0.2); color: #cbd5e1;' : '';
+    let badgeStyle = "";
+    if (!isObjectPart) {
+        badgeStyle = 'background: rgba(148, 163, 184, 0.2); color: #cbd5e1;';
+    } else if (levelTier === "advanced" || ["B1", "B2", "C1"].includes((cefr || "").toUpperCase())) {
+        badgeStyle = 'background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid #c084fc;';
+    } else {
+        badgeStyle = 'background: rgba(34, 211, 238, 0.25); color: #67e8f9; border: 1px solid #67e8f9;';
+    }
 
     token.innerHTML = `
         <span class="cefr-badge" style="${badgeStyle}">${cefr || 'A1'}</span>
         <span style="font-weight: 700; color: #fff;">${word}</span>
         ${ipa ? `<span class="word-ipa">${ipa}</span>` : ''}
+        ${meaning && isObjectPart ? `<span style="font-size: 11px; color: #fef08a; margin-left: 2px;">(${meaning})</span>` : ''}
         <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; padding: 0 4px;" onclick="speakWord('${word}', event)" title="Nghe phát âm">🔊</button>
         ${(isObjectPart && !isLearned) ? `<button type="button" class="btn-add-vocab" onclick="collectVocab('${word}', event)" title="Lưu vào kho ôn tập SRS">+ Thu thập</button>` : ''}
     `;

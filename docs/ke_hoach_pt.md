@@ -150,4 +150,33 @@
 
 ---
 
+## PHẦN VII: PHÂN CẤP NHẬN BIẾT ĐA TẦNG, GIỚI HẠN VẬT THỂ & TẢI LÊN ĐA PHƯƠNG TIỆN (MEDIA UPLOAD) [x]
+
+### 7.1 Phân cấp Mức độ Nhận biết Đa tầng (Granularity / Depth of Detection) [x]
+- Xây dựng 4 mức độ nhận biết từ vựng linh hoạt:
+  1. *Cơ bản (`macro`)*: Chỉ quét vật thể nguyên khối chính (24+ đồ vật học thuật & đời sống). [x]
+  2. *Trung cấp (`functional`)*: Quét vật thể và các bộ phận chức năng nổi bật (screen, keyboard, handle...). [x]
+  3. *Chuyên sâu (`micro`)*: Quét chi tiết vi mô và linh kiện con (seam, buckle, hinge, trackpad, crown, dial...). [x]
+  4. *Toàn diện (`all`)*: Quét kết hợp đa tầng toàn diện mọi chi tiết vật thể. [x]
+- Mở rộng từ điển phân cấp học thuật hơn 24 đồ vật và 100+ linh kiện có gán nhãn CEFR và nghĩa tiếng Việt chuẩn xác trong `vision_taxonomy.py` [x]
+
+### 7.2 Giới hạn Số lượng Vật thể (3 - 20) & Nhãn Song ngữ Bounding Box [x]
+- Bổ sung thanh trượt điều chỉnh số lượng vật thể tối đa trong khung hình: Giới hạn từ 3 đến 20 vật thể/bộ phận [x]
+- Gán nhãn trực quan song ngữ trên từng Bounding Box: Tiếng Anh viết hoa, cấp độ CEFR, tỷ lệ tin cậy và **bản dịch Tiếng Việt chuẩn xác** màu vàng hổ phách nổi bật [x]
+- Mã hóa màu sắc Bounding Box thích ứng theo cấp độ: Xanh Cyan cho Cơ bản (A1 - A2) và Tím Neon cho Chuyên sâu (B1 - C1) [x]
+
+### 7.3 Tải lên Đa phương tiện (Media Upload: Ảnh & Video ≤ 25MB) [x]
+- Endpoint backend `POST /api/vision/upload-media` hỗ trợ cả tệp ảnh tĩnh (JPG, PNG, WEBP) và video clip (MP4, WEBM, MOV) [x]
+- Cơ chế kiểm duyệt dung lượng nghiêm ngặt: Chặn tuyệt đối các tệp vượt quá 25MB và thông báo lỗi rõ ràng [x]
+- Tích hợp trình phát video HTML5 Video Player trực tiếp trên Viewfinder: Cho phép xem trước, tua video, bấm "📸 Quét khung hình này" [x]
+- Tích hợp chế độ "🎞️ Quét Video Tự Động": Tự động trích xuất khung hình định kỳ mỗi 2.5s khi video đang phát để nhận diện từ vựng động [x]
+- Hỗ trợ kéo & thả trực tiếp file từ máy tính vào khung nhìn Camera Viewfinder [x]
+
+### 7.4 Bộ lọc Kho Từ Vựng theo Cấp độ Học tập (CEFR Level Filtering) [x]
+- Phân nhóm cấp độ từ vựng: Cơ bản (A1 - A2) vs Chuyên sâu (B1 - C1) [x]
+- Bổ sung thanh nút chuyển đổi bộ lọc cấp độ trong Kho từ vựng: `🌟 Mọi Cấp Độ` | `🌱 Cơ Bản (A1 - A2)` | `🚀 Chuyên Sâu (B1 - C1)` [x]
+- Thẻ từ vựng hiển thị đồng thời nghĩa tiếng Việt và viền huy hiệu màu sắc tương ứng với cấp độ học tập [x]
+
+---
+
 *Kế hoạch được phê duyệt và lưu trữ tại*: [`docs/ke_hoach_pt.md`](file:///d:/Python/TAP/docs/ke_hoach_pt.md)

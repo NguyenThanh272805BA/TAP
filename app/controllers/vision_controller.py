@@ -57,7 +57,10 @@ def scan_object():
         image_data = data.get('image')
         target_category = data.get('target_category') or None
         custom_queries = data.get('custom_queries') or None
-        threshold = float(data.get('threshold', 0.14))
+        threshold = float(data.get('threshold', 0.12))
+        max_results = int(data.get('max_results', 10))
+        max_results = max(3, min(20, max_results))
+        granularity = str(data.get('granularity', 'all')).lower()
 
         if not image_data:
             return jsonify({
@@ -71,7 +74,8 @@ def scan_object():
             target_category=target_category,
             custom_queries=custom_queries,
             score_threshold=threshold,
-            max_results=8
+            max_results=max_results,
+            granularity=granularity
         )
 
         if result.get("status") != "success":
@@ -125,6 +129,153 @@ def scan_object():
         return jsonify({
             "status": "error",
             "message": f"Lỗi hệ thống khi quét ảnh: {str(e)}"
+        }), 500
+
+
+@vision_bp.route('/api/vision/upload-media', methods=['POST'])
+def upload_media_and_scan():
+    """
+    API Tải lên ảnh tĩnh hoặc video clip (Giới hạn tối đa 25MB)
+    Tự động trích xuất khung hình và nhận diện từ vựng theo hình ảnh động hoặc tĩnh.
+    Hỗ trợ chia cấp độ nhận biết (granularity) và giới hạn số lượng vật thể (3-20).
+    """
+    try:
+        if 'media' not in request.files and 'file' not in request.files:
+            return jsonify({
+                "status": "error",
+                "message": "Vui lòng chọn tệp ảnh hoặc video để tải lên!"
+            }), 400
+
+        file = request.files.get('media') or request.files.get('file')
+        if not file or file.filename == '':
+            return jsonify({
+                "status": "error",
+                "message": "Tệp rỗng hoặc chưa được chọn!"
+            }), 400
+
+        # Kiểm tra dung lượng tệp (Giới hạn tối đa 25MB)
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+
+        max_allowed_size = 25 * 1024 * 1024  # 25MB
+        if file_size > max_allowed_size:
+            size_mb = round(file_size / (1024 * 1024), 2)
+            return jsonify({
+                "status": "error",
+                "message": f"Dung lượng tệp ({size_mb} MB) vượt quá giới hạn tối đa cho phép (25 MB)!"
+            }), 400
+
+        filename = file.filename.lower()
+        target_category = request.form.get('target_category') or None
+        granularity = str(request.form.get('granularity', 'all')).lower()
+        max_results = int(request.form.get('max_results', 10))
+        max_results = max(3, min(20, max_results))
+        threshold = float(request.form.get('threshold', 0.12))
+
+        is_video = any(filename.endswith(ext) for ext in ['.mp4', '.webm', '.mov', '.avi', '.mkv']) or (
+            bool(file.mimetype and file.mimetype.startswith('video/'))
+        )
+
+        import cv2
+        import base64
+        import io
+        from PIL import Image
+
+        extracted_pil_image = None
+        preview_base64 = None
+
+        if is_video:
+            # Lưu tạm video vào scratch file để OpenCV trích xuất frame
+            temp_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'instance', 'temp_uploads')
+            os.makedirs(temp_dir, exist_ok=True)
+            temp_path = os.path.join(temp_dir, f"temp_{int(time.time()*1000)}_{os.path.basename(filename)}")
+            file.save(temp_path)
+
+            try:
+                cap = cv2.VideoCapture(temp_path)
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                fps = cap.get(cv2.CAP_PROP_FPS) or 25
+                # Chọn frame tại giây thứ 1 (hoặc giữa video nếu ngắn)
+                target_frame_no = min(int(fps * 1.0), max(0, total_frames // 2))
+                cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame_no)
+                success, frame = cap.read()
+                if not success:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    success, frame = cap.read()
+                cap.release()
+
+                if not success or frame is None:
+                    return jsonify({
+                        "status": "error",
+                        "message": "Không thể trích xuất khung hình từ video!"
+                    }), 400
+
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                extracted_pil_image = Image.fromarray(frame_rgb)
+
+                # Tạo preview base64
+                buffered = io.BytesIO()
+                extracted_pil_image.save(buffered, format="JPEG", quality=85)
+                preview_base64 = "data:image/jpeg;base64," + base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+            finally:
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except Exception:
+                        pass
+        else:
+            # Là ảnh tĩnh
+            image_bytes = file.read()
+            extracted_pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+            buffered = io.BytesIO()
+            extracted_pil_image.save(buffered, format="JPEG", quality=85)
+            preview_base64 = "data:image/jpeg;base64," + base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+        # Thực hiện nhận diện với OWL-ViT
+        result = owl_vit_engine.detect_parts(
+            image_input=extracted_pil_image,
+            target_category=target_category,
+            score_threshold=threshold,
+            max_results=max_results,
+            granularity=granularity
+        )
+
+        if result.get("status") != "success":
+            return jsonify(result), 500
+
+        detected_parts = result.get("detected_parts", [])
+        primary_object = result.get("primary_object", "object")
+
+        user_id = session.get('user_id')
+        learned_words = set()
+        if user_id:
+            user_vocabs = db.session.query(Vocabulary.word).join(
+                UserVocabulary, UserVocabulary.vocab_id == Vocabulary.id
+            ).filter(
+                UserVocabulary.user_id == user_id,
+                UserVocabulary.is_unlocked == True
+            ).all()
+            learned_words = {v[0].lower() for v in user_vocabs}
+
+        for part in detected_parts:
+            part["is_learned"] = (part["word"].lower() in learned_words)
+
+        return jsonify({
+            "status": "success",
+            "media_type": "video" if is_video else "image",
+            "primary_object": primary_object,
+            "total_detected": len(detected_parts),
+            "inference_time_ms": result.get("inference_time_ms", 0),
+            "preview_image": preview_base64,
+            "detected_parts": detected_parts
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Lỗi xử lý tệp tải lên: {str(e)}"
         }), 500
 
 
