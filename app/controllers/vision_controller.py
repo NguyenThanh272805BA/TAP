@@ -14,7 +14,11 @@ from app.ml_models.vision_taxonomy import (
     OBJECT_PARTS_TAXONOMY,
     get_part_info,
     DOMAINS,
-    get_domain_stats
+    get_domain_stats,
+    get_taxonomy_forest,
+    get_micro_queries,
+    lookup_forest_word,
+    get_facial_expressions
 )
 from app.ml_models.gec_engine import LocalGECEngine
 from app.ml_models.scramble_engine import LocalScrambleEngine
@@ -52,6 +56,31 @@ def get_categories():
         "domains": DOMAINS,
         "domain_stats": get_domain_stats(),
         "categories": OBJECT_PARTS_TAXONOMY
+    })
+
+
+@vision_bp.route('/api/vision/taxonomy-forest', methods=['GET'])
+def get_taxonomy_forest_info():
+    """Lấy siêu dữ liệu Rừng phân cấp 5.830 từ vựng và các thực thể vĩ mô cốt lõi"""
+    forest = get_taxonomy_forest()
+    trees = forest.get("macro_trees", {})
+    tree_summaries = {}
+    for k, v in trees.items():
+        tree_summaries[k] = {
+            "name": v.get("name"),
+            "vn_name": v.get("vn_name"),
+            "domain": v.get("domain"),
+            "cefr": v.get("cefr"),
+            "micro_parts_count": len(v.get("micro_anatomy", [])),
+            "expressions_count": len(v.get("expressions_behaviors", []))
+        }
+
+    return jsonify({
+        "status": "success",
+        "total_vocab_count": forest.get("total_vocab_count", 5830),
+        "macro_trees": tree_summaries,
+        "expression_engine": forest.get("expression_engine", {}),
+        "stats": forest.get("stats", {})
     })
 
 
@@ -146,6 +175,60 @@ def scan_object():
         return jsonify({
             "status": "error",
             "message": f"Lỗi hệ thống khi quét ảnh: {str(e)}"
+        }), 500
+
+
+@vision_bp.route('/api/vision/micro-focus', methods=['POST'])
+def micro_focus_scan():
+    """
+    API Soi Chi Tiết Vi Mô & Cây Phân Cấp Thực Thể (Focal Reticle Micro-Zoom)
+    Phục vụ Mục 13.2, 13.3, 13.4, 13.5
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        image_data = data.get('image')
+        reticle_roi = data.get('reticle_roi')
+        parent_category = data.get('parent_category')
+        mode = data.get('mode', 'all')
+        threshold = float(data.get('threshold', 0.08))
+        max_results = int(data.get('max_results', 6))
+
+        if not image_data:
+            return jsonify({
+                "status": "error",
+                "message": "Không tìm thấy dữ liệu ảnh (image) trong request!"
+            }), 400
+
+        result = owl_vit_engine.detect_micro_focus(
+            image_input=image_data,
+            reticle_roi=reticle_roi,
+            parent_category=parent_category,
+            mode=mode,
+            score_threshold=threshold,
+            max_results=max_results
+        )
+
+        # Đối chiếu với từ vựng đã học của user
+        user_id = session.get('user_id')
+        learned_words = set()
+        if user_id:
+            user_vocabs = db.session.query(Vocabulary.word).join(
+                UserVocabulary, UserVocabulary.vocab_id == Vocabulary.id
+            ).filter(
+                UserVocabulary.user_id == user_id,
+                UserVocabulary.is_unlocked == True
+            ).all()
+            learned_words = {v[0].lower() for v in user_vocabs}
+
+        for md in result.get("micro_detections", []):
+            md["is_learned"] = (md["word"].lower() in learned_words)
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Lỗi xử lý vi mô: {str(e)}"
         }), 500
 
 

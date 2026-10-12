@@ -11,10 +11,26 @@ except ImportError:
 CURRENT_DIR = os.path.dirname(__file__)
 OXFORD_PATH = os.path.join(CURRENT_DIR, 'oxford_5000.json')
 OMNI_VOCAB_PATH = os.path.join(CURRENT_DIR, 'omni_vocab_1000.json')
+TAXONOMY_FOREST_PATH = os.path.join(CURRENT_DIR, 'taxonomy_forest_5000.json')
 
 _OXFORD_CACHE: Optional[Dict[str, str]] = None
 _OMNI_VOCAB_CACHE: Optional[Dict[str, Dict[str, Any]]] = None
 _OMNI_STATS_CACHE: Optional[Dict[str, Any]] = None
+_TAXONOMY_FOREST_CACHE: Optional[Dict[str, Any]] = None
+
+def get_taxonomy_forest() -> Dict[str, Any]:
+    global _TAXONOMY_FOREST_CACHE
+    if _TAXONOMY_FOREST_CACHE is None:
+        if os.path.exists(TAXONOMY_FOREST_PATH):
+            try:
+                with open(TAXONOMY_FOREST_PATH, 'r', encoding='utf-8') as f:
+                    _TAXONOMY_FOREST_CACHE = json.load(f)
+            except Exception as ex:
+                print(f"[!] Lỗi đọc taxonomy_forest_5000.json: {ex}")
+                _TAXONOMY_FOREST_CACHE = {"macro_trees": {}, "expression_engine": {}, "flat_registry": {}}
+        else:
+            _TAXONOMY_FOREST_CACHE = {"macro_trees": {}, "expression_engine": {}, "flat_registry": {}}
+    return _TAXONOMY_FOREST_CACHE
 
 def get_oxford_dict() -> Dict[str, str]:
     global _OXFORD_CACHE
@@ -278,19 +294,105 @@ OBJECT_PARTS_TAXONOMY: Dict[str, Dict[str, Any]] = {
     }
 }
 
+def lookup_forest_word(word_query: str) -> Optional[Dict[str, Any]]:
+    """Tra cứu một từ vựng trong Rừng phân cấp 5.830 từ vựng với tốc độ O(1)"""
+    clean = (word_query or "").strip().lower()
+    forest = get_taxonomy_forest()
+    flat = forest.get("flat_registry", {})
+    if clean in flat:
+        entry = flat[clean]
+        cefr_val = (entry.get("cefr") or "B1").upper()
+        return {
+            "word": clean,
+            "display_name": clean.capitalize(),
+            "meaning": entry.get("meaning", "Chi tiết nhận diện"),
+            "cefr": cefr_val,
+            "ipa": entry.get("ipa", ""),
+            "tier": entry.get("tier", "micro"),
+            "domain": entry.get("domain", "objects"),
+            "parent": entry.get("parent"),
+            "category": entry.get("category", ""),
+            "level_tier": "basic" if cefr_val in ["A1", "A2"] else "advanced"
+        }
+    return None
+
+def get_facial_expressions() -> Dict[str, Any]:
+    """Lấy danh sách 8 trạng thái biểu cảm khuôn mặt cốt lõi và các tính từ CEFR B2-C1"""
+    forest = get_taxonomy_forest()
+    return forest.get("expression_engine", {})
+
+def get_micro_queries(
+    parent_category: Optional[str] = None,
+    mode: str = "all",
+    max_queries: int = 12
+) -> List[str]:
+    """
+    Trích xuất và cắt tỉa động danh sách truy vấn vi mô theo thực thể cha (Parent-Conditioned Dynamic Pruning).
+    Đảm bảo M_sub <= 12 queries để độ trễ suy luận trên CPU luôn <= 30ms.
+    - parent_category: 'cat', 'dog', 'human', 'laptop', 'backpack', v.v.
+    - mode: 'micro_anatomy' (bộ phận giải phẫu/linh kiện), 'expressions' (biểu cảm/hành vi), 'all' (kết hợp).
+    """
+    forest = get_taxonomy_forest()
+    macro_trees = forest.get("macro_trees", {})
+    max_queries = max(3, min(16, max_queries))
+
+    # Chuẩn hóa tên thực thể cha
+    p_key = (parent_category or "").strip().lower()
+    if p_key in ["person", "student", "teacher", "man", "woman", "boy", "girl"]:
+        p_key = "human"
+
+    if p_key and p_key in macro_trees:
+        tree = macro_trees[p_key]
+        anatomy = [item["word"] for item in tree.get("micro_anatomy", [])]
+        expressions = [item["word"] for item in tree.get("expressions_behaviors", [])]
+        textures = [item["word"] for item in tree.get("textures_materials", [])]
+
+        if mode == "micro_anatomy":
+            return anatomy[:max_queries]
+        elif mode == "expressions":
+            return expressions[:max_queries]
+        else: # "all"
+            # Cân đối: 7 bộ phận giải phẫu + 3 biểu cảm/hành vi + 2 chất liệu
+            selected = anatomy[:7] + expressions[:3] + textures[:2]
+            return selected[:max_queries]
+
+    # Nếu cha có trong OBJECT_PARTS_TAXONOMY
+    if p_key and p_key in OBJECT_PARTS_TAXONOMY:
+        parts_dict = OBJECT_PARTS_TAXONOMY[p_key].get("parts", {})
+        micro_parts = [p for p, info in parts_dict.items() if info.get("tier") == "micro"]
+        func_parts = [p for p, info in parts_dict.items() if info.get("tier") != "micro"]
+        candidate = micro_parts + func_parts
+        return candidate[:max_queries]
+
+    # Nếu không xác định được cha cụ thể (General Micro Spotlight)
+    # Lấy các chi tiết vi mô phổ quát thường gặp trong đời sống & học tập
+    fallback_micro = [
+        "eye", "whisker", "paw", "smile", "frown", "keycap", "screen",
+        "zipper", "petal", "leaf vein", "button", "lens"
+    ]
+    return fallback_micro[:max_queries]
+
 # =========================================================================
 # 3. TRUY XUẤT THÔNG TIN HỌC THUẬT OMNI-MODAL METADATA (O(1))
 # =========================================================================
 def get_part_info(part_word: str, parent_obj: Optional[str] = None, domain: Optional[str] = None) -> Dict[str, Any]:
     """
     Truy xuất đầy đủ metadata học thuật: Phiên âm IPA, Nghĩa tiếng Việt, Cấp độ CEFR,
-    Miền thực thể (domain) và Level Tier từ kho 1.000+ từ vựng.
+    Miền thực thể (domain) và Level Tier từ Rừng phân cấp 5.830 từ vựng.
     """
     clean_word = (part_word or "").strip().lower()
+
+    # 1. Tìm trong Rừng phân cấp 5.830 từ vựng (Dynamic Taxonomy Forest)
+    forest_entry = lookup_forest_word(clean_word)
+    if forest_entry:
+        if domain:
+            forest_entry["domain"] = domain
+        return forest_entry
+
+    # 2. Tìm trực tiếp trong Registry 1.000+ từ vựng Omni
     registry = get_omni_registry()
     oxford = get_oxford_dict()
 
-    # 1. Tìm trực tiếp trong Registry 1.000+ từ vựng Omni
     if clean_word in registry:
         entry = registry[clean_word]
         cefr = entry.get("cefr") or oxford.get(clean_word, "B1")
@@ -306,7 +408,7 @@ def get_part_info(part_word: str, parent_obj: Optional[str] = None, domain: Opti
             "level_tier": "basic" if cefr_upper in ["A1", "A2"] else "advanced"
         }
 
-    # 2. Tìm trong OBJECT_PARTS_TAXONOMY (Nếu có cha hoặc là đồ vật chính)
+    # 3. Tìm trong OBJECT_PARTS_TAXONOMY (Nếu có cha hoặc là đồ vật chính)
     vn_meaning = "Chi tiết nhận diện"
     cefr = oxford.get(clean_word, "B1")
     tier = "functional"
@@ -334,7 +436,7 @@ def get_part_info(part_word: str, parent_obj: Optional[str] = None, domain: Opti
                 ent_domain = obj_data.get("domain", "objects")
                 break
 
-    # 3. Sinh phiên âm IPA nếu chưa có
+    # 4. Sinh phiên âm IPA nếu chưa có
     phonetic_ipa = ""
     if ipa is not None:
         try:

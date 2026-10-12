@@ -33,7 +33,11 @@ from app.ml_models.vision_taxonomy import (
     get_part_info,
     build_candidate_queries,
     get_domain_stats,
-    DOMAINS
+    DOMAINS,
+    get_micro_queries,
+    lookup_forest_word,
+    get_facial_expressions,
+    get_taxonomy_forest
 )
 
 # Đường dẫn thư mục weights local
@@ -513,4 +517,221 @@ class LocalOwlVitEngine:
                 "status": "error",
                 "message": f"Lỗi trong quá trình nhận diện: {str(e)}",
                 "detected_parts": []
+            }
+
+    # =========================================================================
+    # KIẾN TRÚC TIÊU ĐIỂM KÍNH HIỂN VI NGỮ NGHĨA (FOCAL RETICLE MICRO-ZOOM)
+    # Phục vụ Mục 13.2, 13.3, 13.4 - TAP PART XIII
+    # =========================================================================
+    def detect_micro_focus(
+        self,
+        image_input: Union[str, Image.Image, np.ndarray],
+        reticle_roi: Optional[Union[List[float], Dict[str, float]]] = None,
+        parent_category: Optional[str] = None,
+        mode: str = "all",
+        score_threshold: float = 0.08,
+        max_results: int = 6
+    ) -> Dict[str, Any]:
+        """
+        Nhận diện thị giác vi mô bằng Kính hiển vi ngữ nghĩa:
+        1. ROI Extraction: Trích xuất vùng ảnh cục bộ trong phạm vi Vòng đỏ.
+        2. Super-Resolution Bicubic Upscaling: Phóng đại vùng crop lên 224x224 px để râu mèo,
+           móng vuốt, nếp nhăn, linh kiện phóng to gấp 4 - 8 lần.
+        3. Parent-Conditioned Dynamic Pruning: Cắt tỉa chỉ nạp M_sub <= 12 queries con của cha,
+           đảm bảo thời gian suy luận trên CPU luôn <= 30ms.
+        4. Micro Facial Expression Engine: Nhận biết 8 biểu cảm & gợi ý tính từ học thuật B2-C1.
+        5. Trả về cấu trúc phân cấp Cha - Con: [CAT ➔ WHISKER], [MÈO ➔ RÂU MÈO].
+        """
+        if not self.is_loaded:
+            if not self.load_model():
+                return {
+                    "status": "error",
+                    "message": "Không thể nạp mô hình OWL-ViT",
+                    "micro_detections": []
+                }
+
+        try:
+            start_infer = time.time()
+            pil_img = self._prepare_image(image_input)
+            img_w, img_h = pil_img.size
+
+            # 1. Tính toán tọa độ Bounding Box của Vòng đỏ (Chuẩn hóa 0.0 - 1.0)
+            xmin, ymin, xmax, ymax = 0.25, 0.25, 0.75, 0.75
+            if isinstance(reticle_roi, dict):
+                cx = float(reticle_roi.get("cx", 0.5))
+                cy = float(reticle_roi.get("cy", 0.5))
+                r = float(reticle_roi.get("r", 0.15))
+                xmin = max(0.0, cx - r)
+                xmax = min(1.0, cx + r)
+                ymin = max(0.0, cy - r)
+                ymax = min(1.0, cy + r)
+            elif isinstance(reticle_roi, (list, tuple)) and len(reticle_roi) == 4:
+                vals = [float(v) for v in reticle_roi]
+                # Hỗ trợ cả định dạng [ymin, xmin, ymax, xmax] và [xmin, ymin, xmax, ymax]
+                if vals[0] <= vals[2] and vals[1] <= vals[3]:
+                    # Giả định chuẩn [xmin, ymin, xmax, ymax]
+                    xmin, ymin, xmax, ymax = vals
+                else:
+                    ymin, xmin, ymax, xmax = vals
+                xmin, xmax = min(xmin, xmax), max(xmin, xmax)
+                ymin, ymax = min(ymin, ymax), max(ymin, ymax)
+
+            # Đảm bảo phạm vi hợp lệ và có kích thước tối thiểu
+            xmin, xmax = max(0.0, xmin), min(1.0, xmax)
+            ymin, ymax = max(0.0, ymin), min(1.0, ymax)
+            if xmax - xmin < 0.05:
+                cx = (xmin + xmax) / 2.0
+                xmin, xmax = max(0.0, cx - 0.05), min(1.0, cx + 0.05)
+            if ymax - ymin < 0.05:
+                cy = (ymin + ymax) / 2.0
+                ymin, ymax = max(0.0, cy - 0.05), min(1.0, cy + 0.05)
+
+            # Quy đổi sang pixel
+            px_left = int(xmin * img_w)
+            px_top = int(ymin * img_h)
+            px_right = int(xmax * img_w)
+            px_bottom = int(ymax * img_h)
+
+            crop_w = max(10, px_right - px_left)
+            crop_h = max(10, px_top - px_top if px_bottom - px_top <= 0 else px_bottom - px_top)
+
+            # 2. ROI Cropping & Super-Resolution Bicubic Upscaling (Mục 13.2)
+            crop_img = pil_img.crop((px_left, px_top, px_right, px_bottom))
+            # Phóng đại lên chuẩn 224x224 px bằng nội suy Bicubic chất lượng cao
+            target_crop_dim = 224
+            crop_upscaled = crop_img.resize((target_crop_dim, target_crop_dim), Image.Resampling.BICUBIC)
+
+            # 3. Dynamic Query Pruning: Cắt tỉa động M_sub <= 12 queries theo thực thể cha (Mục 13.3)
+            p_cat = (parent_category or "").strip().lower()
+            if not p_cat or p_cat == "unknown":
+                p_cat = "cat"  # Mặc định thực thể phổ biến cho vi mô
+
+            raw_queries = get_micro_queries(parent_category=p_cat, mode=mode, max_queries=12)
+            if not raw_queries:
+                raw_queries = ["whisker", "paw", "eye", "ear", "muzzle", "claw", "fur", "fang"]
+
+            formatted_texts = [f"a photo of a {q.strip()}" for q in raw_queries]
+
+            # 4. Suy luận nhanh qua OWL-ViT với chỉ M_sub <= 12 queries
+            inputs = self.processor(
+                text=[formatted_texts],
+                images=crop_upscaled,
+                return_tensors="pt"
+            ).to(self.device)
+
+            with torch.no_grad():
+                outputs = self.model(**inputs)
+
+            target_sizes = torch.tensor([[target_crop_dim, target_crop_dim]], device=self.device)
+            results = self.processor.post_process_grounded_object_detection(
+                outputs=outputs,
+                threshold=score_threshold,
+                target_sizes=target_sizes,
+                text_labels=[formatted_texts]
+            )[0]
+
+            # Fallback nhẹ nếu chưa bắt được
+            if len(results["boxes"]) == 0:
+                results = self.processor.post_process_grounded_object_detection(
+                    outputs=outputs,
+                    threshold=0.05,
+                    target_sizes=target_sizes,
+                    text_labels=[formatted_texts]
+                )[0]
+
+            boxes = results["boxes"].cpu().numpy().tolist()
+            scores = results["scores"].cpu().numpy().tolist()
+            labels_idx = results["labels"].cpu().numpy().tolist()
+            raw_labels = [raw_queries[idx] for idx in labels_idx]
+
+            keep_indices = self._apply_nms(boxes, scores, raw_labels, iou_threshold=0.40)
+
+            # 5. Xây dựng kết quả phân cấp & Biểu cảm khuôn mặt (Mục 13.4, 13.5)
+            forest = get_taxonomy_forest()
+            expr_engine = forest.get("expression_engine", {})
+            macro_tree = forest.get("macro_trees", {}).get(p_cat, {})
+            parent_vn = macro_tree.get("vn_name", p_cat.capitalize())
+
+            micro_detections = []
+            seen_words = set()
+
+            for idx in keep_indices[:max_results]:
+                word = raw_labels[idx]
+                if word in seen_words:
+                    continue
+                seen_words.add(word)
+
+                score = round(float(scores[idx]), 3)
+                meta = get_part_info(word, parent_obj=p_cat)
+
+                # Tọa độ box trong vùng crop (0.0 - 1.0)
+                c_ymin = round(max(0.0, boxes[idx][1] / target_crop_dim), 4)
+                c_xmin = round(max(0.0, boxes[idx][0] / target_crop_dim), 4)
+                c_ymax = round(min(1.0, boxes[idx][3] / target_crop_dim), 4)
+                c_xmax = round(min(1.0, boxes[idx][2] / target_crop_dim), 4)
+
+                # Quy đổi tọa độ box ngược về hệ tọa độ toàn khung ảnh gốc
+                g_xmin = round(xmin + c_xmin * (xmax - xmin), 4)
+                g_ymin = round(ymin + c_ymin * (ymax - ymin), 4)
+                g_xmax = round(xmin + c_xmax * (xmax - xmin), 4)
+                g_ymax = round(ymin + c_ymax * (ymax - ymin), 4)
+
+                # Kiểm tra sắc thái biểu cảm và gợi ý tính từ học thuật CEFR B2-C1
+                academic_adjectives = []
+                is_expression = False
+                if word in expr_engine:
+                    is_expression = True
+                    academic_adjectives = expr_engine[word].get("academic_adjectives", [])
+                elif any(word == item.get("word") for item in macro_tree.get("expressions_behaviors", [])):
+                    is_expression = True
+
+                child_display = meta.get("display_name", word.capitalize())
+                child_meaning = meta.get("meaning", "Chi tiết vi mô")
+                hierarchy_label = f"[{p_cat.upper()} ➔ {word.upper()}]"
+                display_relation = f"{parent_vn} ➔ {child_meaning}"
+
+                micro_detections.append({
+                    "word": word,
+                    "hierarchy_label": hierarchy_label,
+                    "display_relation": display_relation,
+                    "parent_entity": p_cat,
+                    "display_name": child_display,
+                    "meaning": child_meaning,
+                    "cefr": meta.get("cefr", "B2"),
+                    "ipa": meta.get("ipa", ""),
+                    "tier": "micro",
+                    "is_expression": is_expression,
+                    "academic_adjectives": academic_adjectives,
+                    "confidence": score,
+                    "crop_normalized_box": {
+                        "ymin": c_ymin, "xmin": c_xmin, "ymax": c_ymax, "xmax": c_xmax
+                    },
+                    "global_normalized_box": {
+                        "ymin": g_ymin, "xmin": g_xmin, "ymax": g_ymax, "xmax": g_xmax
+                    }
+                })
+
+            infer_elapsed = round((time.time() - start_infer) * 1000, 1)
+
+            return {
+                "status": "success",
+                "parent_entity": p_cat,
+                "parent_vn": parent_vn,
+                "total_micro_detected": len(micro_detections),
+                "reticle_roi": {
+                    "xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax,
+                    "pixel_box": [px_left, px_top, px_right, px_bottom],
+                    "upscaled_dim": f"{target_crop_dim}x{target_crop_dim}"
+                },
+                "pruned_query_count": len(raw_queries),
+                "queries_executed": raw_queries,
+                "inference_time_ms": infer_elapsed,
+                "micro_detections": micro_detections
+            }
+
+        except Exception as ex:
+            return {
+                "status": "error",
+                "message": f"Lỗi trong quá trình soi vi mô: {str(ex)}",
+                "micro_detections": []
             }

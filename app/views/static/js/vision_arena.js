@@ -119,7 +119,7 @@ function initTargetReticleEvents() {
     if (reticleEl) {
         // Chuột kéo di chuyển vòng đỏ
         reticleEl.addEventListener("mousedown", (e) => {
-            if (e.target.closest("button") || e.target.closest("#reticle-callout") || e.target.closest("#reticle-resize-handle")) return;
+            if (e.target.closest("button") || e.target.closest("#reticle-resize-handle")) return;
             isDraggingReticle = true;
             isResizingReticle = false;
             e.preventDefault();
@@ -127,7 +127,7 @@ function initTargetReticleEvents() {
 
         // Chạm ngón tay kéo di chuyển vòng đỏ (Hỗ trợ 100% thiết bị di động / điện thoại)
         reticleEl.addEventListener("touchstart", (e) => {
-            if (e.target.closest("button") || e.target.closest("#reticle-callout") || e.target.closest("#reticle-resize-handle")) return;
+            if (e.target.closest("button") || e.target.closest("#reticle-resize-handle")) return;
             isDraggingReticle = true;
             isResizingReticle = false;
             e.stopPropagation();
@@ -198,7 +198,6 @@ function initTargetReticleEvents() {
         wrapper.addEventListener("click", (e) => {
             if (!isReticleActive) return;
             if (e.target.closest("button") || 
-                e.target.closest("#reticle-callout") || 
                 e.target.closest("#reticle-resize-handle") ||
                 e.target.closest(".hud-metrics") ||
                 e.target.closest(".hud-gesture-badge") ||
@@ -380,12 +379,6 @@ function moveReticleTo(normX, normY) {
 }
 
 function updateReticleTarget() {
-    const calloutEl = document.getElementById("reticle-callout");
-    const titleEl = document.getElementById("reticle-word-title");
-    const badgeEl = document.getElementById("reticle-cefr-badge");
-    const meaningEl = document.getElementById("reticle-meaning-text");
-    if (!calloutEl || !titleEl) return;
-
     let matchedPart = null;
     let minDistance = 999999;
 
@@ -410,19 +403,11 @@ function updateReticleTarget() {
 
     if (matchedPart) {
         currentReticleWord = matchedPart;
-        const domTag = matchedPart.domain ? `[${matchedPart.domain.slice(0, 3).toUpperCase()}] ` : '';
-        titleEl.innerText = `${domTag}${(matchedPart.word || "").toUpperCase()}`;
-        badgeEl.innerText = (matchedPart.cefr || "B1").toUpperCase();
-        meaningEl.innerText = matchedPart.meaning || "";
-        calloutEl.style.display = "flex";
     } else {
         currentReticleWord = null;
-        titleEl.innerText = "VÒNG ĐỎ QUÉT";
-        badgeEl.innerText = "A1-C1";
-        meaningEl.innerText = "Di chuyển hoặc phóng to vòng đỏ để ngắm chi tiết";
-        calloutEl.style.display = "flex";
     }
 
+    // Cập nhật lại khung viền bounding boxes trên canvas (hộp được ngắm sẽ sáng đỏ)
     if (!isCameraActive && canvasCtx && canvasElement) {
         drawDetectedBoundingBoxes();
     }
@@ -640,12 +625,16 @@ function renderLiveDetectionStrip() {
         const badgeColor = isBasic ? "#22d3ee" : "#c084fc";
         const badgeBg = isBasic ? "rgba(34, 211, 238, 0.2)" : "rgba(168, 85, 247, 0.2)";
         const domainName = (part.domain || 'objects').toUpperCase();
+        const hierarchyHtml = part.hierarchy_label ? `<span style="font-size: 10px; font-weight: 800; color: #fb7185; background: rgba(244, 63, 94, 0.2); border: 1px solid rgba(244, 63, 94, 0.5); padding: 1px 6px; border-radius: 4px;">${part.hierarchy_label}</span>` : '';
+        const adjHtml = (part.academic_adjectives && part.academic_adjectives.length > 0) ? `<span style="color: #67e8f9; font-size: 10.5px; font-style: italic;">(${part.academic_adjectives.slice(0, 2).join(', ')})</span>` : '';
 
         chip.innerHTML = `
             <span class="domain-tag ${part.domain || 'objects'}">${domainName}</span>
+            ${hierarchyHtml}
             <span style="font-size: 10px; font-weight: 800; color: ${badgeColor}; background: ${badgeBg}; padding: 1px 5px; border-radius: 4px;">${part.cefr || 'B1'}</span>
             <strong style="color: #fff;">${(part.word || '').toUpperCase()}</strong>
             ${part.meaning ? `<span style="color: #fef08a; font-size: 11px;">(${part.meaning})</span>` : ''}
+            ${adjHtml}
             <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; display: inline-flex; align-items: center;" onclick="speakWord('${part.word}', event)" title="Nghe phát âm">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
             </button>
@@ -1417,6 +1406,127 @@ async function captureAndScan() {
     } finally {
         if (laser) laser.style.display = "none";
         if (scanBtn) scanBtn.disabled = false;
+    }
+}
+
+/**
+ * HIỂN THỊ DÒNG PHỤ ĐỀ AR TRONG SUỐT Ở CHÂN CAMERA (KHÔNG CÓ KHUNG CHE VÒNG ĐỎ)
+ */
+function showArSubtitle(text) {
+    const subtitleEl = document.getElementById("camera-ar-subtitle-strip");
+    if (!subtitleEl) return;
+    subtitleEl.innerText = text;
+    subtitleEl.style.display = "block";
+    clearTimeout(window._subtitleTimer);
+    window._subtitleTimer = setTimeout(() => {
+        subtitleEl.style.display = "none";
+    }, 4500);
+}
+
+/**
+ * 4.1 SOI CHI TIẾT VI MÔ (MICRO-FOCUS) BẰNG KÍNH HIỂN VI NGỮ NGHĨA
+ * Cắt riêng vùng Vòng đỏ, phóng đại Bicubic lên 224x224 px, cắt tỉa M_sub <= 12 queries
+ * và hiển thị nhãn quan hệ [CHA ➔ CON] siêu mượt mà trên CPU <= 30ms.
+ */
+async function performMicroFocusScan() {
+    const microBtn = document.getElementById("btn-micro-focus");
+    const statusHud = document.getElementById("status-hud");
+    const laser = document.getElementById("scan-laser");
+
+    try {
+        if (!canvasElement) return;
+
+        let base64Image = null;
+        if (isCameraActive && videoElement) {
+            canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            base64Image = canvasElement.toDataURL("image/jpeg", 0.85);
+        } else {
+            base64Image = canvasElement.toDataURL("image/jpeg", 0.9);
+        }
+
+        if (!base64Image) {
+            alert("Vui lòng Bật Camera hoặc tải ảnh trước khi soi vi mô!");
+            return;
+        }
+
+        if (laser) laser.style.display = "block";
+        if (microBtn) microBtn.disabled = true;
+        if (statusHud) statusHud.innerHTML = `🔬 Đang soi vi mô Kính hiển vi ngữ nghĩa...`;
+
+        // Tính toán tọa độ vòng đỏ chuẩn hóa
+        const rxRadiusNorm = reticleRadius / canvasElement.width;
+        const ryRadiusNorm = reticleRadius / canvasElement.height;
+        const reticleRoi = [
+            Math.max(0, reticleNormPos.x - rxRadiusNorm),
+            Math.max(0, reticleNormPos.y - ryRadiusNorm),
+            Math.min(1, reticleNormPos.x + rxRadiusNorm),
+            Math.min(1, reticleNormPos.y + ryRadiusNorm)
+        ];
+
+        const startTime = performance.now();
+        const response = await fetch("/api/vision/micro-focus", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                image: base64Image,
+                reticle_roi: reticleRoi,
+                parent_category: primaryObject || "cat",
+                mode: "all",
+                threshold: 0.08,
+                max_results: 6
+            })
+        });
+
+        const data = await response.json();
+        const latency = Math.round(performance.now() - startTime);
+        const latencyHud = document.getElementById("latency-hud");
+        if (latencyHud) latencyHud.innerText = `⏱️ Vi mô: ${latency} ms`;
+
+        if (data.status === "success") {
+            const microDetections = data.micro_detections || [];
+            if (microDetections.length > 0) {
+                // Đưa các micro detection vào danh sách phát hiện
+                microDetections.forEach(md => {
+                    md.normalized_box = md.global_normalized_box;
+                    md.is_in_reticle = true;
+                    const exists = currentDetectedParts.find(p => p.word && p.word.toLowerCase() === md.word.toLowerCase());
+                    if (!exists) {
+                        currentDetectedParts.unshift(md);
+                    } else {
+                        Object.assign(exists, md);
+                    }
+                });
+
+                registerDetectedParts(microDetections, data.parent_entity);
+                renderLiveDetectionStrip();
+
+                // Hiển thị AR Subtitle strip tinh tế ở chân camera (hoàn toàn không có khung che trên vòng đỏ)
+                const topItem = microDetections[0];
+                showArSubtitle(`${topItem.hierarchy_label} ${topItem.display_relation} • ${topItem.cefr}`);
+
+                if (statusHud) {
+                    statusHud.innerHTML = `🔬 Soi thấy <b>${microDetections.length}</b> chi tiết vi mô của <b>${data.parent_vn}</b> (${data.inference_time_ms}ms)!`;
+                }
+
+                // Vẽ lại Canvas với Bounding Boxes chi tiết vi mô
+                if (!isCameraActive && canvasCtx && canvasElement) {
+                    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                    drawDetectedBoundingBoxes();
+                }
+            } else {
+                if (statusHud) {
+                    statusHud.innerHTML = `🔍 Vùng vòng đỏ chưa bắt được chi tiết siêu vi. Hãy thử phóng to hoặc di chuyển vòng đỏ!`;
+                }
+                showArSubtitle(`[TIÊU ĐIỂM] Hãy di chuyển hoặc phóng to vòng đỏ để ngắm rõ hơn`);
+            }
+        } else {
+            alert(`Lỗi soi vi mô: ${data.message}`);
+        }
+    } catch (err) {
+        console.error("Lỗi khi soi vi mô:", err);
+    } finally {
+        if (laser) laser.style.display = "none";
+        if (microBtn) microBtn.disabled = false;
     }
 }
 
