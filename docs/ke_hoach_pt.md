@@ -270,7 +270,48 @@
 
 ---
 
+## PHẦN XII: HỆ THỐNG THỊ GIÁC TOÀN CẢNH MỞ RỘNG (OMNI-MODAL OPEN-WORLD VISION SYSTEM) - NHẬN DIỆN VẠN VẬT TỪ ĐỒ VẬT, KHUNG CẢNH, SINH VẬT ĐẾN MÔI TRƯỜNG []
+
+### 12.1 Mở rộng Không gian Nhận diện Mở Toàn cảnh (Universal Open-World Domain Expansion) []
+- Xóa bỏ giới hạn nhận diện danh mục đóng, mở rộng phạm vi thị giác sang 4 miền thực thể cốt lõi của thế giới thực:
+  1. **Đồ vật & Công cụ (Objects & Artifacts)**: Thiết bị công nghệ, nội thất, đồ gia dụng, phương tiện giao thông, công cụ học tập & lao động, phụ kiện cá nhân, cấu trúc chất liệu. []
+  2. **Khung cảnh & Không gian (Scenes & Spatial Layouts)**: Lớp học, phòng làm việc, quán cà phê, phòng khách, nhà bếp, thư viện, đường phố đô thị, công viên, bãi biển, danh lam thắng cảnh. []
+  3. **Sinh vật & Thực thể Sống (Living Beings & Organisms)**: Động vật (thú cưng, gia cầm, sinh vật hoang dã, thủy sinh), thực vật (cây cối, hoa lá, thảm cỏ, quả hạt), côn trùng và con người (vai trò xã hội, nghề nghiệp, dáng vẻ, hành động). []
+  4. **Môi trường & Hiện tượng Tự nhiên (Environment & Atmospheric Elements)**: Bầu trời, ánh sáng (bình minh, hoàng hôn, dạ quang), thời tiết (nắng, mưa, sương mù, tuyết), cảnh quan địa hình (đồi núi, sông ngòi, đại dương, đường mòn). []
+- Mở rộng Từ điển Phân loại Học thuật lên hơn 1.000+ từ vựng mục tiêu bao quát 4 miền, gán nhãn chuẩn hóa CEFR (A1 - C2), phiên âm IPA và bản dịch Tiếng Việt ngữ cảnh cao cấp. []
+
+### 12.2 Kiến trúc Hybrid AI Pipeline: Fast Zero-Shot Detector + Edge Vision-Language Model (VLM) []
+- **Tầng 1 (Fast Bounding Box Detection)**: Sử dụng mô hình Open-Vocabulary Transformer (OWL-ViT / Grounding DINO quantized) định vị tức thời tọa độ các thực thể nổi bật trong khung hình với độ trễ tối ưu (<100ms trên CPU). []
+- **Tầng 2 (Global Scene & Environment Classifier)**: Tích hợp mạng phân tích khung cảnh toàn cục (Scene Attributes & Weather Estimation) nhận biết không gian môi trường tổng thể (ví dụ: `Scene: Cozy Café`, `Lighting: Warm Ambient`, `Weather: Rainy Afternoon`). []
+- **Tầng 3 (Zero-Shot Edge VLM Description)**: Tích hợp mô hình ngôn ngữ - thị giác gọn nhẹ chạy cục bộ (như Moondream2 / SmolVLM-500M / PaliGemma 3B INT4) để trả lời truy vấn chi tiết về bất kỳ vật thể hoặc góc nhìn nào mà người dùng chỉ định qua vòng đỏ. []
+- **Tầng 4 (Dynamic Contextual Captioning)**: Tự động tổng hợp câu mô tả bức tranh hoàn chỉnh mang tính học thuật cao (ví dụ: *"A golden retriever is resting beside a wooden bookshelf in a sunlit living room."*). []
+
+### 12.3 Chế độ Tự Động Phân Vùng Đa Miền & Thẻ Nhận Diện Môi Trường (Omni-Domain UI & Filtering) []
+- **Thanh Thông tin Môi trường Toàn cảnh (Global Scene & Environment HUD)**: Hiển thị nhãn tổng quan về địa điểm, ánh sáng và điều kiện thời tiết ngay trên đầu khung hình. []
+- **Bộ lọc Phân loại theo Miền Thực thể**: Thêm bộ chuyển đổi danh mục nhanh trên thanh công cụ:
+  - `🌐 Tất Cả` | `📦 Đồ Vật` | `🌿 Sinh Vật` | `🏙️ Khung Cảnh` | `⛅ Môi Trường` []
+- **Lưới Quét Đa Chiều (Omni-Scan Grid)**: Cho phép tự động gom nhóm từ vựng quét được theo từng miền rõ ràng để người học dễ dàng phân loại và ghi nhớ có hệ thống. []
+
+### 12.4 Đấu Trường Ghép Câu Toàn Cảnh Mở Rộng (Omni-Context Sentence Arena) []
+- Bổ sung hệ thống mẫu câu đa tầng kết hợp đồ vật, sinh vật, không gian và môi trường:
+  - Mẫu câu bối cảnh không gian: *"The atmosphere in this [scene] is remarkably [adjective]..."* []
+  - Mẫu câu tương tác sinh vật & đồ vật: *"A [creature] is interacting with the [object] inside the [scene]..."* []
+  - Mẫu câu hiện tượng môi trường: *"Because it is [weather] today, I feel [emotion] while observing the [environment]..."* []
+- Nâng cấp Symbolic Grammar Engine (GEC) hỗ trợ kiểm tra và sửa lỗi cho các cấu trúc câu phức (Complex & Compound-Complex Sentences), mệnh đề quan hệ (Relative Clauses) và trạng từ chỉ nơi chốn/thời gian. []
+
+### 12.5 Tối Ưu Hóa Bộ Nhớ, Suy Luận Cục Bộ & Tiết Kiệm Năng Lượng (Offline Performance Polish) []
+- Lượng tử hóa mô hình (INT8 / ONNX Runtime FP16) giúp pipeline thị giác hoạt động mượt mà trên phần cứng máy tính phổ thông và thiết bị di động, không đòi hỏi card đồ họa chuyên dụng. []
+- Thuật toán Frame Difference & Change Detection: Chỉ chạy lại toàn bộ pipeline VLM khi có biến động khung hình đáng kể (>15% thay đổi pixel), tiết kiệm tối đa CPU/RAM và giảm phát nhiệt. []
+- Tách biệt luồng suy luận AI sang Background Worker để giữ vững 60 FPS cho giao diện hiển thị và cử chỉ bàn tay. []
+
+### 12.6 Bộ Kiểm Thử Đối Chuẩn Toàn Diện 100 Tình Huống Thực Tế (Omni-Domain Benchmark Suite) []
+- Xây dựng tập dữ liệu kiểm thử chuẩn gồm 100 hình ảnh/video thuộc các bối cảnh đa dạng: Trong nhà, ngoài phố, công viên thiên nhiên, thời tiết cực đoan, ban đêm thiếu sáng. []
+- Đo lường độ bao phủ từ vựng (Vocabulary Coverage Rate $\ge 90\%$) và độ chính xác dịch thuật ngữ cảnh Việt - Anh. []
+
+---
+
 *Kế hoạch được phê duyệt và lưu trữ tại*: [`docs/ke_hoach_pt.md`](file:///d:/Python/TAP/docs/ke_hoach_pt.md)
+
 
 
 
