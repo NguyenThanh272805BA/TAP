@@ -17,6 +17,9 @@ let controlMode = "gesture"; // 'gesture' | 'mouse'
 
 let currentDetectedParts = [];
 let primaryObject = "object";
+let scannedWordRegistry = [];
+let currentWordFilter = "all"; // 'all' | 'objects' | 'connectors'
+let selectedObjectCategory = "all";
 
 // Quản lý con trỏ cử chỉ ảo toàn màn hình
 let airPointer = null;
@@ -475,7 +478,7 @@ async function captureAndScan() {
             currentDetectedParts = data.detected_parts || [];
             primaryObject = data.primary_object || "object";
 
-            renderWordPool(currentDetectedParts);
+            registerDetectedParts(currentDetectedParts, primaryObject);
             document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject}</b> (${currentDetectedParts.length} chi tiết)`;
         } else {
             alert(`Lỗi nhận diện: ${data.message}`);
@@ -552,6 +555,43 @@ async function loadSamplePreset(type) {
         ctx.fillStyle = "#1e293b";
         ctx.fillRect(180, 285, 280, 60); // Bàn phím
         ctx.fillRect(270, 355, 100, 45); // Trackpad
+    } else if (type === "glasses") {
+        // Kính mắt
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 5;
+        // Tròng kính trái & phải
+        ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+        ctx.fillRect(160, 180, 130, 100);
+        ctx.strokeRect(160, 180, 130, 100);
+        ctx.fillRect(350, 180, 130, 100);
+        ctx.strokeRect(350, 180, 130, 100);
+        // Cầu nối kính
+        ctx.beginPath();
+        ctx.moveTo(290, 220);
+        ctx.lineTo(350, 220);
+        ctx.stroke();
+        // Càng kính hai bên
+        ctx.beginPath();
+        ctx.moveTo(160, 200);
+        ctx.lineTo(80, 170);
+        ctx.moveTo(480, 200);
+        ctx.lineTo(560, 170);
+        ctx.stroke();
+    } else if (type === "phone") {
+        // Điện thoại thông minh
+        ctx.fillStyle = "#0f172a";
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 4;
+        ctx.fillRect(230, 70, 180, 340);
+        ctx.strokeRect(230, 70, 180, 340);
+        // Màn hình
+        ctx.fillStyle = "#1e3a8a";
+        ctx.fillRect(245, 110, 150, 250);
+        // Camera tròn
+        ctx.fillStyle = "#e2e8f0";
+        ctx.beginPath();
+        ctx.arc(320, 90, 6, 0, 2 * Math.PI);
+        ctx.fill();
     } else {
         // Áo sơ mi
         ctx.fillStyle = "#f8fafc";
@@ -596,7 +636,7 @@ async function loadSamplePreset(type) {
             currentDetectedParts = data.detected_parts || [];
             primaryObject = data.primary_object || type;
 
-            renderWordPool(currentDetectedParts);
+            registerDetectedParts(currentDetectedParts, primaryObject);
             document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject.toUpperCase()}</b> (${currentDetectedParts.length} chi tiết)`;
 
             // Nếu camera đang tắt, vẽ ảnh mockup lên canvas
@@ -656,45 +696,173 @@ function drawDetectedBoundingBoxes() {
 }
 
 /**
- * 7. HIỂN THỊ KHO TỪ VỰNG NỔI & HỖ TRỢ CHUỘT KÉO THẢ (DUAL-FALLBACK)
+ * 7. QUẢN LÝ KHO TỪ VỰNG THỊ GIÁC, BỘ LỌC ĐỒ VẬT & GỢI Ý ĐẶT CÂU
  */
-function renderWordPool(parts) {
+
+function registerDetectedParts(parts, objectCategory) {
+    if (!parts) return;
+    primaryObject = objectCategory || primaryObject || "object";
+
+    // 1. Nạp các từ chi tiết bộ phận vật thể (Loại bỏ trùng lặp)
+    parts.forEach(part => {
+        const cleanWord = (part.word || "").trim().toLowerCase();
+        if (!cleanWord) return;
+        const existingIdx = scannedWordRegistry.findIndex(w => w.word.toLowerCase() === cleanWord);
+        const item = {
+            word: cleanWord,
+            ipa: part.ipa || "",
+            cefr: part.cefr || "B1",
+            meaning: part.meaning || "Chi tiết vật thể",
+            isLearned: !!part.is_learned,
+            parentObject: objectCategory || primaryObject,
+            isObjectPart: true
+        };
+        if (existingIdx >= 0) {
+            scannedWordRegistry[existingIdx] = item;
+        } else {
+            scannedWordRegistry.push(item);
+        }
+    });
+
+    // 2. Nạp các từ nối cơ bản phục vụ đặt câu (Chỉ nạp 1 lần duy nhất)
+    const baseConnectors = [
+        { word: "the", ipa: "/ðə/", cefr: "A1", meaning: "Mạo từ xác định", isLearned: true, isObjectPart: false },
+        { word: "is", ipa: "/ɪz/", cefr: "A1", meaning: "Thì / là", isLearned: true, isObjectPart: false },
+        { word: "a", ipa: "/ə/", cefr: "A1", meaning: "Một", isLearned: true, isObjectPart: false },
+        { word: "has", ipa: "/hæz/", cefr: "A1", meaning: "Có", isLearned: true, isObjectPart: false },
+        { word: "my", ipa: "/maɪ/", cefr: "A1", meaning: "Của tôi", isLearned: true, isObjectPart: false },
+        { word: "of", ipa: "/əv/", cefr: "A1", meaning: "Của", isLearned: true, isObjectPart: false },
+        { word: "this", ipa: "/ðɪs/", cefr: "A1", meaning: "Cái này", isLearned: true, isObjectPart: false }
+    ];
+
+    baseConnectors.forEach(conn => {
+        if (!scannedWordRegistry.some(w => w.word.toLowerCase() === conn.word.toLowerCase())) {
+            scannedWordRegistry.push(conn);
+        }
+    });
+
+    updateObjectCategoryDropdown();
+    renderWordPool();
+}
+
+function setWordFilter(filterType) {
+    currentWordFilter = filterType;
+    document.querySelectorAll(".pool-filter-tab").forEach(tab => tab.classList.remove("active"));
+    const activeBtn = document.getElementById(`filter-${filterType}-btn`);
+    if (activeBtn) activeBtn.classList.add("active");
+    renderWordPool();
+}
+
+function filterBySpecificObject(category) {
+    selectedObjectCategory = category;
+    renderWordPool();
+}
+
+function updateObjectCategoryDropdown() {
+    const select = document.getElementById("pool-object-select");
+    const wrapper = document.getElementById("object-category-filter-wrapper");
+    if (!select || !wrapper) return;
+
+    // Lấy danh sách các vật thể cha duy nhất
+    const objects = [...new Set(scannedWordRegistry.filter(w => w.isObjectPart && w.parentObject).map(w => w.parentObject))];
+
+    if (objects.length > 0) {
+        wrapper.style.display = "flex";
+        const currentVal = select.value;
+        select.innerHTML = `<option value="all">Mọi vật thể (${objects.length})</option>`;
+        objects.forEach(obj => {
+            const opt = document.createElement("option");
+            opt.value = obj;
+            opt.innerText = obj.charAt(0).toUpperCase() + obj.slice(1);
+            select.appendChild(opt);
+        });
+        if (objects.includes(currentVal)) {
+            select.value = currentVal;
+        }
+    } else {
+        wrapper.style.display = "none";
+    }
+}
+
+function clearScannedWordPool() {
+    scannedWordRegistry = [];
+    currentDetectedParts = [];
+    primaryObject = "object";
+
+    renderWordPool();
+    updateObjectCategoryDropdown();
+
+    if (canvasCtx && canvasElement) {
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    }
+
+    const statusHud = document.getElementById("status-hud");
+    if (statusHud) {
+        statusHud.innerHTML = "🗑️ Kho từ vựng đã được làm sạch";
+    }
+
+    playHapticSound("drop");
+}
+
+function renderWordPool() {
     const pool = document.getElementById("word-pool");
     const countBadge = document.getElementById("word-count-badge");
+    if (!pool || !countBadge) return;
+
     pool.innerHTML = "";
 
-    if (!parts || parts.length === 0) {
-        pool.innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Không tìm thấy chi tiết bộ phận nào. Hãy thử đổi góc chụp hoặc giảm ngưỡng tin cậy!</div>`;
+    if (scannedWordRegistry.length === 0) {
+        pool.innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Kho từ đang trống. Bấm "Bật Camera" hoặc click vào một "Ảnh mẫu" phía trên để nạp từ vựng...</div>`;
         countBadge.innerText = "0 từ vựng";
         return;
     }
 
-    countBadge.innerText = `${parts.length} từ vựng`;
-
-    parts.forEach(part => {
-        const token = createWordTokenElement(part.word, part.ipa, part.cefr, part.meaning, part.is_learned);
-        pool.appendChild(token);
+    // Lọc theo currentWordFilter và selectedObjectCategory
+    const filteredList = scannedWordRegistry.filter(item => {
+        if (currentWordFilter === "objects" && !item.isObjectPart) return false;
+        if (currentWordFilter === "connectors" && item.isObjectPart) return false;
+        if (selectedObjectCategory !== "all" && item.isObjectPart) {
+            if (item.parentObject !== selectedObjectCategory) return false;
+        }
+        return true;
     });
 
-    // Thêm các từ nối ngữ pháp cơ bản
-    ["the", "is", "a", "has", "my"].forEach(auxWord => {
-        const auxToken = createWordTokenElement(auxWord, "", "A1", "Từ nối", true);
-        pool.appendChild(auxToken);
+    if (filteredList.length === 0) {
+        pool.innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Không có từ nào thuộc nhóm này. Hãy bấm tab "🌟 Tất cả" hoặc quét thêm vật thể!</div>`;
+        countBadge.innerText = `${scannedWordRegistry.filter(w => w.isObjectPart).length} từ (đang ẩn)`;
+        return;
+    }
+
+    const objectPartsCount = scannedWordRegistry.filter(w => w.isObjectPart).length;
+    countBadge.innerText = `${objectPartsCount} từ vật thể (${filteredList.length} hiển thị)`;
+
+    filteredList.forEach(item => {
+        const token = createWordTokenElement(
+            item.word,
+            item.ipa,
+            item.cefr,
+            item.meaning,
+            item.isLearned,
+            item.isObjectPart
+        );
+        pool.appendChild(token);
     });
 }
 
-function createWordTokenElement(word, ipa, cefr, meaning, isLearned) {
+function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPart = true) {
     const token = document.createElement("div");
     token.className = "word-token";
     token.setAttribute("draggable", "true");
     token.setAttribute("data-word", word);
 
+    const badgeStyle = !isObjectPart ? 'background: rgba(148, 163, 184, 0.2); color: #cbd5e1;' : '';
+
     token.innerHTML = `
-        <span class="cefr-badge">${cefr || 'A1'}</span>
+        <span class="cefr-badge" style="${badgeStyle}">${cefr || 'A1'}</span>
         <span style="font-weight: 700; color: #fff;">${word}</span>
         ${ipa ? `<span class="word-ipa">${ipa}</span>` : ''}
         <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; padding: 0 4px;" onclick="speakWord('${word}', event)" title="Nghe phát âm">🔊</button>
-        ${!isLearned ? `<button type="button" class="btn-add-vocab" onclick="collectVocab('${word}', event)" title="Lưu vào kho ôn tập SRS">+ Thu thập</button>` : ''}
+        ${(isObjectPart && !isLearned) ? `<button type="button" class="btn-add-vocab" onclick="collectVocab('${word}', event)" title="Lưu vào kho ôn tập SRS">+ Thu thập</button>` : ''}
     `;
 
     // Hỗ trợ click chuột để chuyển nhanh qua lại giữa Kho từ và Khay ghép câu
@@ -722,6 +890,91 @@ function createWordTokenElement(word, ipa, cefr, meaning, isLearned) {
     });
 
     return token;
+}
+
+/**
+ * 8. CÔNG CỤ HỖ TRỢ ĐẶT CÂU & GHÉP CÂU MẪU TỰ ĐỘNG
+ */
+function autoAssembleSentence() {
+    const dropZone = document.getElementById("assembly-drop-zone");
+    if (!dropZone) return;
+
+    const objectParts = scannedWordRegistry.filter(w => w.isObjectPart);
+    if (objectParts.length === 0) {
+        alert("Kho từ chưa có từ vựng vật thể nào để ghép câu! Hãy bấm nạp ảnh mẫu hoặc bật camera trước.");
+        return;
+    }
+
+    const targetPart = objectParts[0].word;
+    const parentObj = (primaryObject && primaryObject !== "object") ? primaryObject : (objectParts[0].parentObject || "item");
+
+    let sentenceWords = [];
+    if (objectParts.length >= 2) {
+        sentenceWords = ["my", parentObj, "has", "a", targetPart, "and", "a", objectParts[1].word];
+    } else {
+        sentenceWords = ["the", targetPart, "of", "my", parentObj, "is", "broken"];
+    }
+
+    dropZone.innerHTML = "";
+    sentenceWords.forEach(w => {
+        const token = createWordTokenElement(w, "", "A1", "", true, false);
+        dropZone.appendChild(token);
+    });
+
+    playHapticSound("drop");
+    updateSentenceSubmitButton();
+
+    const statusHud = document.getElementById("status-hud");
+    if (statusHud) {
+        statusHud.innerHTML = `✨ Đã tự động ghép câu: "<b>${sentenceWords.join(" ")}</b>"`;
+    }
+}
+
+function applySentenceTemplate(templateKey) {
+    if (!templateKey) return;
+    const dropZone = document.getElementById("assembly-drop-zone");
+    const select = document.getElementById("sentence-template-select");
+
+    const objectParts = scannedWordRegistry.filter(w => w.isObjectPart);
+    const targetPart = objectParts.length > 0 ? objectParts[0].word : "part";
+    const parentObj = (primaryObject && primaryObject !== "object") ? primaryObject : (objectParts.length > 0 ? objectParts[0].parentObject : "object");
+
+    let words = [];
+    switch (templateKey) {
+        case "part_is_adj":
+            words = ["the", targetPart, "of", "my", parentObj, "is", "broken"];
+            break;
+        case "obj_has_part":
+            words = ["this", parentObj, "has", "a", targetPart];
+            break;
+        case "my_obj_part":
+            words = ["my", parentObj, "has", "a", "good", targetPart];
+            break;
+        case "i_need_obj":
+            words = ["i", "use", "the", parentObj, "with", "the", targetPart];
+            break;
+        default:
+            words = ["the", targetPart, "is", "clean"];
+    }
+
+    dropZone.innerHTML = "";
+    words.forEach(w => {
+        const token = createWordTokenElement(w, "", "A1", "", true, false);
+        dropZone.appendChild(token);
+    });
+
+    playHapticSound("drop");
+    updateSentenceSubmitButton();
+    if (select) select.value = "";
+}
+
+function insertQuickWord(word) {
+    const dropZone = document.getElementById("assembly-drop-zone");
+    if (!dropZone) return;
+    const token = createWordTokenElement(word, "", "A1", "", true, false);
+    dropZone.appendChild(token);
+    playHapticSound("drop");
+    updateSentenceSubmitButton();
 }
 
 function handleDragOver(e) {
@@ -910,11 +1163,6 @@ function playHapticSound(type) {
 }
 
 function resetArena() {
-    currentDetectedParts = [];
-    document.getElementById("word-pool").innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Bấm "Bật Camera" hoặc click vào một "Ảnh mẫu" phía trên để nạp từ vựng...</div>`;
-    document.getElementById("word-count-badge").innerText = "0 từ vựng";
+    clearScannedWordPool();
     clearSentence();
-    if (canvasCtx && canvasElement) {
-        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    }
 }

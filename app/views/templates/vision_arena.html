@@ -377,6 +377,124 @@
         animation: fadeIn 0.3s ease;
     }
 
+    /* Filter Bar & Action Pills */
+    .pool-filter-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(103, 232, 249, 0.2);
+        border-radius: 10px;
+        padding: 6px 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .pool-filter-tab {
+        background: transparent;
+        border: 1px solid transparent;
+        color: #94a3b8;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .pool-filter-tab:hover {
+        color: #fff;
+        background: rgba(103, 232, 249, 0.1);
+    }
+
+    .pool-filter-tab.active {
+        background: rgba(6, 182, 212, 0.25);
+        color: var(--neon-cyan);
+        border-color: rgba(6, 182, 212, 0.5);
+    }
+
+    .action-pill-btn {
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(103, 232, 249, 0.3);
+        color: #e2e8f0;
+        padding: 5px 11px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.2s;
+    }
+
+    .action-pill-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .btn-danger-pill {
+        border-color: rgba(244, 63, 94, 0.4);
+        color: #fda4af;
+        background: rgba(244, 63, 94, 0.15);
+    }
+    .btn-danger-pill:hover {
+        background: rgba(244, 63, 94, 0.3);
+        color: #fff;
+        border-color: #f43f5e;
+    }
+
+    .btn-primary-pill {
+        border-color: rgba(34, 211, 238, 0.4);
+        color: #67e8f9;
+        background: rgba(6, 182, 212, 0.15);
+    }
+    .btn-primary-pill:hover {
+        background: rgba(6, 182, 212, 0.3);
+        color: #fff;
+        border-color: #22d3ee;
+    }
+
+    .cyber-mini-select {
+        background: rgba(2, 6, 23, 0.9);
+        border: 1px solid rgba(103, 232, 249, 0.35);
+        color: #e2e8f0;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        cursor: pointer;
+        outline: none;
+    }
+    .cyber-mini-select:focus {
+        border-color: var(--neon-cyan);
+    }
+
+    .sentence-builder-bar {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(244, 63, 94, 0.25);
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+    }
+
+    .quick-word-chip {
+        background: rgba(30, 41, 59, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        color: #cbd5e1;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-family: var(--text-mono);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .quick-word-chip:hover {
+        background: rgba(6, 182, 212, 0.25);
+        border-color: var(--neon-cyan);
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -493,16 +611,49 @@
 
         <!-- BENTO 2: WORD POOL & SENTENCE ASSEMBLY ARENA -->
         <div class="bento-card">
-            <!-- WORD POOL -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                    <span>📦</span> Kho Từ Vựng Thị Giác Vừa Quét
-                </span>
-                <span id="word-count-badge" style="font-size: 11px; color: var(--neon-cyan); background: rgba(103, 232, 249, 0.15); padding: 2px 8px; border-radius: 8px;">
-                    0 từ vựng
-                </span>
+            <!-- WORD POOL HEADER -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                        <span>📦</span> Kho Từ Vựng Thị Giác Vừa Quét
+                    </span>
+                    <span id="word-count-badge" style="font-size: 11px; color: var(--neon-cyan); background: rgba(103, 232, 249, 0.15); padding: 2px 8px; border-radius: 8px; font-weight: 700;">
+                        0 từ vựng
+                    </span>
+                </div>
+
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button type="button" class="action-pill-btn btn-danger-pill" id="btn-clear-pool" onclick="clearScannedWordPool()" title="Xóa toàn bộ các từ vựng vừa quét trong kho">
+                        <span>🗑️</span> Xóa kho từ
+                    </button>
+                </div>
             </div>
 
+            <!-- THANH BỘ LỌC TỪ VỰNG THEO VẬT THỂ & PHÂN LOẠI -->
+            <div class="pool-filter-bar">
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Lọc từ:</span>
+                    <button type="button" class="pool-filter-tab active" id="filter-all-btn" onclick="setWordFilter('all')">
+                        🌟 Tất cả
+                    </button>
+                    <button type="button" class="pool-filter-tab" id="filter-objects-btn" onclick="setWordFilter('objects')">
+                        👁️ Chỉ từ vật thể / Bộ phận
+                    </button>
+                    <button type="button" class="pool-filter-tab" id="filter-connectors-btn" onclick="setWordFilter('connectors')">
+                        🔗 Chỉ từ nối / Trợ từ
+                    </button>
+                </div>
+
+                <!-- Dropdown lọc theo vật thể cụ thể nếu có nhiều loại đồ vật -->
+                <div id="object-category-filter-wrapper" style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11px; color: #94a3b8;">Vật thể:</span>
+                    <select id="pool-object-select" onchange="filterBySpecificObject(this.value)" class="cyber-mini-select">
+                        <option value="all">Mọi vật thể</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- CONTAINER KHO TỪ VỰNG -->
             <div class="word-pool-container" id="word-pool">
                 <div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">
                     Bấm "Bật Camera" hoặc click vào một "Ảnh mẫu" phía trên để nạp từ vựng...
@@ -511,13 +662,46 @@
 
             <!-- SENTENCE ASSEMBLY DECK -->
             <div class="sentence-deck">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                     <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 6px;">
                         <span>🧩</span> Khay Ghép Câu Hoàn Chỉnh
                     </span>
                     <span style="font-size: 11px; color: #94a3b8;">
-                        Hỗ trợ cả cử chỉ bàn tay lẫn chuột kéo thả
+                        Hỗ trợ cử chỉ bàn tay, kéo thả hoặc click 1 chạm
                     </span>
+                </div>
+
+                <!-- THANH CÔNG CỤ LỰA CHỌN ĐẶT CÂU & GỢI Ý MẪU CÂU -->
+                <div class="sentence-builder-bar">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 11px; color: var(--neon-amber); font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                                <span>💡</span> Đặt câu:
+                            </span>
+                            <select id="sentence-template-select" class="cyber-mini-select" onchange="applySentenceTemplate(this.value)">
+                                <option value="">🎯 Chọn mẫu câu theo đồ vật...</option>
+                                <option value="part_is_adj">The [part] of my [object] is [adj] (Khóa/tròng... của tôi thì...)</option>
+                                <option value="obj_has_part">This [object] has a [part] (Đồ vật này có bộ phận...)</option>
+                                <option value="my_obj_part">My [object] has a good [part] (Đồ vật của tôi có... tốt)</option>
+                                <option value="i_need_obj">I use the [object] with the [part] (Tôi sử dụng... cùng...)</option>
+                            </select>
+                            <button type="button" class="action-pill-btn btn-primary-pill" onclick="autoAssembleSentence()" title="Tự động ghép một câu mẫu hoàn chỉnh từ các từ có sẵn trong kho">
+                                <span>🤖</span> Ghép câu mẫu
+                            </button>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                            <span style="font-size: 11px; color: #94a3b8;">Thêm nhanh:</span>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('is')">is</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('has')">has</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('broken')">broken</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('clean')">clean</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('new')">new</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('good')">good</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('of')">of</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('with')">with</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="assembly-drop-zone" id="assembly-drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
@@ -534,7 +718,7 @@
                     </div>
 
                     <button class="cyber-btn" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(103, 232, 249, 0.3);" onclick="addCustomWordPrompt()">
-                        <span>➕</span> Thêm từ nối
+                        <span>➕</span> Thêm từ tự chọn
                     </button>
                 </div>
             </div>
@@ -575,5 +759,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
 <!-- VISION ARENA CORE SCRIPT -->
-<script src="{{ url_for('static', filename='js/vision_arena.js') }}?v=20261012_2"></script>
+<script src="{{ url_for('static', filename='js/vision_arena.js') }}?v=20261012_3"></script>
 {% endblock %}
