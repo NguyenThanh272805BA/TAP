@@ -267,6 +267,136 @@
         backdrop-filter: blur(8px);
     }
 
+    /* OMNI SCENE & ENVIRONMENT HUD OVERLAY */
+    .omni-scene-hud {
+        position: absolute;
+        top: 48px;
+        left: 12px;
+        z-index: 22;
+        background: rgba(15, 23, 42, 0.92);
+        border: 1.5px solid rgba(103, 232, 249, 0.4);
+        border-radius: 14px;
+        padding: 8px 12px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75), 0 0 20px rgba(6, 182, 212, 0.2);
+        max-width: 460px;
+        animation: fadeIn 0.25s ease;
+    }
+
+    .scene-hud-badges {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .omni-hud-badge {
+        padding: 2px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .badge-scene {
+        color: #fbbf24;
+        background: rgba(245, 158, 11, 0.18);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .badge-lighting {
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.18);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .badge-atmosphere {
+        color: #4ade80;
+        background: rgba(74, 222, 128, 0.18);
+        border: 1px solid rgba(74, 222, 128, 0.4);
+    }
+
+    .scene-hud-caption {
+        margin-top: 6px;
+        padding-top: 5px;
+        border-top: 1px dashed rgba(103, 232, 249, 0.25);
+    }
+
+    .scene-hud-caption .caption-en {
+        color: #67e8f9;
+        font-size: 12px;
+        font-weight: 700;
+        display: block;
+        line-height: 1.35;
+    }
+
+    .scene-hud-caption .caption-vn {
+        color: #fef08a;
+        font-size: 11px;
+        font-style: italic;
+        display: block;
+        margin-top: 2px;
+        line-height: 1.3;
+    }
+
+    /* OMNI DOMAIN TAB SELECTOR */
+    .omni-domain-bar {
+        display: flex;
+        gap: 6px;
+        background: rgba(2, 6, 23, 0.7);
+        border: 1px solid rgba(103, 232, 249, 0.25);
+        border-radius: 10px;
+        padding: 4px;
+        flex-wrap: wrap;
+    }
+
+    .domain-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        color: #94a3b8;
+        padding: 5px 11px;
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.18s ease;
+    }
+
+    .domain-btn:hover {
+        color: #fff;
+        background: rgba(103, 232, 249, 0.1);
+    }
+
+    .domain-btn.active {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(6, 182, 212, 0.25));
+        border-color: var(--neon-cyan);
+        color: #fff;
+        box-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
+    }
+
+    /* Domain Colors & Badges */
+    .token-domain-objects { border-color: #22d3ee !important; }
+    .token-domain-creatures { border-color: #4ade80 !important; }
+    .token-domain-scenes { border-color: #fbbf24 !important; }
+    .token-domain-environment { border-color: #c084fc !important; }
+
+    .domain-tag {
+        font-size: 9px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+    }
+    .domain-tag.objects { background: rgba(34, 211, 238, 0.2); color: #22d3ee; }
+    .domain-tag.creatures { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+    .domain-tag.scenes { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .domain-tag.environment { background: rgba(192, 132, 252, 0.2); color: #c084fc; }
+
     .hud-gesture-badge {
         position: absolute;
         bottom: 12px;
@@ -1087,6 +1217,28 @@
                     </div>
                 </div>
 
+                <!-- GLOBAL SCENE & ENVIRONMENT HUD (THÔNG TIN MÔI TRƯỜNG & KHUNG CẢNH TOÀN CẢNH) -->
+                <div id="omni-scene-hud" class="omni-scene-hud" style="display: none;">
+                    <div class="scene-hud-badges">
+                        <span class="omni-hud-badge badge-scene" id="hud-scene-name" title="Khung cảnh & Không gian">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
+                            <span id="hud-scene-text">Không gian: Đang phân tích...</span>
+                        </span>
+                        <span class="omni-hud-badge badge-lighting" id="hud-lighting-name" title="Điều kiện ánh sáng">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+                            <span id="hud-lighting-text">Ánh sáng: Tự nhiên</span>
+                        </span>
+                        <span class="omni-hud-badge badge-atmosphere" id="hud-atmosphere-name" title="Bầu không khí bối cảnh">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22v-9"/><path d="M12 13a5 5 0 0 0 5-5c0-3-2-5-5-5s-5 2-5 5a5 5 0 0 0 5 5Z"/></svg>
+                            <span id="hud-atmosphere-text">Không khí: Cân bằng</span>
+                        </span>
+                    </div>
+                    <div class="scene-hud-caption" id="hud-caption-strip">
+                        <span class="caption-en" id="hud-caption-en">A peaceful view in a modern space under ambient lighting.</span>
+                        <span class="caption-vn" id="hud-caption-vn">Khung cảnh thanh bình trong không gian hiện đại dưới ánh sáng môi trường.</span>
+                    </div>
+                </div>
+
                 <div class="hud-gesture-badge" id="gesture-hud">
                     <span id="gesture-emoji" style="display: inline-flex; align-items: center;">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v7"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.83L7 15"/></svg>
@@ -1254,12 +1406,36 @@
                 </div>
 
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <!-- BỘ LỌC MIỀN THỰC THỂ TOÀN CẢNH (OMNI-DOMAIN FILTER) -->
+                    <div class="omni-domain-bar" id="omni-domain-bar">
+                        <button type="button" class="domain-btn active" id="domain-btn-all" onclick="setOmniDomain('all')" title="Nhận diện vạn vật mọi miền">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            <span>Toàn Cảnh</span>
+                        </button>
+                        <button type="button" class="domain-btn" id="domain-btn-objects" onclick="setOmniDomain('objects')" title="Đồ vật, nội thất, thiết bị">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                            <span>Đồ Vật</span>
+                        </button>
+                        <button type="button" class="domain-btn" id="domain-btn-creatures" onclick="setOmniDomain('creatures')" title="Động vật, thực vật, con người">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M12 22v-9"/><path d="M12 13a5 5 0 0 0 5-5c0-3-2-5-5-5s-5 2-5 5a5 5 0 0 0 5 5Z"/></svg>
+                            <span>Sinh Vật</span>
+                        </button>
+                        <button type="button" class="domain-btn" id="domain-btn-scenes" onclick="setOmniDomain('scenes')" title="Khung cảnh, phòng học, đường phố">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
+                            <span>Khung Cảnh</span>
+                        </button>
+                        <button type="button" class="domain-btn" id="domain-btn-environment" onclick="setOmniDomain('environment')" title="Môi trường, thời tiết, ánh sáng">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg>
+                            <span>Môi Trường</span>
+                        </button>
+                    </div>
+
                     <!-- ĐỘ SÂU / MỨC ĐỘ NHẬN BIẾT -->
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="font-size: 12px; color: #c084fc; font-weight: 700;">Độ sâu:</span>
                         <select id="granularity-select" class="cyber-mini-select" style="padding: 7px 10px; font-size: 12.5px; border-color: #a855f7;" title="Chọn mức độ chi tiết nhận diện">
                             <option value="all">Toàn diện (Mọi chi tiết)</option>
-                            <option value="macro">Cơ bản (Chỉ đồ vật chính)</option>
+                            <option value="macro">Cơ bản (Chỉ thực thể chính)</option>
                             <option value="functional">Trung cấp (Bộ phận chức năng)</option>
                             <option value="micro">Chuyên sâu (Chi tiết vi mô)</option>
                         </select>
@@ -1267,9 +1443,9 @@
 
                     <!-- VẬT THỂ MỤC TIÊU -->
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 12px; color: #67e8f9; font-weight: 700;">Vật thể:</span>
+                        <span style="font-size: 12px; color: #67e8f9; font-weight: 700;">Danh mục:</span>
                         <select id="category-select" class="cyber-mini-select" style="padding: 7px 10px; font-size: 12.5px;">
-                            <option value="">Tự động phát hiện mọi vật thể</option>
+                            <option value="">Tự động quét theo miền đã chọn</option>
                             {% for cat_key, cat_data in taxonomy.items() %}
                             <option value="{{ cat_key }}">{{ cat_data.vn_name }} ({{ cat_key.capitalize() }})</option>
                             {% endfor %}
@@ -1336,13 +1512,16 @@
                 </div>
 
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <!-- MẪU CÂU THÔNG DỤNG -->
+                    <!-- MẪU CÂU THÔNG DỤNG THEO BỐI CẢNH TOÀN CẢNH -->
                     <select id="sentence-template-select" class="cyber-mini-select" onchange="applySentenceTemplate(this.value)" style="font-size: 12px; padding: 6px 10px;">
-                        <option value="">Chọn mẫu câu theo đồ vật...</option>
-                        <option value="part_is_adj">The [part] of my [object] is broken (Bộ phận của tôi bị hỏng)</option>
-                        <option value="obj_has_part">This [object] has a [part] (Đồ vật này có bộ phận...)</option>
-                        <option value="my_obj_part">My [object] has a good [part] (Đồ vật của tôi có... tốt)</option>
-                        <option value="i_need_obj">I use the [object] with the [part] (Tôi sử dụng... cùng...)</option>
+                        <option value="">Chọn mẫu câu theo bối cảnh...</option>
+                        <option value="scene_atmosphere">The atmosphere in this [scene] is remarkably [adj] (Bối cảnh không gian & không khí)</option>
+                        <option value="creature_object">A [creature] is resting near the [object] in the [scene] (Tương tác sinh vật & đồ vật)</option>
+                        <option value="weather_environment">Because it is [weather] today, the [environment] looks [adj] (Môi trường & thời tiết)</option>
+                        <option value="complex_relative">The [object] which is situated inside the [scene] is very [adj] (Mệnh đề quan hệ phức)</option>
+                        <option value="part_is_adj">The [part] of my [object] is broken (Đồ vật & bộ phận hỏng)</option>
+                        <option value="obj_has_part">This [object] has a [part] (Đồ vật sở hữu chi tiết)</option>
+                        <option value="i_need_obj">I use the [object] with the [part] (Hành động & công cụ)</option>
                     </select>
                     <button type="button" class="action-pill-btn btn-primary-pill" onclick="autoAssembleSentence()" title="Tự động ghép một câu mẫu hoàn chỉnh từ các từ có sẵn trong kho">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
@@ -1351,13 +1530,21 @@
                 </div>
             </div>
 
-            <!-- CÁC TỪ KẾT NỐI NHANH -->
+            <!-- CÁC TỪ KẾT NỐI & TÍNH TỪ TOÀN CẢNH NHANH -->
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;">
                 <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Thêm nhanh:</span>
                 <button type="button" class="quick-word-chip" onclick="insertQuickWord('is')">is</button>
                 <button type="button" class="quick-word-chip" onclick="insertQuickWord('has')">has</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('in')">in</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('under')">under</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('near')">near</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('because')">because</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('which')">which</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('bright')">bright</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('peaceful')">peaceful</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('cozy')">cozy</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('beautiful')">beautiful</button>
                 <button type="button" class="quick-word-chip" onclick="insertQuickWord('broken')">broken</button>
-                <button type="button" class="quick-word-chip" onclick="insertQuickWord('clean')">clean</button>
                 <button type="button" class="quick-word-chip" onclick="insertQuickWord('new')">new</button>
                 <button type="button" class="quick-word-chip" onclick="insertQuickWord('good')">good</button>
                 <button type="button" class="quick-word-chip" onclick="insertQuickWord('of')">of</button>
@@ -1449,12 +1636,24 @@
                             <span>Tất cả</span>
                         </button>
                         <button type="button" class="pool-filter-tab" id="filter-objects-btn" onclick="setWordFilter('objects')" style="display: inline-flex; align-items: center; gap: 4px;">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/></svg>
-                            <span>Chỉ từ vật thể</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                            <span>Đồ vật</span>
+                        </button>
+                        <button type="button" class="pool-filter-tab" id="filter-creatures-btn" onclick="setWordFilter('creatures')" style="display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M12 22v-9"/><path d="M12 13a5 5 0 0 0 5-5c0-3-2-5-5-5s-5 2-5 5a5 5 0 0 0 5 5Z"/></svg>
+                            <span>Sinh vật</span>
+                        </button>
+                        <button type="button" class="pool-filter-tab" id="filter-scenes-btn" onclick="setWordFilter('scenes')" style="display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/></svg>
+                            <span>Khung cảnh</span>
+                        </button>
+                        <button type="button" class="pool-filter-tab" id="filter-environment-btn" onclick="setWordFilter('environment')" style="display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+                            <span>Môi trường</span>
                         </button>
                         <button type="button" class="pool-filter-tab" id="filter-connectors-btn" onclick="setWordFilter('connectors')" style="display: inline-flex; align-items: center; gap: 4px;">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                            <span>Chỉ từ nối</span>
+                            <span>Từ nối</span>
                         </button>
                     </div>
 
@@ -1570,6 +1769,10 @@
                         <option value="all">Mọi cấp độ (A1 - C1)</option>
                         <option value="basic">Cơ bản (A1 - A2)</option>
                         <option value="advanced">Chuyên sâu (B1 - C1)</option>
+                        <option value="objects">Miền: Đồ vật (Objects)</option>
+                        <option value="creatures">Miền: Sinh vật (Creatures)</option>
+                        <option value="scenes">Miền: Khung cảnh (Scenes)</option>
+                        <option value="environment">Miền: Môi trường (Environment)</option>
                         <option value="learned">Đã lưu ôn tập SRS</option>
                     </select>
                 </div>
@@ -1597,5 +1800,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
 <!-- VISION ARENA CORE SCRIPT -->
-<script src="{{ url_for('static', filename='js/vision_arena.js') }}?v=20261012_3"></script>
+<script src="{{ url_for('static', filename='js/vision_arena.js') }}?v=20261013_omni"></script>
 {% endblock %}

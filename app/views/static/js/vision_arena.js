@@ -18,7 +18,8 @@ let controlMode = "gesture"; // 'gesture' | 'mouse'
 let currentDetectedParts = [];
 let primaryObject = "object";
 let scannedWordRegistry = [];
-let currentWordFilter = "all"; // 'all' | 'objects' | 'connectors'
+let currentOmniDomain = "all"; // 'all' | 'objects' | 'creatures' | 'scenes' | 'environment'
+let currentWordFilter = "all"; // 'all' | 'objects' | 'creatures' | 'scenes' | 'environment' | 'connectors'
 let currentLevelFilter = "all"; // 'all' | 'basic' | 'advanced'
 let selectedObjectCategory = "all";
 
@@ -290,6 +291,75 @@ function switchWorkspace(mode) {
 }
 
 /**
+ * 0.05 QUẢN LÝ MIỀN THỰC THỂ TOÀN CẢNH (OMNI-DOMAIN SELECTION & HUD)
+ */
+function setOmniDomain(domain) {
+    currentOmniDomain = domain;
+    ["all", "objects", "creatures", "scenes", "environment"].forEach(d => {
+        const btn = document.getElementById(`domain-btn-${d}`);
+        if (btn) btn.classList.toggle("active", d === domain);
+    });
+
+    const domainNames = {
+        all: "Toàn Cảnh (Mọi Miền)",
+        objects: "Đồ Vật (Objects)",
+        creatures: "Sinh Vật (Creatures)",
+        scenes: "Khung Cảnh (Scenes)",
+        environment: "Môi Trường (Environment)"
+    };
+
+    const statusHud = document.getElementById("status-hud");
+    if (statusHud) {
+        statusHud.innerHTML = `🌐 Miền thực thể: <b>${domainNames[domain] || domain}</b>`;
+    }
+
+    // Nếu đang có hình ảnh / camera và có từ đã quét, kích hoạt cập nhật kho từ tương ứng
+    if (scannedWordRegistry.length > 0) {
+        renderWordPool();
+    }
+}
+
+function updateOmniSceneHud(sceneInfo, contextCaption, domainBreakdown) {
+    const hudContainer = document.getElementById("omni-scene-hud");
+    if (!hudContainer) return;
+
+    if (!sceneInfo && !contextCaption) {
+        hudContainer.style.display = "none";
+        return;
+    }
+
+    hudContainer.style.display = "block";
+
+    if (sceneInfo) {
+        const sceneEl = document.getElementById("hud-scene-text");
+        if (sceneEl) {
+            sceneEl.innerText = `${sceneInfo.scene_vn || sceneInfo.scene_type || "Không gian mở"}`;
+        }
+        const lightingEl = document.getElementById("hud-lighting-text");
+        if (lightingEl) {
+            lightingEl.innerText = `${sceneInfo.lighting_vn || sceneInfo.lighting_condition || "Ánh sáng tự nhiên"}`;
+        }
+        const atmosphereEl = document.getElementById("hud-atmosphere-text");
+        if (atmosphereEl) {
+            atmosphereEl.innerText = `${sceneInfo.atmosphere_vn || sceneInfo.atmosphere || "Cân bằng"}`;
+        }
+    }
+
+    if (contextCaption) {
+        const enEl = document.getElementById("hud-caption-en");
+        const vnEl = document.getElementById("hud-caption-vn");
+        if (enEl) enEl.innerText = contextCaption.en || "";
+        if (vnEl) vnEl.innerText = contextCaption.vn || "";
+
+        const subtitleStrip = document.getElementById("camera-ar-subtitle-strip");
+        if (subtitleStrip && contextCaption.en) {
+            subtitleStrip.innerText = contextCaption.en;
+            subtitleStrip.style.display = "block";
+        }
+    }
+}
+
+/**
  * 0.1 ĐIỀU KHIỂN VÒNG ĐỎ SOI VẬT THỂ (TARGET SPOTLIGHT RETICLE)
  */
 function moveReticleTo(normX, normY) {
@@ -340,7 +410,8 @@ function updateReticleTarget() {
 
     if (matchedPart) {
         currentReticleWord = matchedPart;
-        titleEl.innerText = (matchedPart.word || "").toUpperCase();
+        const domTag = matchedPart.domain ? `[${matchedPart.domain.slice(0, 3).toUpperCase()}] ` : '';
+        titleEl.innerText = `${domTag}${(matchedPart.word || "").toUpperCase()}`;
         badgeEl.innerText = (matchedPart.cefr || "B1").toUpperCase();
         meaningEl.innerText = matchedPart.meaning || "";
         calloutEl.style.display = "flex";
@@ -568,8 +639,10 @@ function renderLiveDetectionStrip() {
         const isBasic = (part.level_tier === "basic" || ["A1", "A2"].includes((part.cefr || "").toUpperCase()));
         const badgeColor = isBasic ? "#22d3ee" : "#c084fc";
         const badgeBg = isBasic ? "rgba(34, 211, 238, 0.2)" : "rgba(168, 85, 247, 0.2)";
+        const domainName = (part.domain || 'objects').toUpperCase();
 
         chip.innerHTML = `
+            <span class="domain-tag ${part.domain || 'objects'}">${domainName}</span>
             <span style="font-size: 10px; font-weight: 800; color: ${badgeColor}; background: ${badgeBg}; padding: 1px 5px; border-radius: 4px;">${part.cefr || 'B1'}</span>
             <strong style="color: #fff;">${(part.word || '').toUpperCase()}</strong>
             ${part.meaning ? `<span style="color: #fef08a; font-size: 11px;">(${part.meaning})</span>` : ''}
@@ -617,6 +690,7 @@ function renderVaultCards() {
         if (tierVal === "basic" && item.levelTier !== "basic") return false;
         if (tierVal === "advanced" && item.levelTier !== "advanced") return false;
         if (tierVal === "learned" && !item.isLearned) return false;
+        if (["objects", "creatures", "scenes", "environment"].includes(tierVal) && item.domain !== tierVal) return false;
         return true;
     });
 
@@ -637,13 +711,15 @@ function renderVaultCards() {
         const tierBadge = isBasic 
             ? `<span style="background: rgba(34, 211, 238, 0.2); color: #22d3ee; border: 1px solid #22d3ee; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M12 22v-9"/><path d="M12 13a5 5 0 0 0 5-5c0-3-2-5-5-5s-5 2-5 5a5 5 0 0 0 5 5Z"/></svg> A1-A2 Cơ Bản</span>`
             : `<span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #c084fc; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg> B1-C1 Chuyên Sâu</span>`;
+        const domainBadge = `<span class="domain-tag ${item.domain || 'objects'}" style="margin-left: 6px;">${(item.domain || 'objects').toUpperCase()}</span>`;
 
         card.innerHTML = `
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                     <div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             <h3 style="margin: 0; color: #fff; font-size: 17px; font-weight: 800; letter-spacing: 0.5px;">${item.word.toUpperCase()}</h3>
+                            ${domainBadge}
                             <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; display: inline-flex; align-items: center;" onclick="speakWord('${item.word}', event)" title="Nghe phát âm">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                             </button>
@@ -656,7 +732,7 @@ function renderVaultCards() {
                 <div style="background: rgba(2, 6, 23, 0.6); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--neon-cyan);">
                     <div style="color: #fef08a; font-weight: 600; font-size: 13px;">${item.meaning}</div>
                     <div style="color: #94a3b8; font-size: 11px; margin-top: 3px;">
-                        Thuộc vật thể: <b style="color: #67e8f9;">${(item.parentObject || 'object').toUpperCase()}</b>
+                        Miền: <b style="color: #67e8f9;">${(item.domain || 'objects').toUpperCase()}</b> • Nguồn: <b style="color: #cbd5e1;">${(item.parentObject || 'object').toUpperCase()}</b>
                     </div>
                 </div>
             </div>
@@ -1284,6 +1360,18 @@ async function captureAndScan() {
         const maxResults = parseInt(document.getElementById("max-objects-slider") ? document.getElementById("max-objects-slider").value : 10) || 10;
         const granularity = document.getElementById("granularity-select") ? document.getElementById("granularity-select").value : "all";
 
+        let reticleRoi = null;
+        if (isReticleActive && canvasElement && canvasElement.width > 0 && canvasElement.height > 0) {
+            const rxRadiusNorm = reticleRadius / canvasElement.width;
+            const ryRadiusNorm = reticleRadius / canvasElement.height;
+            reticleRoi = [
+                Math.max(0, reticleNormPos.x - rxRadiusNorm),
+                Math.max(0, reticleNormPos.y - ryRadiusNorm),
+                Math.min(1, reticleNormPos.x + rxRadiusNorm),
+                Math.min(1, reticleNormPos.y + ryRadiusNorm)
+            ];
+        }
+
         const startTime = performance.now();
         const response = await fetch("/api/vision/scan", {
             method: "POST",
@@ -1293,7 +1381,9 @@ async function captureAndScan() {
                 target_category: category,
                 threshold: threshold,
                 max_results: maxResults,
-                granularity: granularity
+                granularity: granularity,
+                domain: currentOmniDomain,
+                reticle_roi: reticleRoi
             })
         });
 
@@ -1306,6 +1396,7 @@ async function captureAndScan() {
             primaryObject = data.primary_object || "object";
 
             registerDetectedParts(currentDetectedParts, primaryObject);
+            updateOmniSceneHud(data.scene_info, data.context_caption, data.domain_breakdown);
             document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject}</b> (${currentDetectedParts.length} vật thể/chi tiết)`;
 
             updateReticleTarget();
@@ -1463,7 +1554,8 @@ async function loadSamplePreset(type) {
                 target_category: type,
                 threshold: 0.08,
                 max_results: maxResults,
-                granularity: granularity
+                granularity: granularity,
+                domain: currentOmniDomain
             })
         });
 
@@ -1476,6 +1568,7 @@ async function loadSamplePreset(type) {
             primaryObject = data.primary_object || type;
 
             registerDetectedParts(currentDetectedParts, primaryObject);
+            updateOmniSceneHud(data.scene_info, data.context_caption, data.domain_breakdown);
             document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject.toUpperCase()}</b> (${currentDetectedParts.length} chi tiết)`;
 
             updateReticleTarget();
@@ -1520,8 +1613,13 @@ function drawDetectedBoundingBoxes() {
         const isReticleTarget = currentReticleWord && (part.word && currentReticleWord.word && part.word.toLowerCase() === currentReticleWord.word.toLowerCase());
         const isBasic = (part.level_tier === "basic" || ["A1", "A2"].includes((part.cefr || "").toUpperCase()));
         
-        let themeColor = isBasic ? "#22d3ee" : "#c084fc"; // Cyan cho Cơ bản (A1-A2), Tím neon cho Chuyên sâu (B1-C1)
-        let shadowColor = isBasic ? "rgba(34, 211, 238, 0.7)" : "rgba(192, 132, 252, 0.7)";
+        let themeColor = "#22d3ee";
+        if (part.domain === "creatures") themeColor = "#4ade80";
+        else if (part.domain === "scenes") themeColor = "#fbbf24";
+        else if (part.domain === "environment") themeColor = "#c084fc";
+        else if (!isBasic) themeColor = "#38bdf8";
+
+        let shadowColor = themeColor;
         let lineWidth = 2.5;
 
         if (isReticleTarget) {
@@ -1533,7 +1631,7 @@ function drawDetectedBoundingBoxes() {
         canvasCtx.save();
         canvasCtx.lineWidth = lineWidth;
         canvasCtx.strokeStyle = themeColor;
-        canvasCtx.fillStyle = isReticleTarget ? "rgba(244, 63, 94, 0.22)" : (isBasic ? "rgba(6, 182, 212, 0.14)" : "rgba(168, 85, 247, 0.14)");
+        canvasCtx.fillStyle = isReticleTarget ? "rgba(244, 63, 94, 0.22)" : "rgba(15, 23, 42, 0.25)";
         canvasCtx.shadowBlur = isReticleTarget ? 18 : 10;
         canvasCtx.shadowColor = shadowColor;
 
@@ -1541,13 +1639,14 @@ function drawDetectedBoundingBoxes() {
         canvasCtx.fillRect(x1, y1, boxW, boxH);
         canvasCtx.strokeRect(x1, y1, boxW, boxH);
 
-        // Chuẩn bị nhãn song ngữ: EN [CEFR] (conf%) và Tiếng Việt chuẩn xác
+        // Chuẩn bị nhãn song ngữ: [DOMAIN] EN [CEFR] (conf%) và Tiếng Việt chuẩn xác
         const enWord = (part.word || "").toUpperCase();
         const cefr = part.cefr || "B1";
         const vnMeaning = part.meaning || "";
         const confPercent = Math.round((part.confidence || 0) * 100);
+        const domainShort = (part.domain || "obj").slice(0, 3).toUpperCase();
 
-        const line1 = `${enWord} [${cefr}] (${confPercent}%)`;
+        const line1 = `[${domainShort}] ${enWord} [${cefr}] (${confPercent}%)`;
         const line2 = vnMeaning ? `🇻🇳 ${vnMeaning}` : "";
 
         canvasCtx.font = "bold 11px Inter, sans-serif";
@@ -1565,7 +1664,7 @@ function drawDetectedBoundingBoxes() {
         canvasCtx.lineWidth = 1;
         canvasCtx.strokeRect(x1, badgeY, badgeW, badgeH);
 
-        // Dòng 1: Tiếng Anh + Cấp độ CEFR + Độ tin cậy
+        // Dòng 1: Miền + Tiếng Anh + Cấp độ CEFR + Độ tin cậy
         canvasCtx.fillStyle = themeColor;
         canvasCtx.font = "bold 11px Inter, sans-serif";
         canvasCtx.fillText(line1, x1 + 6, badgeY + 13);
@@ -1603,6 +1702,7 @@ function registerDetectedParts(parts, objectCategory) {
             cefr: cefrUpper,
             meaning: part.meaning || "Chi tiết vật thể",
             tier: part.tier || "functional",
+            domain: part.domain || "objects",
             levelTier: levelTier,
             isLearned: !!part.is_learned,
             parentObject: objectCategory || primaryObject,
@@ -1617,13 +1717,22 @@ function registerDetectedParts(parts, objectCategory) {
 
     // 2. Nạp các từ nối cơ bản phục vụ đặt câu (Chỉ nạp 1 lần duy nhất)
     const baseConnectors = [
-        { word: "the", ipa: "/ðə/", cefr: "A1", levelTier: "basic", meaning: "Mạo từ xác định", isLearned: true, isObjectPart: false },
-        { word: "is", ipa: "/ɪz/", cefr: "A1", levelTier: "basic", meaning: "Thì / là", isLearned: true, isObjectPart: false },
-        { word: "a", ipa: "/ə/", cefr: "A1", levelTier: "basic", meaning: "Một", isLearned: true, isObjectPart: false },
-        { word: "has", ipa: "/hæz/", cefr: "A1", levelTier: "basic", meaning: "Có", isLearned: true, isObjectPart: false },
-        { word: "my", ipa: "/maɪ/", cefr: "A1", levelTier: "basic", meaning: "Của tôi", isLearned: true, isObjectPart: false },
-        { word: "of", ipa: "/əv/", cefr: "A1", levelTier: "basic", meaning: "Của", isLearned: true, isObjectPart: false },
-        { word: "this", ipa: "/ðɪs/", cefr: "A1", levelTier: "basic", meaning: "Cái này", isLearned: true, isObjectPart: false }
+        { word: "the", ipa: "/ðə/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Mạo từ xác định", isLearned: true, isObjectPart: false },
+        { word: "is", ipa: "/ɪz/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Thì / là", isLearned: true, isObjectPart: false },
+        { word: "a", ipa: "/ə/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Một", isLearned: true, isObjectPart: false },
+        { word: "has", ipa: "/hæz/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Có", isLearned: true, isObjectPart: false },
+        { word: "my", ipa: "/maɪ/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Của tôi", isLearned: true, isObjectPart: false },
+        { word: "of", ipa: "/əv/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Của", isLearned: true, isObjectPart: false },
+        { word: "this", ipa: "/ðɪs/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Cái này", isLearned: true, isObjectPart: false },
+        { word: "in", ipa: "/ɪn/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Ở trong", isLearned: true, isObjectPart: false },
+        { word: "near", ipa: "/nɪər/", cefr: "A2", levelTier: "basic", domain: "connectors", meaning: "Gần", isLearned: true, isObjectPart: false },
+        { word: "under", ipa: "/ˈʌndər/", cefr: "A2", levelTier: "basic", domain: "connectors", meaning: "Dưới", isLearned: true, isObjectPart: false },
+        { word: "because", ipa: "/bɪˈkɒz/", cefr: "B1", levelTier: "advanced", domain: "connectors", meaning: "Bởi vì", isLearned: true, isObjectPart: false },
+        { word: "which", ipa: "/wɪtʃ/", cefr: "B1", levelTier: "advanced", domain: "connectors", meaning: "Mà / cái mà", isLearned: true, isObjectPart: false },
+        { word: "peaceful", ipa: "/ˈpiːsfəl/", cefr: "B1", levelTier: "advanced", domain: "connectors", meaning: "Thanh bình", isLearned: true, isObjectPart: false },
+        { word: "bright", ipa: "/braɪt/", cefr: "A2", levelTier: "basic", domain: "connectors", meaning: "Tươi sáng", isLearned: true, isObjectPart: false },
+        { word: "cozy", ipa: "/ˈkəʊzi/", cefr: "B1", levelTier: "advanced", domain: "connectors", meaning: "Ấm cúng", isLearned: true, isObjectPart: false },
+        { word: "beautiful", ipa: "/ˈbjuːtɪfəl/", cefr: "A2", levelTier: "basic", domain: "connectors", meaning: "Đẹp đẽ", isLearned: true, isObjectPart: false }
     ];
 
     baseConnectors.forEach(conn => {
@@ -1641,7 +1750,7 @@ function registerDetectedParts(parts, objectCategory) {
 
 function setWordFilter(filterType) {
     currentWordFilter = filterType;
-    ["all", "objects", "connectors"].forEach(type => {
+    ["all", "objects", "creatures", "scenes", "environment", "connectors"].forEach(type => {
         const btn = document.getElementById(`filter-${type}-btn`);
         if (btn) btn.classList.toggle("active", type === filterType);
     });
@@ -1725,11 +1834,14 @@ function renderWordPool() {
     }
 
     // Lọc đồng thời theo:
-    // 1. Phân loại (Tất cả / Chỉ từ vật thể / Chỉ từ nối)
+    // 1. Phân loại (Tất cả / Đồ vật / Sinh vật / Khung cảnh / Môi trường / Chỉ từ nối)
     // 2. Vật thể cha cụ thể
     // 3. Cấp độ học tập (Tất cả / Cơ bản A1-A2 / Chuyên sâu B1-C1)
     const filteredList = scannedWordRegistry.filter(item => {
-        if (currentWordFilter === "objects" && !item.isObjectPart) return false;
+        if (currentWordFilter === "objects" && (item.domain !== "objects" || !item.isObjectPart)) return false;
+        if (currentWordFilter === "creatures" && (item.domain !== "creatures" || !item.isObjectPart)) return false;
+        if (currentWordFilter === "scenes" && (item.domain !== "scenes" || !item.isObjectPart)) return false;
+        if (currentWordFilter === "environment" && (item.domain !== "environment" || !item.isObjectPart)) return false;
         if (currentWordFilter === "connectors" && item.isObjectPart) return false;
         if (selectedObjectCategory !== "all" && item.isObjectPart) {
             if (item.parentObject !== selectedObjectCategory) return false;
@@ -1746,7 +1858,7 @@ function renderWordPool() {
     }
 
     const objectPartsCount = scannedWordRegistry.filter(w => w.isObjectPart).length;
-    countBadge.innerText = `${objectPartsCount} từ vật thể (${filteredList.length} hiển thị)`;
+    countBadge.innerText = `${objectPartsCount} từ thực thể (${filteredList.length} hiển thị)`;
 
     filteredList.forEach(item => {
         const token = createWordTokenElement(
@@ -1756,15 +1868,16 @@ function renderWordPool() {
             item.meaning,
             item.isLearned,
             item.isObjectPart,
-            item.levelTier
+            item.levelTier,
+            item.domain || "objects"
         );
         pool.appendChild(token);
     });
 }
 
-function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPart = true, levelTier = 'basic') {
+function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPart = true, levelTier = 'basic', domain = 'objects') {
     const token = document.createElement("div");
-    token.className = "word-token";
+    token.className = "word-token token-domain-" + (domain || 'objects');
     token.setAttribute("draggable", "true");
     token.setAttribute("data-word", word);
     token.setAttribute("title", meaning ? `${word}: ${meaning}` : word);
@@ -1778,7 +1891,10 @@ function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPar
         badgeStyle = 'background: rgba(34, 211, 238, 0.25); color: #67e8f9; border: 1px solid #67e8f9;';
     }
 
+    const domainBadge = (isObjectPart && domain) ? `<span class="domain-tag ${domain}">${domain.toUpperCase()}</span>` : '';
+
     token.innerHTML = `
+        ${domainBadge}
         <span class="cefr-badge" style="${badgeStyle}">${cefr || 'A1'}</span>
         <span style="font-weight: 700; color: #fff;">${word}</span>
         ${ipa ? `<span class="word-ipa">${ipa}</span>` : ''}
@@ -1859,12 +1975,31 @@ function applySentenceTemplate(templateKey) {
     const dropZone = document.getElementById("assembly-drop-zone");
     const select = document.getElementById("sentence-template-select");
 
-    const objectParts = scannedWordRegistry.filter(w => w.isObjectPart);
+    const objectParts = scannedWordRegistry.filter(w => w.isObjectPart && (w.domain === "objects" || !w.domain));
+    const creatures = scannedWordRegistry.filter(w => w.isObjectPart && w.domain === "creatures");
+    const scenes = scannedWordRegistry.filter(w => w.isObjectPart && w.domain === "scenes");
+    const environments = scannedWordRegistry.filter(w => w.isObjectPart && w.domain === "environment");
+
     const targetPart = objectParts.length > 0 ? objectParts[0].word : "part";
-    const parentObj = (primaryObject && primaryObject !== "object") ? primaryObject : (objectParts.length > 0 ? objectParts[0].parentObject : "object");
+    const parentObj = (primaryObject && primaryObject !== "object") ? primaryObject : (objectParts.length > 0 ? (objectParts[0].parentObject || "object") : "object");
+    const creatureWord = creatures.length > 0 ? creatures[0].word : "cat";
+    const sceneWord = scenes.length > 0 ? scenes[0].word : "room";
+    const envWord = environments.length > 0 ? environments[0].word : "sunlight";
 
     let words = [];
     switch (templateKey) {
+        case "scene_atmosphere":
+            words = ["the", "atmosphere", "in", "this", sceneWord, "is", "remarkably", "peaceful"];
+            break;
+        case "creature_object":
+            words = ["a", creatureWord, "is", "resting", "near", "the", parentObj, "in", "the", sceneWord];
+            break;
+        case "weather_environment":
+            words = ["because", "it", "is", "bright", "today", "the", sceneWord, "looks", "beautiful"];
+            break;
+        case "complex_relative":
+            words = ["the", parentObj, "which", "is", "situated", "inside", "the", sceneWord, "is", "very", "cozy"];
+            break;
         case "part_is_adj":
             words = ["the", targetPart, "of", "my", parentObj, "is", "broken"];
             break;

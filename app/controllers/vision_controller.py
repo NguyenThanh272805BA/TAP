@@ -10,7 +10,12 @@ from app.models.vocabulary import Vocabulary
 from app.models.user_vocabulary import UserVocabulary
 from app.models.vision_log import VisionDetectionLog
 from app.ml_models.owl_vit_engine import LocalOwlVitEngine
-from app.ml_models.vision_taxonomy import OBJECT_PARTS_TAXONOMY, get_part_info
+from app.ml_models.vision_taxonomy import (
+    OBJECT_PARTS_TAXONOMY,
+    get_part_info,
+    DOMAINS,
+    get_domain_stats
+)
 from app.ml_models.gec_engine import LocalGECEngine
 from app.ml_models.scramble_engine import LocalScrambleEngine
 from app.ml_models.critique_synthesizer import LocalCritiqueSynthesizer
@@ -33,15 +38,19 @@ def vision_arena_page():
     return render_template(
         'vision_arena.html',
         current_user=current_user,
-        taxonomy=OBJECT_PARTS_TAXONOMY
+        taxonomy=OBJECT_PARTS_TAXONOMY,
+        domains=DOMAINS,
+        domain_stats=get_domain_stats()
     )
 
 
 @vision_bp.route('/api/vision/categories', methods=['GET'])
 def get_categories():
-    """Lấy danh sách các danh mục vật thể và bộ phận mẫu"""
+    """Lấy danh sách các danh mục vật thể và các miền thực thể toàn cảnh"""
     return jsonify({
         "status": "success",
+        "domains": DOMAINS,
+        "domain_stats": get_domain_stats(),
         "categories": OBJECT_PARTS_TAXONOMY
     })
 
@@ -61,6 +70,8 @@ def scan_object():
         max_results = int(data.get('max_results', 10))
         max_results = max(3, min(20, max_results))
         granularity = str(data.get('granularity', 'all')).lower()
+        domain = str(data.get('domain', 'all')).lower()
+        reticle_roi = data.get('reticle_roi')
 
         if not image_data:
             return jsonify({
@@ -75,7 +86,9 @@ def scan_object():
             custom_queries=custom_queries,
             score_threshold=threshold,
             max_results=max_results,
-            granularity=granularity
+            granularity=granularity,
+            domain=domain,
+            reticle_roi=reticle_roi
         )
 
         if result.get("status") != "success":
@@ -121,6 +134,10 @@ def scan_object():
             "status": "success",
             "primary_object": primary_object,
             "total_detected": len(detected_parts),
+            "domain": result.get("domain", domain),
+            "domain_breakdown": result.get("domain_breakdown", {}),
+            "scene_info": result.get("scene_info", {}),
+            "context_caption": result.get("context_caption", {}),
             "inference_time_ms": result.get("inference_time_ms", 0),
             "detected_parts": detected_parts
         })
@@ -169,6 +186,7 @@ def upload_media_and_scan():
         filename = file.filename.lower()
         target_category = request.form.get('target_category') or None
         granularity = str(request.form.get('granularity', 'all')).lower()
+        domain = str(request.form.get('domain', 'all')).lower()
         max_results = int(request.form.get('max_results', 10))
         max_results = max(3, min(20, max_results))
         threshold = float(request.form.get('threshold', 0.12))
@@ -239,7 +257,8 @@ def upload_media_and_scan():
             target_category=target_category,
             score_threshold=threshold,
             max_results=max_results,
-            granularity=granularity
+            granularity=granularity,
+            domain=domain
         )
 
         if result.get("status") != "success":
@@ -267,6 +286,10 @@ def upload_media_and_scan():
             "media_type": "video" if is_video else "image",
             "primary_object": primary_object,
             "total_detected": len(detected_parts),
+            "domain": result.get("domain", domain),
+            "domain_breakdown": result.get("domain_breakdown", {}),
+            "scene_info": result.get("scene_info", {}),
+            "context_caption": result.get("context_caption", {}),
             "inference_time_ms": result.get("inference_time_ms", 0),
             "preview_image": preview_base64,
             "detected_parts": detected_parts
