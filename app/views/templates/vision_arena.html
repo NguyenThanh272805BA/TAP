@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}ĐẤU TRƯỜNG THỊ GIÁC & CỬ CHỈ BÀN TAY (VISION & AIR-GESTURE){% endblock %}
+
+{% block content %}
+<style>
+    /* CSS Bento Grid & Cyberpunk Glassmorphism */
+    .vision-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding-bottom: 50px;
+    }
+
+    .vision-hero-card {
+        background: rgba(15, 23, 42, 0.85);
+        border: 2px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 24px 30px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.5);
+        position: relative;
+    }
+
+    .vision-bento-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 22px;
+    }
+
+    @media (max-width: 1024px) {
+        .vision-bento-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .bento-card {
+        background: rgba(15, 23, 42, 0.75);
+        border: 1.5px solid var(--glass-border);
+        border-radius: 18px;
+        padding: 20px;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    /* Video & Canvas Viewport */
+    .viewport-wrapper {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #020617;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 2px solid rgba(103, 232, 249, 0.3);
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+    }
+
+    #webcam-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1); /* Lật gương cho camera tự nhiên */
+    }
+
+    #vision-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 10;
+        cursor: crosshair;
+    }
+
+    /* HUD Metrics Overlay */
+    .hud-metrics {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 20;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .hud-pill {
+        background: rgba(2, 6, 23, 0.75);
+        border: 1px solid rgba(103, 232, 249, 0.4);
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 11px;
+        font-family: var(--text-mono);
+        color: var(--neon-cyan);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        backdrop-filter: blur(8px);
+    }
+
+    .hud-gesture-badge {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        z-index: 20;
+        background: rgba(2, 6, 23, 0.85);
+        border: 1.5px solid var(--neon-pink);
+        color: #fff;
+        padding: 6px 16px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 0 15px rgba(244, 63, 94, 0.3);
+    }
+
+    /* Scanning Laser Effect */
+    .scan-laser {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #22d3ee, #f43f5e, #22d3ee, transparent);
+        box-shadow: 0 0 15px #22d3ee;
+        z-index: 15;
+        display: none;
+        animation: scanMove 2s infinite ease-in-out;
+    }
+
+    @keyframes scanMove {
+        0% { top: 0%; opacity: 0.8; }
+        50% { top: 98%; opacity: 1; }
+        100% { top: 0%; opacity: 0.8; }
+    }
+
+    /* Interactive Floating Word Tokens */
+    .word-pool-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        min-height: 120px;
+        padding: 16px;
+        background: rgba(2, 6, 23, 0.5);
+        border: 1.5px dashed rgba(103, 232, 249, 0.3);
+        border-radius: 14px;
+        align-content: flex-start;
+    }
+
+    .word-token {
+        background: rgba(15, 23, 42, 0.95);
+        border: 2px solid var(--neon-cyan);
+        border-radius: 12px;
+        padding: 10px 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: #fff;
+        cursor: grab;
+        user-select: none;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+    }
+
+    .word-token:active, .word-token.is-grabbed {
+        cursor: grabbing;
+        transform: scale(1.08);
+        border-color: var(--neon-pink);
+        box-shadow: 0 0 20px rgba(244, 63, 94, 0.6);
+        background: rgba(30, 41, 59, 0.95);
+    }
+
+    .word-token .cefr-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: rgba(103, 232, 249, 0.2);
+        color: var(--neon-cyan);
+        font-family: var(--text-mono);
+        font-weight: 700;
+    }
+
+    .word-token .word-ipa {
+        font-size: 11px;
+        color: #94a3b8;
+        font-family: var(--text-mono);
+    }
+
+    .word-token .btn-add-vocab {
+        background: rgba(34, 197, 94, 0.2);
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        color: #4ade80;
+        border-radius: 6px;
+        padding: 2px 6px;
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .word-token .btn-add-vocab:hover {
+        background: rgba(34, 197, 94, 0.4);
+    }
+
+    /* Sentence Assembly Deck */
+    .sentence-deck {
+        margin-top: 16px;
+        background: rgba(2, 6, 23, 0.6);
+        border: 2px solid rgba(244, 63, 94, 0.3);
+        border-radius: 14px;
+        padding: 18px;
+    }
+
+    .assembly-drop-zone {
+        min-height: 80px;
+        border: 2px dashed rgba(244, 63, 94, 0.5);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.4);
+        transition: all 0.2s ease;
+    }
+
+    .assembly-drop-zone.drag-over {
+        border-color: #22d3ee;
+        background: rgba(6, 182, 212, 0.1);
+        box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.3);
+    }
+
+    .assembly-drop-zone:empty::before {
+        content: '🖐️ Nắm tay cầm chữ hoặc kéo thả chuột vào đây để ghép câu...';
+        color: #64748b;
+        font-style: italic;
+        font-size: 13px;
+        margin: auto;
+    }
+
+    /* Buttons */
+    .cyber-btn {
+        background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        padding: 10px 20px;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+    }
+    .cyber-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5);
+    }
+    .cyber-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .cyber-btn-pink {
+        background: linear-gradient(135deg, #f43f5e, #e11d48);
+        box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+    }
+    .cyber-btn-pink:hover:not(:disabled) {
+        box-shadow: 0 6px 20px rgba(244, 63, 94, 0.5);
+    }
+
+    /* Feedback Deck */
+    .feedback-deck {
+        margin-top: 16px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1.5px solid var(--neon-cyan);
+        border-radius: 14px;
+        padding: 18px;
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="vision-container">
+    <!-- HERO HEADER -->
+    <div class="vision-hero-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 26px;">👁️</span>
+                    <div>
+                        <h1 style="color: var(--neon-cyan); font-size: 20px; font-weight: 800; margin: 0;">
+                            ĐẤU TRƯỜNG THỊ GIÁC & TƯƠNG TÁC CỬ CHỈ BÀN TAY (AIR-GESTURE)
+                        </h1>
+                        <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">
+                            Nhận diện chi tiết bộ phận vật thể (100% Offline Vision Transformer OWL-ViT) & Dùng tay không chạm kẹp chữ ghép câu!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTROLS & CAMERA TOGGLE -->
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="category-select" style="background: rgba(2, 6, 23, 0.8); border: 1.5px solid var(--neon-cyan); color: #fff; padding: 9px 14px; border-radius: 10px; font-size: 13px; cursor: pointer;">
+                    <option value="">🎯 Tự động phát hiện mọi vật thể</option>
+                    {% for cat_key, cat_data in taxonomy.items() %}
+                    <option value="{{ cat_key }}">{{ cat_data.vn_name }} ({{ cat_key.capitalize() }})</option>
+                    {% endfor %}
+                </select>
+
+                <button id="btn-toggle-camera" class="cyber-btn" onclick="toggleCamera()">
+                    <span id="cam-icon">📹</span> <span id="cam-text">Bật Camera</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN BENTO GRID -->
+    <div class="vision-bento-grid">
+        <!-- BENTO 1: CAMERA VIEWPORT & HAND SKELETON -->
+        <div class="bento-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <span style="color: var(--neon-cyan);">●</span> Camera Viewfinder (Tầm nhìn Thị giác)
+                </span>
+                <span style="font-size: 12px; color: #94a3b8;">
+                    Mô hình: <b style="color: #4ade80;">OWL-ViT Local Core</b>
+                </span>
+            </div>
+
+            <div class="viewport-wrapper" id="viewport-wrapper">
+                <video id="webcam-video" autoplay playsinline muted></video>
+                <canvas id="vision-canvas"></canvas>
+                <div class="scan-laser" id="scan-laser"></div>
+
+                <!-- HUD Overlays -->
+                <div class="hud-metrics">
+                    <div class="hud-pill" id="fps-hud">⚡ FPS: --</div>
+                    <div class="hud-pill" id="latency-hud">⏱️ Suy luận: -- ms</div>
+                    <div class="hud-pill" id="status-hud">🔴 Camera: Đang tắt</div>
+                </div>
+
+                <div class="hud-gesture-badge" id="gesture-hud">
+                    <span id="gesture-emoji">🖐️</span>
+                    <span id="gesture-text">Chưa thấy bàn tay</span>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-scan-frame" class="cyber-btn" onclick="captureAndScan()" disabled>
+                        <span>📸</span> Quét Chi Tiết Đồ Vật
+                    </button>
+                    <button class="cyber-btn" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(103, 232, 249, 0.4);" onclick="resetArena()">
+                        <span>🔄</span> Làm Mới
+                    </button>
+                </div>
+
+                <div style="font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                    <span>Ngưỡng tin cậy:</span>
+                    <input type="range" id="threshold-slider" min="0.08" max="0.35" step="0.02" value="0.14" style="accent-color: var(--neon-cyan); cursor: pointer;" oninput="document.getElementById('threshold-val').innerText = this.value">
+                    <span id="threshold-val" style="font-family: var(--text-mono); color: var(--neon-cyan); font-weight: 700;">0.14</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BENTO 2: WORD POOL & SENTENCE ASSEMBLY ARENA -->
+        <div class="bento-card">
+            <!-- WORD POOL -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <span>📦</span> Kho Từ Vựng Thị Giác Vừa Quét
+                </span>
+                <span id="word-count-badge" style="font-size: 11px; color: var(--neon-cyan); background: rgba(103, 232, 249, 0.15); padding: 2px 8px; border-radius: 8px;">
+                    0 từ vựng
+                </span>
+            </div>
+
+            <div class="word-pool-container" id="word-pool">
+                <div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">
+                    Bấm "Bật Camera" và hướng đồ vật trước ống kính, sau đó nhấn "Quét Chi Tiết Đồ Vật"...
+                </div>
+            </div>
+
+            <!-- SENTENCE ASSEMBLY DECK -->
+            <div class="sentence-deck">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                        <span>🧩</span> Khay Ghép Câu Hoàn Chỉnh
+                    </span>
+                    <span style="font-size: 11px; color: #94a3b8;">
+                        Hỗ trợ cả cử chỉ bàn tay lẫn chuột kéo thả
+                    </span>
+                </div>
+
+                <div class="assembly-drop-zone" id="assembly-drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
+
+                <!-- SENTENCE CONTROLS -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button class="cyber-btn cyber-btn-pink" id="btn-submit-sentence" onclick="submitSentence()" disabled>
+                            <span>✨</span> Chấm Điểm & Phân Tích Ngữ Pháp
+                        </button>
+                        <button class="cyber-btn" style="background: rgba(51, 65, 85, 0.8);" onclick="clearSentence()">
+                            <span>🗑️</span> Xóa Khay
+                        </button>
+                    </div>
+
+                    <button class="cyber-btn" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(103, 232, 249, 0.3);" onclick="addCustomWordPrompt()">
+                        <span>➕</span> Thêm từ nối (the/is/a)
+                    </button>
+                </div>
+            </div>
+
+            <!-- EVALUATION & FEEDBACK DECK -->
+            <div class="feedback-deck" id="feedback-deck">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-weight: 700; color: var(--neon-cyan); font-size: 15px;">
+                        🎯 KẾT QUẢ ĐÁNH GIÁ NGỮ PHÁP (GEC ENGINE)
+                    </span>
+                    <span id="score-badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #4ade80; padding: 4px 12px; border-radius: 12px; font-weight: 800; font-size: 14px;">
+                        Điểm: 100/100
+                    </span>
+                </div>
+
+                <div style="background: rgba(2, 6, 23, 0.7); padding: 12px; border-radius: 10px; margin-bottom: 12px;">
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Câu của bạn:</div>
+                    <div id="result-original" style="color: #fff; font-size: 14px; font-weight: 600;"></div>
+                    <div style="font-size: 12px; color: #4ade80; margin-top: 8px; margin-bottom: 4px;">Câu chuẩn hóa đề xuất:</div>
+                    <div id="result-corrected" style="color: #4ade80; font-size: 14px; font-weight: 600;"></div>
+                </div>
+
+                <div style="background: rgba(30, 41, 59, 0.6); padding: 12px; border-radius: 10px; border-left: 3px solid var(--neon-pink);">
+                    <div style="font-size: 12px; color: var(--neon-pink); font-weight: 700; margin-bottom: 4px;">Lời nhận xét Sư phạm (Master G):</div>
+                    <div id="result-critique" style="color: #cbd5e1; font-size: 13px; line-height: 1.5;"></div>
+                </div>
+
+                <div id="result-exp" style="margin-top: 10px; color: #fbbf24; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                    <span>⭐</span> +30 EXP đã được cộng vào tài khoản của bạn!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MEDIAPIPE HANDS SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+<!-- VISION ARENA CORE SCRIPT -->
+<script src="{{ url_for('static', filename='js/vision_arena.js') }}?v=20261012_1"></script>
+{% endblock %}

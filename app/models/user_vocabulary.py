@@ -16,3 +16,7 @@ class UserVocabulary(db.Model):
     avg_response_time = db.Column(db.Float, default=0.0) # Thời gian phản xạ trung bình (giây)
     previous_interval = db.Column(db.Float, default=0.0) # [ THÊM MỚI ] Khoảng thời gian ôn tập trước đó (giờ)
     next_review_time = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    # Nguồn gốc học từ vựng (ví dụ: 'system', 'vision_scan', 'arena')
+    source_type = db.Column(db.String(50), default='system')
+    context_note = db.Column(db.String(255), nullable=True) # Ngữ cảnh phát hiện: ví dụ 'Phát hiện từ vật thể: backpack'
