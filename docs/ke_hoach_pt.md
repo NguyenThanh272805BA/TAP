@@ -194,10 +194,38 @@
 - **Bổ sung nút Toàn màn hình (Fullscreen Viewport)**: Hỗ trợ phóng to camera tràn viền với một cú nhấp chuột. [x]
 
 ### 8.3 Nâng cấp Tương tác & Trải nghiệm Người dùng (UX/UI Polish) [x]
-- Bổ sung dải chip từ vựng quét trực tiếp (`Live Detection Strip`) ngay dưới camera ở Workspace 1.
-- Hỗ trợ nút click nhanh "🧩 Dùng" trên mỗi thẻ từ để tự động chuyển tab và đưa từ vào khay ghép câu.
+- Bổ sung dải chip từ vựng quét trực tiếp (`Live Detection Strip`) ngay dưới camera ở Workspace 1. [x]
+- Hỗ trợ nút click nhanh "🧩 Dùng" trên mỗi thẻ từ để tự động chuyển tab và đưa từ vào khay ghép câu. [x]
 - Tích hợp thanh tìm kiếm tức thời và bộ lọc cấp độ CEFR cho lưới thẻ Flashcard trong Kho từ vựng. [x]
 
 ---
 
+## PHẦN IX: TỐI ƯU HÓA ĐA THIẾT BỊ / MOBILE-FIRST, VÒNG ĐỎ SOI CHI TIẾT (TARGET SPOTLIGHT RETICLE) & GHÉP CÂU AR TRỰC TIẾP TRONG CAMERA [x]
+
+### 9.1 Khay Ghép Câu AR Trực Tiếp Trong Lòng Camera (In-Camera AR Sentence Dock) [x]
+- Nhúng khay ghép câu trực tiếp vào không gian camera (AR HUD Dock kính mờ nổi ở đáy màn hình camera): Các từ vựng, nút ghép nhanh và thanh trạng thái hiển thị trực tiếp đè trên luồng camera, triệt tiêu hoàn toàn tình trạng cửa sổ PiP che góc màn hình điện thoại [x]
+- Chuyển đổi và tinh gọn không gian làm việc thành 2 Tab chính:
+  1. `1. Camera AR & Soi Chi Tiết`: Kết hợp đồng nhất Camera Max View, Vòng đỏ ngắm chi tiết, Khay ghép câu AR trong camera và Kho từ vựng tương tác ngay bên dưới. [x]
+  2. `2. Kho Từ Vựng SRS`: Quản lý kho thẻ từ vựng và lộ trình ôn tập khoa học. [x]
+- Hologram Phản hồi Sư phạm nổi (AR Feedback Modal): Bảng điểm, câu chuẩn hóa và lời nhận xét của Master G hiển thị nổi ngay giữa lòng camera kèm hiệu ứng âm thanh trực quan [x]
+- Nút thu gọn / mở rộng khay câu AR (`🔽 / 🔼`) giúp người dùng linh hoạt giải phóng tầm nhìn quan sát camera khi cần thiết [x]
+
+### 9.2 Vòng Đỏ Soi & Phân Biệt Vật Thể (Target Spotlight Reticle) [x]
+- Vòng tròn đỏ neon Cyberpunk (`#f43f5e`) kèm tâm ngắm Crosshair chuẩn xác và radar pulse nhấp nháy:
+  - Cho phép người dùng chạm hoặc kéo di chuyển vòng đỏ tới bất kỳ vị trí mong muốn trên ảnh chụp/camera để ngắm và phân biệt chi tiết vật thể [x]
+  - Tự động bắt tọa độ (Hit-Testing) theo khoảng cách Euclid và Bounding Box để nhận biết chi tiết vật thể gần nhất [x]
+  - Thẻ thông tin AR Callout Badge gắn liền theo vòng đỏ: Hiển thị tên từ vựng tiếng Anh in hoa, cấp độ CEFR, bản dịch tiếng Việt, nút 🔊 nghe phát âm chuẩn và nút `➕ Ghép vào câu` để đưa ngay từ đó vào câu đang ghép trong camera [x]
+  - Bổ sung thanh chỉnh bán kính vòng ngắm linh hoạt: 3 kích cỡ `S` (55px - soi chi tiết vi mô), `M` (90px - kích cỡ tiêu chuẩn), `L` (140px - bao quát toàn thể vật thể) [x]
+  - Đồng bộ hiệu ứng Bounding Box phát sáng đỏ neon rực rỡ khi vòng đỏ ngắm trúng chi tiết [x]
+  - Nút bật / tắt vòng đỏ trên thanh công cụ điều khiển [x]
+
+### 9.3 Tối ưu Hóa Giao diện Đa Thiết Bị & Mobile-First (Responsive Mobile UX) [x]
+- Tối ưu hóa chuẩn Touch Targets theo khuyến nghị WCAG (kích thước tối thiểu $\ge 44\text{px}$) cho ngón tay cái trên điện thoại [x]
+- Thao tác 1 chạm (Single-Tap to Insert / Remove): Chạm vào thẻ từ trong kho là từ tự động bay vào câu trong camera; chạm vào từ trong câu là tự gỡ về kho [x]
+- Khung nhìn Camera thích ứng động (Dynamic Viewport Ratio): Đảm bảo tỷ lệ khung hình 4:3 / 16:9 co giãn mượt mà trên màn hình dọc (portrait) của điện thoại không bị tràn viền hay méo tỷ lệ [x]
+- Hỗ trợ đầy đủ sự kiện chạm cảm ứng đa điểm (`touchstart`, `touchmove`, `touchend`) cho vòng đỏ và tương tác thẻ từ [x]
+
+---
+
 *Kế hoạch được phê duyệt và lưu trữ tại*: [`docs/ke_hoach_pt.md`](file:///d:/Python/TAP/docs/ke_hoach_pt.md)
+

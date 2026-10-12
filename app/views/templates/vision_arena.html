@@ -646,9 +646,361 @@
         transform: translateY(-1px);
     }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+    /* ========================================================================= */
+    /* VÒNG ĐỎ ĐỊNH VỊ & SOI VẬT THỂ (TARGET SPOTLIGHT RETICLE)                 */
+    /* ========================================================================= */
+    .target-reticle {
+        position: absolute;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        border: 2.5px solid #f43f5e;
+        box-shadow: 0 0 20px rgba(244, 63, 94, 0.75), inset 0 0 15px rgba(244, 63, 94, 0.35);
+        z-index: 28;
+        pointer-events: auto;
+        cursor: move;
+        transform: translate(-50%, -50%);
+        touch-action: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.15s ease, height 0.15s ease;
+        animation: reticlePulse 2.4s infinite ease-in-out;
+    }
+
+    @keyframes reticlePulse {
+        0% { box-shadow: 0 0 12px rgba(244, 63, 94, 0.6), inset 0 0 8px rgba(244, 63, 94, 0.25); }
+        50% { box-shadow: 0 0 30px rgba(244, 63, 94, 0.95), inset 0 0 22px rgba(244, 63, 94, 0.5); }
+        100% { box-shadow: 0 0 12px rgba(244, 63, 94, 0.6), inset 0 0 8px rgba(244, 63, 94, 0.25); }
+    }
+
+    .reticle-crosshair-h {
+        position: absolute;
+        width: 100%;
+        height: 1.5px;
+        background: rgba(244, 63, 94, 0.75);
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .reticle-crosshair-v {
+        position: absolute;
+        height: 100%;
+        width: 1.5px;
+        background: rgba(244, 63, 94, 0.75);
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        pointer-events: none;
+    }
+
+    .reticle-center-dot {
+        width: 8px;
+        height: 8px;
+        background: #f43f5e;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #f43f5e;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .reticle-callout {
+        position: absolute;
+        bottom: calc(100% + 14px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(2, 6, 23, 0.95);
+        border: 1.5px solid #f43f5e;
+        border-radius: 12px;
+        padding: 8px 12px;
+        min-width: 190px;
+        max-width: 290px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.85), 0 0 20px rgba(244, 63, 94, 0.45);
+        backdrop-filter: blur(12px);
+        pointer-events: auto;
+        z-index: 40;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        animation: fadeInCallout 0.2s ease-out;
+    }
+
+    .reticle-callout::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 6px 6px 0 6px;
+        border-style: solid;
+        border-color: #f43f5e transparent transparent transparent;
+    }
+
+    @keyframes fadeInCallout {
+        from { opacity: 0; transform: translate(-50%, 6px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .reticle-action-btn {
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .reticle-action-btn:hover {
+        background: rgba(244, 63, 94, 0.3);
+        border-color: #f43f5e;
+    }
+    .reticle-action-btn.btn-add-ar {
+        background: linear-gradient(135deg, #f43f5e, #e11d48);
+        border-color: #fda4af;
+        font-weight: 700;
+    }
+
+    .reticle-size-selector {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 5px;
+        background: rgba(2, 6, 23, 0.8);
+        padding: 2px 6px;
+        border-radius: 12px;
+        border: 1px solid rgba(244, 63, 94, 0.4);
+    }
+    .reticle-size-dot {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 1px 4px;
+        border-radius: 4px;
+    }
+    .reticle-size-dot.active, .reticle-size-dot:hover {
+        color: #f43f5e;
+        background: rgba(244, 63, 94, 0.2);
+    }
+
+    /* ========================================================================= */
+    /* AR LIVE SENTENCE DOCK TRỰC TIẾP TRONG CAMERA                              */
+    /* ========================================================================= */
+    .ar-camera-sentence-dock {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        z-index: 26;
+        background: rgba(15, 23, 42, 0.92);
+        border: 1.5px solid rgba(103, 232, 249, 0.45);
+        border-radius: 16px;
+        padding: 12px 16px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8), 0 0 25px rgba(6, 182, 212, 0.25);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    }
+
+    .ar-camera-sentence-dock.is-collapsed {
+        transform: translateY(calc(100% - 44px));
+        opacity: 0.88;
+    }
+
+    .ar-dock-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .ar-mini-btn {
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        color: #cbd5e1;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .ar-mini-btn:hover {
+        background: rgba(6, 182, 212, 0.3);
+        border-color: var(--neon-cyan);
+        color: #fff;
+    }
+
+    .ar-sentence-drop-zone {
+        min-height: 48px;
+        border: 1.5px dashed rgba(103, 232, 249, 0.4);
+        border-radius: 12px;
+        padding: 8px 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        background: rgba(2, 6, 23, 0.65);
+        transition: all 0.2s ease;
+    }
+
+    .ar-sentence-drop-zone:empty::before {
+        content: '🧩 Chạm thẻ từ bên dưới hoặc ở vòng đỏ để đưa chữ vào câu ngay tại camera...';
+        color: #64748b;
+        font-size: 12px;
+        font-style: italic;
+    }
+
+    .ar-sentence-drop-zone.drag-over, .ar-sentence-drop-zone.air-hover {
+        border-color: #f43f5e;
+        background: rgba(244, 63, 94, 0.15);
+        box-shadow: inset 0 0 20px rgba(244, 63, 94, 0.35);
+    }
+
+    /* AR FEEDBACK MODAL NỔI TRONG CAMERA */
+    .ar-feedback-modal {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 500px;
+        background: rgba(15, 23, 42, 0.96);
+        border: 2px solid var(--neon-cyan);
+        border-radius: 18px;
+        padding: 20px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(6, 182, 212, 0.4);
+        z-index: 50;
+        display: none;
+        animation: zoomInAr 0.25s ease-out;
+    }
+
+    @keyframes zoomInAr {
+        from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+        to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    /* ========================================================================= */
+    /* TỐI ƯU HÓA ĐA THIẾT BỊ / MOBILE-FIRST (ĐIỆN THOẠI & TABLET)               */
+    /* ========================================================================= */
+    @media (max-width: 768px) {
+        .vision-container {
+            padding: 8px 6px !important;
+        }
+
+        .vision-hero-card {
+            padding: 12px 14px !important;
+            margin-bottom: 10px !important;
+        }
+
+        .workspace-nav-bar {
+            gap: 6px !important;
+            margin-bottom: 10px !important;
+            flex-direction: column !important;
+        }
+
+        .ws-tab-btn {
+            width: 100% !important;
+            padding: 11px 14px !important;
+            font-size: 13.5px !important;
+            min-height: 48px !important;
+            justify-content: space-between !important;
+        }
+
+        /* Khung Camera co giãn chuẩn tỉ lệ điện thoại thông minh */
+        .viewport-wrapper.cinema-mode {
+            width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 4 / 3 !important;
+            min-height: 330px !important;
+            max-height: 460px !important;
+            border-radius: 14px !important;
+        }
+
+        /* Khay câu AR trong camera nhỏ gọn trên mobile */
+        .ar-camera-sentence-dock {
+            bottom: 6px !important;
+            left: 6px !important;
+            right: 6px !important;
+            padding: 8px 10px !important;
+            border-radius: 12px !important;
+        }
+
+        .ar-sentence-drop-zone {
+            min-height: 42px !important;
+            padding: 6px 8px !important;
+            gap: 6px !important;
+        }
+
+        .target-reticle {
+            width: 75px !important;
+            height: 75px !important;
+        }
+
+        .reticle-callout {
+            min-width: 160px !important;
+            max-width: 250px !important;
+            padding: 6px 10px !important;
+            font-size: 11.5px !important;
+        }
+
+        .cinema-dock-card {
+            padding: 12px 14px !important;
+            border-radius: 14px !important;
+            margin-top: 10px !important;
+        }
+
+        /* Touch Targets chuẩn ngón tay cái WCAG >= 44px */
+        .cyber-btn {
+            min-height: 44px !important;
+            padding: 10px 14px !important;
+            font-size: 13px !important;
+        }
+
+        .action-pill-btn {
+            min-height: 38px !important;
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+        }
+
+        .quick-word-chip {
+            min-height: 36px !important;
+            padding: 6px 10px !important;
+            font-size: 12px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+        }
+
+        .live-detection-banner {
+            padding: 10px 12px !important;
+            gap: 10px !important;
+            margin-top: 10px !important;
+        }
+
+        .live-detection-banner > div:first-child {
+            width: 100% !important;
+        }
+
+        #live-detection-chips {
+            max-height: 120px !important;
+            overflow-y: auto !important;
+            width: 100% !important;
+        }
+
+        /* Loại bỏ hoàn toàn PiP gây che khuất */
+        #pip-viewport-host {
+            display: none !important;
+        }
     }
 </style>
 
@@ -674,10 +1026,9 @@
             </div>
 
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 12px; color: #94a3b8;">Phím tắt chuyển nhanh:</span>
-                <span class="quick-word-chip" style="cursor: default;" title="Phím 1: Khung nhìn Camera">1: Camera</span>
-                <span class="quick-word-chip" style="cursor: default;" title="Phím 2: Khay ghép câu">2: Ghép câu</span>
-                <span class="quick-word-chip" style="cursor: default;" title="Phím 3: Kho từ vựng">3: Kho từ</span>
+                <span style="font-size: 12px; color: #94a3b8;">Phím tắt:</span>
+                <span class="quick-word-chip" style="cursor: pointer;" onclick="switchWorkspace('scanner')" title="Phím 1: Camera AR, Vòng đỏ & Ghép câu">1: Camera AR & Soi Chi Tiết</span>
+                <span class="quick-word-chip" style="cursor: pointer;" onclick="switchWorkspace('vault')" title="Phím 2: Kho từ vựng & SRS">2: Kho Từ Vựng SRS</span>
             </div>
         </div>
     </div>
@@ -686,26 +1037,17 @@
     <div class="workspace-nav-bar">
         <button type="button" class="ws-tab-btn active" id="ws-btn-scanner" onclick="switchWorkspace('scanner')">
             <span style="font-size: 16px;">👁️</span>
-            <span>1. Khung Nhìn Thị Giác (Camera Siêu Rộng)</span>
+            <span>1. Đấu Trường Camera AR & Soi Chi Tiết (Ghép Câu Trực Tiếp)</span>
             <span class="ws-tab-badge" id="badge-detected-count">0 vật thể</span>
-        </button>
-        <button type="button" class="ws-tab-btn" id="ws-btn-assembly" onclick="switchWorkspace('assembly')">
-            <span style="font-size: 16px;">🖐️</span>
-            <span>2. Đấu Trường Ghép Câu & Cử Chỉ</span>
-            <span class="ws-tab-badge" id="badge-sentence-count">0 từ trong khay</span>
         </button>
         <button type="button" class="ws-tab-btn" id="ws-btn-vault" onclick="switchWorkspace('vault')">
             <span style="font-size: 16px;">📦</span>
-            <span>3. Kho Từ Vựng & Ôn Tập SRS</span>
+            <span>2. Kho Từ Vựng Thị Giác & Lộ Trình SRS</span>
             <span class="ws-tab-badge" id="badge-vault-count">0 từ đã quét</span>
         </button>
     </div>
 
-    <!-- PIP HOST (Dành cho chế độ thu nhỏ góc màn hình khi sang Tab 2 và Tab 3) -->
-    <div id="pip-viewport-host" style="position: fixed; bottom: 20px; right: 20px; z-index: 99990; display: none;"></div>
-
-    <!-- ========================================================================================= -->
-    <!-- GIAO DIỆN 1: KHUNG NHÌN THỊ GIÁC (CAMERA CHIẾM DIỆN TÍCH LỚN NHẤT - CINEMA MAX VIEW)      -->
+    <!-- GIAO DIỆN 1: ĐẤU TRƯỜNG CAMERA AR & SOI CHI TIẾT (ALL-IN-ONE) -->
     <!-- ========================================================================================= -->
     <div class="arena-workspace-panel active" id="workspace-scanner">
         <div id="cinema-viewport-host" class="cinema-viewport-container">
@@ -741,6 +1083,109 @@
                     <span id="gesture-emoji">🖐️</span>
                     <span id="gesture-text">Chưa thấy bàn tay</span>
                 </div>
+
+                <!-- VÒNG ĐỎ SOI & PHÂN BIỆT VẬT THỂ (TARGET SPOTLIGHT RETICLE) -->
+                <div id="target-reticle" class="target-reticle" style="left: 50%; top: 40%;" title="Kéo hoặc chạm vào vị trí bất kỳ để ngắm và nhận biết chi tiết vật thể">
+                    <div class="reticle-crosshair-h"></div>
+                    <div class="reticle-crosshair-v"></div>
+                    <div class="reticle-center-dot"></div>
+                    
+                    <!-- AR Callout Badge treo trên vòng đỏ -->
+                    <div id="reticle-callout" class="reticle-callout">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+                            <span id="reticle-word-title" style="color: #fff; font-weight: 800; font-size: 13.5px; letter-spacing: 0.5px;">🎯 VÒNG ĐỎ SOI</span>
+                            <span id="reticle-cefr-badge" class="cefr-badge" style="background: rgba(103, 232, 249, 0.25); color: #22d3ee; font-size: 10px;">A1-C1</span>
+                        </div>
+                        <div id="reticle-meaning-text" style="color: #fef08a; font-size: 11.5px; font-weight: 600;">Chạm/kéo vòng đỏ tới chi tiết để nhận biết</div>
+                        <div style="display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap;">
+                            <button type="button" class="reticle-action-btn" onclick="speakReticleWord(event)" title="Nghe phát âm">🔊</button>
+                            <button type="button" class="reticle-action-btn btn-add-ar" onclick="addReticleWordToSentence(event)" title="Đưa từ này vào câu đang ghép trong camera">➕ Ghép vào câu</button>
+                            <button type="button" class="reticle-action-btn" onclick="collectReticleWord(event)" title="Lưu vào kho SRS">+ SRS</button>
+                        </div>
+                    </div>
+
+                    <!-- Nút điều chỉnh bán kính vòng tròn đỏ S / M / L -->
+                    <div class="reticle-size-selector">
+                        <button type="button" class="reticle-size-dot" onclick="setReticleSize(55, event)" title="Vòng nhỏ (soi chi tiết vi mô)">S</button>
+                        <button type="button" class="reticle-size-dot active" id="reticle-size-m" onclick="setReticleSize(90, event)" title="Vòng vừa">M</button>
+                        <button type="button" class="reticle-size-dot" onclick="setReticleSize(140, event)" title="Vòng lớn (toàn thể vật thể)">L</button>
+                    </div>
+                </div>
+
+                <!-- AR CAMERA SENTENCE DOCK (KHAY GHÉP CÂU TRỰC TIẾP TRONG CAMERA) -->
+                <div id="camera-ar-sentence-dock" class="ar-camera-sentence-dock">
+                    <div class="ar-dock-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 15px;">🧩</span>
+                            <span style="color: #fff; font-weight: 800; font-size: 12.5px; letter-spacing: 0.3px;">
+                                CÂU GHÉP TRỰC TIẾP TRONG CAMERA
+                            </span>
+                            <span id="ar-sentence-count-badge" style="font-size: 10.5px; color: var(--neon-cyan); background: rgba(34, 211, 238, 0.2); padding: 1px 6px; border-radius: 8px; font-weight: 700;">
+                                0 từ
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <button type="button" class="ar-mini-btn" onclick="autoAssembleSentence()" title="Tự động ghép câu mẫu hoàn chỉnh">🤖 Câu mẫu</button>
+                            <button type="button" class="ar-mini-btn" onclick="clearSentence()" title="Xóa toàn bộ câu">🗑️ Xóa</button>
+                            <button type="button" class="ar-mini-btn" id="btn-toggle-dock-collapse" onclick="toggleArDockCollapse()" title="Thu gọn khay để nhìn rõ camera">🔽</button>
+                        </div>
+                    </div>
+
+                    <!-- Khay chứa các từ đã ghép -->
+                    <div id="assembly-drop-zone" class="ar-sentence-drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
+
+                    <!-- Thanh nút hỗ trợ và Chấm Điểm Ngữ Pháp ngay trên Camera -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                            <span style="font-size: 11px; color: #94a3b8;">Chạm nhanh:</span>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('is')">is</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('has')">has</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('broken')">broken</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('clean')">clean</button>
+                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('of')">of</button>
+                        </div>
+
+                        <button type="button" class="cyber-btn cyber-btn-pink" id="btn-submit-sentence" onclick="submitSentence()" disabled style="padding: 7px 16px; font-size: 12.5px;">
+                            <span>✨</span> Chấm Điểm Ngữ Pháp
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AR FEEDBACK MODAL (BẢNG KẾT QUẢ ĐÁNH GIÁ NGỮ PHÁP NỔI TRONG CAMERA) -->
+                <div id="ar-feedback-modal" class="ar-feedback-modal">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 800; color: var(--neon-cyan); font-size: 15px; display: flex; align-items: center; gap: 6px;">
+                            <span>🎯</span> KẾT QUẢ ĐÁNH GIÁ (MASTER G)
+                        </span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="score-badge" style="background: rgba(34, 197, 94, 0.25); color: #4ade80; border: 1.5px solid #4ade80; padding: 3px 10px; border-radius: 12px; font-weight: 800; font-size: 13.5px;">
+                                100/100
+                            </span>
+                            <button type="button" class="ar-mini-btn" onclick="closeArFeedbackModal()" style="font-size: 14px; padding: 2px 8px;">✖</button>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(2, 6, 23, 0.85); padding: 10px 14px; border-radius: 10px; margin-bottom: 10px; border: 1px solid rgba(103, 232, 249, 0.2);">
+                        <div style="font-size: 11px; color: #94a3b8;">Câu của bạn:</div>
+                        <div id="result-original" style="color: #fff; font-size: 14px; font-weight: 600; margin-top: 2px;"></div>
+                        <div style="font-size: 11px; color: #4ade80; margin-top: 6px;">Câu chuẩn hóa đề xuất:</div>
+                        <div id="result-corrected" style="color: #4ade80; font-size: 14px; font-weight: 600; margin-top: 2px;"></div>
+                    </div>
+
+                    <div style="background: rgba(30, 41, 59, 0.7); padding: 10px 14px; border-radius: 10px; border-left: 3px solid var(--neon-pink);">
+                        <div style="font-size: 11px; color: var(--neon-pink); font-weight: 700;">Nhận xét Sư phạm:</div>
+                        <div id="result-critique" style="color: #cbd5e1; font-size: 12.5px; line-height: 1.5; margin-top: 3px; white-space: pre-line;"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                        <div id="result-exp" style="color: #fbbf24; font-weight: 700; font-size: 12.5px;">
+                            <span>⭐</span> +50 EXP
+                        </div>
+                        <button type="button" class="cyber-btn" onclick="closeArFeedbackModal()" style="padding: 6px 14px; font-size: 12px;">
+                            Tiếp Tục Luyện Tập ➔
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -758,8 +1203,8 @@
             </div>
 
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <button type="button" class="cyber-btn cyber-btn-pink" onclick="switchWorkspace('assembly')" style="padding: 9px 16px; font-size: 12.5px;">
-                    <span>🧩</span> Sang Khay Ghép Câu ➔
+                <button type="button" class="cyber-btn cyber-btn-pink" onclick="focusArSentenceDock()" style="padding: 9px 16px; font-size: 12.5px;">
+                    <span>🧩</span> Ghép Câu Trong Camera ➔
                 </button>
                 <button type="button" class="cyber-btn" onclick="switchWorkspace('vault')" style="padding: 9px 16px; font-size: 12.5px; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(103, 232, 249, 0.4);">
                     <span>📦</span> Mở Kho Từ Vựng & SRS
@@ -788,6 +1233,9 @@
                     <input type="file" id="media-file-input" accept="image/*,video/*" style="display:none;" onchange="handleMediaFileUpload(event)">
                     <button id="btn-upload-media" class="cyber-btn" onclick="document.getElementById('media-file-input').click()" style="background: linear-gradient(135deg, #0ea5e9, #2563eb); border: 1.5px solid #38bdf8; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);">
                         <span id="upload-icon">📁</span> <span id="upload-text">Tải Ảnh / Video (≤25MB)</span>
+                    </button>
+                    <button id="btn-toggle-reticle" class="cyber-btn" onclick="toggleTargetReticle()" style="background: linear-gradient(135deg, rgba(244, 63, 94, 0.25), rgba(225, 29, 72, 0.35)); border: 1.5px solid #f43f5e; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);">
+                        <span id="reticle-icon">🎯</span> <span id="reticle-text">Vòng Đỏ: Bật</span>
                     </button>
                 </div>
 
@@ -843,136 +1291,18 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- ========================================================================================= -->
-    <!-- GIAO DIỆN 2: ĐẤU TRƯỜNG GHÉP CÂU & CỬ CHỈ BÀN TAY (AIR-GESTURE & GEC SENTENCE ARENA)        -->
-    <!-- ========================================================================================= -->
-    <div class="arena-workspace-panel" id="workspace-assembly">
-        <div class="bento-card" style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <h2 style="color: var(--neon-cyan); font-size: 16px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
-                        <span>🖐️</span> ĐẤU TRƯỜNG GHÉP CÂU TƯƠNG TÁC
-                    </h2>
-                    <p style="color: #94a3b8; font-size: 12px; margin: 4px 0 0 0;">
-                        Gắp thả chữ bằng cử chỉ tay không chạm hoặc kéo chuột để ghép câu hoàn chỉnh. Hệ thống GEC & Master G sẽ phân tích ngữ pháp tức thì!
-                    </p>
-                </div>
-
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <div class="control-mode-toggle">
-                        <button id="mode-gesture-btn" class="mode-tab active" onclick="setControlMode('gesture')">🖐️ Cử Chỉ Bàn Tay</button>
-                        <button id="mode-mouse-btn" class="mode-tab" onclick="setControlMode('mouse')">🖱️ Chuột / Cảm Ứng</button>
-                    </div>
-                    <button type="button" class="action-pill-btn btn-primary-pill" onclick="switchWorkspace('scanner')">
-                        <span>👁️</span> Mở Camera Lớn
-                    </button>
-                </div>
-            </div>
-
-            <!-- SENTENCE ASSEMBLY DECK -->
-            <div class="sentence-deck" style="margin-top: 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-                    <span style="font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 6px;">
-                        <span>🧩</span> Khay Ghép Câu Hoàn Chỉnh
-                    </span>
-                    <span style="font-size: 11px; color: #94a3b8;">
-                        Hỗ trợ cử chỉ bàn tay, kéo thả hoặc click 1 chạm vào thẻ từ
-                    </span>
-                </div>
-
-                <!-- THANH CÔNG CỤ LỰA CHỌN ĐẶT CÂU & GỢI Ý MẪU CÂU -->
-                <div class="sentence-builder-bar">
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span style="font-size: 11px; color: var(--neon-amber); font-weight: 700; display: flex; align-items: center; gap: 4px;">
-                                <span>💡</span> Đặt câu:
-                            </span>
-                            <select id="sentence-template-select" class="cyber-mini-select" onchange="applySentenceTemplate(this.value)">
-                                <option value="">🎯 Chọn mẫu câu theo đồ vật...</option>
-                                <option value="part_is_adj">The [part] of my [object] is [adj] (Khóa/tròng... của tôi thì...)</option>
-                                <option value="obj_has_part">This [object] has a [part] (Đồ vật này có bộ phận...)</option>
-                                <option value="my_obj_part">My [object] has a good [part] (Đồ vật của tôi có... tốt)</option>
-                                <option value="i_need_obj">I use the [object] with the [part] (Tôi sử dụng... cùng...)</option>
-                            </select>
-                            <button type="button" class="action-pill-btn btn-primary-pill" onclick="autoAssembleSentence()" title="Tự động ghép một câu mẫu hoàn chỉnh từ các từ có sẵn trong kho">
-                                <span>🤖</span> Ghép câu mẫu
-                            </button>
-                        </div>
-
-                        <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                            <span style="font-size: 11px; color: #94a3b8;">Thêm nhanh:</span>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('is')">is</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('has')">has</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('broken')">broken</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('clean')">clean</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('new')">new</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('good')">good</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('of')">of</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('with')">with</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="assembly-drop-zone" id="assembly-drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
-
-                <!-- SENTENCE CONTROLS -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; gap: 8px;">
-                        <button class="cyber-btn cyber-btn-pink" id="btn-submit-sentence" onclick="submitSentence()" disabled>
-                            <span>✨</span> Chấm Điểm & Phân Tích Ngữ Pháp
-                        </button>
-                        <button class="cyber-btn" style="background: rgba(51, 65, 85, 0.8);" onclick="clearSentence()">
-                            <span>🗑️</span> Xóa Khay
-                        </button>
-                    </div>
-
-                    <button class="cyber-btn" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(103, 232, 249, 0.3);" onclick="addCustomWordPrompt()">
-                        <span>➕</span> Thêm từ tự chọn
-                    </button>
-                </div>
-            </div>
-
-            <!-- EVALUATION & FEEDBACK DECK -->
-            <div class="feedback-deck" id="feedback-deck">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span style="font-weight: 700; color: var(--neon-cyan); font-size: 15px;">
-                        🎯 KẾT QUẢ ĐÁNH GIÁ NGỮ PHÁP (GEC ENGINE)
-                    </span>
-                    <span id="score-badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #4ade80; padding: 4px 12px; border-radius: 12px; font-weight: 800; font-size: 14px;">
-                        Điểm: 100/100
-                    </span>
-                </div>
-
-                <div style="background: rgba(2, 6, 23, 0.7); padding: 12px; border-radius: 10px; margin-bottom: 12px;">
-                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Câu của bạn:</div>
-                    <div id="result-original" style="color: #fff; font-size: 14px; font-weight: 600;"></div>
-                    <div style="font-size: 12px; color: #4ade80; margin-top: 8px; margin-bottom: 4px;">Câu chuẩn hóa đề xuất:</div>
-                    <div id="result-corrected" style="color: #4ade80; font-size: 14px; font-weight: 600;"></div>
-                </div>
-
-                <div style="background: rgba(30, 41, 59, 0.6); padding: 12px; border-radius: 10px; border-left: 3px solid var(--neon-pink);">
-                    <div style="font-size: 12px; color: var(--neon-pink); font-weight: 700; margin-bottom: 4px;">Lời nhận xét Sư phạm (Master G):</div>
-                    <div id="result-critique" style="color: #cbd5e1; font-size: 13px; line-height: 1.5; white-space: pre-line;"></div>
-                </div>
-
-                <div id="result-exp" style="margin-top: 10px; color: #fbbf24; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px;">
-                    <span>⭐</span> +50 EXP đã được cộng vào tài khoản của bạn!
-                </div>
-            </div>
-        </div>
-
-        <!-- WORD POOL DECK FOR ASSEMBLY -->
-        <div class="bento-card">
+        <!-- WORD POOL DECK (KHO TỪ VỰNG TƯƠNG TÁC SẴN SÀNG GHÉP CÂU) -->
+        <div class="bento-card" style="margin-top: 14px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-weight: 700; color: #fff; font-size: 14px;">
-                        <span>📦</span> Thẻ Từ Vựng Có Sẵn Để Ghép Câu
+                        <span>📦</span> Thẻ Từ Vựng Để Ghép Vào Camera
                     </span>
                     <span id="word-count-badge" style="font-size: 11px; color: var(--neon-cyan); background: rgba(103, 232, 249, 0.15); padding: 2px 8px; border-radius: 8px; font-weight: 700;">
                         0 từ vựng
                     </span>
+                    <span style="font-size: 11px; color: #94a3b8; font-style: italic;">(Chạm 1-touch vào thẻ từ để đưa vào câu trong camera)</span>
                 </div>
 
                 <div style="display: flex; gap: 6px; align-items: center;">
@@ -1012,7 +1342,7 @@
             <!-- CONTAINER KHO TỪ VỰNG GHÉP CÂU -->
             <div class="word-pool-container" id="word-pool">
                 <div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">
-                    Kho từ đang trống. Bấm "Khung Nhìn Thị Giác" để quét hoặc click vào một ảnh mẫu!
+                    Kho từ đang trống. Bật camera, quét ảnh hoặc kéo vòng đỏ ngắm vật thể để nạp từ vựng!
                 </div>
             </div>
         </div>
@@ -1037,8 +1367,8 @@
                     <button type="button" class="cyber-btn" onclick="switchWorkspace('scanner')" style="padding: 8px 14px; font-size: 12px;">
                         <span>👁️</span> Quét Thêm Từ Mới
                     </button>
-                    <button type="button" class="cyber-btn cyber-btn-pink" onclick="switchWorkspace('assembly')" style="padding: 8px 14px; font-size: 12px;">
-                        <span>🧩</span> Ghép Câu Với Kho Từ
+                    <button type="button" class="cyber-btn cyber-btn-pink" onclick="focusArSentenceDock()" style="padding: 8px 14px; font-size: 12px;">
+                        <span>🧩</span> Ghép Câu Trong Camera
                     </button>
                 </div>
             </div>

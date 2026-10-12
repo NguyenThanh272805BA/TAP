@@ -38,7 +38,14 @@ let grabbedElement = null;
 let lastFrameTime = performance.now();
 let frameCount = 0;
 let currentFPS = 0;
-let activeWorkspace = "scanner"; // 'scanner' | 'assembly' | 'vault'
+let activeWorkspace = "scanner"; // 'scanner' | 'vault'
+
+// Trạng thái Vòng Đỏ Soi Vật Thể (Target Spotlight Reticle)
+let isReticleActive = true;
+let reticleNormPos = { x: 0.5, y: 0.4 };
+let reticleRadius = 45;
+let currentReticleWord = null;
+let isDraggingReticle = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     videoElement = document.getElementById("webcam-video");
@@ -52,26 +59,103 @@ document.addEventListener("DOMContentLoaded", () => {
         canvasCtx = canvasElement.getContext("2d");
     }
 
-    window.addEventListener("resize", resizeCanvas);
-    document.addEventListener("fullscreenchange", () => setTimeout(resizeCanvas, 80));
+    window.addEventListener("resize", () => {
+        resizeCanvas();
+        moveReticleTo(reticleNormPos.x, reticleNormPos.y);
+    });
+    document.addEventListener("fullscreenchange", () => setTimeout(() => {
+        resizeCanvas();
+        moveReticleTo(reticleNormPos.x, reticleNormPos.y);
+    }, 100));
     resizeCanvas();
 
-    // Lắng nghe phím tắt số 1, 2, 3 chuyển nhanh giữa 3 Workspace
+    // Lắng nghe phím tắt số 1, 2 chuyển nhanh giữa các Workspace
     window.addEventListener("keydown", (e) => {
         const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
         if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
         if (e.key === '1') switchWorkspace('scanner');
-        else if (e.key === '2') switchWorkspace('assembly');
-        else if (e.key === '3') switchWorkspace('vault');
+        else if (e.key === '2') switchWorkspace('vault');
     });
+
+    // KHỞI TẠO TƯƠNG TÁC VÒNG ĐỎ SOI VẬT THỂ (MÀN HÌNH CẢM ỨNG & CHUỘT)
+    initTargetReticleEvents();
 
     // Khởi tạo trạng thái Workspace ban đầu
     updateWorkspaceBadges();
     renderLiveDetectionStrip();
 
+    // Đặt vị trí ban đầu cho Vòng Đỏ
+    setTimeout(() => {
+        moveReticleTo(0.5, 0.4);
+    }, 150);
+
     // Khởi tạo MediaPipe
     initMediaPipeHands();
 });
+
+function initTargetReticleEvents() {
+    const reticleEl = document.getElementById("target-reticle");
+    const wrapper = document.getElementById("viewport-wrapper");
+
+    if (reticleEl) {
+        // Chuột kéo vòng đỏ
+        reticleEl.addEventListener("mousedown", (e) => {
+            if (e.target.closest("button") || e.target.closest("#reticle-callout")) return;
+            isDraggingReticle = true;
+            e.preventDefault();
+        });
+
+        // Chạm ngón tay kéo vòng đỏ (Hỗ trợ 100% thiết bị di động / điện thoại)
+        reticleEl.addEventListener("touchstart", (e) => {
+            if (e.target.closest("button") || e.target.closest("#reticle-callout")) return;
+            isDraggingReticle = true;
+            e.stopPropagation();
+        }, { passive: false });
+    }
+
+    // Sự kiện kéo chuột toàn cửa sổ
+    window.addEventListener("mousemove", (e) => {
+        if (!isDraggingReticle || !wrapper) return;
+        const rect = wrapper.getBoundingClientRect();
+        const normX = (e.clientX - rect.left) / rect.width;
+        const normY = (e.clientY - rect.top) / rect.height;
+        moveReticleTo(normX, normY);
+    });
+
+    // Sự kiện vuốt ngón tay toàn màn hình cho điện thoại
+    window.addEventListener("touchmove", (e) => {
+        if (!isDraggingReticle || !wrapper || !e.touches[0]) return;
+        const touch = e.touches[0];
+        const rect = wrapper.getBoundingClientRect();
+        const normX = (touch.clientX - rect.left) / rect.width;
+        const normY = (touch.clientY - rect.top) / rect.height;
+        moveReticleTo(normX, normY);
+        e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener("mouseup", () => { isDraggingReticle = false; });
+    window.addEventListener("touchend", () => { isDraggingReticle = false; });
+
+    // Chạm hoặc Click vào bất kỳ vị trí nào trên Camera -> Vòng đỏ tự động lướt tới đó!
+    if (wrapper) {
+        wrapper.addEventListener("click", (e) => {
+            if (!isReticleActive) return;
+            if (e.target.closest("button") || 
+                e.target.closest("#camera-ar-sentence-dock") || 
+                e.target.closest("#reticle-callout") || 
+                e.target.closest(".hud-metrics") ||
+                e.target.closest(".hud-gesture-badge") ||
+                e.target.closest("#media-mode-bar") ||
+                e.target.closest("#ar-feedback-modal")) {
+                return;
+            }
+            const rect = wrapper.getBoundingClientRect();
+            const normX = (e.clientX - rect.left) / rect.width;
+            const normY = (e.clientY - rect.top) / rect.height;
+            moveReticleTo(normX, normY);
+        });
+    }
+}
 
 function resizeCanvas() {
     if (!canvasElement || !canvasElement.parentElement) return;
@@ -101,66 +185,230 @@ function setControlMode(mode) {
  * 0. QUẢN LÝ CHUYỂN ĐỔI WORKSPACES & VIEWPORT CAMERA
  */
 function switchWorkspace(mode) {
+    if (mode === "assembly") mode = "scanner"; // Hợp nhất để trải nghiệm AR luôn ở camera lớn nhất
     activeWorkspace = mode;
 
     // 1. Cập nhật trạng thái các Tab buttons
     const btnScanner = document.getElementById("ws-btn-scanner");
-    const btnAssembly = document.getElementById("ws-btn-assembly");
     const btnVault = document.getElementById("ws-btn-vault");
 
     if (btnScanner) btnScanner.classList.toggle("active", mode === "scanner");
-    if (btnAssembly) btnAssembly.classList.toggle("active", mode === "assembly");
     if (btnVault) btnVault.classList.toggle("active", mode === "vault");
 
     // 2. Chuyển đổi hiển thị Panels
     const panelScanner = document.getElementById("workspace-scanner");
-    const panelAssembly = document.getElementById("workspace-assembly");
     const panelVault = document.getElementById("workspace-vault");
 
     if (panelScanner) panelScanner.classList.toggle("active", mode === "scanner");
-    if (panelAssembly) panelAssembly.classList.toggle("active", mode === "assembly");
     if (panelVault) panelVault.classList.toggle("active", mode === "vault");
 
-    // 3. Quản lý Viewport Camera (Cinema Ultrawide vs PiP Mini View)
+    // 3. Quản lý Viewport Camera (Luôn giữ Cinema View siêu rộng, không bị PiP che góc)
     const viewportWrapper = document.getElementById("viewport-wrapper");
     const cinemaHost = document.getElementById("cinema-viewport-host");
-    const pipHost = document.getElementById("pip-viewport-host");
 
+    if (viewportWrapper && cinemaHost && viewportWrapper.parentElement !== cinemaHost) {
+        cinemaHost.appendChild(viewportWrapper);
+    }
     if (viewportWrapper) {
-        if (mode === "scanner") {
-            // Chế độ Camera siêu rộng (Cinema Max View)
-            if (cinemaHost && viewportWrapper.parentElement !== cinemaHost) {
-                cinemaHost.appendChild(viewportWrapper);
-            }
-            viewportWrapper.classList.remove("pip-mode");
-            viewportWrapper.classList.add("cinema-mode");
-            if (pipHost) pipHost.style.display = "none";
-        } else {
-            // Chế độ PiP thu nhỏ góc màn hình (Giữ luồng Air Gesture & Hand tracking liên tục)
-            if (pipHost && viewportWrapper.parentElement !== pipHost) {
-                pipHost.appendChild(viewportWrapper);
-            }
-            viewportWrapper.classList.remove("cinema-mode");
-            viewportWrapper.classList.add("pip-mode");
-            if (pipHost) pipHost.style.display = "block";
-        }
+        viewportWrapper.classList.remove("pip-mode");
+        viewportWrapper.classList.add("cinema-mode");
     }
 
-    // 4. Đồng bộ kích thước canvas vẽ
+    // 4. Đồng bộ kích thước canvas vẽ và định vị lại vòng đỏ
     setTimeout(() => {
         resizeCanvas();
         if (!isCameraActive && activeMediaType !== "camera") {
             drawDetectedBoundingBoxes();
         }
+        moveReticleTo(reticleNormPos.x, reticleNormPos.y);
     }, 60);
 
     // 5. Cập nhật dữ liệu tương ứng cho từng màn hình
-    if (mode === "assembly") {
+    if (mode === "scanner") {
         renderWordPool();
+        updateReticleTarget();
     } else if (mode === "vault") {
         renderVaultCards();
     }
     updateWorkspaceBadges();
+}
+
+/**
+ * 0.1 ĐIỀU KHIỂN VÒNG ĐỎ SOI VẬT THỂ (TARGET SPOTLIGHT RETICLE)
+ */
+function moveReticleTo(normX, normY) {
+    const reticleEl = document.getElementById("target-reticle");
+    const wrapper = document.getElementById("viewport-wrapper");
+    if (!reticleEl || !wrapper) return;
+
+    reticleNormPos.x = Math.max(0.04, Math.min(0.96, normX));
+    reticleNormPos.y = Math.max(0.04, Math.min(0.96, normY));
+
+    const pxX = reticleNormPos.x * wrapper.clientWidth;
+    const pxY = reticleNormPos.y * wrapper.clientHeight;
+
+    reticleEl.style.left = `${pxX}px`;
+    reticleEl.style.top = `${pxY}px`;
+
+    updateReticleTarget();
+}
+
+function updateReticleTarget() {
+    const calloutEl = document.getElementById("reticle-callout");
+    const titleEl = document.getElementById("reticle-word-title");
+    const badgeEl = document.getElementById("reticle-cefr-badge");
+    const meaningEl = document.getElementById("reticle-meaning-text");
+    if (!calloutEl || !titleEl) return;
+
+    let matchedPart = null;
+    let minDistance = 999999;
+
+    // Tìm trong danh sách các chi tiết vật thể đã quét
+    currentDetectedParts.forEach(part => {
+        const box = part.normalized_box;
+        if (!box) return;
+
+        const isInside = (reticleNormPos.x >= box.xmin && reticleNormPos.x <= box.xmax &&
+                          reticleNormPos.y >= box.ymin && reticleNormPos.y <= box.ymax);
+        const centerX = (box.xmin + box.xmax) / 2;
+        const centerY = (box.ymin + box.ymax) / 2;
+        const dist = Math.hypot(reticleNormPos.x - centerX, reticleNormPos.y - centerY);
+
+        if (isInside) {
+            matchedPart = part;
+        } else if (!matchedPart && dist < 0.28 && dist < minDistance) {
+            minDistance = dist;
+            matchedPart = part;
+        }
+    });
+
+    if (matchedPart) {
+        currentReticleWord = matchedPart;
+        titleEl.innerText = (matchedPart.word || "").toUpperCase();
+        badgeEl.innerText = (matchedPart.cefr || "B1").toUpperCase();
+        meaningEl.innerText = matchedPart.meaning ? `🇻🇳 ${matchedPart.meaning}` : "";
+        calloutEl.style.display = "flex";
+    } else {
+        currentReticleWord = null;
+        titleEl.innerText = "🎯 VÒNG ĐỎ SOI";
+        badgeEl.innerText = "A1-C1";
+        meaningEl.innerText = "Di chuyển vòng đỏ tới chi tiết để nhận biết";
+        calloutEl.style.display = "flex";
+    }
+
+    if (!isCameraActive && canvasCtx && canvasElement) {
+        drawDetectedBoundingBoxes();
+    }
+}
+
+function toggleTargetReticle() {
+    isReticleActive = !isReticleActive;
+    const reticleEl = document.getElementById("target-reticle");
+    const iconEl = document.getElementById("reticle-icon");
+    const textEl = document.getElementById("reticle-text");
+    const btnEl = document.getElementById("btn-toggle-reticle");
+
+    if (reticleEl) {
+        reticleEl.style.display = isReticleActive ? "flex" : "none";
+    }
+    if (textEl) {
+        textEl.innerText = isReticleActive ? "Vòng Đỏ: Bật" : "Vòng Đỏ: Tắt";
+    }
+    if (btnEl) {
+        btnEl.style.borderColor = isReticleActive ? "#f43f5e" : "rgba(148, 163, 184, 0.4)";
+        btnEl.style.background = isReticleActive ? "linear-gradient(135deg, rgba(244, 63, 94, 0.25), rgba(225, 29, 72, 0.35))" : "rgba(30, 41, 59, 0.6)";
+    }
+    if (isReticleActive) updateReticleTarget();
+}
+
+function setReticleSize(radius, event) {
+    if (event) event.stopPropagation();
+    reticleRadius = radius;
+    const reticleEl = document.getElementById("target-reticle");
+    if (reticleEl) {
+        reticleEl.style.width = `${radius * 2}px`;
+        reticleEl.style.height = `${radius * 2}px`;
+    }
+    document.querySelectorAll(".reticle-size-dot").forEach(dot => dot.classList.remove("active"));
+    if (event && event.target) event.target.classList.add("active");
+    updateReticleTarget();
+}
+
+function addReticleWordToSentence(event) {
+    if (event) event.stopPropagation();
+    if (!currentReticleWord) return;
+    insertWordToSentence(currentReticleWord.word);
+}
+
+function collectReticleWord(event) {
+    if (event) event.stopPropagation();
+    if (!currentReticleWord) return;
+    collectVocab(currentReticleWord.word, event);
+}
+
+function speakReticleWord(event) {
+    if (event) event.stopPropagation();
+    if (!currentReticleWord) return;
+    speakWord(currentReticleWord.word, event);
+}
+
+/**
+ * 0.2 ĐIỀU KHIỂN KHAY GHÉP CÂU TRỰC TIẾP TRONG CAMERA (AR SENTENCE DOCK)
+ */
+function insertWordToSentence(word) {
+    if (!word) return;
+    const dropZone = document.getElementById("assembly-drop-zone");
+    if (!dropZone) return;
+
+    const item = scannedWordRegistry.find(w => w.word.toLowerCase() === word.toLowerCase());
+    const token = createWordTokenElement(
+        word.toLowerCase(),
+        item ? item.ipa : "",
+        item ? item.cefr : "B1",
+        item ? item.meaning : "",
+        item ? item.isLearned : false,
+        true,
+        item ? item.levelTier : "basic"
+    );
+
+    dropZone.appendChild(token);
+    playHapticSound("drop");
+    updateSentenceSubmitButton();
+    updateWorkspaceBadges();
+
+    // Mở khay nếu đang thu gọn
+    const dock = document.getElementById("camera-ar-sentence-dock");
+    if (dock && dock.classList.contains("is-collapsed")) {
+        dock.classList.remove("is-collapsed");
+        const btnToggle = document.getElementById("btn-toggle-dock-collapse");
+        if (btnToggle) btnToggle.innerText = "🔽";
+    }
+}
+
+function toggleArDockCollapse() {
+    const dock = document.getElementById("camera-ar-sentence-dock");
+    const btn = document.getElementById("btn-toggle-dock-collapse");
+    if (!dock) return;
+    dock.classList.toggle("is-collapsed");
+    if (btn) {
+        btn.innerText = dock.classList.contains("is-collapsed") ? "🔼" : "🔽";
+    }
+}
+
+function focusArSentenceDock() {
+    switchWorkspace("scanner");
+    const dock = document.getElementById("camera-ar-sentence-dock");
+    if (dock) {
+        dock.classList.remove("is-collapsed");
+        const btn = document.getElementById("btn-toggle-dock-collapse");
+        if (btn) btn.innerText = "🔽";
+        dock.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+}
+
+function closeArFeedbackModal() {
+    const modal = document.getElementById("ar-feedback-modal");
+    if (modal) modal.style.display = "none";
 }
 
 function toggleFullscreenViewport() {
@@ -187,12 +435,16 @@ function updateWorkspaceBadges() {
         badgeDetected.innerText = `${currentDetectedParts.length} vật thể`;
     }
 
-    // Tab 2 badge: số từ trong khay ghép câu
+    // Tab 2 / AR Dock badge: số từ trong khay ghép câu trực tiếp trên Camera
+    const dropZone = document.getElementById("assembly-drop-zone");
+    const count = dropZone ? dropZone.querySelectorAll(".word-token").length : 0;
     const badgeSentence = document.getElementById("badge-sentence-count");
     if (badgeSentence) {
-        const dropZone = document.getElementById("assembly-drop-zone");
-        const count = dropZone ? dropZone.querySelectorAll(".word-token").length : 0;
         badgeSentence.innerText = `${count} từ trong khay`;
+    }
+    const arBadge = document.getElementById("ar-sentence-count-badge");
+    if (arBadge) {
+        arBadge.innerText = `${count} từ`;
     }
 
     // Tab 3 badge: số từ vựng vật thể đã ghi nhận
@@ -975,6 +1227,8 @@ async function captureAndScan() {
             registerDetectedParts(currentDetectedParts, primaryObject);
             document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject}</b> (${currentDetectedParts.length} vật thể/chi tiết)`;
 
+            updateReticleTarget();
+
             if (!isCameraActive && canvasCtx && canvasElement) {
                 canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
                 drawDetectedBoundingBoxes();
@@ -1143,6 +1397,8 @@ async function loadSamplePreset(type) {
             registerDetectedParts(currentDetectedParts, primaryObject);
             document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject.toUpperCase()}</b> (${currentDetectedParts.length} chi tiết)`;
 
+            updateReticleTarget();
+
             // Nếu camera đang tắt, vẽ ảnh mockup lên canvas
             if (!isCameraActive && canvasCtx && canvasElement) {
                 canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -1180,15 +1436,24 @@ function drawDetectedBoundingBoxes() {
         const boxW = (box.xmax - box.xmin) * w;
         const boxH = (box.ymax - box.ymin) * h;
 
+        const isReticleTarget = currentReticleWord && (part.word && currentReticleWord.word && part.word.toLowerCase() === currentReticleWord.word.toLowerCase());
         const isBasic = (part.level_tier === "basic" || ["A1", "A2"].includes((part.cefr || "").toUpperCase()));
-        const themeColor = isBasic ? "#22d3ee" : "#c084fc"; // Cyan cho Cơ bản (A1-A2), Tím neon cho Chuyên sâu (B1-C1)
-        const shadowColor = isBasic ? "rgba(34, 211, 238, 0.7)" : "rgba(192, 132, 252, 0.7)";
+        
+        let themeColor = isBasic ? "#22d3ee" : "#c084fc"; // Cyan cho Cơ bản (A1-A2), Tím neon cho Chuyên sâu (B1-C1)
+        let shadowColor = isBasic ? "rgba(34, 211, 238, 0.7)" : "rgba(192, 132, 252, 0.7)";
+        let lineWidth = 2.5;
+
+        if (isReticleTarget) {
+            themeColor = "#f43f5e"; // Đỏ neon ăn khớp đồng bộ với Vòng đỏ
+            shadowColor = "rgba(244, 63, 94, 0.95)";
+            lineWidth = 3.5;
+        }
 
         canvasCtx.save();
-        canvasCtx.lineWidth = 2.5;
+        canvasCtx.lineWidth = lineWidth;
         canvasCtx.strokeStyle = themeColor;
-        canvasCtx.fillStyle = isBasic ? "rgba(6, 182, 212, 0.14)" : "rgba(168, 85, 247, 0.14)";
-        canvasCtx.shadowBlur = 10;
+        canvasCtx.fillStyle = isReticleTarget ? "rgba(244, 63, 94, 0.22)" : (isBasic ? "rgba(6, 182, 212, 0.14)" : "rgba(168, 85, 247, 0.14)");
+        canvasCtx.shadowBlur = isReticleTarget ? 18 : 10;
         canvasCtx.shadowColor = shadowColor;
 
         // Vẽ hộp bao quanh vật thể
@@ -1629,10 +1894,16 @@ function updateSentenceSubmitButton() {
 function clearSentence() {
     const dropZone = document.getElementById("assembly-drop-zone");
     const pool = document.getElementById("word-pool");
-    const tokens = Array.from(dropZone.querySelectorAll(".word-token"));
-    tokens.forEach(t => pool.appendChild(t));
+    const tokens = Array.from(dropZone ? dropZone.querySelectorAll(".word-token") : []);
+    tokens.forEach(t => {
+        if (pool) pool.appendChild(t);
+        else t.remove();
+    });
     updateSentenceSubmitButton();
-    document.getElementById("feedback-deck").style.display = "none";
+    const fbDeck = document.getElementById("feedback-deck");
+    if (fbDeck) fbDeck.style.display = "none";
+    const arModal = document.getElementById("ar-feedback-modal");
+    if (arModal) arModal.style.display = "none";
 }
 
 function addCustomWordPrompt() {
@@ -1640,21 +1911,23 @@ function addCustomWordPrompt() {
     if (customWord && customWord.trim()) {
         const pool = document.getElementById("word-pool");
         const token = createWordTokenElement(customWord.trim().toLowerCase(), "", "A2", "Tự bổ sung", true);
-        pool.appendChild(token);
+        if (pool) pool.appendChild(token);
     }
 }
 
 async function submitSentence() {
     const dropZone = document.getElementById("assembly-drop-zone");
-    const tokens = dropZone.querySelectorAll(".word-token");
+    const tokens = dropZone ? dropZone.querySelectorAll(".word-token") : [];
     if (tokens.length === 0) return;
 
     const words = Array.from(tokens).map(t => t.getAttribute("data-word"));
     const sentence = words.join(" ");
 
     const submitBtn = document.getElementById("btn-submit-sentence");
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = "<span>⏳</span> Đang chấm điểm...";
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = "<span>⏳</span> Đang chấm điểm...";
+    }
 
     try {
         const response = await fetch("/api/vision/submit-sentence", {
@@ -1669,16 +1942,36 @@ async function submitSentence() {
 
         const data = await response.json();
         if (data.status === "success") {
+            // Hiển thị AR Hologram Modal ngay bên trong lòng Camera
+            const arModal = document.getElementById("ar-feedback-modal");
+            if (arModal) {
+                arModal.style.display = "block";
+            }
+
+            // Đồng thời hiển thị feedback deck truyền thống nếu có
             const feedbackDeck = document.getElementById("feedback-deck");
-            feedbackDeck.style.display = "block";
+            if (feedbackDeck) {
+                feedbackDeck.style.display = "block";
+            }
 
-            document.getElementById("score-badge").innerText = `Điểm: ${data.score}/100`;
-            document.getElementById("result-original").innerText = data.original_sentence;
-            document.getElementById("result-corrected").innerText = data.corrected_sentence;
-            document.getElementById("result-critique").innerText = data.feedback || "Cấu trúc câu rất tốt!";
-            document.getElementById("result-exp").innerHTML = `<span>⭐</span> +${data.exp_awarded} EXP đã được cộng vào tài khoản của bạn!`;
+            // Đồng bộ dữ liệu hiển thị vào tất cả các phần tử kết quả tương ứng
+            document.querySelectorAll("#score-badge").forEach(el => {
+                el.innerText = `Điểm: ${data.score}/100`;
+            });
+            document.querySelectorAll("#result-original").forEach(el => {
+                el.innerText = data.original_sentence || sentence;
+            });
+            document.querySelectorAll("#result-corrected").forEach(el => {
+                el.innerText = data.corrected_sentence || sentence;
+            });
+            document.querySelectorAll("#result-critique").forEach(el => {
+                el.innerText = data.feedback || "Cấu trúc câu rất tốt!";
+            });
+            document.querySelectorAll("#result-exp").forEach(el => {
+                el.innerHTML = `<span>⭐</span> +${data.exp_awarded || 50} EXP đã được cộng vào tài khoản!`;
+            });
 
-            feedbackDeck.scrollIntoView({ behavior: "smooth" });
+            playHapticSound("grab");
         } else {
             alert(`Lỗi khi chấm câu: ${data.message}`);
         }
@@ -1686,8 +1979,10 @@ async function submitSentence() {
         console.error("Lỗi submit câu:", e);
         alert("Lỗi khi kết nối tới engine chấm câu!");
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = "<span>✨</span> Chấm Điểm & Phân Tích Ngữ Pháp";
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = "<span>✨</span> Chấm Điểm & Phân Tích Ngữ Pháp";
+        }
     }
 }
 
