@@ -263,6 +263,11 @@
 ### 11.4 Cân đối Chiều cao Khung Camera Thích ứng Đa Màn hình (Responsive Viewport Polish) [x]
 - Điều chỉnh kích thước khung camera (`.viewport-wrapper.cinema-mode`) từ 68vh (min-height 520px) sang 58vh (min-height 380px, max-height 680px) để vừa giữ camera là tâm điểm lớn nhất vừa hiển thị vừa vặn các thanh điều khiển bên dưới trên laptop và màn hình phổ thông mà không bị tràn màn hình [x]
 
+### 11.5 Khắc phục Triệt để Hiện tượng Cuộn Kép & Khoảng Thừa Đen Trống Ở Đáy Màn hình (Eliminate Window Scroll & Phantom Bottom Void) [x]
+- Thiết lập `html, body` và `.app-layout` ở chế độ `overflow: hidden; height: 100%;` triệt tiêu dứt điểm lỗi cuộn cấp window kéo trôi toàn bộ giao diện [x]
+- Phân lập cơ chế cuộn độc lập: Sidebar cuộn nội bộ (`overflow-y: auto`) khi menu dài, Nội dung chính (`.main-content`) cuộn mượt mà không làm lệch thanh điều hướng [x]
+- Triệt tiêu hoàn toàn khoảng đen trống thừa (~740px) ở đáy trang, đảm bảo khi cuộn xuống dưới cùng thì trang dừng chuẩn xác ngay đáy thẻ nội dung cuối [x]
+
 ---
 
 *Kế hoạch được phê duyệt và lưu trữ tại*: [`docs/ke_hoach_pt.md`](file:///d:/Python/TAP/docs/ke_hoach_pt.md)
