@@ -7,6 +7,8 @@ try:
 except ImportError:
     ipa = None
 
+from app.ml_models.vietnamese_phonetics import get_vietnamese_phonetic
+
 # Đường dẫn tới các file dữ liệu
 CURRENT_DIR = os.path.dirname(__file__)
 OXFORD_PATH = os.path.join(CURRENT_DIR, 'oxford_5000.json')
@@ -302,12 +304,15 @@ def lookup_forest_word(word_query: str) -> Optional[Dict[str, Any]]:
     if clean in flat:
         entry = flat[clean]
         cefr_val = (entry.get("cefr") or "B1").upper()
+        ipa_val = entry.get("ipa", "")
+        vn_phonetic = entry.get("vn_phonetic") or get_vietnamese_phonetic(clean, ipa_val)
         return {
             "word": clean,
             "display_name": clean.capitalize(),
             "meaning": entry.get("meaning", "Chi tiết nhận diện"),
             "cefr": cefr_val,
-            "ipa": entry.get("ipa", ""),
+            "ipa": ipa_val,
+            "vn_phonetic": vn_phonetic,
             "tier": entry.get("tier", "micro"),
             "domain": entry.get("domain", "objects"),
             "parent": entry.get("parent"),
@@ -397,10 +402,13 @@ def get_part_info(part_word: str, parent_obj: Optional[str] = None, domain: Opti
         entry = registry[clean_word]
         cefr = entry.get("cefr") or oxford.get(clean_word, "B1")
         cefr_upper = cefr.upper()
+        ipa_val = entry.get("ipa", "")
+        vn_phonetic = entry.get("vn_phonetic") or get_vietnamese_phonetic(clean_word, ipa_val)
         return {
             "word": clean_word,
             "display_name": entry.get("display_name", clean_word.capitalize()),
-            "ipa": entry.get("ipa", ""),
+            "ipa": ipa_val,
+            "vn_phonetic": vn_phonetic,
             "meaning": entry.get("meaning", "Chi tiết nhận diện"),
             "cefr": cefr_upper,
             "tier": entry.get("tier", "functional"),
@@ -436,7 +444,7 @@ def get_part_info(part_word: str, parent_obj: Optional[str] = None, domain: Opti
                 ent_domain = obj_data.get("domain", "objects")
                 break
 
-    # 4. Sinh phiên âm IPA nếu chưa có
+    # 4. Sinh phiên âm IPA & phiên âm tiếng Việt nếu chưa có
     phonetic_ipa = ""
     if ipa is not None:
         try:
@@ -444,6 +452,7 @@ def get_part_info(part_word: str, parent_obj: Optional[str] = None, domain: Opti
         except Exception:
             phonetic_ipa = ""
 
+    vn_phonetic = get_vietnamese_phonetic(clean_word, phonetic_ipa)
     cefr_upper = cefr.upper()
     level_tier = "basic" if cefr_upper in ["A1", "A2"] else "advanced"
 
@@ -451,6 +460,7 @@ def get_part_info(part_word: str, parent_obj: Optional[str] = None, domain: Opti
         "word": clean_word,
         "display_name": clean_word.capitalize(),
         "ipa": phonetic_ipa,
+        "vn_phonetic": vn_phonetic,
         "meaning": vn_meaning,
         "cefr": cefr_upper,
         "tier": tier,

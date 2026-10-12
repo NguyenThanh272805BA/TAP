@@ -626,6 +626,7 @@ function renderLiveDetectionStrip() {
         const badgeBg = isBasic ? "rgba(34, 211, 238, 0.2)" : "rgba(168, 85, 247, 0.2)";
         const domainName = (part.domain || 'objects').toUpperCase();
         const hierarchyHtml = part.hierarchy_label ? `<span style="font-size: 10px; font-weight: 800; color: #fb7185; background: rgba(244, 63, 94, 0.2); border: 1px solid rgba(244, 63, 94, 0.5); padding: 1px 6px; border-radius: 4px;">${part.hierarchy_label}</span>` : '';
+        const phoneticHtml = part.vn_phonetic ? `<span style="font-size: 11px; font-weight: 700; color: #fb923c; background: rgba(251, 146, 60, 0.2); border: 1px solid rgba(251, 146, 60, 0.45); padding: 1px 6px; border-radius: 4px;" title="Cách đọc / Phiên âm tiếng Việt">🗣️ ${part.vn_phonetic}</span>` : '';
         const adjHtml = (part.academic_adjectives && part.academic_adjectives.length > 0) ? `<span style="color: #67e8f9; font-size: 10.5px; font-style: italic;">(${part.academic_adjectives.slice(0, 2).join(', ')})</span>` : '';
 
         chip.innerHTML = `
@@ -633,6 +634,7 @@ function renderLiveDetectionStrip() {
             ${hierarchyHtml}
             <span style="font-size: 10px; font-weight: 800; color: ${badgeColor}; background: ${badgeBg}; padding: 1px 5px; border-radius: 4px;">${part.cefr || 'B1'}</span>
             <strong style="color: #fff;">${(part.word || '').toUpperCase()}</strong>
+            ${phoneticHtml}
             ${part.meaning ? `<span style="color: #fef08a; font-size: 11px;">(${part.meaning})</span>` : ''}
             ${adjHtml}
             <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; display: inline-flex; align-items: center;" onclick="speakWord('${part.word}', event)" title="Nghe phát âm">
@@ -713,7 +715,10 @@ function renderVaultCards() {
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                             </button>
                         </div>
-                        ${item.ipa ? `<div style="color: #94a3b8; font-size: 12px; font-family: var(--text-mono);">${item.ipa}</div>` : ''}
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 3px;">
+                            ${item.ipa ? `<span style="color: #94a3b8; font-size: 12px; font-family: var(--text-mono);">${item.ipa}</span>` : ''}
+                            ${item.vn_phonetic ? `<span style="background: rgba(251, 146, 60, 0.2); color: #fb923c; border: 1px solid rgba(251, 146, 60, 0.45); padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;" title="Phiên âm tiếng Việt">🗣️ ${item.vn_phonetic}</span>` : ''}
+                        </div>
                     </div>
                     ${tierBadge}
                 </div>
@@ -1502,7 +1507,8 @@ async function performMicroFocusScan() {
 
                 // Hiển thị AR Subtitle strip tinh tế ở chân camera (hoàn toàn không có khung che trên vòng đỏ)
                 const topItem = microDetections[0];
-                showArSubtitle(`${topItem.hierarchy_label} ${topItem.display_relation} • ${topItem.cefr}`);
+                const readVn = topItem.vn_phonetic ? `🗣️ /${topItem.vn_phonetic}/ • ` : '';
+                showArSubtitle(`${topItem.hierarchy_label} ${readVn}${topItem.display_relation} • ${topItem.cefr}`);
 
                 if (statusHud) {
                     statusHud.innerHTML = `🔬 Soi thấy <b>${microDetections.length}</b> chi tiết vi mô của <b>${data.parent_vn}</b> (${data.inference_time_ms}ms)!`;
@@ -1749,15 +1755,21 @@ function drawDetectedBoundingBoxes() {
         canvasCtx.fillRect(x1, y1, boxW, boxH);
         canvasCtx.strokeRect(x1, y1, boxW, boxH);
 
-        // Chuẩn bị nhãn song ngữ: [DOMAIN] EN [CEFR] (conf%) và Tiếng Việt chuẩn xác
+        // Chuẩn bị nhãn song ngữ & phiên âm tiếng Việt: [DOMAIN] EN /vn_phonetic/ [CEFR] (conf%) và Tiếng Việt chuẩn xác
         const enWord = (part.word || "").toUpperCase();
         const cefr = part.cefr || "B1";
         const vnMeaning = part.meaning || "";
+        const vnPhonetic = part.vn_phonetic || "";
         const confPercent = Math.round((part.confidence || 0) * 100);
         const domainShort = (part.domain || "obj").slice(0, 3).toUpperCase();
 
-        const line1 = `[${domainShort}] ${enWord} [${cefr}] (${confPercent}%)`;
-        const line2 = vnMeaning ? `🇻🇳 ${vnMeaning}` : "";
+        const phoneticDisplay = vnPhonetic ? `/${vnPhonetic}/` : "";
+        const line1 = part.hierarchy_label
+            ? `${part.hierarchy_label} ${phoneticDisplay} [${cefr}] (${confPercent}%)`
+            : `[${domainShort}] ${enWord} ${phoneticDisplay} [${cefr}] (${confPercent}%)`;
+        const line2 = part.display_relation
+            ? `🇻🇳 ${part.display_relation}`
+            : (vnMeaning ? `🇻🇳 ${vnMeaning}` : "");
 
         canvasCtx.font = "bold 11px Inter, sans-serif";
         const w1 = canvasCtx.measureText(line1).width;
@@ -1809,6 +1821,7 @@ function registerDetectedParts(parts, objectCategory) {
         const item = {
             word: cleanWord,
             ipa: part.ipa || "",
+            vn_phonetic: part.vn_phonetic || "",
             cefr: cefrUpper,
             meaning: part.meaning || "Chi tiết vật thể",
             tier: part.tier || "functional",
