@@ -65,6 +65,13 @@ VIETNAMESE_PHONETIC_OVERRIDES: Dict[str, str] = {
     "pollen": "pol-lơn",
     "plant": "plen-t",
     "grass": "gra-x",
+    "grapes": "grây-ps",
+    "grape": "grêip",
+    "fruit": "phrút",
+    "cluster": "clát-x-tơ",
+    "vine": "va-in",
+    "apple": "ép-pồ",
+    "banana": "bơ-na-nơ",
 
     # Đồ vật & Công nghệ
     "laptop": "lép-tóp",

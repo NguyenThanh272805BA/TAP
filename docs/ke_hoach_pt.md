@@ -355,6 +355,85 @@
 
 ---
 
+## PHẦN XIV: CHIẾN LƯỢC HUẤN LUYỆN BỔ SUNG NÂNG CAO ĐỘ CHÍNH XÁC (OPEN-VOCABULARY FINE-TUNING & ADAPTATION) VÀ GÁN NHÃN AR MŨI TÊN CHỈ VẬT THỂ (CALLOUT ARROW ANNOTATION) [ ]
+
+### 14.1 Phân Tích Nguyên Nhân Gốc Rễ Gây Nhận Diện Sai Lệch (Root Cause Failure Analysis: Grapes vs. Hamburger) [ ]
+- **Hiện tượng thực tế**: Khi người dùng tải lên bức ảnh Full HD sắc nét chụp một chùm nho (`grapes`), hệ thống hoàn toàn không nhận diện được quả nho mà lại gán nhãn sai thành `hamburger`, đồng thời kích hoạt chuỗi từ vựng liên tưởng ẩm thực món ăn nhanh (`bun`, `patty`, `cheese`...).
+- **4 Nguyên nhân kỹ thuật cốt lõi**:
+  1. **Nghẽn cổ chai Danh sách Truy vấn Tĩnh (Static Candidate Queries Bottleneck)**: Mô hình OWL-ViT là Open-Vocabulary nhưng trong mã nguồn hiện tại (`vision_taxonomy.py`), danh sách text queries toàn cảnh được code cứng cố định 32 từ phổ biến (`burger`, `dish`, `plate`, `laptop`, `cat`...). Từ vựng `grapes`, `grape`, `fruit`, `vine`, `berry` **hoàn toàn vắng mặt** trong 32 queries này.
+  2. **Cơ chế Ép điểm Tương đồng Cosine (Forced Cosine Similarity Matching)**: Khi không có text query đúng thực tế, ma trận Cosine Similarity giữa Visual Embedding của chùm nho và 32 text queries buộc phải chọn query có điểm tương đồng cao nhất. Cụm nho hình tròn màu sẫm có phân bố đặc trưng thị giác gần với thực phẩm (`food`, `burger`) hơn là thiết bị điện tử (`laptop`) hay động vật (`cat`), dẫn đến việc mô hình gán nhãn sai nghiêm trọng.
+  3. **Thiếu Tầng Sàng Lọc Ngữ Nghĩa Toàn Cục (Absence of Global Semantic Pre-Filter)**: Hệ thống chưa có tầng trích xuất ngữ cảnh hình ảnh toàn cảnh (Zero-Shot Global Classifier) để quét nhanh $O(1)$ trên kho 5.830 từ vựng trước khi nạp vào bộ định vị không gian.
+  4. **Thiếu Ngưỡng Loại Bỏ Giả Lập (Lack of Unknown Entity Rejection)**: Hệ thống chưa thiết lập cơ chế lọc phủ định (Background / Unknown Filtering), ép mô hình luôn phải chọn 1 trong các queries định sẵn thay vì thông báo "Vật thể chưa xác định".
+
+### 14.2 Kiến Trúc Hai Giai Đoạn Động: Truy Xuất Toàn Cục $\rightarrow$ Định Vị Chi Tiết (Two-Stage Dynamic Open-Vocabulary Retrieval Pipeline) [ ]
+- **Giai đoạn 1: Sàng lọc Ngữ nghĩa Toàn cục Siêu nhanh (Global Semantic Screening via SigLIP/CLIP Image-Text Dot Product - O(1))**:
+  - Tiền tính toán trước ma trận nhúng văn bản (Pre-computed Normalized Text Embeddings $W_{text} \in \mathbb{R}^{5830 \times d}$) cho toàn bộ 5.830 từ vựng trong `taxonomy_forest_5000.json`.
+  - Khi người dùng nạp ảnh tĩnh hoặc khung hình camera, Vision Transformer Image Encoder trích xuất vector đặc trưng toàn cảnh $v_{img} \in \mathbb{R}^{d}$ chỉ trong $\sim 15\text{ms}$.
+  - Thực hiện phép nhân ma trận tích vô hướng $S = v_{img} \cdot W_{text}^T$ trên CPU qua chuẩn BLAS tối ưu.
+  - Tự động trích xuất Top-16 từ vựng có độ tương đồng ngữ nghĩa cao nhất xuất hiện trong ảnh (với ảnh chùm nho sẽ lập tức tìm ra: `grapes`, `grape`, `fruit`, `vine`, `leaf`, `stem`, `berry` với score $> 0.85$).
+- **Giai đoạn 2: Định vị & Đóng Bounding Box Trúng Đích (Targeted OWL-ViT Localization)**:
+  - Nạp chính xác danh sách Top-16 từ vựng động vừa tìm được vào OWL-ViT Text Encoder thay cho danh sách 32 từ cứng nhắc.
+  - Bổ sung cơ chế Ngưỡng Loại Trừ (Rejection Confidence Threshold $\tau = 0.22$): Nếu điểm tương đồng cao nhất của tất cả nhãn vẫn dưới $\tau$, hệ thống hiển thị trạng thái `🔍 Đang phân tích vật thể mới...` thay vì đoán bừa sang hamburger.
+
+### 14.3 Chiến Lược Huấn Luyện Bổ Sung & Tinh Chỉnh Miền Dữ Liệu (Vision Model Fine-Tuning & Adaptation Pipeline) [ ]
+- **Thu thập & Chuẩn hóa Tập Dữ liệu Đa Miền (Target Domain Datasets)**:
+  - *LVIS Dataset*: 1.203 danh mục vật thể phong phú với phân bố đuôi dài (Long-Tail Distribution), chứa chi tiết hoa quả và nông sản.
+  - *Fruits-360 & OpenImages V7 (Food & Nature)*: Hơn 90.000 hình ảnh hoa quả đa góc độ, độ phân giải cao (nho xanh, nho tím, dưa hấu, táo, thanh long, chuối...).
+  - *Vietnam Daily Life Objects*: Tập dữ liệu đời sống, ẩm thực và trái cây nhiệt đới đặc thù Việt Nam.
+- **Phương pháp Huấn luyện Hiệu quả Tham số PEFT / LoRA (Parameter-Efficient Fine-Tuning)**:
+  - Đóng băng (Freeze) toàn bộ trọng số của Vision Transformer Backbone (ViT-B/16 hoặc ViT-L/14) để bảo toàn khả năng nhận diện tổng quát.
+  - Tích hợp LoRA Adapters (Rank $r=16$, $\alpha=32$, Dropout $0.05$) vào các khối Attention Projection ($W_q, W_v$) và Text-Image Cross-Attention Heads.
+  - Huấn luyện nhẹ (Fine-tuning) lớp Bounding Box Regression Head và Contrastive Projection Layer.
+- **Hàm Mất Mát Đa Nhiệm Chống Nhận Nhầm Hình Học (Contrastive Geometry-Aware Loss Formulation)**:
+  - $\mathcal{L}_{total} = \mathcal{L}_{focal} + \lambda_{iou} \mathcal{L}_{GIoU} + \lambda_{contrast} \mathcal{L}_{InfoNCE} + \lambda_{neg} \mathcal{L}_{background}$
+  - Gia tăng trọng số Contrastive Loss $\lambda_{contrast}$ giữa các cặp âm tính dễ nhầm lẫn (Hard Negative Pairs): Ép vector biểu diễn của quả tròn tự nhiên (nho, quả sung) cách xa khỏi các khối hình tròn nhân tạo (bánh burger, bánh quy, đĩa tròn).
+- **Lượng Tử Hóa & Triển Khai Offline 100% (INT8 / ONNX Runtime Deployment)**:
+  - Sau khi huấn luyện LoRA, hợp nhất (Merge) trọng số LoRA vào mô hình gốc và xuất sang định dạng ONNX FP16 / INT8 qua OpenVINO.
+  - Tốc độ suy luận đạt $\le 65\text{ms}$ trên CPU thông thường, duy trì tính độc lập hoàn toàn không phụ thuộc Cloud API.
+
+### 14.4 Công Nghệ Gán Nhãn AR Mũi Tên Chỉ Vật Thể Trực Tiếp Vào Ảnh (AR Callout Arrow Annotation & Visual Dictionary) [ ]
+- **Triết lý Thiết kế: Từ điển Tranh Trực quan (Visual Dictionary Paradigm)**:
+  - Loại bỏ hoàn toàn các khung hộp chữ nhật Bounding Box cứng nhắc che khuất mất chi tiết và vẻ đẹp nguyên bản của bức ảnh.
+  - Chuyển đổi sang giao diện **Gán nhãn Mũi tên AR (AR Callout Arrow Annotation)** mô phỏng phong cách bách khoa toàn thư hình ảnh chuẩn quốc tế (Dorling Kindersley Visual Dictionary).
+- **Thuật toán Bố Cục Điểm Neo & Đường Dẫn Chống Đè Nhãn (Anti-Collision Leader Line & Anchor Placement)**:
+  - **Điểm neo mục tiêu (Anchor Target Pinpoint)**: Xác định tọa độ tâm thực thể $C(x_0, y_0) = \left(\frac{x_{min}+x_{max}}{2}, \frac{y_{min}+y_{max}}{2}\right)$ kèm một chấm tròn định vị phát sáng (Pulsing Target Dot) đường kính 6px.
+  - **Thẻ nhãn Từ vựng (Callout Label Badge)**: Đặt ở vùng trống thông thoáng xung quanh vật thể (Top-Left, Top-Right, Bottom-Left, Bottom-Right).
+  - **Thuật toán Chống Chồng Chéo Nhãn (Force-Directed Anti-Collision)**: Tự động tính toán khoảng cách và đẩy các thẻ nhãn ra xa nhau khi trong ảnh xuất hiện nhiều vật thể nằm san sát, đảm bảo không bao giờ bị đè chữ.
+- **Cấu Trúc Đường Dẫn Mũi Tên AR Neon (Curved / Orthogonal Neon Leader Lines)**:
+  - Đường vẽ nối từ Thẻ nhãn đến Điểm neo gồm 3 đoạn liên kết:
+    1. *Thanh đế nhãn nằm ngang (Horizontal Base Line)*: Nằm ngay dưới chân thẻ nhãn.
+    2. *Đường cong Bézier thanh thoát hoặc đường gấp khúc $90^\circ$ (Leader Line Segment)*.
+    3. *Đầu mũi tên nhọn (Arrowhead Marker)*: Góc nhọn $30^\circ$, dài 8px, trỏ chính xác vào điểm neo của vật thể.
+  - Hiệu ứng phát sáng neon (Glow Shadow Effect) phân màu trực quan theo miền:
+    - 🍏 Xanh lá tươi (`#4ade80`): Sinh vật, hoa quả, cây cối, chùm nho.
+    - 💻 Xanh ngọc (`#22d3ee`): Đồ vật, thiết bị công nghệ, đồ gia dụng.
+    - 🌇 Vàng hổ phách (`#fbbf24`): Khung cảnh không gian, bàn tiệc, đường phố.
+    - 🎯 Đỏ neon rực rỡ (`#f43f5e`): Tiêu điểm đang được Vòng đỏ soi chiếu.
+- **Thành Phần Thẻ Nhãn Học Thuật Đa Tầng (Rich Semantic Callout Badge)**:
+  - Dòng 1: Từ tiếng Anh in đậm + Phiên âm tiếng Việt dễ đọc + Cấp độ CEFR: `GRAPES 🗣️ /rây-ps/ [A2]`.
+  - Dòng 2: Bản dịch tiếng Việt chuẩn xác kèm biểu tượng: `🇻🇳 Chùm nho tươi`.
+  - Tương tác thông minh: Nhấp trực tiếp vào Thẻ nhãn hoặc Mũi tên để nghe phát âm bản xứ (TTS), ghim từ vào Khay ghép câu, hoặc soi kính hiển vi vi mô.
+
+### 14.5 Cơ Chế Vòng Lặp Phản Hồi Tự Sửa Lỗi & Tự Huấn Luyện (Active Learning & User Correction Loop) [ ]
+- **Nút "Hiệu Chỉnh Nhãn Nhanh" (One-Click User Correction)**: Khi hệ thống nhận diện chưa chuẩn xác, người dùng có thể nhấp trực tiếp vào thẻ nhãn để chọn từ đúng từ danh sách gợi ý hoặc gõ từ mới.
+- **Bộ Đệm Tự Giám Sát Cục Bộ (Self-Correction Data Buffer)**: Khi người dùng sửa nhãn (ví dụ sửa từ `hamburger` thành `grapes`), hệ thống tự động lưu mẫu ảnh crop cùng nhãn hiệu chuẩn vào thư mục `data/user_feedback/` để phục vụ các đợt fine-tuning định kỳ.
+- **Bộ Nhớ Nhúng Vector Tức Thời (Few-Shot Local Vector Embedding Cache)**:
+  - Vector đặc trưng của ảnh vừa được người dùng sửa nhãn sẽ được lưu ngay vào SQLite / FAISS cache cục bộ.
+  - Lần sau khi người dùng quét lại bức ảnh đó hoặc góc chụp tương tự, hệ thống đối soát $K$-Nearest Neighbors và lập tức trả về nhãn chính xác `grapes` với độ ưu tiên tuyệt đối $100\%$ mà không cần phải chờ đợi đợt huấn luyện lại toàn bộ mô hình.
+
+### 14.6 Lộ Trình Triển Khai & Chỉ Số Nghiệm Thu Đo Lường (Roadmap & Acceptance Metrics) [ ]
+- **Giai đoạn 1 (Tuần 1 - UI & Visual Dictionary)**:
+  - Nâng cấp module vẽ Canvas trong `vision_arena.js` từ Bounding Box chữ nhật sang AR Callout Arrow Annotation với đường dẫn Bézier cong mềm mại và Thẻ nhãn đa tầng. [ ]
+- **Giai đoạn 2 (Tuần 2 - Dynamic Two-Stage Pipeline)**:
+  - Tích hợp SigLIP / MobileCLIP Image-Text Dot Product O(1) để sàng lọc Top-16 queries động từ 5.830 từ vựng trước khi nạp vào OWL-ViT, chấm dứt hoàn toàn giới hạn 32 queries tĩnh. [ ]
+- **Giai đoạn 3 (Tuần 3 - Dataset Curation & LoRA Fine-Tuning)**:
+  - Xây dựng tập dữ liệu 50.000 mẫu hoa quả, ẩm thực và đời sống Việt Nam; tiến hành huấn luyện LoRA Adapter cho Vision Detection Head. [ ]
+- **Giai đoạn 4 (Tuần 4 - False Positive Benchmark & Triển khai)**:
+  - Kiểm thử đối chuẩn trên Bộ 200 ảnh Full HD thực tế (gồm chùm nho, đĩa hoa quả, đồ ăn nhanh, dụng cụ học tập). [ ]
+  - Đảm bảo độ chính xác Top-1 đạt $\ge 94\%$, triệt tiêu 100% hiện tượng nhận nhầm nghiêm trọng giữa hoa quả và hamburger, thời gian suy luận $\le 80\text{ms}$ trên CPU. [ ]
+
+---
+
 *Kế hoạch được phê duyệt và lưu trữ tại*: [`docs/ke_hoach_pt.md`](file:///d:/Python/TAP/docs/ke_hoach_pt.md)
 
 

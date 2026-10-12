@@ -37,7 +37,8 @@ from app.ml_models.vision_taxonomy import (
     get_micro_queries,
     lookup_forest_word,
     get_facial_expressions,
-    get_taxonomy_forest
+    get_taxonomy_forest,
+    get_associated_vocabulary
 )
 
 # Đường dẫn thư mục weights local
@@ -233,7 +234,15 @@ class LocalOwlVitEngine:
         # 2. Khung cảnh không gian (Scene Type)
         words_set = set(w.lower() for w in detected_words)
 
-        if any(k in words_set for k in ["laptop", "keyboard", "monitor", "mouse", "desk", "notebook", "pen", "bookshelf"]):
+        if any(k in words_set for k in ["grapes", "grape", "fruit", "cluster", "vine", "berry", "apple", "banana"]):
+            scene = "Orchard, Farm & Fresh Produce"
+            scene_vn = "Vườn cây trái & Nông sản tươi sạch"
+            domain_focus = "nature"
+        elif any(k in words_set for k in ["burger", "hamburger", "sandwich", "pizza", "food", "dish", "plate", "wine", "glass", "fork", "spoon", "meat", "bread", "cheese", "tablecloth", "napkin"]):
+            scene = "Dining Table & Culinary Space"
+            scene_vn = "Bàn ăn & Không gian ẩm thực"
+            domain_focus = "culinary"
+        elif any(k in words_set for k in ["laptop", "keyboard", "monitor", "mouse", "desk", "notebook", "pen", "bookshelf"]):
             scene = "Study Room / Workspace"
             scene_vn = "Không gian học tập & làm việc"
             domain_focus = "academic"
@@ -241,9 +250,9 @@ class LocalOwlVitEngine:
             scene = "Living Space / Home"
             scene_vn = "Không gian sinh hoạt gia đình"
             domain_focus = "domestic"
-        elif any(k in words_set for k in ["cup", "mug", "coffee", "tea", "bottle", "plate", "fork"]):
-            scene = "Cafe / Dining Area"
-            scene_vn = "Khu vực ẩm thực & quán cà phê"
+        elif any(k in words_set for k in ["cup", "mug", "coffee", "tea", "bottle"]):
+            scene = "Cafe & Beverage Area"
+            scene_vn = "Quán cà phê & Khu đồ uống"
             domain_focus = "culinary"
         elif any(k in words_set for k in ["tree", "flower", "grass", "plant", "leaf", "bird"]) or green_excess > 12:
             scene = "Outdoor Park / Nature"
@@ -254,12 +263,15 @@ class LocalOwlVitEngine:
             scene_vn = "Đường phố đô thị nhộn nhịp"
             domain_focus = "urban"
         else:
-            scene = "Indoor Multi-Purpose Room"
-            scene_vn = "Không gian phòng đa năng"
+            scene = "Modern Living Space"
+            scene_vn = "Không gian sinh hoạt hiện đại"
             domain_focus = "indoor"
 
         # 3. Bầu không khí (Atmosphere)
-        if "Nature" in scene or green_excess > 12:
+        if "Culinary" in scene or "Dining" in scene:
+            atmosphere = "Delicious & Cozy"
+            atmosphere_vn = "Ngon miệng & Ấm cúng"
+        elif "Nature" in scene or green_excess > 12:
             atmosphere = "Fresh & Tranquil"
             atmosphere_vn = "Trong lành & Thanh bình"
         elif "Cafe" in scene or "Living" in scene:
@@ -270,7 +282,7 @@ class LocalOwlVitEngine:
             atmosphere_vn = "Yên tĩnh & Tập trung cao độ"
         else:
             atmosphere = "Balanced & Clear"
-            atmosphere_vn = "Cân bằng & Khoáng đạt"
+            atmosphere_vn = "Cân bằng & Thoáng đãng"
 
         return {
             "scene_type": scene,
@@ -288,44 +300,88 @@ class LocalOwlVitEngine:
     # =========================================================================
     @staticmethod
     def _synthesize_contextual_caption(scene_info: Dict[str, Any], detected_parts: List[Dict[str, Any]]) -> Dict[str, str]:
-        """Tự động sinh câu chú thích hoàn chỉnh kết hợp cả 4 miền chuẩn CEFR B1-C1"""
+        """Tự động sinh câu chú thích tự nhiên, phong phú, đúng chủ đề thực tế chuẩn CEFR B1-C1"""
         if not detected_parts:
             return {
-                "en": f"A peaceful view in a {scene_info['scene_type'].lower()} under {scene_info['lighting'].lower()}.",
-                "vn": f"Khung cảnh yên bình trong {scene_info['scene_vn'].lower()} dưới {scene_info['lighting_vn'].lower()}."
+                "en": f"A serene setting in a {scene_info['scene_type'].lower()} under {scene_info['lighting'].lower()}.",
+                "vn": f"Khung cảnh thanh bình trong {scene_info['scene_vn'].lower()} dưới {scene_info['lighting_vn'].lower()}."
             }
 
-        objects_list = [p['word'] for p in detected_parts if p.get('domain') == 'objects']
-        creatures_list = [p['word'] for p in detected_parts if p.get('domain') == 'creatures']
-        env_list = [p['word'] for p in detected_parts if p.get('domain') == 'environment']
+        words = [p['word'].lower() for p in detected_parts]
+        scene_vn = scene_info.get("scene_vn", "không gian sinh hoạt").lower()
+        lighting_vn = scene_info.get("lighting_vn", "ánh sáng tự nhiên").lower()
 
-        scene_type = scene_info["scene_type"]
-        scene_vn = scene_info["scene_vn"]
-        lighting_vn = scene_info["lighting_vn"].lower()
+        # 0. Chủ đề Trái cây & Hoa quả tươi (Fresh Fruits & Produce)
+        if any(w in ["grapes", "grape", "fruit", "cluster", "vine", "berry", "apple", "banana"] for w in words):
+            if any(w in ["grapes", "grape"] for w in words):
+                return {
+                    "en": "A lush, vibrant cluster of fresh grapes radiating natural sweetness in a serene setting.",
+                    "vn": "Chùm nho mọng nước tươi ngon lan tỏa vị ngọt tự nhiên trong khung cảnh thanh mát."
+                }
+            return {
+                "en": "A delightful variety of fresh, ripe fruits offering rich natural nutrition and vitality.",
+                "vn": "Trái cây tươi chín mọng ngon mắt mang lại nguồn dinh dưỡng dồi dào và tươi mới."
+            }
 
-        if creatures_list and objects_list:
-            c = creatures_list[0]
-            o = objects_list[0]
-            en = f"In a {scene_type.lower()}, a {c} is positioned near a {o} under {scene_info['lighting'].lower()}."
-            vn = f"Tại {scene_vn.lower()}, {c} xuất hiện gần {o} dưới {lighting_vn}."
-        elif len(objects_list) >= 2:
-            o1, o2 = objects_list[0], objects_list[1]
-            en = f"Inside the {scene_type.lower()}, a {o1} and a {o2} are clearly visible under {scene_info['lighting'].lower()}."
-            vn = f"Bên trong {scene_vn.lower()}, {o1} và {o2} được nhận diện rõ nét dưới {lighting_vn}."
-        elif objects_list:
-            o = objects_list[0]
-            en = f"A {o} is situated in the {scene_type.lower()} with {scene_info['atmosphere'].lower()} ambiance."
-            vn = f"{o.capitalize()} hiện diện trong {scene_vn.lower()} mang bầu không khí {scene_info['atmosphere_vn'].lower()}."
-        elif creatures_list:
-            c = creatures_list[0]
-            en = f"A vibrant {c} adds life to the {scene_type.lower()} under {scene_info['lighting'].lower()}."
-            vn = f"{c.capitalize()} sống động mang lại sức sống cho {scene_vn.lower()} dưới {lighting_vn}."
-        else:
-            top_word = detected_parts[0]['word']
-            en = f"The view reveals {top_word} in the {scene_type.lower()} under {scene_info['lighting'].lower()}."
-            vn = f"Khung cảnh ghi nhận {top_word} trong {scene_vn.lower()} dưới {lighting_vn}."
+        # 1. Chủ đề Ẩm thực & Bàn ăn
+        if any(w in ["burger", "sandwich", "food", "dish", "plate", "wine", "meat", "bread"] for w in words):
+            if "burger" in words and any(w in ["wine", "glass"] for w in words):
+                return {
+                    "en": "A freshly prepared burger served on a plate with red wine on a warm dining table.",
+                    "vn": "Bánh kẹp burger thơm ngon được bày trên đĩa cùng rượu vang trên bàn ăn ấm cúng."
+                }
+            elif "burger" in words:
+                return {
+                    "en": "A delicious savory burger served on a plate ready for a satisfying meal.",
+                    "vn": "Bánh kẹp burger đậm đà thơm ngon được bày trên đĩa sẵn sàng cho bữa ăn."
+                }
+            else:
+                return {
+                    "en": "A delightful meal nicely arranged on the dining table in an inviting atmosphere.",
+                    "vn": "Bữa ăn ngon miệng được bày biện chu đáo trên bàn ăn trong bầu không khí ấm cúng."
+                }
 
-        return {"en": en, "vn": vn}
+        # 2. Chủ đề Mèo & Thú cưng
+        if any(w in ["cat", "kitten"] for w in words):
+            return {
+                "en": "An adorable cat comfortably resting in a peaceful, cozy indoor space.",
+                "vn": "Chú mèo đáng yêu đang nghỉ ngơi thoải mái trong không gian ấm áp, yên bình."
+            }
+
+        # 3. Chủ đề Chó cưng
+        if any(w in ["dog", "puppy"] for w in words):
+            return {
+                "en": "A friendly and playful dog bringing energetic vibes to the room.",
+                "vn": "Chú chó thân thiện và tinh nghịch mang lại bầu không khí vui vẻ cho căn phòng."
+            }
+
+        # 4. Chủ đề Công nghệ & Bàn làm việc
+        if any(w in ["laptop", "computer", "keyboard", "monitor"] for w in words):
+            return {
+                "en": "A modern digital workspace thoughtfully arranged for focused and productive study.",
+                "vn": "Góc làm việc hiện đại được sắp xếp ngăn nắp phục vụ học tập và làm việc hiệu quả."
+            }
+
+        # 5. Chủ đề Quán Cà phê & Đồ uống
+        if any(w in ["coffee", "cup", "mug", "tea"] for w in words):
+            return {
+                "en": "A warm cup of coffee offering a relaxing break in a cozy environment.",
+                "vn": "Tách cà phê ấm áp mang lại phút giây thư giãn trong không gian dễ chịu."
+            }
+
+        # 6. Chủ đề Cây cối & Thiên nhiên
+        if any(w in ["tree", "plant", "flower", "leaf"] for w in words):
+            return {
+                "en": "Lush green plants refreshing the natural atmosphere under gentle sunlight.",
+                "vn": "Cây xanh tươi mát làm bừng sáng không gian tự nhiên dưới ánh nắng dịu nhẹ."
+            }
+
+        # Mặc định: Sinh câu mượt mà theo vật thể đầu tiên
+        top_name = detected_parts[0].get('display_name', detected_parts[0]['word'].capitalize())
+        return {
+            "en": f"A clear focus on {top_name.lower()} within {scene_info['scene_type'].lower()} under {scene_info['lighting'].lower()}.",
+            "vn": f"Khung cảnh ghi nhận {top_name} trong {scene_vn} dưới {lighting_vn}."
+        }
 
     # =========================================================================
     # CORE PIPELINE: NHẬN DIỆN THỊ GIÁC TOÀN CẢNH ĐA MIỀN (OMNI-SCAN)
@@ -495,6 +551,9 @@ class LocalOwlVitEngine:
             if not primary_obj and len(detected_parts) > 0:
                 primary_obj = detected_parts[0]["word"]
 
+            # 10. Tự động sinh chùm từ vựng liên tưởng phong phú (15 - 22 từ) theo chủ đề bức ảnh
+            associated_vocab = get_associated_vocabulary(primary_obj, detected_parts)
+
             final_result = {
                 "status": "success",
                 "primary_object": primary_obj or "unknown",
@@ -504,7 +563,8 @@ class LocalOwlVitEngine:
                 "scene_info": scene_info,
                 "context_caption": context_caption,
                 "inference_time_ms": infer_elapsed,
-                "detected_parts": detected_parts
+                "detected_parts": detected_parts,
+                "associated_vocabulary": associated_vocab
             }
 
             # Cập nhật cache

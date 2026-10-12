@@ -19,7 +19,7 @@ let currentDetectedParts = [];
 let primaryObject = "object";
 let scannedWordRegistry = [];
 let currentOmniDomain = "all"; // 'all' | 'objects' | 'creatures' | 'scenes' | 'environment'
-let currentWordFilter = "all"; // 'all' | 'objects' | 'creatures' | 'scenes' | 'environment' | 'connectors'
+let currentWordFilter = "all"; // 'all' | 'objects' | 'creatures' | 'scenes' | 'environment'
 let currentLevelFilter = "all"; // 'all' | 'basic' | 'advanced'
 let selectedObjectCategory = "all";
 
@@ -319,42 +319,43 @@ function setOmniDomain(domain) {
 }
 
 function updateOmniSceneHud(sceneInfo, contextCaption, domainBreakdown) {
-    const hudContainer = document.getElementById("omni-scene-hud");
-    if (!hudContainer) return;
+    const stripContainer = document.getElementById("omni-scene-strip");
+    if (!stripContainer) return;
 
     if (!sceneInfo && !contextCaption) {
-        hudContainer.style.display = "none";
+        stripContainer.style.display = "none";
         return;
     }
 
-    hudContainer.style.display = "block";
+    stripContainer.style.display = "block";
 
     if (sceneInfo) {
-        const sceneEl = document.getElementById("hud-scene-text");
+        const sceneEl = document.getElementById("strip-scene-text");
         if (sceneEl) {
             sceneEl.innerText = `${sceneInfo.scene_vn || sceneInfo.scene_type || "Không gian mở"}`;
         }
-        const lightingEl = document.getElementById("hud-lighting-text");
+        const lightingEl = document.getElementById("strip-lighting-text");
         if (lightingEl) {
             lightingEl.innerText = `${sceneInfo.lighting_vn || sceneInfo.lighting_condition || "Ánh sáng tự nhiên"}`;
         }
-        const atmosphereEl = document.getElementById("hud-atmosphere-text");
+        const atmosphereEl = document.getElementById("strip-atmosphere-text");
         if (atmosphereEl) {
             atmosphereEl.innerText = `${sceneInfo.atmosphere_vn || sceneInfo.atmosphere || "Cân bằng"}`;
         }
     }
 
     if (contextCaption) {
-        const enEl = document.getElementById("hud-caption-en");
-        const vnEl = document.getElementById("hud-caption-vn");
+        const enEl = document.getElementById("strip-caption-en");
+        const vnEl = document.getElementById("strip-caption-vn");
         if (enEl) enEl.innerText = contextCaption.en || "";
         if (vnEl) vnEl.innerText = contextCaption.vn || "";
+    }
+}
 
-        const subtitleStrip = document.getElementById("camera-ar-subtitle-strip");
-        if (subtitleStrip && contextCaption.en) {
-            subtitleStrip.innerText = contextCaption.en;
-            subtitleStrip.style.display = "block";
-        }
+function toggleSceneStrip(show) {
+    const stripContainer = document.getElementById("omni-scene-strip");
+    if (stripContainer) {
+        stripContainer.style.display = show ? "block" : "none";
     }
 }
 
@@ -1389,7 +1390,7 @@ async function captureAndScan() {
             currentDetectedParts = data.detected_parts || [];
             primaryObject = data.primary_object || "object";
 
-            registerDetectedParts(currentDetectedParts, primaryObject);
+            registerDetectedParts(currentDetectedParts, primaryObject, data.associated_vocabulary || [], true);
             updateOmniSceneHud(data.scene_info, data.context_caption, data.domain_breakdown);
             document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject}</b> (${currentDetectedParts.length} vật thể/chi tiết)`;
 
@@ -1683,7 +1684,7 @@ async function loadSamplePreset(type) {
             currentDetectedParts = data.detected_parts || [];
             primaryObject = data.primary_object || type;
 
-            registerDetectedParts(currentDetectedParts, primaryObject);
+            registerDetectedParts(currentDetectedParts, primaryObject, data.associated_vocabulary || [], true);
             updateOmniSceneHud(data.scene_info, data.context_caption, data.domain_breakdown);
             document.getElementById("status-hud").innerHTML = `✅ Phát hiện: <b>${primaryObject.toUpperCase()}</b> (${currentDetectedParts.length} chi tiết)`;
 
@@ -1747,15 +1748,54 @@ function drawDetectedBoundingBoxes() {
         canvasCtx.save();
         canvasCtx.lineWidth = lineWidth;
         canvasCtx.strokeStyle = themeColor;
-        canvasCtx.fillStyle = isReticleTarget ? "rgba(244, 63, 94, 0.22)" : "rgba(15, 23, 42, 0.25)";
-        canvasCtx.shadowBlur = isReticleTarget ? 18 : 10;
+        canvasCtx.shadowBlur = isReticleTarget ? 16 : 8;
         canvasCtx.shadowColor = shadowColor;
 
-        // Vẽ hộp bao quanh vật thể
-        canvasCtx.fillRect(x1, y1, boxW, boxH);
-        canvasCtx.strokeRect(x1, y1, boxW, boxH);
+        // 1. GÓC NGẮM TINH TẾ (Subtle Corner Brackets - không che khuất ảnh)
+        const cornerLen = Math.min(14, boxW * 0.28, boxH * 0.28);
+        canvasCtx.beginPath();
+        // Góc trên-trái
+        canvasCtx.moveTo(x1, y1 + cornerLen);
+        canvasCtx.lineTo(x1, y1);
+        canvasCtx.lineTo(x1 + cornerLen, y1);
+        // Góc trên-phải
+        canvasCtx.moveTo(x1 + boxW - cornerLen, y1);
+        canvasCtx.lineTo(x1 + boxW, y1);
+        canvasCtx.lineTo(x1 + boxW, y1 + cornerLen);
+        // Góc dưới-trái
+        canvasCtx.moveTo(x1, y1 + boxH - cornerLen);
+        canvasCtx.lineTo(x1, y1 + boxH);
+        canvasCtx.lineTo(x1 + cornerLen, y1 + boxH);
+        // Góc dưới-phải
+        canvasCtx.moveTo(x1 + boxW - cornerLen, y1 + boxH);
+        canvasCtx.lineTo(x1 + boxW, y1 + boxH);
+        canvasCtx.lineTo(x1 + boxW, y1 + boxH - cornerLen);
+        canvasCtx.stroke();
 
-        // Chuẩn bị nhãn song ngữ & phiên âm tiếng Việt: [DOMAIN] EN /vn_phonetic/ [CEFR] (conf%) và Tiếng Việt chuẩn xác
+        // Nền mờ siêu nhẹ khi là tiêu điểm
+        if (isReticleTarget) {
+            canvasCtx.fillStyle = "rgba(244, 63, 94, 0.14)";
+            canvasCtx.fillRect(x1, y1, boxW, boxH);
+        }
+
+        // 2. TÂM ĐIỂM NEO PHÁT SÁNG (Target Pinpoint Center Dot)
+        const cx = x1 + boxW / 2;
+        const cy = y1 + boxH / 2;
+
+        canvasCtx.beginPath();
+        canvasCtx.arc(cx, cy, isReticleTarget ? 4 : 3, 0, Math.PI * 2);
+        canvasCtx.fillStyle = themeColor;
+        canvasCtx.shadowBlur = 12;
+        canvasCtx.shadowColor = themeColor;
+        canvasCtx.fill();
+
+        canvasCtx.beginPath();
+        canvasCtx.arc(cx, cy, isReticleTarget ? 8 : 6.5, 0, Math.PI * 2);
+        canvasCtx.strokeStyle = themeColor;
+        canvasCtx.lineWidth = 1;
+        canvasCtx.stroke();
+
+        // 3. CHUẨN BỊ NỘI DUNG NHÃN TỪ VỰNG
         const enWord = (part.word || "").toUpperCase();
         const cefr = part.cefr || "B1";
         const vnMeaning = part.meaning || "";
@@ -1765,8 +1805,8 @@ function drawDetectedBoundingBoxes() {
 
         const phoneticDisplay = vnPhonetic ? `/${vnPhonetic}/` : "";
         const line1 = part.hierarchy_label
-            ? `${part.hierarchy_label} ${phoneticDisplay} [${cefr}] (${confPercent}%)`
-            : `[${domainShort}] ${enWord} ${phoneticDisplay} [${cefr}] (${confPercent}%)`;
+            ? `${part.hierarchy_label} ${phoneticDisplay} [${cefr}]`
+            : `[${domainShort}] ${enWord} ${phoneticDisplay} [${cefr}]`;
         const line2 = part.display_relation
             ? `🇻🇳 ${part.display_relation}`
             : (vnMeaning ? `🇻🇳 ${vnMeaning}` : "");
@@ -1775,27 +1815,87 @@ function drawDetectedBoundingBoxes() {
         const w1 = canvasCtx.measureText(line1).width;
         canvasCtx.font = "normal 11px Inter, sans-serif";
         const w2 = canvasCtx.measureText(line2).width;
-        const badgeW = Math.max(w1, w2) + 14;
-        const badgeH = line2 ? 34 : 20;
-        const badgeY = Math.max(0, y1 - badgeH - 3);
+        const badgeW = Math.max(w1, w2) + 20;
+        const badgeH = line2 ? 34 : 22;
 
-        // Nền nhãn kính mờ Cyberpunk tương phản cao
-        canvasCtx.fillStyle = "rgba(2, 6, 23, 0.92)";
-        canvasCtx.fillRect(x1, badgeY, badgeW, badgeH);
+        // 4. TÍNH VỊ TRÍ THẺ NHÃN (Smart Callout Placement)
+        let badgeY;
+        let isAbove = true;
+        if (cy > h * 0.45) {
+            badgeY = Math.max(10, y1 - badgeH - 24);
+            isAbove = true;
+        } else {
+            badgeY = Math.min(h - badgeH - 10, y1 + boxH + 24);
+            isAbove = false;
+        }
+
+        let badgeX = Math.max(10, Math.min(w - badgeW - 10, cx - badgeW / 2));
+
+        // 5. ĐƯỜNG DẪN AR & MŨI TÊN CHỈ ĐÍCH DANH VẬT THỂ (AR Leader Line & Callout Arrow)
+        const startLineX = badgeX + badgeW / 2;
+        const startLineY = isAbove ? (badgeY + badgeH) : badgeY;
+
+        // Vẽ đường cong mềm mại từ thẻ nhãn đến tâm vật thể
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(startLineX, startLineY);
+        const midY = (startLineY + cy) / 2;
+        canvasCtx.bezierCurveTo(startLineX, midY, cx, midY, cx, cy);
         canvasCtx.strokeStyle = themeColor;
-        canvasCtx.lineWidth = 1;
-        canvasCtx.strokeRect(x1, badgeY, badgeW, badgeH);
+        canvasCtx.lineWidth = isReticleTarget ? 2.4 : 1.7;
+        canvasCtx.shadowBlur = 8;
+        canvasCtx.shadowColor = themeColor;
+        canvasCtx.stroke();
 
-        // Dòng 1: Miền + Tiếng Anh + Cấp độ CEFR + Độ tin cậy
+        // Vẽ Mũi tên nhọn trỏ vào tâm (cx, cy)
+        const angle = Math.atan2(cy - midY, cx - startLineX);
+        const arrowLen = 9;
+        const arrowAngle = Math.PI / 6;
+
+        canvasCtx.beginPath();
+        canvasCtx.moveTo(cx, cy);
+        canvasCtx.lineTo(
+            cx - arrowLen * Math.cos(angle - arrowAngle),
+            cy - arrowLen * Math.sin(angle - arrowAngle)
+        );
+        canvasCtx.lineTo(
+            cx - arrowLen * Math.cos(angle + arrowAngle),
+            cy - arrowLen * Math.sin(angle + arrowAngle)
+        );
+        canvasCtx.closePath();
+        canvasCtx.fillStyle = themeColor;
+        canvasCtx.fill();
+
+        // 6. THẺ NHÃN AR GLASSMORPHISM CÔNG NGHỆ CAO
+        // Vẽ hộp nhãn bo góc
+        const radius = 6;
+        canvasCtx.beginPath();
+        if (canvasCtx.roundRect) {
+            canvasCtx.roundRect(badgeX, badgeY, badgeW, badgeH, radius);
+        } else {
+            canvasCtx.rect(badgeX, badgeY, badgeW, badgeH);
+        }
+        canvasCtx.fillStyle = "rgba(4, 9, 23, 0.94)";
+        canvasCtx.fill();
+        canvasCtx.strokeStyle = themeColor;
+        canvasCtx.lineWidth = 1.2;
+        canvasCtx.stroke();
+
+        // Chấm tròn nhỏ trang trí góc trái thẻ nhãn
+        canvasCtx.beginPath();
+        canvasCtx.arc(badgeX + 8, badgeY + 11, 2.5, 0, Math.PI * 2);
+        canvasCtx.fillStyle = themeColor;
+        canvasCtx.fill();
+
+        // Dòng 1: Miền + Tiếng Anh + Phiên âm + Cấp độ CEFR
         canvasCtx.fillStyle = themeColor;
         canvasCtx.font = "bold 11px Inter, sans-serif";
-        canvasCtx.fillText(line1, x1 + 6, badgeY + 13);
+        canvasCtx.fillText(line1, badgeX + 15, badgeY + 14);
 
-        // Dòng 2: Bản dịch tiếng Việt chuẩn xác
+        // Dòng 2: Bản dịch tiếng Việt chuẩn xác (màu vàng hổ phách nổi bật)
         if (line2) {
-            canvasCtx.fillStyle = "#fef08a"; // Màu vàng hổ phách nổi bật
+            canvasCtx.fillStyle = "#fef08a";
             canvasCtx.font = "bold 10.5px Inter, sans-serif";
-            canvasCtx.fillText(line2, x1 + 6, badgeY + 27);
+            canvasCtx.fillText(line2, badgeX + 15, badgeY + 28);
         }
 
         canvasCtx.restore();
@@ -1806,63 +1906,75 @@ function drawDetectedBoundingBoxes() {
  * 7. QUẢN LÝ KHO TỪ VỰNG THỊ GIÁC, BỘ LỌC ĐỒ VẬT & CẤP ĐỘ CEFR
  */
 
-function registerDetectedParts(parts, objectCategory) {
-    if (!parts) return;
+function registerDetectedParts(parts, objectCategory, associatedVocab = [], shouldResetExisting = false) {
+    if (!parts && (!associatedVocab || associatedVocab.length === 0)) return;
     primaryObject = objectCategory || primaryObject || "object";
 
-    // 1. Nạp các từ chi tiết bộ phận vật thể (Loại bỏ trùng lặp)
-    parts.forEach(part => {
-        const cleanWord = (part.word || "").trim().toLowerCase();
-        if (!cleanWord) return;
-        const existingIdx = scannedWordRegistry.findIndex(w => w.word.toLowerCase() === cleanWord);
-        const cefrUpper = (part.cefr || "B1").toUpperCase();
-        const levelTier = part.level_tier || (["A1", "A2"].includes(cefrUpper) ? "basic" : "advanced");
+    // Nếu shouldResetExisting = true (quét ảnh mới, upload ảnh mới, đổi ảnh mẫu):
+    // Dọn sạch các từ thực thể của ảnh trước đó để không bị dính từ cũ (ví dụ mèo/cún khi quét burger)
+    if (shouldResetExisting) {
+        scannedWordRegistry = scannedWordRegistry.filter(w => !w.isObjectPart);
+    }
 
-        const item = {
-            word: cleanWord,
-            ipa: part.ipa || "",
-            vn_phonetic: part.vn_phonetic || "",
-            cefr: cefrUpper,
-            meaning: part.meaning || "Chi tiết vật thể",
-            tier: part.tier || "functional",
-            domain: part.domain || "objects",
-            levelTier: levelTier,
-            isLearned: !!part.is_learned,
-            parentObject: objectCategory || primaryObject,
-            isObjectPart: true
-        };
-        if (existingIdx >= 0) {
-            scannedWordRegistry[existingIdx] = item;
-        } else {
-            scannedWordRegistry.push(item);
-        }
-    });
+    // 1. Nạp các từ chi tiết bộ phận vật thể phát hiện được
+    if (parts && parts.length > 0) {
+        parts.forEach(part => {
+            const cleanWord = (part.word || "").trim().toLowerCase();
+            if (!cleanWord) return;
+            const existingIdx = scannedWordRegistry.findIndex(w => w.word.toLowerCase() === cleanWord);
+            const cefrUpper = (part.cefr || "B1").toUpperCase();
+            const levelTier = part.level_tier || (["A1", "A2"].includes(cefrUpper) ? "basic" : "advanced");
 
-    // 2. Nạp các từ nối cơ bản phục vụ đặt câu (Chỉ nạp 1 lần duy nhất)
-    const baseConnectors = [
-        { word: "the", ipa: "/ðə/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Mạo từ xác định", isLearned: true, isObjectPart: false },
-        { word: "is", ipa: "/ɪz/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Thì / là", isLearned: true, isObjectPart: false },
-        { word: "a", ipa: "/ə/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Một", isLearned: true, isObjectPart: false },
-        { word: "has", ipa: "/hæz/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Có", isLearned: true, isObjectPart: false },
-        { word: "my", ipa: "/maɪ/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Của tôi", isLearned: true, isObjectPart: false },
-        { word: "of", ipa: "/əv/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Của", isLearned: true, isObjectPart: false },
-        { word: "this", ipa: "/ðɪs/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Cái này", isLearned: true, isObjectPart: false },
-        { word: "in", ipa: "/ɪn/", cefr: "A1", levelTier: "basic", domain: "connectors", meaning: "Ở trong", isLearned: true, isObjectPart: false },
-        { word: "near", ipa: "/nɪər/", cefr: "A2", levelTier: "basic", domain: "connectors", meaning: "Gần", isLearned: true, isObjectPart: false },
-        { word: "under", ipa: "/ˈʌndər/", cefr: "A2", levelTier: "basic", domain: "connectors", meaning: "Dưới", isLearned: true, isObjectPart: false },
-        { word: "because", ipa: "/bɪˈkɒz/", cefr: "B1", levelTier: "advanced", domain: "connectors", meaning: "Bởi vì", isLearned: true, isObjectPart: false },
-        { word: "which", ipa: "/wɪtʃ/", cefr: "B1", levelTier: "advanced", domain: "connectors", meaning: "Mà / cái mà", isLearned: true, isObjectPart: false },
-        { word: "peaceful", ipa: "/ˈpiːsfəl/", cefr: "B1", levelTier: "advanced", domain: "connectors", meaning: "Thanh bình", isLearned: true, isObjectPart: false },
-        { word: "bright", ipa: "/braɪt/", cefr: "A2", levelTier: "basic", domain: "connectors", meaning: "Tươi sáng", isLearned: true, isObjectPart: false },
-        { word: "cozy", ipa: "/ˈkəʊzi/", cefr: "B1", levelTier: "advanced", domain: "connectors", meaning: "Ấm cúng", isLearned: true, isObjectPart: false },
-        { word: "beautiful", ipa: "/ˈbjuːtɪfəl/", cefr: "A2", levelTier: "basic", domain: "connectors", meaning: "Đẹp đẽ", isLearned: true, isObjectPart: false }
-    ];
+            const item = {
+                word: cleanWord,
+                ipa: part.ipa || "",
+                vn_phonetic: part.vn_phonetic || "",
+                cefr: cefrUpper,
+                meaning: part.meaning || "Chi tiết vật thể",
+                tier: part.tier || "functional",
+                domain: part.domain || "objects",
+                levelTier: levelTier,
+                isLearned: !!part.is_learned,
+                parentObject: objectCategory || primaryObject,
+                isObjectPart: true
+            };
+            if (existingIdx >= 0) {
+                scannedWordRegistry[existingIdx] = item;
+            } else {
+                scannedWordRegistry.push(item);
+            }
+        });
+    }
 
-    baseConnectors.forEach(conn => {
-        if (!scannedWordRegistry.some(w => w.word.toLowerCase() === conn.word.toLowerCase())) {
-            scannedWordRegistry.push(conn);
-        }
-    });
+    // 2. Nạp thêm toàn bộ Chùm Từ Vựng Liên Tưởng Ngữ Nghĩa (Semantic Vocabulary Clusters)
+    if (associatedVocab && associatedVocab.length > 0) {
+        associatedVocab.forEach(av => {
+            const cleanWord = (av.word || "").trim().toLowerCase();
+            if (!cleanWord) return;
+            const existingIdx = scannedWordRegistry.findIndex(w => w.word.toLowerCase() === cleanWord);
+            const cefrUpper = (av.cefr || "A1").toUpperCase();
+            const levelTier = av.level_tier || (["A1", "A2"].includes(cefrUpper) ? "basic" : "advanced");
+
+            const item = {
+                word: cleanWord,
+                ipa: av.ipa || "",
+                vn_phonetic: av.vn_phonetic || "",
+                cefr: cefrUpper,
+                meaning: av.meaning || "Từ vựng liên quan",
+                tier: av.tier || "functional",
+                domain: av.domain || "objects",
+                levelTier: levelTier,
+                isLearned: !!av.is_learned,
+                parentObject: av.parentObject || objectCategory || primaryObject,
+                isObjectPart: true
+            };
+            if (existingIdx >= 0) {
+                scannedWordRegistry[existingIdx] = item;
+            } else {
+                scannedWordRegistry.push(item);
+            }
+        });
+    }
 
     updateObjectCategoryDropdown();
     renderWordPool();
@@ -1873,7 +1985,7 @@ function registerDetectedParts(parts, objectCategory) {
 
 function setWordFilter(filterType) {
     currentWordFilter = filterType;
-    ["all", "objects", "creatures", "scenes", "environment", "connectors"].forEach(type => {
+    ["all", "objects", "creatures", "scenes", "environment"].forEach(type => {
         const btn = document.getElementById(`filter-${type}-btn`);
         if (btn) btn.classList.toggle("active", type === filterType);
     });
@@ -1965,7 +2077,6 @@ function renderWordPool() {
         if (currentWordFilter === "creatures" && (item.domain !== "creatures" || !item.isObjectPart)) return false;
         if (currentWordFilter === "scenes" && (item.domain !== "scenes" || !item.isObjectPart)) return false;
         if (currentWordFilter === "environment" && (item.domain !== "environment" || !item.isObjectPart)) return false;
-        if (currentWordFilter === "connectors" && item.isObjectPart) return false;
         if (selectedObjectCategory !== "all" && item.isObjectPart) {
             if (item.parentObject !== selectedObjectCategory) return false;
         }
@@ -1976,12 +2087,15 @@ function renderWordPool() {
 
     if (filteredList.length === 0) {
         pool.innerHTML = `<div style="color: #64748b; font-style: italic; font-size: 13px; margin: auto;">Không có từ nào thỏa mãn bộ lọc hiện tại. Hãy bấm chọn "🌟 Mọi Cấp Độ" hoặc quét thêm vật thể!</div>`;
-        countBadge.innerText = `${scannedWordRegistry.filter(w => w.isObjectPart).length} từ (đang ẩn)`;
+        countBadge.innerText = `0 / ${scannedWordRegistry.length} từ (đang ẩn)`;
         return;
     }
 
-    const objectPartsCount = scannedWordRegistry.filter(w => w.isObjectPart).length;
-    countBadge.innerText = `${objectPartsCount} từ thực thể (${filteredList.length} hiển thị)`;
+    if (filteredList.length === scannedWordRegistry.length) {
+        countBadge.innerText = `${scannedWordRegistry.length} từ vựng`;
+    } else {
+        countBadge.innerText = `${filteredList.length} / ${scannedWordRegistry.length} từ vựng`;
+    }
 
     filteredList.forEach(item => {
         const token = createWordTokenElement(
@@ -1992,13 +2106,14 @@ function renderWordPool() {
             item.isLearned,
             item.isObjectPart,
             item.levelTier,
-            item.domain || "objects"
+            item.domain || "objects",
+            item.vn_phonetic || ""
         );
         pool.appendChild(token);
     });
 }
 
-function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPart = true, levelTier = 'basic', domain = 'objects') {
+function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPart = true, levelTier = 'basic', domain = 'objects', vn_phonetic = '') {
     const token = document.createElement("div");
     token.className = "word-token token-domain-" + (domain || 'objects');
     token.setAttribute("draggable", "true");
@@ -2015,12 +2130,14 @@ function createWordTokenElement(word, ipa, cefr, meaning, isLearned, isObjectPar
     }
 
     const domainBadge = (isObjectPart && domain) ? `<span class="domain-tag ${domain}">${domain.toUpperCase()}</span>` : '';
+    const vnPhoneticBadge = (isObjectPart && vn_phonetic) ? `<span class="vn-read-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.45); font-size: 10.5px; font-weight: 700; padding: 1px 5px; border-radius: 5px; margin-left: 3px;">🗣️ ${vn_phonetic}</span>` : '';
 
     token.innerHTML = `
         ${domainBadge}
         <span class="cefr-badge" style="${badgeStyle}">${cefr || 'A1'}</span>
         <span style="font-weight: 700; color: #fff;">${word}</span>
         ${ipa ? `<span class="word-ipa">${ipa}</span>` : ''}
+        ${vnPhoneticBadge}
         ${meaning && isObjectPart ? `<span style="font-size: 11px; color: #fef08a; margin-left: 2px;">(${meaning})</span>` : ''}
         <button type="button" style="background: none; border: none; cursor: pointer; color: #38bdf8; padding: 0 4px; display: inline-flex; align-items: center;" onclick="speakWord('${word}', event)" title="Nghe phát âm">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>

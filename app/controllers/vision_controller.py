@@ -159,6 +159,10 @@ def scan_object():
                 db.session.rollback()
                 print(f"[!] Lỗi ghi VisionDetectionLog: {log_err}")
 
+        assoc_vocab = result.get("associated_vocabulary", [])
+        for av in assoc_vocab:
+            av["is_learned"] = (av["word"].lower() in learned_words)
+
         return jsonify({
             "status": "success",
             "primary_object": primary_object,
@@ -168,7 +172,8 @@ def scan_object():
             "scene_info": result.get("scene_info", {}),
             "context_caption": result.get("context_caption", {}),
             "inference_time_ms": result.get("inference_time_ms", 0),
-            "detected_parts": detected_parts
+            "detected_parts": detected_parts,
+            "associated_vocabulary": assoc_vocab
         })
 
     except Exception as e:
@@ -364,6 +369,10 @@ def upload_media_and_scan():
         for part in detected_parts:
             part["is_learned"] = (part["word"].lower() in learned_words)
 
+        assoc_vocab = result.get("associated_vocabulary", [])
+        for av in assoc_vocab:
+            av["is_learned"] = (av["word"].lower() in learned_words)
+
         return jsonify({
             "status": "success",
             "media_type": "video" if is_video else "image",
@@ -375,7 +384,8 @@ def upload_media_and_scan():
             "context_caption": result.get("context_caption", {}),
             "inference_time_ms": result.get("inference_time_ms", 0),
             "preview_image": preview_base64,
-            "detected_parts": detected_parts
+            "detected_parts": detected_parts,
+            "associated_vocabulary": assoc_vocab
         })
 
     except Exception as e:

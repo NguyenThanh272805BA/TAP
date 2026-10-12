@@ -293,6 +293,70 @@ OBJECT_PARTS_TAXONOMY: Dict[str, Dict[str, Any]] = {
             "stem": {"vn": "Cành thân cây", "cefr": "B1", "tier": "functional"},
             "pot": {"vn": "Chậu trồng", "cefr": "A2", "tier": "functional"}
         }
+    },
+    "burger": {
+        "vn_name": "Bánh kẹp Burger",
+        "cefr": "A1",
+        "domain": "objects",
+        "parts": {
+            "bun": {"vn": "Bánh mì kẹp", "cefr": "A2", "tier": "functional"},
+            "patty": {"vn": "Miếng thịt kẹp", "cefr": "B1", "tier": "functional"},
+            "lettuce": {"vn": "Rau xà lách", "cefr": "A2", "tier": "functional"},
+            "tomato": {"vn": "Cà chua", "cefr": "A1", "tier": "functional"},
+            "cheese": {"vn": "Phô mai", "cefr": "A1", "tier": "functional"},
+            "sauce": {"vn": "Nước sốt", "cefr": "A2", "tier": "functional"},
+            "sesame": {"vn": "Hạt vừng / mè", "cefr": "B2", "tier": "micro"},
+            "onion": {"vn": "Hành tây", "cefr": "A2", "tier": "functional"}
+        }
+    },
+    "dish": {
+        "vn_name": "Món ăn / Đĩa thức ăn",
+        "cefr": "A1",
+        "domain": "objects",
+        "parts": {
+            "plate": {"vn": "Đĩa đựng", "cefr": "A1", "tier": "functional"},
+            "food": {"vn": "Thức ăn", "cefr": "A1", "tier": "functional"},
+            "fork": {"vn": "Dĩa ăn", "cefr": "A1", "tier": "functional"},
+            "spoon": {"vn": "Thìa / muỗng", "cefr": "A1", "tier": "functional"},
+            "tablecloth": {"vn": "Khăn trải bàn", "cefr": "B1", "tier": "functional"},
+            "napkin": {"vn": "Khăn ăn", "cefr": "A2", "tier": "functional"}
+        }
+    },
+    "wine glass": {
+        "vn_name": "Ly rượu vang",
+        "cefr": "A2",
+        "domain": "objects",
+        "parts": {
+            "wine": {"vn": "Rượu vang", "cefr": "A2", "tier": "functional"},
+            "glass rim": {"vn": "Vành ly", "cefr": "B2", "tier": "micro"},
+            "stem": {"vn": "Chân cuống ly", "cefr": "B1", "tier": "functional"},
+            "glass base": {"vn": "Đế ly", "cefr": "A2", "tier": "functional"}
+        }
+    },
+    "grapes": {
+        "vn_name": "Chùm nho",
+        "cefr": "A2",
+        "domain": "creatures",
+        "parts": {
+            "grape": {"vn": "Quả nho", "cefr": "A2", "tier": "functional"},
+            "cluster": {"vn": "Chùm quả", "cefr": "B1", "tier": "macro"},
+            "stem": {"vn": "Cuống nho", "cefr": "B1", "tier": "micro"},
+            "vine": {"vn": "Cành nhánh nho", "cefr": "B1", "tier": "functional"},
+            "grape skin": {"vn": "Vỏ quả nho", "cefr": "B2", "tier": "micro"},
+            "leaf": {"vn": "Lá nho", "cefr": "A1", "tier": "functional"}
+        }
+    },
+    "fruit": {
+        "vn_name": "Trái cây / Hoa quả",
+        "cefr": "A1",
+        "domain": "creatures",
+        "parts": {
+            "grapes": {"vn": "Chùm nho", "cefr": "A2", "tier": "macro"},
+            "skin": {"vn": "Vỏ quả", "cefr": "A2", "tier": "functional"},
+            "stem": {"vn": "Cuống quả", "cefr": "B1", "tier": "functional"},
+            "seed": {"vn": "Hạt quả", "cefr": "A2", "tier": "micro"},
+            "pulp": {"vn": "Thịt quả / Ruột", "cefr": "B2", "tier": "micro"}
+        }
     }
 }
 
@@ -528,23 +592,265 @@ def build_candidate_queries(
         return target_words[:32]
 
     # 4. Chế độ TOÀN CẢNH (Universal Open-World: domain="all"):
-    # Chọn lọc cân bằng giữa 4 miền thực thể để đảm bảo nhận diện mọi thứ
-    selected_queries: List[str] = []
+    # Chọn lọc cân bằng giữa các miền thực thể cốt lõi đời sống & học tập
+    # Đặc biệt bổ sung đồ ăn, ẩm thực, bàn tiệc, công nghệ, vật nuôi
+    selected_queries: List[str] = [
+        # Trái cây & Nông sản tươi (Fresh Fruits & Produce)
+        "grapes", "grape", "fruit", "apple", "banana",
+        # Ẩm thực & Bàn ăn (Culinary & Dining)
+        "burger", "dish", "plate", "wine glass", "wine", "food", "bread",
+        # Công nghệ & Dụng cụ học tập (Tech & Study)
+        "laptop", "phone", "backpack", "book", "cup", "bottle",
+        # Sinh vật & Thú cưng (Living Creatures)
+        "cat", "dog", "person", "plant", "bird",
+        # Đồ dùng gia đình & Bàn ghế (Furniture & Objects)
+        "chair", "tablecloth", "desk",
+        # Khung cảnh không gian (Scenes)
+        "dining room", "cafe", "classroom", "office", "living room", "street", "park",
+        # Môi trường & Ánh sáng (Environment)
+        "sunlight", "window", "lamp", "shadow"
+    ]
 
-    # Đồ vật nổi bật
-    objs = domain_items.get("objects", [])
-    selected_queries.extend(objs[:10] if objs else ["laptop", "phone", "backpack", "book", "cup", "chair", "desk", "bottle"])
+    return selected_queries[:36]
 
-    # Sinh vật & con người
-    creatures = domain_items.get("creatures", [])
-    selected_queries.extend(creatures[:8] if creatures else ["person", "student", "cat", "dog", "plant", "tree", "bird"])
 
-    # Khung cảnh không gian
-    scenes = domain_items.get("scenes", [])
-    selected_queries.extend(scenes[:8] if scenes else ["classroom", "office", "cafe", "living room", "street", "library", "park"])
+# =========================================================================
+# 5. CỤM TỪ VỰNG NGỮ NGHĨA LIÊN TƯỞNG TOÀN CẢNH (SEMANTIC VOCABULARY CLUSTERS)
+# Tự động mở rộng từ 1 thực thể chính thành 15-22 từ vựng sinh động, đa cấp độ CEFR
+# =========================================================================
+SEMANTIC_CLUSTERS: Dict[str, Dict[str, Any]] = {
+    "fruits_nature": {
+        "keywords": ["grapes", "grape", "fruit", "cluster", "vine", "berry", "apple", "banana", "orange", "fresh fruit"],
+        "display_topic": "Hoa quả tươi & Trái cây",
+        "words": [
+            {"word": "grapes", "ipa": "/ɡreɪps/", "vn": "Chùm nho tươi", "cefr": "A2", "tier": "macro", "domain": "creatures"},
+            {"word": "grape", "ipa": "/ɡreɪp/", "vn": "Quả nho", "cefr": "A2", "tier": "functional", "domain": "creatures"},
+            {"word": "fruit", "ipa": "/fruːt/", "vn": "Trái cây tươi", "cefr": "A1", "tier": "macro", "domain": "creatures"},
+            {"word": "cluster", "ipa": "/ˈklʌstər/", "vn": "Chùm quả", "cefr": "B1", "tier": "macro", "domain": "creatures"},
+            {"word": "vine", "ipa": "/vaɪn/", "vn": "Cành nhánh nho", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "stem", "ipa": "/stem/", "vn": "Cuống quả nho", "cefr": "B1", "tier": "micro", "domain": "creatures"},
+            {"word": "leaf", "ipa": "/liːf/", "vn": "Lá cây tươi", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "sweet", "ipa": "/swiːt/", "vn": "Ngọt ngào thanh mát", "cefr": "A1", "tier": "functional", "domain": "scenes"},
+            {"word": "juicy", "ipa": "/ˈdʒuːsi/", "vn": "Mọng nước thơm ngon", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "fresh", "ipa": "/freʃ/", "vn": "Tươi sạch tự nhiên", "cefr": "A2", "tier": "functional", "domain": "environment"},
+            {"word": "ripe", "ipa": "/raɪp/", "vn": "Chín mọng", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "harvest", "ipa": "/ˈhɑːrvɪst/", "vn": "Mùa thu hoạch quả", "cefr": "B1", "tier": "functional", "domain": "scenes"},
+            {"word": "berry", "ipa": "/ˈberi/", "vn": "Quả mọng", "cefr": "A2", "tier": "functional", "domain": "creatures"},
+            {"word": "organic", "ipa": "/ɔːrˈɡænɪk/", "vn": "Hữu cơ an lành", "cefr": "B2", "tier": "functional", "domain": "environment"},
+            {"word": "nutritious", "ipa": "/nuːˈtrɪʃəs/", "vn": "Giàu dinh dưỡng", "cefr": "B2", "tier": "functional", "domain": "scenes"}
+        ]
+    },
+    "food_dining": {
+        "keywords": ["burger", "hamburger", "sandwich", "food", "dish", "plate", "wine", "glass", "meal", "pizza", "bread", "dining"],
+        "display_topic": "Ẩm thực & Bàn ăn",
+        "words": [
+            {"word": "burger", "ipa": "/ˈbɜːrɡər/", "vn": "Bánh kẹp burger", "cefr": "A1", "tier": "macro", "domain": "objects"},
+            {"word": "bun", "ipa": "/bʌn/", "vn": "Bánh mì tròn", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "patty", "ipa": "/ˈpæti/", "vn": "Miếng thịt kẹp", "cefr": "B1", "tier": "functional", "domain": "objects"},
+            {"word": "lettuce", "ipa": "/ˈletɪs/", "vn": "Rau xà lách", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "tomato", "ipa": "/təˈmeɪtoʊ/", "vn": "Cà chua", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "cheese", "ipa": "/tʃiːz/", "vn": "Phô mai", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "beef", "ipa": "/biːf/", "vn": "Thịt bò", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "sauce", "ipa": "/sɔːs/", "vn": "Nước sốt", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "plate", "ipa": "/pleɪt/", "vn": "Đĩa đựng thức ăn", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "wine", "ipa": "/waɪn/", "vn": "Rượu vang", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "glass", "ipa": "/ɡlæs/", "vn": "Ly thủy tinh", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "tablecloth", "ipa": "/ˈteɪblklɔːθ/", "vn": "Khăn trải bàn", "cefr": "B1", "tier": "functional", "domain": "objects"},
+            {"word": "napkin", "ipa": "/ˈnæpkɪn/", "vn": "Khăn ăn", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "fork", "ipa": "/fɔːrk/", "vn": "Dĩa ăn", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "delicious", "ipa": "/dɪˈlɪʃəs/", "vn": "Ngon miệng", "cefr": "A1", "tier": "functional", "domain": "scenes"},
+            {"word": "crispy", "ipa": "/ˈkrɪspi/", "vn": "Giòn rụm", "cefr": "B1", "tier": "functional", "domain": "objects"},
+            {"word": "juicy", "ipa": "/ˈdʒuːsi/", "vn": "Mọng nước / thơm ngọt", "cefr": "B1", "tier": "functional", "domain": "objects"},
+            {"word": "savory", "ipa": "/ˈseɪvəri/", "vn": "Đậm đà hương vị", "cefr": "B2", "tier": "functional", "domain": "objects"},
+            {"word": "fresh", "ipa": "/freʃ/", "vn": "Tươi ngon", "cefr": "A2", "tier": "functional", "domain": "environment"},
+            {"word": "taste", "ipa": "/teɪst/", "vn": "Nếm thử / Thưởng thức", "cefr": "A2", "tier": "functional", "domain": "scenes"},
+            {"word": "serve", "ipa": "/sɜːrv/", "vn": "Phục vụ món", "cefr": "B1", "tier": "functional", "domain": "scenes"}
+        ]
+    },
+    "creature_cat": {
+        "keywords": ["cat", "kitten", "feline"],
+        "display_topic": "Mèo cưng & Động vật",
+        "words": [
+            {"word": "cat", "ipa": "/kæt/", "vn": "Con mèo", "cefr": "A1", "tier": "macro", "domain": "creatures"},
+            {"word": "kitten", "ipa": "/ˈkɪtn/", "vn": "Mèo con", "cefr": "A1", "tier": "macro", "domain": "creatures"},
+            {"word": "paw", "ipa": "/pɔː/", "vn": "Bàn chân vuốt", "cefr": "A2", "tier": "functional", "domain": "creatures"},
+            {"word": "fur", "ipa": "/fɜːr/", "vn": "Lông thú", "cefr": "A2", "tier": "functional", "domain": "creatures"},
+            {"word": "tail", "ipa": "/teɪl/", "vn": "Cái đuôi", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "whisker", "ipa": "/ˈwɪskər/", "vn": "Râu mèo", "cefr": "B1", "tier": "micro", "domain": "creatures"},
+            {"word": "claw", "ipa": "/klɔː/", "vn": "Móng vuốt", "cefr": "B2", "tier": "micro", "domain": "creatures"},
+            {"word": "ear", "ipa": "/ɪər/", "vn": "Đôi tai", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "eye", "ipa": "/aɪ/", "vn": "Mắt tròn", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "purr", "ipa": "/pɜːr/", "vn": "Tiếng kêu gừ gừ âu yếm", "cefr": "B2", "tier": "functional", "domain": "creatures"},
+            {"word": "meow", "ipa": "/miˈaʊ/", "vn": "Tiếng kêu meo meo", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "fluffy", "ipa": "/ˈflʌfi/", "vn": "Mềm mại bông xù", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "playful", "ipa": "/ˈpleɪfəl/", "vn": "Hiếu động tinh nghịch", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "cute", "ipa": "/kjuːt/", "vn": "Dễ thương đáng yêu", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "cuddle", "ipa": "/ˈkʌdl/", "vn": "Ôm ấp cưng nựng", "cefr": "B2", "tier": "functional", "domain": "creatures"},
+            {"word": "sleepy", "ipa": "/ˈsliːpi/", "vn": "Buồn ngủ / Say giấc", "cefr": "A2", "tier": "functional", "domain": "creatures"}
+        ]
+    },
+    "creature_dog": {
+        "keywords": ["dog", "puppy", "canine"],
+        "display_topic": "Chó cưng & Vật nuôi",
+        "words": [
+            {"word": "dog", "ipa": "/dɔːɡ/", "vn": "Con chó", "cefr": "A1", "tier": "macro", "domain": "creatures"},
+            {"word": "puppy", "ipa": "/ˈpʌpi/", "vn": "Chó con", "cefr": "A1", "tier": "macro", "domain": "creatures"},
+            {"word": "tail", "ipa": "/teɪl/", "vn": "Cái đuôi", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "bark", "ipa": "/bɑːrk/", "vn": "Tiếng sủa", "cefr": "A2", "tier": "functional", "domain": "creatures"},
+            {"word": "snout", "ipa": "/snaʊt/", "vn": "Mõm chó", "cefr": "B2", "tier": "micro", "domain": "creatures"},
+            {"word": "paw", "ipa": "/pɔː/", "vn": "Bàn chân", "cefr": "A2", "tier": "functional", "domain": "creatures"},
+            {"word": "collar", "ipa": "/ˈkɑːlər/", "vn": "Vòng cổ", "cefr": "B1", "tier": "functional", "domain": "objects"},
+            {"word": "leash", "ipa": "/liːʃ/", "vn": "Dây dắt chó", "cefr": "B2", "tier": "functional", "domain": "objects"},
+            {"word": "bone", "ipa": "/boʊn/", "vn": "Khúc xương gặm", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "friendly", "ipa": "/ˈfrendli/", "vn": "Thân thiện hiền hòa", "cefr": "A2", "tier": "functional", "domain": "creatures"},
+            {"word": "loyal", "ipa": "/ˈlɔɪəl/", "vn": "Trung thành", "cefr": "B2", "tier": "functional", "domain": "creatures"},
+            {"word": "energetic", "ipa": "/ˌenərˈdʒetɪk/", "vn": "Năng động hoạt bát", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "fetch", "ipa": "/fetʃ/", "vn": "Bắt bóng / Nhặt đồ", "cefr": "B1", "tier": "functional", "domain": "creatures"}
+        ]
+    },
+    "tech_workspace": {
+        "keywords": ["laptop", "computer", "desk", "keyboard", "monitor", "workspace", "office", "study"],
+        "display_topic": "Công nghệ & Bàn làm việc",
+        "words": [
+            {"word": "laptop", "ipa": "/ˈlæptɑːp/", "vn": "Máy tính xách tay", "cefr": "A1", "tier": "macro", "domain": "objects"},
+            {"word": "keyboard", "ipa": "/ˈkiːbɔːrd/", "vn": "Bàn phím", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "screen", "ipa": "/skriːn/", "vn": "Màn hình", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "trackpad", "ipa": "/ˈtrækpæd/", "vn": "Bàn di chuột cảm ứng", "cefr": "B1", "tier": "micro", "domain": "objects"},
+            {"word": "mouse", "ipa": "/maʊs/", "vn": "Chuột máy tính", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "desk", "ipa": "/desk/", "vn": "Bàn làm việc", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "chair", "ipa": "/tʃer/", "vn": "Chiếc ghế", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "cable", "ipa": "/ˈkeɪbl/", "vn": "Dây cáp sạc", "cefr": "B1", "tier": "functional", "domain": "objects"},
+            {"word": "headphones", "ipa": "/ˈhedfoʊnz/", "vn": "Tai nghe", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "type", "ipa": "/taɪp/", "vn": "Gõ phím", "cefr": "A1", "tier": "functional", "domain": "scenes"},
+            {"word": "click", "ipa": "/klɪk/", "vn": "Bấm chuột", "cefr": "A2", "tier": "functional", "domain": "scenes"},
+            {"word": "modern", "ipa": "/ˈmɑːdərn/", "vn": "Hiện đại tiên tiến", "cefr": "A2", "tier": "functional", "domain": "scenes"},
+            {"word": "efficient", "ipa": "/ɪˈfɪʃnt/", "vn": "Hiệu quả tối ưu", "cefr": "B2", "tier": "functional", "domain": "scenes"},
+            {"word": "focus", "ipa": "/ˈfoʊkəs/", "vn": "Tập trung cao độ", "cefr": "B1", "tier": "functional", "domain": "scenes"}
+        ]
+    },
+    "cafe_beverage": {
+        "keywords": ["coffee", "cup", "mug", "tea", "cafe", "beverage", "drink"],
+        "display_topic": "Cà phê & Đồ uống",
+        "words": [
+            {"word": "coffee", "ipa": "/ˈkɔːfi/", "vn": "Cà phê thơm", "cefr": "A1", "tier": "macro", "domain": "objects"},
+            {"word": "cup", "ipa": "/kʌp/", "vn": "Cốc tách", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "mug", "ipa": "/mʌɡ/", "vn": "Cốc uống lớn", "cefr": "A2", "tier": "functional", "domain": "objects"},
+            {"word": "foam", "ipa": "/foʊm/", "vn": "Lớp bọt sữa", "cefr": "B1", "tier": "micro", "domain": "objects"},
+            {"word": "steam", "ipa": "/stiːm/", "vn": "Hơi nước nóng", "cefr": "B1", "tier": "environment", "domain": "environment"},
+            {"word": "table", "ipa": "/ˈteɪbl/", "vn": "Bàn cà phê", "cefr": "A1", "tier": "functional", "domain": "objects"},
+            {"word": "cafe", "ipa": "/kæˈfeɪ/", "vn": "Quán cà phê", "cefr": "A1", "tier": "macro", "domain": "scenes"},
+            {"word": "sip", "ipa": "/sɪp/", "vn": "Nhấp từng ngụm", "cefr": "B1", "tier": "functional", "domain": "scenes"},
+            {"word": "brew", "ipa": "/bruː/", "vn": "Pha chế cà phê", "cefr": "B2", "tier": "functional", "domain": "scenes"},
+            {"word": "aromatic", "ipa": "/ˌærəˈmætɪk/", "vn": "Thơm ngát quyến rũ", "cefr": "B2", "tier": "functional", "domain": "scenes"},
+            {"word": "cozy", "ipa": "/ˈkoʊzi/", "vn": "Ấm cúng dễ chịu", "cefr": "B1", "tier": "functional", "domain": "scenes"},
+            {"word": "warm", "ipa": "/wɔːrm/", "vn": "Ấm áp", "cefr": "A1", "tier": "functional", "domain": "environment"}
+        ]
+    },
+    "nature_green": {
+        "keywords": ["tree", "plant", "flower", "leaf", "garden", "park", "nature", "forest"],
+        "display_topic": "Thiên nhiên & Cây xanh",
+        "words": [
+            {"word": "tree", "ipa": "/triː/", "vn": "Cây xanh", "cefr": "A1", "tier": "macro", "domain": "creatures"},
+            {"word": "leaf", "ipa": "/liːf/", "vn": "Chiếc lá", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "flower", "ipa": "/ˈflaʊər/", "vn": "Bông hoa", "cefr": "A1", "tier": "macro", "domain": "creatures"},
+            {"word": "petal", "ipa": "/ˈpetl/", "vn": "Cánh hoa", "cefr": "B1", "tier": "micro", "domain": "creatures"},
+            {"word": "branch", "ipa": "/bræntʃ/", "vn": "Cành cây", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "stem", "ipa": "/stem/", "vn": "Thân cuống cây", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "grass", "ipa": "/ɡræs/", "vn": "Thảm cỏ", "cefr": "A1", "tier": "functional", "domain": "creatures"},
+            {"word": "sunlight", "ipa": "/ˈsʌnlaɪt/", "vn": "Ánh nắng mặt trời", "cefr": "A2", "tier": "functional", "domain": "environment"},
+            {"word": "shadow", "ipa": "/ˈʃædoʊ/", "vn": "Bóng râm", "cefr": "A2", "tier": "functional", "domain": "environment"},
+            {"word": "fresh", "ipa": "/freʃ/", "vn": "Tươi mát trong lành", "cefr": "A2", "tier": "functional", "domain": "environment"},
+            {"word": "green", "ipa": "/ɡriːn/", "vn": "Xanh tươi", "cefr": "A1", "tier": "functional", "domain": "scenes"},
+            {"word": "bloom", "ipa": "/bluːm/", "vn": "Khoe sắc nở hoa", "cefr": "B1", "tier": "functional", "domain": "creatures"},
+            {"word": "peaceful", "ipa": "/ˈpiːsfəl/", "vn": "Thanh bình yên ả", "cefr": "B1", "tier": "functional", "domain": "scenes"}
+        ]
+    }
+}
 
-    # Môi trường & thời tiết
-    env = domain_items.get("environment", [])
-    selected_queries.extend(env[:6] if env else ["sunlight", "window", "blue sky", "cloud", "shadow", "lamp"])
+def get_associated_vocabulary(primary_word: str, detected_parts: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    """
+    Sinh danh sách từ vựng liên tưởng phong phú (15 - 22 từ vựng hoàn chỉnh kèm IPA,
+    phiên âm tiếng Việt, nghĩa tiếng Việt, cấp độ CEFR) theo chủ đề bức ảnh vừa quét.
+    """
+    p_norm = (primary_word or "").strip().lower()
+    all_context_words = [p_norm]
+    if detected_parts:
+        for p in detected_parts:
+            w = (p.get("word") or "").lower()
+            if w:
+                all_context_words.append(w)
 
-    return selected_queries[:32]
+    # 1. Tìm cluster phù hợp nhất
+    best_cluster = None
+    max_score = 0
+    for c_id, c_data in SEMANTIC_CLUSTERS.items():
+        kw_set = set(k.lower() for k in c_data["keywords"])
+        match_count = sum(1 for w in all_context_words if w in kw_set or any(kw in w for kw in kw_set))
+        if match_count > max_score:
+            max_score = match_count
+            best_cluster = c_data
+
+    # Mặc định rơi vào food_dining nếu có từ liên quan đến món ăn/bàn ăn, hoặc tech nếu có laptop
+    if not best_cluster:
+        if any(w in ["food", "dish", "plate", "wine", "meat", "bread", "burger"] for w in all_context_words):
+            best_cluster = SEMANTIC_CLUSTERS["food_dining"]
+        elif any(w in ["cat", "kitten", "pet"] for w in all_context_words):
+            best_cluster = SEMANTIC_CLUSTERS["creature_cat"]
+        elif any(w in ["dog", "puppy"] for w in all_context_words):
+            best_cluster = SEMANTIC_CLUSTERS["creature_dog"]
+        else:
+            best_cluster = SEMANTIC_CLUSTERS.get("food_dining")
+
+    if not best_cluster:
+        return []
+
+    # 2. Xây dựng danh sách từ vựng hoàn chỉnh
+    results: List[Dict[str, Any]] = []
+    seen = set()
+
+    # Ưu tiên các từ thực tế đã phát hiện được
+    if detected_parts:
+        for part in detected_parts:
+            w = (part.get("word") or "").lower()
+            if w and w not in seen:
+                seen.add(w)
+                results.append({
+                    "word": w,
+                    "display_name": part.get("display_name", w.capitalize()),
+                    "ipa": part.get("ipa", ""),
+                    "vn_phonetic": part.get("vn_phonetic") or get_vietnamese_phonetic(w, part.get("ipa", "")),
+                    "meaning": part.get("meaning", "Chi tiết phát hiện"),
+                    "cefr": (part.get("cefr") or "A1").upper(),
+                    "tier": part.get("tier", "functional"),
+                    "domain": part.get("domain", "objects"),
+                    "level_tier": part.get("level_tier", "basic"),
+                    "parentObject": primary_word,
+                    "isObjectPart": True,
+                    "is_learned": bool(part.get("is_learned", False))
+                })
+
+    # Sau đó bổ sung từ trong semantic cluster
+    for item in best_cluster["words"]:
+        w = item["word"].lower()
+        if w not in seen:
+            seen.add(w)
+            ipa_val = item.get("ipa", "")
+            vn_phon = get_vietnamese_phonetic(w, ipa_val)
+            cefr_u = (item.get("cefr") or "A1").upper()
+            results.append({
+                "word": w,
+                "display_name": w.capitalize(),
+                "ipa": ipa_val,
+                "vn_phonetic": vn_phon,
+                "meaning": item.get("vn", "Từ vựng liên quan"),
+                "cefr": cefr_u,
+                "tier": item.get("tier", "functional"),
+                "domain": item.get("domain", "objects"),
+                "level_tier": "basic" if cefr_u in ["A1", "A2"] else "advanced",
+                "parentObject": primary_word,
+                "isObjectPart": True,
+                "is_learned": False
+            })
+
+    return results
+
