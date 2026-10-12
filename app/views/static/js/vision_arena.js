@@ -197,7 +197,6 @@ function initTargetReticleEvents() {
         wrapper.addEventListener("click", (e) => {
             if (!isReticleActive) return;
             if (e.target.closest("button") || 
-                e.target.closest("#camera-ar-sentence-dock") || 
                 e.target.closest("#reticle-callout") || 
                 e.target.closest("#reticle-resize-handle") ||
                 e.target.closest(".hud-metrics") ||
@@ -452,34 +451,24 @@ function insertWordToSentence(word) {
     playHapticSound("drop");
     updateSentenceSubmitButton();
     updateWorkspaceBadges();
-
-    // Mở khay nếu đang thu gọn
-    const dock = document.getElementById("camera-ar-sentence-dock");
-    if (dock && dock.classList.contains("is-collapsed")) {
-        dock.classList.remove("is-collapsed");
-        const btnToggle = document.getElementById("btn-toggle-dock-collapse");
-        if (btnToggle) btnToggle.innerText = "🔽";
-    }
 }
 
 function toggleArDockCollapse() {
-    const dock = document.getElementById("camera-ar-sentence-dock");
-    const btn = document.getElementById("btn-toggle-dock-collapse");
-    if (!dock) return;
-    dock.classList.toggle("is-collapsed");
-    if (btn) {
-        btn.innerText = dock.classList.contains("is-collapsed") ? "🔼" : "🔽";
-    }
+    // Không còn khung hộp chắn trong camera
 }
 
 function focusArSentenceDock() {
     switchWorkspace("scanner");
-    const dock = document.getElementById("camera-ar-sentence-dock");
-    if (dock) {
-        dock.classList.remove("is-collapsed");
-        const btn = document.getElementById("btn-toggle-dock-collapse");
-        if (btn) btn.innerText = "🔽";
-        dock.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const deck = document.getElementById("sentence-assembly-deck");
+    if (deck) {
+        deck.scrollIntoView({ behavior: "smooth", block: "center" });
+        deck.style.transition = "box-shadow 0.4s ease, border-color 0.4s ease";
+        deck.style.borderColor = "var(--neon-cyan)";
+        deck.style.boxShadow = "0 0 35px rgba(6, 182, 212, 0.5)";
+        setTimeout(() => {
+            deck.style.boxShadow = "";
+            deck.style.borderColor = "";
+        }, 1200);
     }
 }
 
@@ -1983,6 +1972,19 @@ function updateSentenceSubmitButton() {
         submitBtn.disabled = (words.length === 0);
     }
     updateWorkspaceBadges();
+
+    // Đồng bộ hiển thị phụ đề AR nổi nhẹ trong lòng camera (không có khung viền hộp)
+    const subStrip = document.getElementById("camera-ar-subtitle-strip");
+    if (subStrip) {
+        if (words.length > 0) {
+            const sentenceText = Array.from(words).map(t => t.getAttribute("data-word")).join(" ");
+            subStrip.innerText = sentenceText;
+            subStrip.style.display = "block";
+        } else {
+            subStrip.innerText = "";
+            subStrip.style.display = "none";
+        }
+    }
 }
 
 function clearSentence() {
@@ -1994,6 +1996,13 @@ function clearSentence() {
         else t.remove();
     });
     updateSentenceSubmitButton();
+
+    const subStrip = document.getElementById("camera-ar-subtitle-strip");
+    if (subStrip) {
+        subStrip.innerText = "";
+        subStrip.style.display = "none";
+    }
+
     const fbDeck = document.getElementById("feedback-deck");
     if (fbDeck) fbDeck.style.display = "none";
     const arModal = document.getElementById("ar-feedback-modal");
@@ -2036,32 +2045,33 @@ async function submitSentence() {
 
         const data = await response.json();
         if (data.status === "success") {
-            // Hiển thị AR Hologram Modal ngay bên trong lòng Camera
+            // Hiển thị AR Modal nếu cần
             const arModal = document.getElementById("ar-feedback-modal");
             if (arModal) {
                 arModal.style.display = "block";
             }
 
-            // Đồng thời hiển thị feedback deck truyền thống nếu có
+            // Đồng thời hiển thị feedback deck bên dưới khay ghép câu
             const feedbackDeck = document.getElementById("feedback-deck");
             if (feedbackDeck) {
                 feedbackDeck.style.display = "block";
+                feedbackDeck.scrollIntoView({ behavior: "smooth", block: "nearest" });
             }
 
             // Đồng bộ dữ liệu hiển thị vào tất cả các phần tử kết quả tương ứng
-            document.querySelectorAll("#score-badge").forEach(el => {
+            document.querySelectorAll("#score-badge, #score-badge-deck").forEach(el => {
                 el.innerText = `Điểm: ${data.score}/100`;
             });
-            document.querySelectorAll("#result-original").forEach(el => {
+            document.querySelectorAll("#result-original, #deck-result-original").forEach(el => {
                 el.innerText = data.original_sentence || sentence;
             });
-            document.querySelectorAll("#result-corrected").forEach(el => {
+            document.querySelectorAll("#result-corrected, #deck-result-corrected").forEach(el => {
                 el.innerText = data.corrected_sentence || sentence;
             });
-            document.querySelectorAll("#result-critique").forEach(el => {
+            document.querySelectorAll("#result-critique, #deck-result-critique").forEach(el => {
                 el.innerText = data.feedback || "Cấu trúc câu rất tốt!";
             });
-            document.querySelectorAll("#result-exp").forEach(el => {
+            document.querySelectorAll("#result-exp, #deck-result-exp").forEach(el => {
                 el.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> +${data.exp_awarded || 50} EXP đã được cộng vào tài khoản!</span>`;
             });
 

@@ -242,6 +242,30 @@
 
 ---
 
+## PHẦN XI: LOẠI BỎ KHUNG HỘP CHẮN TẦM NHÌN CAMERA & TỐI ƯU HÓA KHÔNG GIAN THỊ GIÁC THÔNG THOÁNG (CLEAN VIEWPORT & DECOUPLED SENTENCE BUILDER) [x]
+
+### 11.1 Triệt tiêu Hoàn toàn Khung Chữ Nhật Nằm Ngang Chắn Trong Camera [x]
+- Xóa bỏ triệt để phần tử `#camera-ar-sentence-dock` cồng kềnh nằm ngang chắn ngang đáy khung hình camera, trả lại 100% diện tích quan sát trong suốt, sạch sẽ và thông thoáng cho người dùng [x]
+- Loại bỏ hoàn toàn cảm giác vướng víu, cản trở tầm nhìn khi quan sát đồ vật trên camera thực tế hoặc video tải lên [x]
+
+### 11.2 Tách biệt Khay Ghép Câu & Phân Tích Ngữ Pháp Thành Bento Card Chuyên Dụng [x]
+- Chuyển toàn bộ khu vực ghép câu (`#sentence-assembly-deck`) xuống ngay bên dưới thanh điều khiển camera (`.cinema-dock-card`), giữ nguyên đầy đủ tính năng:
+  - Bộ chọn mẫu câu thông dụng theo đồ vật (`#sentence-template-select`) & Nút ghép câu mẫu tự động [x]
+  - Dải phím tắt từ nối nhanh (`is`, `has`, `broken`, `clean`, `new`, `good`, `of`, `with`) [x]
+  - Khu vực thả từ ghép câu trực quan (`#assembly-drop-zone`) hỗ trợ kéo thả chuột và chạm cảm ứng [x]
+  - Nút "Chấm Điểm & Phân Tích Ngữ Pháp" (`#btn-submit-sentence`) kết nối GEC Engine và hiển thị phản hồi từ Master G [x]
+  - Nút "Xóa Khay" (`clearSentence()`) và "Thêm từ tự chọn" (`addCustomWordPrompt()`) [x]
+
+### 11.3 Tích hợp Dải Phụ Đề Nổi Không Khung Viền (Zero-Box Floating AR Subtitle) [x]
+- Thay thế khung hộp chữ nhật bằng dòng phụ đề AR nổi nhẹ nhàng (`#camera-ar-subtitle-strip`) với nền trong suốt tuyệt đối (không viền, không khối hộp) [x]
+- Chữ phát sáng neon cyan dịu mắt với đổ bóng sâu, chỉ hiển thị khi có từ vựng được xếp vào câu và tự động ẩn khi khay trống [x]
+
+### 11.4 Cân đối Chiều cao Khung Camera Thích ứng Đa Màn hình (Responsive Viewport Polish) [x]
+- Điều chỉnh kích thước khung camera (`.viewport-wrapper.cinema-mode`) từ 68vh (min-height 520px) sang 58vh (min-height 380px, max-height 680px) để vừa giữ camera là tâm điểm lớn nhất vừa hiển thị vừa vặn các thanh điều khiển bên dưới trên laptop và màn hình phổ thông mà không bị tràn màn hình [x]
+
+---
+
 *Kế hoạch được phê duyệt và lưu trữ tại*: [`docs/ke_hoach_pt.md`](file:///d:/Python/TAP/docs/ke_hoach_pt.md)
+
 
 

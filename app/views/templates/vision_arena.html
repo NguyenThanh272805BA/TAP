@@ -115,9 +115,9 @@
 
     .viewport-wrapper.cinema-mode {
         width: 100%;
-        height: 68vh;
-        min-height: 520px;
-        max-height: 800px;
+        height: 58vh;
+        min-height: 380px;
+        max-height: 680px;
         border-radius: 20px;
         border: 2px solid rgba(34, 211, 238, 0.5);
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(6, 182, 212, 0.25);
@@ -140,6 +140,15 @@
         backdrop-filter: blur(14px);
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
         margin-top: 14px;
+    }
+
+    .feedback-deck {
+        background: rgba(15, 23, 42, 0.85);
+        border: 1.5px solid rgba(103, 232, 249, 0.35);
+        border-radius: 16px;
+        padding: 16px 20px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
     .live-detection-banner {
@@ -397,7 +406,7 @@
     }
 
     .assembly-drop-zone:empty::before {
-        content: '🖐️ Kẹp chữ thả vào đây bằng cử chỉ bàn tay hoặc kéo chuột để ghép câu...';
+        content: 'Chạm hoặc kéo các thẻ từ vựng vào đây để ghép câu...';
         color: #64748b;
         font-style: italic;
         font-size: 13px;
@@ -915,18 +924,9 @@
             border-radius: 14px !important;
         }
 
-        /* Khay câu AR trong camera nhỏ gọn trên mobile */
-        .ar-camera-sentence-dock {
-            bottom: 6px !important;
-            left: 6px !important;
-            right: 6px !important;
+        .assembly-drop-zone {
+            min-height: 60px !important;
             padding: 8px 10px !important;
-            border-radius: 12px !important;
-        }
-
-        .ar-sentence-drop-zone {
-            min-height: 42px !important;
-            padding: 6px 8px !important;
             gap: 6px !important;
         }
 
@@ -1124,57 +1124,8 @@
                     </div>
                 </div>
 
-                <!-- AR CAMERA SENTENCE DOCK (KHAY GHÉP CÂU TRỰC TIẾP TRONG CAMERA) -->
-                <div id="camera-ar-sentence-dock" class="ar-camera-sentence-dock">
-                    <div class="ar-dock-header">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: inline-flex; align-items: center; color: var(--neon-cyan);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a2 2 0 0 1 2-2h1a2 2 0 1 0 4 0h1a2 2 0 0 1 2 2v1a2 2 0 1 0 0 4v1a2 2 0 0 1-2 2h-1a2 2 0 1 0-4 0H6a2 2 0 0 1-2-2v-1a2 2 0 1 0 0-4Z"/></svg>
-                            </span>
-                            <span style="color: #fff; font-weight: 800; font-size: 12.5px; letter-spacing: 0.3px;">
-                                CÂU GHÉP TRỰC TIẾP TRONG CAMERA
-                            </span>
-                            <span id="ar-sentence-count-badge" style="font-size: 10.5px; color: var(--neon-cyan); background: rgba(34, 211, 238, 0.2); padding: 1px 6px; border-radius: 8px; font-weight: 700;">
-                                0 từ
-                            </span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <button type="button" class="ar-mini-btn" onclick="autoAssembleSentence()" title="Tự động ghép câu mẫu hoàn chỉnh" style="display: inline-flex; align-items: center; gap: 4px;">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
-                                <span>Câu mẫu</span>
-                            </button>
-                            <button type="button" class="ar-mini-btn" onclick="clearSentence()" title="Xóa toàn bộ câu" style="display: inline-flex; align-items: center; gap: 4px;">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                <span>Xóa</span>
-                            </button>
-                            <button type="button" class="ar-mini-btn" id="btn-toggle-dock-collapse" onclick="toggleArDockCollapse()" title="Thu gọn khay để nhìn rõ camera" style="display: inline-flex; align-items: center;">
-                                <svg id="dock-collapse-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Khay chứa các từ đã ghép -->
-                    <div id="assembly-drop-zone" class="ar-sentence-drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
-
-                    <!-- Thanh nút hỗ trợ và Chấm Điểm Ngữ Pháp ngay trên Camera -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                            <span style="font-size: 11px; color: #94a3b8;">Chạm nhanh:</span>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('is')">is</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('has')">has</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('broken')">broken</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('clean')">clean</button>
-                            <button type="button" class="quick-word-chip" onclick="insertQuickWord('of')">of</button>
-                        </div>
-
-                        <button type="button" class="cyber-btn cyber-btn-pink" id="btn-submit-sentence" onclick="submitSentence()" disabled style="padding: 7px 16px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
-                            <span id="submit-btn-icon" style="display: inline-flex; align-items: center;">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
-                            </span>
-                            <span id="submit-btn-text">Chấm Điểm Ngữ Pháp</span>
-                        </button>
-                    </div>
-                </div>
+                <!-- AR SUBTITLE STRIP: Dòng chữ phụ đề AR nổi nhẹ nhàng trong suốt (chỉ hiện chữ, không có khung hộp chữ nhật chắn) -->
+                <div id="camera-ar-subtitle-strip" style="position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 24; color: #67e8f9; font-weight: 800; font-size: 15px; text-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 12px rgba(6,182,212,0.8); pointer-events: none; white-space: nowrap; letter-spacing: 0.5px; display: none;"></div>
 
                 <!-- AR FEEDBACK MODAL (BẢNG KẾT QUẢ ĐÁNH GIÁ NGỮ PHÁP NỔI TRONG CAMERA) -->
                 <div id="ar-feedback-modal" class="ar-feedback-modal">
@@ -1236,7 +1187,7 @@
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <button type="button" class="cyber-btn cyber-btn-pink" onclick="focusArSentenceDock()" style="padding: 9px 16px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a2 2 0 0 1 2-2h1a2 2 0 1 0 4 0h1a2 2 0 0 1 2 2v1a2 2 0 1 0 0 4v1a2 2 0 0 1-2 2h-1a2 2 0 1 0-4 0H6a2 2 0 0 1-2-2v-1a2 2 0 1 0 0-4Z"/></svg>
-                    <span>Ghép Câu Trong Camera ➔</span>
+                    <span>Ghép Câu Với Từ Đã Quét ➔</span>
                 </button>
                 <button type="button" class="cyber-btn" onclick="switchWorkspace('vault')" style="padding: 9px 16px; font-size: 12.5px; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(103, 232, 249, 0.4); display: inline-flex; align-items: center; gap: 6px;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
@@ -1373,18 +1324,111 @@
             </div>
         </div>
 
+        <!-- SENTENCE ASSEMBLY DECK (KHAY GHÉP CÂU & PHÂN TÍCH NGỮ PHÁP) -->
+        <div class="bento-card" id="sentence-assembly-deck" style="margin-top: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-flex; align-items: center; color: var(--neon-cyan);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a2 2 0 0 1 2-2h1a2 2 0 1 0 4 0h1a2 2 0 0 1 2 2v1a2 2 0 1 0 0 4v1a2 2 0 0 1-2 2h-1a2 2 0 1 0-4 0H6a2 2 0 0 1-2-2v-1a2 2 0 1 0 0-4Z"/></svg>
+                    </span>
+                    <span style="font-weight: 700; color: #fff; font-size: 14px;">Khay Ghép Câu & Phân Tích Ngữ Pháp</span>
+                    <span id="badge-sentence-count" style="font-size: 11px; color: var(--neon-cyan); background: rgba(103, 232, 249, 0.15); padding: 2px 8px; border-radius: 8px; font-weight: 700;">0 từ trong khay</span>
+                </div>
+
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <!-- MẪU CÂU THÔNG DỤNG -->
+                    <select id="sentence-template-select" class="cyber-mini-select" onchange="applySentenceTemplate(this.value)" style="font-size: 12px; padding: 6px 10px;">
+                        <option value="">Chọn mẫu câu theo đồ vật...</option>
+                        <option value="part_is_adj">The [part] of my [object] is broken (Bộ phận của tôi bị hỏng)</option>
+                        <option value="obj_has_part">This [object] has a [part] (Đồ vật này có bộ phận...)</option>
+                        <option value="my_obj_part">My [object] has a good [part] (Đồ vật của tôi có... tốt)</option>
+                        <option value="i_need_obj">I use the [object] with the [part] (Tôi sử dụng... cùng...)</option>
+                    </select>
+                    <button type="button" class="action-pill-btn btn-primary-pill" onclick="autoAssembleSentence()" title="Tự động ghép một câu mẫu hoàn chỉnh từ các từ có sẵn trong kho">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
+                        <span>Ghép câu mẫu</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CÁC TỪ KẾT NỐI NHANH -->
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;">
+                <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">Thêm nhanh:</span>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('is')">is</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('has')">has</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('broken')">broken</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('clean')">clean</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('new')">new</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('good')">good</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('of')">of</button>
+                <button type="button" class="quick-word-chip" onclick="insertQuickWord('with')">with</button>
+            </div>
+
+            <!-- DROP ZONE: NƠI THẢ VÀ XẾP TỪ -->
+            <div class="assembly-drop-zone" id="assembly-drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
+
+            <!-- CÁC NÚT ĐIỀU KHIỂN & CHẤM ĐIỂM -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button class="cyber-btn cyber-btn-pink" id="btn-submit-sentence" onclick="submitSentence()" disabled style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+                        <span id="submit-btn-text">Chấm Điểm & Phân Tích Ngữ Pháp</span>
+                    </button>
+                    <button class="cyber-btn" style="background: rgba(51, 65, 85, 0.8); display: inline-flex; align-items: center; gap: 6px;" onclick="clearSentence()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <span>Xóa Khay</span>
+                    </button>
+                </div>
+
+                <button class="cyber-btn" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(103, 232, 249, 0.3); display: inline-flex; align-items: center; gap: 6px;" onclick="addCustomWordPrompt()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Thêm từ tự chọn</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- EVALUATION & FEEDBACK DECK (KẾT QUẢ ĐÁNH GIÁ NGỮ PHÁP) -->
+        <div class="feedback-deck" id="feedback-deck" style="display: none; margin-top: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 700; color: var(--neon-cyan); font-size: 15px; display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                    <span>KẾT QUẢ ĐÁNH GIÁ NGỮ PHÁP (MASTER G)</span>
+                </span>
+                <span id="score-badge-deck" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1.5px solid #4ade80; padding: 4px 12px; border-radius: 12px; font-weight: 800; font-size: 14px;">
+                    Điểm: 100/100
+                </span>
+            </div>
+
+            <div style="background: rgba(2, 6, 23, 0.7); padding: 12px 16px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(103, 232, 249, 0.2);">
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">Câu của bạn:</div>
+                <div id="deck-result-original" style="color: #fff; font-size: 14px; font-weight: 600;"></div>
+                <div style="font-size: 12px; color: #4ade80; margin-top: 8px; margin-bottom: 4px;">Câu chuẩn hóa đề xuất:</div>
+                <div id="deck-result-corrected" style="color: #4ade80; font-size: 14px; font-weight: 600;"></div>
+            </div>
+
+            <div style="background: rgba(30, 41, 59, 0.6); padding: 12px 16px; border-radius: 12px; border-left: 3px solid var(--neon-pink);">
+                <div style="font-size: 12px; color: var(--neon-pink); font-weight: 700; margin-bottom: 4px;">Lời nhận xét Sư phạm (Master G):</div>
+                <div id="deck-result-critique" style="color: #cbd5e1; font-size: 13px; line-height: 1.5; white-space: pre-line;"></div>
+            </div>
+
+            <div id="deck-result-exp" style="margin-top: 10px; color: #fbbf24; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span>+50 EXP đã được cộng vào tài khoản của bạn!</span>
+            </div>
+        </div>
+
         <!-- WORD POOL DECK (KHO TỪ VỰNG TƯƠNG TÁC SẴN SÀNG GHÉP CÂU) -->
         <div class="bento-card" style="margin-top: 14px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-weight: 700; color: #fff; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--neon-cyan)" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-                        <span>Thẻ Từ Vựng Để Ghép Vào Camera</span>
+                        <span>Thẻ Từ Vựng Ghép Câu</span>
                     </span>
                     <span id="word-count-badge" style="font-size: 11px; color: var(--neon-cyan); background: rgba(103, 232, 249, 0.15); padding: 2px 8px; border-radius: 8px; font-weight: 700;">
                         0 từ vựng
                     </span>
-                    <span style="font-size: 11px; color: #94a3b8; font-style: italic;">(Chạm 1-touch vào thẻ từ để đưa vào câu trong camera)</span>
+                    <span style="font-size: 11px; color: #94a3b8; font-style: italic;">(Chạm 1-touch vào thẻ từ để đưa vào khay ghép câu)</span>
                 </div>
 
                 <div style="display: flex; gap: 6px; align-items: center;">
